@@ -3,10 +3,32 @@
   "outputDirectory": "frontend/.next",
   "installCommand": "cd frontend && npm install",
   "framework": "nextjs",
-  "rewrites": [
+  "functions": {
+    "api/translate.py": {
+      "runtime": "@vercel/python@4.5.0",
+      "maxDuration": 60
+    },
+    "api/health.py": {
+      "runtime": "@vercel/python@4.5.0",
+      "maxDuration": 10
+    }
+  },
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "src": "/api/translate",
+      "dest": "/api/translate.py"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/health.py"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/frontend/src/app/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
     }
   ]
 }

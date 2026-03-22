@@ -118,8 +118,8 @@ Toate fisierele sunt create cu cod functional (nu placeholder-e goale):
 
 ### FAZA 2 — Git + GitHub
 
-- [ ] **2.1. Initializare Git** — git init + remote add origin
-- [ ] **2.2. Primul commit + push** — ATENTIE: NU adauga .env (e in .gitignore)
+- [x] **2.1. Initializare Git** — DONE 2026-03-23 (git init + remote origin)
+- [x] **2.2. Primul commit + push** — DONE 2026-03-23 (87 fisiere, branch main, push OK)
 - Commit: "Initial project structure — Sistem Traduceri Matematica"
 - Push la GitHub
 
@@ -219,6 +219,7 @@ Roland a confirmat continuarea (2026-03-23) — chei considerate valide.
 | 2026-03-23 | 1.5 Monitorizare | DONE | ErrorBoundary, monitoring.ts, /api/logs, /diagnostics, data/logs/ |
 | 2026-03-23 | 1.6 Testare locala | DONE | Backend :8000 health OK, Frontend :3000 OK, /api/logs write+read OK |
 | 2026-03-23 | 1.7 Fix-uri | DONE | mistralai v2 import fix (MistralClient -> Mistral), requirements.txt updated |
+| 2026-03-23 | 2.1+2.2 Git+Push | DONE | 87 fisiere, branch main, push OK la GitHub |
 
 ---
 
