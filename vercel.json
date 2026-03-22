@@ -1,6 +1,4 @@
 {
-  "framework": "nextjs",
-  "rootDirectory": "frontend",
   "functions": {
     "api/translate.py": {
       "runtime": "@vercel/python@4.5.0",
