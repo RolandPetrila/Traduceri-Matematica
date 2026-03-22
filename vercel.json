@@ -1,23 +1,13 @@
 {
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
+  "framework": "nextjs",
+  "rootDirectory": "frontend",
+  "functions": {
+    "api/translate.py": {
+      "runtime": "@vercel/python@4.5.0",
+      "maxDuration": 60
     },
-    {
-      "src": "api/translate.py",
-      "use": "@vercel/python@4.5.0",
-      "config": { "maxLambdaSize": "15mb" }
-    },
-    {
-      "src": "api/health.py",
-      "use": "@vercel/python@4.5.0"
+    "api/health.py": {
+      "runtime": "@vercel/python@4.5.0"
     }
-  ],
-  "routes": [
-    { "src": "/api/translate", "dest": "api/translate.py", "methods": ["POST", "OPTIONS"] },
-    { "src": "/api/health", "dest": "api/health.py" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "frontend/$1" }
-  ]
+  }
 }
