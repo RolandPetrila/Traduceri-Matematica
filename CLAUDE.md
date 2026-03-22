@@ -5,15 +5,16 @@ Aplicatie web (PWA) pentru traducerea documentelor de matematica din romana in s
 Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4 printabil.
 
 ## Status
-- **Faza curenta**: Structura completa creata, urmeaza instalare dependinte + testare
-- **Progres**: 67 fisiere create cu cod functional (frontend + backend + config + PWA)
-- **Urmatorul pas**: npm install + pip install, testare locala, git init + push GitHub
+- **Faza curenta**: FAZA 1+2+3 COMPLETE — functional local + Git + Vercel config
+- **Progres**: 92+ fisiere, dependinte instalate, testat local, push GitHub, Vercel configurat
+- **Urmatorul pas**: Conectare Vercel la repo (Roland), apoi FAZA 4 (imbunatatiri)
+- **Ultima sesiune**: 2026-03-23
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
-1. Citeste `CHECKPOINT.md` — contine TODO complet cu 5 faze si toate detaliile
-2. Citeste `Cerinte_Roland.md` — 93 cerinte confirmate
-3. Daca exista fisier de chat exportat (JSON/JSONL) — citeste-l pentru context complet
-4. Incepe cu FAZA 1.1 din CHECKPOINT.md (instalare dependinte)
+1. Citeste `CHECKPOINT.md` — contine TODO complet cu progres live (checkbox-uri)
+2. Citeste `TODO.md` — contine amanari, idei noi, known issues
+3. Citeste `Cerinte_Roland.md` — 93 cerinte confirmate
+4. Continua cu primul task nemarcat din CHECKPOINT.md
 
 ## Stack
 - Frontend: Next.js 14 + Tailwind CSS + shadcn/ui
@@ -23,12 +24,15 @@ Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4
 - Deploy: Vercel (auto-deploy din GitHub)
 
 ## Key Files
+- `CHECKPOINT.md` — plan master cu progres live (checkbox-uri)
+- `TODO.md` — amanari, idei noi, known issues
 - `Cerinte_Roland.md` — document complet cerinte (93 cerinte)
 - `config/languages.json` — limbi suportate si configurari
 - `frontend/` — Next.js app cu tema "tabla verde + creta"
 - `backend/` — Logica Python (OCR, traducere, SVG, conversii)
-- `data/dictionary/` — dictionar terminologic persistent
-- `data/history/` — istoric rulari
+- `api/` — Vercel Python serverless functions (translate, health)
+- `data/logs/` — loguri erori client-side (JSONL)
+- `frontend/src/app/diagnostics/` — pagina diagnosticare erori (/diagnostics)
 
 ## Conventions
 - Limba interfata/documentatie: ROMANA

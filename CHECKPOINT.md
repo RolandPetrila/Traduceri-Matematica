@@ -152,8 +152,8 @@ Toate fisierele sunt create cu cod functional (nu placeholder-e goale):
 
 ### FAZA 3 — Vercel Deploy
 
-- [ ] **3.1. Conectare Vercel** — repo GitHub la Vercel, framework Next.js, root frontend/
-- [ ] **3.2. Restructurare hybrid** — conversii in API Routes TS, OCR+traducere in Python serverless
+- [x] **3.1. Restructurare hybrid** — DONE 2026-03-23 (api/translate.py + api/health.py + vercel.json)
+- [ ] **3.2. Conectare Vercel** — Roland conecteaza repo GitHub la Vercel Dashboard
 - [ ] **3.3. Configurare env vars** — GOOGLE_AI_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY pe Vercel
 - [ ] **3.4. Test deploy** — verificare ca totul merge pe URL-ul Vercel
 
@@ -220,6 +220,8 @@ Roland a confirmat continuarea (2026-03-23) — chei considerate valide.
 | 2026-03-23 | 1.6 Testare locala | DONE | Backend :8000 health OK, Frontend :3000 OK, /api/logs write+read OK |
 | 2026-03-23 | 1.7 Fix-uri | DONE | mistralai v2 import fix (MistralClient -> Mistral), requirements.txt updated |
 | 2026-03-23 | 2.1+2.2 Git+Push | DONE | 87 fisiere, branch main, push OK la GitHub |
+| 2026-03-23 | 3.1 Vercel hybrid | DONE | api/translate.py, api/health.py, vercel.json, push OK |
+| 2026-03-23 | 9. Final update | DONE | CLAUDE.md, CHECKPOINT.md, TODO.md actualizate |
 
 ---
 
