@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+
+@layer base {
+  :root {
+    --chalkboard: #2d5016;
+    --chalkboard-dark: #1a3009;
+    --chalkboard-light: #3d6b1e;
+    --chalk-white: #f0ebe3;
+    --chalk-yellow: #f5d565;
+    --chalk-red: #e8836b;
+    --chalk-blue: #7bb8d4;
+  }
+
+  body {
+    background: radial-gradient(ellipse at center, var(--chalkboard) 0%, var(--chalkboard-dark) 100%);
+    color: var(--chalk-white);
+    min-height: 100vh;
+    font-family: 'Patrick Hand', cursive;
+  }
+}
+
+/* Chalkboard texture overlay */
+.chalkboard-bg {
+  position: relative;
+  background: radial-gradient(ellipse at center, #2d5016 0%, #1a3009 100%);
+}
+.chalkboard-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Chalk-style text */
+.chalk-text {
+  color: var(--chalk-white);
+  text-shadow: 0 0 3px rgba(240, 235, 227, 0.3);
+}
+
+/* Chalk button */
+.chalk-btn {
+  @apply px-4 py-2 rounded-lg font-bold transition-all duration-200;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed rgba(240, 235, 227, 0.4);
+  color: var(--chalk-yellow);
+  text-shadow: 0 0 2px rgba(245, 213, 101, 0.3);
+}
+.chalk-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--chalk-yellow);
+  transform: scale(1.02);
+}
+
+/* Math decorations in background */
+.math-decoration {
+  position: fixed;
+  opacity: 0.04;
+  font-size: 2rem;
+  color: white;
+  pointer-events: none;
+  z-index: 0;
+  font-family: 'Cambria Math', Cambria, serif;
+}
+
+/* Drop zone */
+.drop-zone {
+  @apply rounded-xl p-8 text-center transition-all duration-300;
+  border: 3px dashed rgba(240, 235, 227, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+}
+.drop-zone.active {
+  border-color: var(--chalk-yellow);
+  background: rgba(245, 213, 101, 0.05);
+}
+
+/* Tab navigation */
+.tab-active {
+  border-bottom: 3px solid var(--chalk-yellow);
+  color: var(--chalk-yellow);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--chalkboard-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--chalkboard-light);
+  border-radius: 4px;
+}

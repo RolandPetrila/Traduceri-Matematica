@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+frontend/.next/
+frontend/out/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Chat exports (large files, private)
+2026-*.txt
+
+# Data (local only)
+data/history/*
+data/dictionary/*.json
+!data/dictionary/.gitkeep
+!data/history/.gitkeep
+
+# Logs
+*.log
+data/logs/*.jsonl
+!data/logs/.gitkeep

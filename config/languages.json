@@ -1,0 +1,29 @@
+{
+  "supported_languages": [
+    {
+      "code": "ro",
+      "name": "Romana",
+      "flag": "🇷🇴",
+      "can_be_source": true,
+      "can_be_target": true
+    },
+    {
+      "code": "sk",
+      "name": "Slovaca",
+      "flag": "🇸🇰",
+      "can_be_source": true,
+      "can_be_target": true
+    },
+    {
+      "code": "en",
+      "name": "Engleza",
+      "flag": "🇬🇧",
+      "can_be_source": true,
+      "can_be_target": true
+    }
+  ],
+  "default_source": "ro",
+  "default_target": "sk",
+  "math_terms_file": "data/dictionary/math_terms_{source}_{target}.json",
+  "encoding_fallbacks": ["utf-8", "utf-8-sig", "cp1250", "latin-1"]
+}

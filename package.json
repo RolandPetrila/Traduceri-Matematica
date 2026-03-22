@@ -1,0 +1,18 @@
+{
+  "name": "traduceri-matematica",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistem Traduceri Matematica — PWA cu AI",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "install:all": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "dev:full": "concurrently \"npm run backend\" \"npm run dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RolandPetrila/Traduceri-Matematica.git"
+  }
+}
