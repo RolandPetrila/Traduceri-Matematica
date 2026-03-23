@@ -165,6 +165,18 @@ export default function TraduceriPage() {
         </div>
       )}
 
+      {/* Success message */}
+      {result && !isProcessing && !error && (
+        <div className="rounded-lg p-4 text-center" style={{ background: "rgba(74, 222, 128, 0.15)", border: "1px solid #4ade80" }}>
+          <p className="text-lg font-bold" style={{ color: "#4ade80" }}>
+            Traducere reusita!
+          </p>
+          <p className="text-sm opacity-70 mt-1">
+            Rezultatul e mai jos. Salvat automat in tab-ul Istoric.
+          </p>
+        </div>
+      )}
+
       {/* Preview side-by-side */}
       {result && (
         <PreviewPanel

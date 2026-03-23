@@ -8,12 +8,19 @@ interface FileUploadProps {
 }
 
 const MAX_FILES = 10;
-const ACCEPTED = [
+const ACCEPTED_MIMES = [
   "image/jpeg",
   "image/png",
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
+const ACCEPTED_EXTS = [".jpg", ".jpeg", ".png", ".pdf", ".docx"];
+
+function isAccepted(file: File): boolean {
+  if (ACCEPTED_MIMES.includes(file.type)) return true;
+  const ext = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  return ACCEPTED_EXTS.includes(ext);
+}
 
 export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -27,7 +34,7 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
       setIsDragging(false);
       dragCounter.current = 0;
       const dropped = Array.from(e.dataTransfer.files)
-        .filter((f) => ACCEPTED.includes(f.type))
+        .filter(isAccepted)
         .slice(0, MAX_FILES);
       if (dropped.length > 0) {
         onFilesChange(dropped);
