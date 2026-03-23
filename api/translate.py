@@ -17,6 +17,38 @@ import urllib.request
 import urllib.parse
 
 
+# --- Local debug logging ---
+
+
+def _log_to_file(message: str) -> None:
+    """Append log entry to data/logs/local_debug.log (local dev only)."""
+    log_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "logs"
+    )
+    if not os.path.isdir(log_dir):
+        return
+    log_file = os.path.join(log_dir, "local_debug.log")
+    try:
+        from datetime import datetime
+
+        ts = datetime.now().strftime("%H:%M:%S")
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] {message}\n")
+    except Exception:
+        pass
+
+
+def _count_output_stats(markdown: str) -> dict:
+    """Count LaTeX formulas, SVG figures, headings in output."""
+    return {
+        "latex": len(re.findall(r"\$[^\$\n]+?\$", markdown))
+        + len(re.findall(r"\$\$[\s\S]+?\$\$", markdown)),
+        "svg": len(re.findall(r"<svg", markdown, re.IGNORECASE)),
+        "headings": len(re.findall(r"^#{1,6}\s", markdown, re.MULTILINE)),
+        "chars": len(markdown),
+    }
+
+
 # --- Math protection ---
 
 LATEX_PATTERNS = [
@@ -605,6 +637,12 @@ class handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
                 return
 
+            file_types = [f.get("mime_type", "?").split("/")[-1] for f in files]
+            _log_to_file(
+                f"ACTION  | Traducere initiata | {len(files)} fisier(e) | "
+                f"{source_lang} -> {target_lang} | Tipuri: {', '.join(file_types)}"
+            )
+
             all_markdowns = []
             results = []
             import time
@@ -624,21 +662,41 @@ class handler(BaseHTTPRequestHandler):
 
                 if is_docx:
                     # DOCX: extract structured text, then Gemini formats + translates in one pass
+                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: DOCX | {len(file_data)} bytes")
+                    t_docx = time.time()
                     extracted = extract_text_from_docx(file_data)
                     final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
+                    _log_to_file(f"OK      | DOCX procesat | Durata: {time.time()-t_docx:.1f}s | Chars: {len(final_markdown)}")
                 else:
                     # Image: OCR with Gemini Vision (fallback: Mistral Pixtral)
+                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes")
+                    t_ocr = time.time()
+                    ocr_provider = "Gemini"
                     try:
                         extracted = ocr_with_gemini(file_data, mime_type, source_lang)
                     except Exception as ocr_err:
                         print(f"[OCR] Gemini OCR failed, trying Mistral: {ocr_err}", file=sys.stderr)
+                        _log_to_file(f"WARN    | OCR Gemini esuat: {ocr_err} | Fallback: Mistral")
+                        ocr_provider = "Mistral"
                         extracted = ocr_with_mistral(file_data, mime_type, source_lang)
+                    ocr_dur = time.time() - t_ocr
+                    _log_to_file(f"OK      | OCR complet | Provider: {ocr_provider} | Durata: {ocr_dur:.1f}s | Chars: {len(extracted)}")
+
                     protected, placeholders = protect_math(extracted)
+                    _log_to_file(f"INFO    | Math protejat: {len(placeholders)} placeholders")
+
+                    t_tr = time.time()
+                    tr_provider = "Gemini"
                     try:
                         translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
                     except Exception as e:
                         print(f"[TRANSLATE] Gemini translation failed, trying Groq: {e}", file=sys.stderr)
+                        _log_to_file(f"WARN    | Traducere Gemini esuata: {e} | Fallback: Groq")
+                        tr_provider = "Groq"
                         translated = translate_with_groq(protected, source_lang, target_lang, dict_terms)
+                    tr_dur = time.time() - t_tr
+                    _log_to_file(f"OK      | Traducere completa | Provider: {tr_provider} | Durata: {tr_dur:.1f}s")
+
                     final_markdown = restore_math(translated, placeholders)
                 all_markdowns.append(final_markdown)
 
@@ -653,6 +711,16 @@ class handler(BaseHTTPRequestHandler):
             unified_html = build_html(all_markdowns, target_lang)
             duration_ms = int((time.time() - t0) * 1000)
 
+            # Log output statistics per page
+            for i, md in enumerate(all_markdowns):
+                stats = _count_output_stats(md)
+                _log_to_file(
+                    f"INFO    | Pagina {i+1} output: LaTeX={stats['latex']} | "
+                    f"SVG={stats['svg']} | Headings={stats['headings']} | Chars={stats['chars']}"
+                )
+            _log_to_file(f"OK      | SUCCES TOTAL | {len(results)} pagini | Durata: {duration_ms}ms")
+            _log_to_file("")
+
             print(f"[TRANSLATE] Success: {len(results)} pages in {duration_ms}ms", file=sys.stderr)
             self._send_json(200, {
                 "results": results,
@@ -664,6 +732,8 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             error_msg = _sanitize_error(f"{type(e).__name__}: {str(e)}")
+            _log_to_file(f"ERROR   | Traducere esuata | {error_msg}")
+            _log_to_file("")
             print(f"[TRANSLATE ERROR] {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             self._send_json(500, {"error": error_msg, "status": "error"})

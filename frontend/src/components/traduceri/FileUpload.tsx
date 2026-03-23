@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, useRef } from "react";
+import { logAction } from "@/lib/monitoring";
 
 interface FileUploadProps {
   files: File[];
@@ -54,6 +55,12 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
       const { valid, errors } = validateFiles(Array.from(e.dataTransfer.files));
       setFileErrors(errors);
       if (valid.length > 0) {
+        logAction("Fisiere selectate (drag&drop)", {
+          count: valid.length,
+          names: valid.map((f) => f.name),
+          sizes: valid.map((f) => `${(f.size / 1024).toFixed(0)}KB`),
+          types: valid.map((f) => f.type),
+        });
         onFilesChange(valid);
       }
     },
@@ -84,6 +91,14 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { valid, errors } = validateFiles(Array.from(e.target.files || []));
     setFileErrors(errors);
+    if (valid.length > 0) {
+      logAction("Fisiere selectate (click)", {
+        count: valid.length,
+        names: valid.map((f) => f.name),
+        sizes: valid.map((f) => `${(f.size / 1024).toFixed(0)}KB`),
+        types: valid.map((f) => f.type),
+      });
+    }
     onFilesChange(valid);
   };
 

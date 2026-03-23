@@ -87,14 +87,43 @@ export default function DiagnosticsPage() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               <button onClick={handleRefresh} className="chalk-btn text-sm">
                 Reincarca
               </button>
               {logs.length > 0 && (
-                <button onClick={handleClearLogs} className="chalk-btn text-sm !text-chalk-red">
-                  Sterge loguri
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      const text = logs
+                        .map((l) => {
+                          const ts = new Date(l.timestamp).toLocaleTimeString("ro-RO", { hour12: false });
+                          const level = l.level.toUpperCase().padEnd(6);
+                          const device = `${l.device.type}/${l.device.os}/${l.device.browser}`;
+                          let line = `[${ts}] ${level} | ${l.message} | ${device} | ${l.page}`;
+                          if (l.context && Object.keys(l.context).length > 0) {
+                            line += `\n                   | Context: ${JSON.stringify(l.context)}`;
+                          }
+                          if (l.stack) {
+                            line += `\n                   | Stack: ${l.stack.split("\\n")[0]}`;
+                          }
+                          return line;
+                        })
+                        .join("\n");
+                      const header = `=== LOGURI EXPORT | ${new Date().toLocaleString("ro-RO")} | ${logs[0]?.device?.type}/${logs[0]?.device?.os}/${logs[0]?.device?.browser} | ${logs.length} intrari ===\n\n`;
+                      navigator.clipboard.writeText(header + text).then(
+                        () => alert(`${logs.length} loguri copiate in clipboard!`),
+                        () => alert("Eroare la copiere. Incearca din nou.")
+                      );
+                    }}
+                    className="chalk-btn text-sm !text-chalk-yellow"
+                  >
+                    Copiaza loguri
+                  </button>
+                  <button onClick={handleClearLogs} className="chalk-btn text-sm !text-chalk-red">
+                    Sterge loguri
+                  </button>
+                </>
               )}
             </div>
 

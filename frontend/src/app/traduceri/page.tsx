@@ -8,6 +8,7 @@ import ProgressBar from "@/components/traduceri/ProgressBar";
 import Dictionary from "@/components/traduceri/Dictionary";
 import { addToHistory } from "@/lib/storage";
 import { logError, logAction, logInfo } from "@/lib/monitoring";
+import { validateTranslationOutput } from "@/lib/validator";
 
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
@@ -108,6 +109,9 @@ export default function TraduceriPage() {
       if (!htmlResult) {
         throw new Error("Raspunsul nu contine HTML tradus");
       }
+
+      // Validate output quality
+      validateTranslationOutput(data);
 
       setResult(htmlResult);
       setProgress(100);

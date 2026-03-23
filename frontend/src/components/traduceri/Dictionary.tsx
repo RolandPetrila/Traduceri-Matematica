@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logAction } from "@/lib/monitoring";
 
 interface DictEntry {
   source: string;
@@ -79,12 +80,15 @@ export default function Dictionary({ sourceLang, targetLang }: DictionaryProps) 
     if (!newSource.trim() || !newTarget.trim()) return;
     // Avoid duplicates
     if (entries.some((e) => e.source.toLowerCase() === newSource.trim().toLowerCase())) return;
-    save([...entries, { source: newSource.trim(), target: newTarget.trim(), domain: "manual" }]);
+    const entry = { source: newSource.trim(), target: newTarget.trim(), domain: "manual" };
+    save([...entries, entry]);
+    logAction("Dictionar: termen adaugat", { source: entry.source, target: entry.target });
     setNewSource("");
     setNewTarget("");
   };
 
   const removeEntry = (index: number) => {
+    logAction("Dictionar: termen sters", { source: entries[index]?.source });
     save(entries.filter((_, i) => i !== index));
   };
 

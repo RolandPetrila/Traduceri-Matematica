@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ProgressBar from "@/components/traduceri/ProgressBar";
 import { logAction, logInfo, logError } from "@/lib/monitoring";
+import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
 
 const CONVERSION_MAP: Record<string, string[]> = {
@@ -131,13 +132,17 @@ export default function ConvertorPage() {
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
 
       // Smart filename from Content-Disposition header or construct one
       const disposition = res.headers.get("content-disposition") || "";
       const serverFilename = disposition.match(/filename="?([^";\n]+)"?/)?.[1];
+
+      // Validate conversion output
+      validateConversionOutput(blob, operation, serverFilename || "output");
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
       const baseName = files[0].name.replace(/\.[^.]+$/, "");
       const ext = operation === "merge" ? "pdf"
         : operation === "compress" ? detectedFormat
@@ -212,7 +217,7 @@ export default function ConvertorPage() {
         {OPERATIONS.map((op) => (
           <button
             key={op.id}
-            onClick={() => { setOperation(op.id); setPdfAction(""); }}
+            onClick={() => { logAction("Convertor: operatie schimbata", { operation: op.id }); setOperation(op.id); setPdfAction(""); }}
             className={`chalk-btn text-sm ${
               operation === op.id ? "!border-chalk-yellow !bg-white/10" : ""
             }`}
@@ -275,7 +280,7 @@ export default function ConvertorPage() {
             {availableTargets.map((fmt) => (
               <button
                 key={fmt}
-                onClick={() => setTargetFormat(fmt)}
+                onClick={() => { logAction("Convertor: format selectat", { format: fmt }); setTargetFormat(fmt); }}
                 className={`chalk-btn ${
                   targetFormat === fmt ? "!border-chalk-yellow !bg-white/10" : ""
                 }`}

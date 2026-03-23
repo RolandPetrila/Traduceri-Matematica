@@ -14,6 +14,30 @@ import sys
 import traceback
 
 
+
+# --- Local debug logging ---
+
+
+def _log_to_file(message: str) -> None:
+    """Append log entry to data/logs/local_debug.log (local dev only)."""
+    import os
+
+    log_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "logs"
+    )
+    if not os.path.isdir(log_dir):
+        return
+    log_file = os.path.join(log_dir, "local_debug.log")
+    try:
+        from datetime import datetime
+
+        ts = datetime.now().strftime("%H:%M:%S")
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"[{ts}] {message}\n")
+    except Exception:
+        pass
+
+
 # --- Helpers ---
 
 def _stem(name: str) -> str:
@@ -527,10 +551,13 @@ class handler(BaseHTTPRequestHandler):
                      if parts.get(k)}
 
             print(f"[CONVERT] {operation}: {len(files)} files, target={target_format}", file=sys.stderr)
+            _log_to_file(f"ACTION  | Conversie initiata | {operation} | {len(files)} fisier(e) | Target: {target_format}")
 
             result = process(files, operation, target_format, **extra)
 
             out_data = result["data"]
+            _log_to_file(f"OK      | Conversie completa | {result['filename']} | {len(out_data)} bytes")
+            _log_to_file("")
             print(f"[CONVERT OK] {operation}: {result['filename']} ({result['mime']}, {len(out_data)} bytes)", file=sys.stderr)
 
             self.send_response(200)
@@ -544,6 +571,8 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             error_msg = str(e)
+            _log_to_file(f"ERROR   | Conversie esuata | {type(e).__name__}: {error_msg}")
+            _log_to_file("")
             print(f"[CONVERT ERROR] {type(e).__name__}: {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             error_body = json.dumps({"error": error_msg, "status": "error"}).encode()

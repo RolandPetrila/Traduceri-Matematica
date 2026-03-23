@@ -86,7 +86,7 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
         <h3 className="text-xl font-bold text-chalk-yellow">Rezultat</h3>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setShowEditor(!showEditor)}
+            onClick={() => { logAction(showEditor ? "Editor HTML inchis" : "Editor HTML deschis"); setShowEditor(!showEditor); }}
             className="chalk-btn text-sm"
           >
             {showEditor ? "Ascunde editor" : "Editeaza"}

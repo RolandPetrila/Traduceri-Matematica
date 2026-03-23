@@ -1,5 +1,7 @@
 "use client";
 
+import { logAction } from "@/lib/monitoring";
+
 const LANGUAGES = [
   { code: "ro", name: "Romana", flag: "\u{1F1F7}\u{1F1F4}" },
   { code: "sk", name: "Slovaca", flag: "\u{1F1F8}\u{1F1F0}" },
@@ -20,8 +22,19 @@ export default function LanguageSelector({
   onTargetChange,
 }: LanguageSelectorProps) {
   const swap = () => {
+    logAction("Limba inversata", { from: `${sourceLang}->${targetLang}`, to: `${targetLang}->${sourceLang}` });
     onSourceChange(targetLang);
     onTargetChange(sourceLang);
+  };
+
+  const handleSourceChange = (lang: string) => {
+    logAction("Limba sursa schimbata", { from: sourceLang, to: lang });
+    onSourceChange(lang);
+  };
+
+  const handleTargetChange = (lang: string) => {
+    logAction("Limba tinta schimbata", { from: targetLang, to: lang });
+    onTargetChange(lang);
   };
 
   return (
@@ -30,7 +43,7 @@ export default function LanguageSelector({
         <label className="block text-sm opacity-60 mb-1">Din limba:</label>
         <select
           value={sourceLang}
-          onChange={(e) => onSourceChange(e.target.value)}
+          onChange={(e) => handleSourceChange(e.target.value)}
           className="bg-white/10 border border-chalk-white/20 rounded-lg px-4 py-2 text-chalk-white appearance-none cursor-pointer"
         >
           {LANGUAGES.map((l) => (
@@ -53,7 +66,7 @@ export default function LanguageSelector({
         <label className="block text-sm opacity-60 mb-1">In limba:</label>
         <select
           value={targetLang}
-          onChange={(e) => onTargetChange(e.target.value)}
+          onChange={(e) => handleTargetChange(e.target.value)}
           className="bg-white/10 border border-chalk-white/20 rounded-lg px-4 py-2 text-chalk-white appearance-none cursor-pointer"
         >
           {LANGUAGES.filter((l) => l.code !== sourceLang).map((l) => (

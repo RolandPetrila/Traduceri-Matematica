@@ -142,6 +142,7 @@ export function getLocalLogs(): ErrorLog[] {
 export function initGlobalErrorHandlers(): void {
   if (typeof window === "undefined") return;
 
+  // --- Error Capture: uncaught JS errors ---
   window.addEventListener("error", (event) => {
     logError(event.message, {
       stack: event.error?.stack,
@@ -156,6 +157,65 @@ export function initGlobalErrorHandlers(): void {
       source: "unhandled-promise-rejection",
     });
   });
+
+  // --- Console Interception: React warnings, MathJax errors, library logs ---
+  let _intercepting = false;
+  const _origWarn = console.warn;
+  const _origError = console.error;
+
+  console.warn = (...args: unknown[]) => {
+    _origWarn.apply(console, args);
+    if (_intercepting) return;
+    _intercepting = true;
+    const msg = args.map((a) => (typeof a === "string" ? a : String(a))).join(" ");
+    // Skip dev noise: React DevTools, HMR, webpack
+    if (!msg.includes("Download the React DevTools") && !msg.includes("[HMR]") && !msg.includes("webpack")) {
+      logWarn(msg, { source: "console" });
+    }
+    _intercepting = false;
+  };
+
+  console.error = (...args: unknown[]) => {
+    _origError.apply(console, args);
+    if (_intercepting) return;
+    _intercepting = true;
+    const msg = args.map((a) => (typeof a === "string" ? a : String(a))).join(" ");
+    if (!msg.includes("[HMR]") && !msg.includes("webpack") && !msg.includes("Failed to process log")) {
+      logError(msg, { source: "console" });
+    }
+    _intercepting = false;
+  };
+
+  // --- API Interceptor: log every /api/* call with status + duration ---
+  const _origFetch = window.fetch;
+  window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+
+    // Skip internal log calls (prevents infinite loop)
+    if (!url.startsWith("/api/") || url.includes("/api/logs")) {
+      return _origFetch.apply(this, [input, init] as Parameters<typeof fetch>);
+    }
+
+    const method = init?.method || "GET";
+    const t0 = Date.now();
+
+    try {
+      const response = await _origFetch.apply(this, [input, init] as Parameters<typeof fetch>);
+      const duration = Date.now() - t0;
+
+      if (response.ok) {
+        logInfo(`API | ${method} ${url} | ${response.status} | ${duration}ms | OK`, { source: "api-interceptor" });
+      } else {
+        logWarn(`API | ${method} ${url} | ${response.status} | ${duration}ms | FAIL`, { source: "api-interceptor" });
+      }
+      return response;
+    } catch (error) {
+      const duration = Date.now() - t0;
+      const msg = error instanceof Error ? error.message : String(error);
+      logError(`API | ${method} ${url} | NETWORK | ${duration}ms | ${msg}`, { source: "api-interceptor" });
+      throw error;
+    }
+  };
 
   // Log app load
   logInfo("App loaded", {
