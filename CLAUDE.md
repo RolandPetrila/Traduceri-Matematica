@@ -6,14 +6,14 @@ Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4
 
 ## Status
 - **Faza curenta**: FAZE 1-4 COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
-- **Progres**: 100+ fisiere, deploy Vercel LIVE, toate feature-urile implementate
-- **Urmatorul pas**: FAZA 5 — extensii viitoare (vezi TODO.md)
-- **Ultima sesiune**: 2026-03-23
+- **Progres**: 100+ fisiere, deploy Vercel LIVE, 119 cerinte (93 initiale + 26 noi)
+- **Urmatorul pas**: Testare pe Android/iPhone dupa fix-urile din sesiunea curenta
+- **Ultima sesiune**: 2026-03-23 (fix buguri critice + monitoring + istoric complet)
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 1. Citeste `CHECKPOINT.md` — contine TODO complet cu progres live (checkbox-uri)
 2. Citeste `TODO.md` — contine amanari, idei noi, known issues
-3. Citeste `Cerinte_Roland.md` — 93 cerinte confirmate
+3. Citeste `Cerinte_Roland.md` — 119 cerinte (v2.0)
 4. Continua cu primul task nemarcat din CHECKPOINT.md
 
 ## Stack
@@ -35,8 +35,9 @@ Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4
 - `backend/` — Logica Python (OCR, traducere, SVG, conversii)
 - `api/` — Vercel Python serverless functions (translate, health)
 - `tests/test_e2e.py` — teste E2E cu imagini reale
-- `data/logs/` — loguri erori client-side (JSONL)
-- `frontend/src/app/diagnostics/` — pagina diagnosticare erori (/diagnostics)
+- `STRUCTURA_MODULE.md` — harta completa module/functii cu descriere proces executie
+- `start.html` — fisier pentru deschidere rapida aplicatie cu dublu-click
+- `frontend/src/app/diagnostics/` — pagina diagnosticare completa (erori + actiuni + info)
 
 ## Conventions
 - Limba interfata/documentatie: ROMANA
