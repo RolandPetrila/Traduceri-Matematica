@@ -175,14 +175,39 @@ def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str
 
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     print(f"[OCR] Processing image: {len(image_bytes)} bytes, mime={mime_type}, lang={source_lang}", file=sys.stderr)
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+
+    ocr_prompt = (
+        f"Extract ALL content from this {src} math textbook page as professional Markdown.\n\n"
+        "STRUCTURE RULES:\n"
+        "- Use # for main titles, ## for section headings, ### for subsections\n"
+        "- Use **bold** for key terms (e.g. **Example.**, **Observation.**, **Definition.**)\n"
+        "- Numbered items: 1. 2. 3. format\n"
+        "- Letter options: a) b) c) d) on separate lines\n"
+        "- Preserve the EXACT order and layout of the original page\n\n"
+        "MATH RULES — ALL math MUST use LaTeX notation:\n"
+        "- Triangles: $\\triangle ABC$\n"
+        "- Angles: $\\angle MON$, $m(\\angle A) = 60°$\n"
+        "- Segments: $[AB]$, $AB = 4 \\text{ cm}$\n"
+        "- Other: $\\perp$, $\\parallel$, $\\cap$, $\\cup$, fractions, etc.\n"
+        "- Inline math: $...$  |  Display math: $$...$$\n"
+        "- NEVER write math as plain text — always LaTeX\n\n"
+        "SVG FIGURES — for ANY geometric figure, construction, or diagram:\n"
+        "- Create inline SVG wrapped in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
+        "- SVG attributes: xmlns, viewBox, width, height, style=\"font-family:Cambria,serif\"\n"
+        "- Vertices: labeled in italic (font-style:italic), points as circles r=2.5\n"
+        "- Measurements: fill=\"#666\", font-size=\"10\"\n"
+        "- Angles: arcs with fill=\"none\" stroke=\"#c44\" (red) or stroke=\"#1a7\" (green)\n"
+        "- Construction steps: group as pairs (P1+P2, P3+P4) side by side in same <div>\n"
+        "- Step labels: P₁, P₂, etc. as <text> at top center, font-weight=\"bold\", fill=\"#444\"\n"
+        "- Dashed helper lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
+        "- Final step: filled polygon with fill=\"#e8f0fe\"\n\n"
+        "Output ONLY the Markdown content. No code fences, no explanations."
+    )
     contents = [{
         "parts": [
-            {"text": (
-                f"Extract ALL content from this math textbook image ({source_lang}). "
-                "Output as Markdown with LaTeX ($...$, $$...$$). "
-                "For geometric figures, create inline SVG wrapped in <div>. "
-                "Preserve all symbols, formulas, measurements, layout order."
-            )},
+            {"text": ocr_prompt},
             {"inline_data": {"mime_type": mime_type, "data": image_b64}},
         ]
     }]
@@ -196,15 +221,31 @@ def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
 
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    tgt = lang_names.get(target_lang, target_lang)
+
     print(f"[TRANSLATE] Gemini: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
-    contents = [{
-        "parts": [{"text": (
-            f"Translate this math textbook text from {source_lang} to {target_lang}.\n"
-            "CRITICAL: Preserve ALL LaTeX ($...$), HTML/SVG blocks, markdown formatting.\n"
-            "Only translate natural language. Use correct math terminology with diacritics.\n\n"
-            f"{text}"
-        )}]
-    }]
+    translate_prompt = (
+        f"Translate this math textbook content from {src} to {tgt}.\n\n"
+        "CRITICAL RULES — violating ANY of these is an error:\n"
+        "1. PRESERVE EXACTLY as-is (do NOT modify):\n"
+        "   - All LaTeX: $...$, $$...$$, \\begin...\\end blocks\n"
+        "   - All HTML/SVG blocks: <div>, <svg>, <table>, etc.\n"
+        "   - All Markdown formatting: #, ##, **, *, -, 1. 2. 3.\n"
+        "   - Placeholders like __MATH_N__\n\n"
+        "2. TRANSLATE only natural language text:\n"
+        f"   - Use correct {tgt} mathematical terminology\n"
+        "   - Use proper diacritics for the target language\n"
+        "   - Keep the same paragraph structure and line breaks\n\n"
+        "3. MATH TERMINOLOGY — translate these correctly:\n"
+        "   - triangle, angle, segment, perpendicular, parallel\n"
+        "   - bisector, median, altitude, circumscribed, inscribed\n"
+        "   - congruent, similar, adjacent, supplementary, complementary\n\n"
+        "Output ONLY the translated text. No code fences, no explanations.\n\n"
+        f"{text}"
+    )
+    contents = [{"parts": [{"text": translate_prompt}]}]
     return gemini_request(contents, api_key)
 
 
@@ -214,15 +255,26 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
     if not api_key:
         raise RuntimeError("GROQ_API_KEY not set")
 
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    tgt = lang_names.get(target_lang, target_lang)
+
     print(f"[TRANSLATE] Groq fallback: {source_lang} -> {target_lang}", file=sys.stderr)
     url = "https://api.groq.com/openai/v1/chat/completions"
+    system_prompt = (
+        f"You are a math textbook translator from {src} to {tgt}.\n"
+        "RULES:\n"
+        "- Preserve ALL LaTeX ($...$, $$...$$), HTML/SVG blocks, Markdown formatting EXACTLY\n"
+        "- Preserve placeholders like __MATH_N__ without modification\n"
+        "- Translate ONLY natural language text\n"
+        f"- Use correct {tgt} mathematical terminology with proper diacritics\n"
+        "- Keep paragraph structure and line breaks identical\n"
+        "- Output ONLY the translated text, no explanations"
+    )
     payload = json.dumps({
         "model": "llama-3.1-70b-versatile",
         "messages": [
-            {"role": "system", "content": (
-                f"Translate from {source_lang} to {target_lang}. "
-                "Preserve ALL LaTeX, HTML/SVG, markdown. Only translate natural language."
-            )},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": text},
         ],
         "temperature": 0.1,
