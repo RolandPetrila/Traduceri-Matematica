@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import FileUpload from "@/components/traduceri/FileUpload";
 import LanguageSelector from "@/components/traduceri/LanguageSelector";
 import PreviewPanel from "@/components/traduceri/PreviewPanel";
@@ -14,11 +14,26 @@ export default function TraduceriPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (progressTimer.current) clearInterval(progressTimer.current);
+    };
+  }, []);
 
   const handleTranslate = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
     setProgress(0);
+    setError(null);
+    setResult(null);
+
+    // Simulated progress (OCR + translation takes time)
+    progressTimer.current = setInterval(() => {
+      setProgress((prev) => (prev < 85 ? prev + Math.random() * 8 : prev));
+    }, 800);
 
     const formData = new FormData();
     files.forEach((f) => formData.append("files", f));
@@ -31,14 +46,33 @@ export default function TraduceriPage() {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Translation failed");
-
       const data = await res.json();
-      setResult(data.html);
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Traducerea a esuat");
+      }
+
+      // Python serverless returns {results: [{html, markdown, ...}], pages, status}
+      const htmlResult =
+        data.results?.[0]?.html || data.html || null;
+
+      if (!htmlResult) {
+        throw new Error("Raspunsul nu contine HTML tradus");
+      }
+
+      // Combine all pages if multiple files
+      const allHtml = data.results
+        ? data.results.map((r: { html: string }) => r.html).join("\n<hr>\n")
+        : htmlResult;
+
+      setResult(allHtml);
       setProgress(100);
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Eroare necunoscuta";
+      setError(message);
       console.error("Translation error:", err);
     } finally {
+      if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);
     }
   };
@@ -69,6 +103,19 @@ export default function TraduceriPage() {
 
       {/* Progress */}
       {isProcessing && <ProgressBar progress={progress} />}
+
+      {/* Error message */}
+      {error && (
+        <div className="rounded-lg p-4 text-center" style={{ background: "rgba(232, 131, 107, 0.15)", border: "1px solid var(--chalk-red)" }}>
+          <p className="text-chalk-red text-lg">Eroare: {error}</p>
+          <button
+            onClick={() => setError(null)}
+            className="mt-2 text-sm opacity-70 hover:opacity-100"
+          >
+            Inchide
+          </button>
+        </div>
+      )}
 
       {/* Preview side-by-side */}
       {result && (

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function Header() {
   return (
     <header className="text-center mb-8">
@@ -11,7 +13,7 @@ export default function Header() {
       <p className="mt-2 text-lg opacity-70">
         Traducere documente matematica cu AI &mdash; RO, SK, EN
       </p>
-      <div className="mt-3 flex justify-center gap-4 text-sm opacity-50">
+      <div className="mt-3 flex items-center justify-center gap-4 text-sm opacity-50">
         <span>&#x222B; f(x)dx</span>
         <span>&middot;</span>
         <span>&#x2220; 60&deg;</span>
@@ -19,6 +21,14 @@ export default function Header() {
         <span>&#x03C0; &middot; r&sup2;</span>
         <span>&middot;</span>
         <span>a&sup2; + b&sup2; = c&sup2;</span>
+        <span>&middot;</span>
+        <Link
+          href="/diagnostics"
+          className="hover:opacity-100 hover:text-chalk-yellow transition-all"
+          title="Diagnosticare & Log-uri"
+        >
+          &#x2699; Diagnosticare
+        </Link>
       </div>
     </header>
   );

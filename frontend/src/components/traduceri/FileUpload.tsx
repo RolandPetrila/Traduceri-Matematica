@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState, useRef } from "react";
 
 interface FileUploadProps {
   files: File[];
@@ -11,16 +11,46 @@ const MAX_FILES = 10;
 const ACCEPTED = ["image/jpeg", "image/png", "application/pdf"];
 
 export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      dragCounter.current = 0;
       const dropped = Array.from(e.dataTransfer.files)
         .filter((f) => ACCEPTED.includes(f.type))
         .slice(0, MAX_FILES);
-      onFilesChange(dropped);
+      if (dropped.length > 0) {
+        onFilesChange(dropped);
+      }
     },
     [onFilesChange]
   );
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current += 1;
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current -= 1;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []).slice(0, MAX_FILES);
@@ -35,12 +65,14 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
     <div>
       <div
         onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-        className="drop-zone cursor-pointer"
-        onClick={() => document.getElementById("file-input")?.click()}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        className={`drop-zone cursor-pointer ${isDragging ? "active" : ""}`}
+        onClick={() => inputRef.current?.click()}
       >
         <input
-          id="file-input"
+          ref={inputRef}
           type="file"
           multiple
           accept=".jpg,.jpeg,.png,.pdf"
