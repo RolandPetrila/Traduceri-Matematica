@@ -49,3 +49,14 @@ export interface ConversionRequest {
   target_format?: string;
   options?: Record<string, unknown>;
 }
+
+export interface ConversionHistoryEntry {
+  id: string;
+  date: string;
+  files: string[];
+  operation: string;
+  target_format: string;
+  status: "success" | "error";
+  duration_ms: number;
+  output_filename: string;
+}

@@ -2,10 +2,45 @@
 
 import { useState } from "react";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { logAction } from "@/lib/monitoring";
 
 interface PreviewPanelProps {
   originalFiles: File[];
   translatedHtml: string;
+}
+
+function downloadAsDocx(html: string, filename: string) {
+  // Create a simple DOCX-compatible HTML document
+  const docxContent = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:w="urn:schemas-microsoft-com:office:word"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8">
+    <style>
+      body { font-family: Cambria, serif; font-size: 12pt; }
+      h1,h2,h3 { margin-top: 1em; }
+      svg { max-width: 100%; }
+    </style>
+    </head><body>${html}</body></html>`;
+  const blob = new Blob([docxContent], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function openPrintView(html: string) {
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+    // Wait for MathJax to load then trigger print
+    setTimeout(() => win.print(), 1500);
+  }
 }
 
 export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewPanelProps) {
@@ -16,29 +51,48 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
     ? URL.createObjectURL(originalFiles[0])
     : null;
 
-  const handleDownload = () => {
-    const blob = new Blob([editedHtml || translatedHtml], { type: "text/html" });
+  const currentHtml = editedHtml || translatedHtml;
+
+  const handleDownloadHtml = () => {
+    const blob = new Blob([currentHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "traducere.html";
     a.click();
     URL.revokeObjectURL(url);
+    logAction("Download HTML", { format: "html" });
+  };
+
+  const handleDownloadDocx = () => {
+    downloadAsDocx(currentHtml, "traducere.docx");
+    logAction("Download DOCX", { format: "docx" });
+  };
+
+  const handlePrintPdf = () => {
+    openPrintView(currentHtml);
+    logAction("Print/PDF", { format: "pdf" });
   };
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <h3 className="text-xl font-bold text-chalk-yellow">Rezultat</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowEditor(!showEditor)}
             className="chalk-btn text-sm"
           >
             {showEditor ? "Ascunde editor" : "Editeaza"}
           </button>
-          <button onClick={handleDownload} className="chalk-btn text-sm">
-            &#x2B07; Download HTML
+          <button onClick={handleDownloadHtml} className="chalk-btn text-sm">
+            HTML
+          </button>
+          <button onClick={handlePrintPdf} className="chalk-btn text-sm">
+            PDF (Print)
+          </button>
+          <button onClick={handleDownloadDocx} className="chalk-btn text-sm">
+            DOCX
           </button>
         </div>
       </div>
@@ -66,16 +120,16 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
           <h4 className="text-sm text-gray-500 mb-2">Traducere</h4>
           <div
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(editedHtml || translatedHtml) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentHtml) }}
           />
         </div>
       </div>
 
-      {/* Inline Markdown editor */}
+      {/* Inline editor */}
       {showEditor && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <h4 className="text-sm opacity-60 mb-2">Editor Markdown</h4>
+            <h4 className="text-sm opacity-60 mb-2">Editor HTML</h4>
             <textarea
               value={editedHtml}
               onChange={(e) => setEditedHtml(e.target.value)}

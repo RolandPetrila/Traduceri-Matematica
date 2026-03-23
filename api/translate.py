@@ -70,6 +70,17 @@ def extract_text_from_docx(data: bytes) -> str:
 
 # --- REST API calls (no SDK dependencies) ---
 
+def _sanitize_error(msg: str) -> str:
+    """Remove API keys/tokens from error messages."""
+    import re as _re
+    # Strip anything that looks like an API key (long alphanumeric strings)
+    sanitized = _re.sub(r'(Bearer\s+)\S+', r'\1[REDACTED]', msg)
+    sanitized = _re.sub(r'(key=)\S+', r'\1[REDACTED]', sanitized)
+    sanitized = _re.sub(r'gsk_\S+', '[REDACTED_GROQ_KEY]', sanitized)
+    sanitized = _re.sub(r'AIza\S+', '[REDACTED_GOOGLE_KEY]', sanitized)
+    return sanitized
+
+
 def gemini_request(contents: list, api_key: str) -> str:
     """Call Google Gemini REST API directly."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
@@ -89,7 +100,7 @@ def gemini_request(contents: list, api_key: str) -> str:
 
 
 def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str:
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "")
+    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set — configureaza variabila in Vercel dashboard")
 
@@ -112,7 +123,7 @@ def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str
 
 
 def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "")
+    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
 
@@ -130,7 +141,7 @@ def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
 
 def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
     """Call Groq REST API (OpenAI-compatible) directly."""
-    api_key = os.environ.get("GROQ_API_KEY", "")
+    api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GROQ_API_KEY not set")
 
@@ -238,7 +249,7 @@ def build_html(pages: list[str], target_lang: str) -> str:
     }}
     .paper {{
       --fit-scale: 1;
-      width: var(--page-width); min-height: var(--page-height);
+      width: var(--page-width); height: var(--page-height);
       margin: 0 auto 16px;
       padding: var(--page-padding-y) var(--page-padding-x);
       background: var(--paper-bg);
@@ -259,6 +270,8 @@ def build_html(pages: list[str], target_lang: str) -> str:
     h1,h2,h3,h4 {{ margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }}
     p,li {{ page-break-inside:avoid; }}
     hr {{ border:none; border-top:1px solid #cfcfcf; margin:1em 0; }}
+    ul, ol {{ margin-top: 0.45em; margin-bottom: 0.6em; }}
+    li {{ margin-bottom: 0.2em; }}
     svg {{ max-width: 100%; height: auto; display: block; margin: 0.8em auto; }}
     .MathJax {{ font-size: 1em !important; }}
     @media print {{
@@ -418,7 +431,7 @@ class handler(BaseHTTPRequestHandler):
             })
 
         except Exception as e:
-            error_msg = f"{type(e).__name__}: {str(e)}"
+            error_msg = _sanitize_error(f"{type(e).__name__}: {str(e)}")
             print(f"[TRANSLATE ERROR] {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             self._send_json(500, {"error": error_msg, "status": "error"})

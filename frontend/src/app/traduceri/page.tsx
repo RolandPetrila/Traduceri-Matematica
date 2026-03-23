@@ -7,7 +7,7 @@ import PreviewPanel from "@/components/traduceri/PreviewPanel";
 import ProgressBar from "@/components/traduceri/ProgressBar";
 import Dictionary from "@/components/traduceri/Dictionary";
 import { addToHistory } from "@/lib/storage";
-import { logError } from "@/lib/monitoring";
+import { logError, logAction, logInfo } from "@/lib/monitoring";
 
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
@@ -59,6 +59,14 @@ export default function TraduceriPage() {
       });
     }, 600);
 
+    logAction("Traducere pornita", {
+      fileCount: files.length,
+      fileNames: files.map(f => f.name),
+      fileSizes: files.map(f => f.size),
+      sourceLang,
+      targetLang,
+    });
+
     const formData = new FormData();
     files.forEach((f) => formData.append("files", f));
     formData.append("source_lang", sourceLang);
@@ -103,6 +111,14 @@ export default function TraduceriPage() {
       setResult(allHtml);
       setProgress(100);
       setStepLabel("Complet!");
+
+      logInfo("Traducere reusita", {
+        pages: data.pages || files.length,
+        duration_ms: data.duration_ms || 0,
+        sourceLang,
+        targetLang,
+        fileNames: files.map(f => f.name),
+      });
 
       // Save to history
       addToHistory({

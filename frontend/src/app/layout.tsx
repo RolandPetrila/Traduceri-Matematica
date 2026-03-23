@@ -33,8 +33,22 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js');
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    // Check for updates every 60 seconds
+                    setInterval(function() { reg.update(); }, 60000);
+                  });
+                  // Listen for SW update notification
+                  navigator.serviceWorker.addEventListener('message', function(e) {
+                    if (e.data && e.data.type === 'SW_UPDATED') {
+                      var banner = document.createElement('div');
+                      banner.id = 'sw-update-banner';
+                      banner.innerHTML = 'Versiune noua disponibila! <button onclick="location.reload()">Reincarca</button>';
+                      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#192031;color:#fff;padding:10px;text-align:center;font-size:14px;';
+                      banner.querySelector('button').style.cssText = 'margin-left:12px;padding:4px 12px;background:#4ade80;color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:600;';
+                      if (!document.getElementById('sw-update-banner')) document.body.prepend(banner);
+                    }
+                  });
                 });
               }
             `,

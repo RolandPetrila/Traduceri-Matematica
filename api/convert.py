@@ -265,19 +265,26 @@ class handler(BaseHTTPRequestHandler):
 
             result = process(files, operation, target_format)
 
+            out_data = result["data"]
+            print(f"[CONVERT OK] {operation}: {result['filename']} ({result['mime']}, {len(out_data)} bytes)", file=sys.stderr)
+
             self.send_response(200)
             self.send_header("Content-Type", result["mime"])
             self.send_header("Content-Disposition", f'attachment; filename="{result["filename"]}"')
+            self.send_header("Content-Length", str(len(out_data)))
             self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Expose-Headers", "Content-Disposition, Content-Length")
             self.end_headers()
-            self.wfile.write(result["data"])
+            self.wfile.write(out_data)
 
         except Exception as e:
-            print(f"[CONVERT ERROR] {type(e).__name__}: {e}", file=sys.stderr)
+            error_msg = str(e)
+            print(f"[CONVERT ERROR] {type(e).__name__}: {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
-            error_body = json.dumps({"error": str(e), "status": "error"}).encode()
-            self.send_response(500)
+            error_body = json.dumps({"error": error_msg, "status": "error"}).encode()
+            self.send_response(400 if isinstance(e, ValueError) else 500)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
             self.end_headers()
             self.wfile.write(error_body)

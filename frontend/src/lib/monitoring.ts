@@ -1,9 +1,12 @@
-// Client-side error monitoring service with device detection
+// Client-side monitoring service with device detection
+// Logs ALL user operations: translations, conversions, downloads, errors
+
+export type LogLevel = "error" | "warn" | "info" | "action";
 
 export interface ErrorLog {
   id: string;
   timestamp: string;
-  level: "error" | "warn" | "info";
+  level: LogLevel;
   message: string;
   stack?: string;
   source?: string;
@@ -21,6 +24,9 @@ export interface DeviceInfo {
   screenHeight: number;
   pwa: boolean;
 }
+
+const LOGS_KEY = "sistem_traduceri_logs";
+const MAX_LOGS = 200;
 
 function detectDevice(): DeviceInfo {
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -56,7 +62,18 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-async function sendLog(log: ErrorLog): Promise<void> {
+function saveLogLocally(log: ErrorLog): void {
+  try {
+    const stored: ErrorLog[] = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
+    stored.unshift(log);
+    if (stored.length > MAX_LOGS) stored.length = MAX_LOGS;
+    localStorage.setItem(LOGS_KEY, JSON.stringify(stored));
+  } catch {
+    // localStorage full or unavailable
+  }
+}
+
+async function sendLogToServer(log: ErrorLog): Promise<void> {
   try {
     await fetch("/api/logs", {
       method: "POST",
@@ -64,47 +81,62 @@ async function sendLog(log: ErrorLog): Promise<void> {
       body: JSON.stringify(log),
     });
   } catch {
-    // If API fails, store in localStorage as fallback
-    const stored = JSON.parse(localStorage.getItem("pending_logs") || "[]");
-    stored.push(log);
-    // Keep max 50 pending logs
-    if (stored.length > 50) stored.shift();
-    localStorage.setItem("pending_logs", JSON.stringify(stored));
+    // Server unavailable, log is already in localStorage
   }
+}
+
+function createLog(level: LogLevel, message: string, opts?: {
+  stack?: string;
+  source?: string;
+  context?: Record<string, unknown>;
+}): ErrorLog {
+  return {
+    id: generateId(),
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    stack: opts?.stack,
+    source: opts?.source || "app",
+    device: detectDevice(),
+    page: typeof window !== "undefined" ? window.location.pathname : "",
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+    context: opts?.context,
+  };
 }
 
 export function logError(
   message: string,
   opts?: { stack?: string; source?: string; context?: Record<string, unknown> }
 ): void {
-  const log: ErrorLog = {
-    id: generateId(),
-    timestamp: new Date().toISOString(),
-    level: "error",
-    message,
-    stack: opts?.stack,
-    source: opts?.source || "unknown",
-    device: detectDevice(),
-    page: typeof window !== "undefined" ? window.location.pathname : "",
-    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
-    context: opts?.context,
-  };
-  sendLog(log);
+  const log = createLog("error", message, opts);
+  saveLogLocally(log);
+  sendLogToServer(log);
 }
 
 export function logWarn(message: string, context?: Record<string, unknown>): void {
-  const log: ErrorLog = {
-    id: generateId(),
-    timestamp: new Date().toISOString(),
-    level: "warn",
-    message,
-    source: "app",
-    device: detectDevice(),
-    page: typeof window !== "undefined" ? window.location.pathname : "",
-    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
-    context,
-  };
-  sendLog(log);
+  const log = createLog("warn", message, { source: "app", context });
+  saveLogLocally(log);
+  sendLogToServer(log);
+}
+
+export function logInfo(message: string, context?: Record<string, unknown>): void {
+  const log = createLog("info", message, { source: "app", context });
+  saveLogLocally(log);
+  sendLogToServer(log);
+}
+
+export function logAction(message: string, context?: Record<string, unknown>): void {
+  const log = createLog("action", message, { source: "user-action", context });
+  saveLogLocally(log);
+  sendLogToServer(log);
+}
+
+export function getLocalLogs(): ErrorLog[] {
+  try {
+    return JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
+  } catch {
+    return [];
+  }
 }
 
 export function initGlobalErrorHandlers(): void {
@@ -125,14 +157,9 @@ export function initGlobalErrorHandlers(): void {
     });
   });
 
-  // Flush pending logs from localStorage
-  try {
-    const pending = JSON.parse(localStorage.getItem("pending_logs") || "[]");
-    if (pending.length > 0) {
-      pending.forEach((log: ErrorLog) => sendLog(log));
-      localStorage.removeItem("pending_logs");
-    }
-  } catch {
-    // ignore
-  }
+  // Log app load
+  logInfo("App loaded", {
+    url: window.location.href,
+    referrer: document.referrer || "direct",
+  });
 }

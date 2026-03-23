@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import ProgressBar from "@/components/traduceri/ProgressBar";
+import { logAction, logInfo, logError } from "@/lib/monitoring";
+import { addConversionToHistory } from "@/lib/storage";
 
 const CONVERSION_MAP: Record<string, string[]> = {
   "pdf": ["docx", "html", "jpg", "png"],
@@ -32,7 +35,14 @@ export default function ConvertorPage() {
   const [operation, setOperation] = useState("convert");
   const [targetFormat, setTargetFormat] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (progressTimer.current) clearInterval(progressTimer.current); };
+  }, []);
 
   // PDF edit state
   const [pdfAction, setPdfAction] = useState("");
@@ -60,13 +70,36 @@ export default function ConvertorPage() {
     if (files.length === 0) return;
     setIsProcessing(true);
     setResult(null);
+    setProgress(0);
+    setProgressLabel("Se pregatesc fisierele...");
+
+    logAction("Conversie pornita", {
+      operation,
+      targetFormat,
+      fileCount: files.length,
+      fileNames: files.map(f => f.name),
+      fileSizes: files.map(f => f.size),
+      pdfAction: operation === "edit-pdf" ? pdfAction : undefined,
+    });
+
+    // Simulated progress
+    let step = 0;
+    const labels = ["Se pregatesc fisierele...", "Se trimite catre server...", "Se proceseaza...", "Se finalizeaza..."];
+    progressTimer.current = setInterval(() => {
+      setProgress((prev) => {
+        const next = prev + Math.random() * 6 + 2;
+        if (next > 90) return prev;
+        const idx = Math.min(Math.floor(next / 25), labels.length - 1);
+        if (idx !== step) { step = idx; setProgressLabel(labels[idx]); }
+        return next;
+      });
+    }, 400);
 
     const formData = new FormData();
     files.forEach((f) => formData.append("files", f));
     formData.append("operation", operation);
     formData.append("target_format", targetFormat);
 
-    // PDF edit options
     if (operation === "edit-pdf") {
       formData.append("pdf_action", pdfAction);
       if (pdfAction === "rotate") formData.append("rotate_angle", rotateAngle);
@@ -74,6 +107,8 @@ export default function ConvertorPage() {
       if (pdfAction === "watermark") formData.append("watermark_text", watermarkText);
       if (pdfAction === "reorder") formData.append("reorder_sequence", reorderSequence);
     }
+
+    const t0 = Date.now();
 
     try {
       const res = await fetch("/api/convert", {
@@ -87,7 +122,8 @@ export default function ConvertorPage() {
           const data = await res.json();
           throw new Error(data.error || `Eroare server: ${res.status}`);
         }
-        throw new Error(`Eroare conversie: ${res.status}`);
+        const text = await res.text();
+        throw new Error(`Eroare conversie: ${res.status} — ${text.substring(0, 200)}`);
       }
 
       const blob = await res.blob();
@@ -95,21 +131,50 @@ export default function ConvertorPage() {
       const a = document.createElement("a");
       a.href = url;
 
-      // Smart filename
+      // Smart filename from Content-Disposition header or construct one
+      const disposition = res.headers.get("content-disposition") || "";
+      const serverFilename = disposition.match(/filename="?([^";\n]+)"?/)?.[1];
       const baseName = files[0].name.replace(/\.[^.]+$/, "");
       const ext = operation === "merge" ? "pdf"
         : operation === "compress" ? detectedFormat
+        : operation === "split" ? "pdf"
         : operation === "edit-pdf" ? "pdf"
-        : targetFormat || "zip";
-      a.download = `${baseName}_${operation}.${ext}`;
+        : targetFormat || "bin";
+      a.download = serverFilename || `${baseName}_${operation}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
 
-      setResult({ success: true, message: `Fisier procesat cu succes!` });
+      const duration = Date.now() - t0;
+      setProgress(100);
+      setProgressLabel("Complet!");
+      setResult({ success: true, message: `Fisier procesat cu succes! (${(duration / 1000).toFixed(1)}s)` });
+
+      logInfo("Conversie reusita", {
+        operation,
+        targetFormat,
+        duration_ms: duration,
+        outputFile: a.download,
+        fileNames: files.map(f => f.name),
+      });
+
+      // Save to conversion history
+      addConversionToHistory({
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        files: files.map(f => f.name),
+        operation,
+        target_format: targetFormat,
+        status: "success",
+        duration_ms: duration,
+        output_filename: a.download,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
+      setProgress(0);
       setResult({ success: false, message });
+      logError(message, { source: "conversion", context: { operation, targetFormat, fileCount: files.length } });
     } finally {
+      if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);
     }
   };
@@ -306,6 +371,9 @@ export default function ConvertorPage() {
           />
         </div>
       )}
+
+      {/* Progress bar */}
+      {isProcessing && <ProgressBar progress={progress} label={progressLabel} />}
 
       {/* Result message */}
       {result && (

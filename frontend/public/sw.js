@@ -1,10 +1,14 @@
-const CACHE_NAME = "sistem-traduceri-v3";
+// Service Worker — Sistem Traduceri Matematica
+// Cache version tied to deployment — update CACHE_VERSION on each deploy
+const CACHE_VERSION = "v4-" + "20260323b";
+const CACHE_NAME = "sistem-traduceri-" + CACHE_VERSION;
 const STATIC_ASSETS = [
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
 ];
 
+// Install: cache static assets, skip waiting to activate immediately
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -12,11 +16,19 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
+// Activate: delete ALL old caches, claim all clients immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    ).then(() => {
+      // Notify all open tabs that a new version is active
+      self.clients.matchAll({ type: "window" }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "SW_UPDATED", version: CACHE_VERSION });
+        });
+      });
+    })
   );
   self.clients.claim();
 });
@@ -24,12 +36,18 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Network-first for HTML pages and API calls — never serve stale HTML
-  if (event.request.mode === "navigate" || url.pathname.startsWith("/api/")) {
+  // NEVER cache API calls — always go to network
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Network-first for HTML pages (navigation)
+  if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (event.request.mode === "navigate" && response.ok) {
+          if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
@@ -40,8 +58,24 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first only for static assets (icons, manifest)
+  // Cache-first only for static assets (icons, manifest, fonts)
+  if (STATIC_ASSETS.some((a) => url.pathname === a) || url.pathname.startsWith("/icons/")) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => cached || fetch(event.request))
+    );
+    return;
+  }
+
+  // Network-first for everything else (JS, CSS bundles — updated on each deploy)
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
