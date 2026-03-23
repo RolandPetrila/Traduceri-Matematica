@@ -5,9 +5,9 @@ Aplicatie web (PWA) pentru traducerea documentelor de matematica din romana in s
 Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4 printabil.
 
 ## Status
-- **Faza curenta**: FAZA 1+2+3 COMPLETE — functional local + Git + Vercel config
-- **Progres**: 92+ fisiere, dependinte instalate, testat local, push GitHub, Vercel configurat
-- **Urmatorul pas**: Conectare Vercel la repo (Roland), apoi FAZA 4 (imbunatatiri)
+- **Faza curenta**: FAZA 1+2+3 COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
+- **Progres**: 95+ fisiere, deploy Vercel LIVE, Python health OK, frontend OK
+- **Urmatorul pas**: FAZA 4 — imbunatatiri (Istoric, Editor avansat, Dictionar, E2E testing)
 - **Ultima sesiune**: 2026-03-23
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
