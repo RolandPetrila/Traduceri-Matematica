@@ -6,6 +6,7 @@ import LanguageSelector from "@/components/traduceri/LanguageSelector";
 import PreviewPanel from "@/components/traduceri/PreviewPanel";
 import ProgressBar from "@/components/traduceri/ProgressBar";
 import Dictionary from "@/components/traduceri/Dictionary";
+import { addToHistory } from "@/lib/storage";
 
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
@@ -101,6 +102,19 @@ export default function TraduceriPage() {
       setResult(allHtml);
       setProgress(100);
       setStepLabel("Complet!");
+
+      // Save to history
+      addToHistory({
+        id: Date.now().toString(),
+        date: new Date().toISOString(),
+        files: files.map((f) => f.name),
+        source_lang: sourceLang,
+        target_lang: targetLang,
+        status: data.status || "success",
+        duration_ms: data.duration_ms || 0,
+        pages: data.pages || files.length,
+        html: allHtml,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setError(message);

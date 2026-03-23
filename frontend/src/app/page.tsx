@@ -5,9 +5,10 @@ import Header from "@/components/layout/Header";
 import TabNav from "@/components/layout/TabNav";
 import TraduceriPage from "./traduceri/page";
 import ConvertorPage from "./convertor/page";
+import HistoryList from "@/components/history/HistoryList";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"traduceri" | "convertor">("traduceri");
+  const [activeTab, setActiveTab] = useState<"traduceri" | "convertor" | "istoric">("traduceri");
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-6">
@@ -17,6 +18,7 @@ export default function Home() {
       <div className="mt-6">
         {activeTab === "traduceri" && <TraduceriPage />}
         {activeTab === "convertor" && <ConvertorPage />}
+        {activeTab === "istoric" && <HistoryList />}
       </div>
     </main>
   );

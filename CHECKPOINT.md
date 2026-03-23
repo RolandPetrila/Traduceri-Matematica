@@ -159,12 +159,12 @@ Toate fisierele sunt create cu cod functional (nu placeholder-e goale):
 
 ### FAZA 4 — Imbunatatiri si Polish
 
-- [ ] **4.1. Integrare Istoric** — HistoryList + HistoryDetail in page.tsx (tab sau sectiune)
-- [ ] **4.2. Editor Markdown avansat** — CodeMirror syntax highlighting + MathJax preview live
-- [ ] **4.3. Convertor fisiere complet** — PDF editing avansat (rotire, stergere, reordonare, watermark)
-- [ ] **4.4. Dictionar pre-populat** — math_terms_ro_sk.json + math_terms_ro_en.json
-- [ ] **4.5. Testare E2E cu poze reale** — din proiectul originar CLI
-- [ ] **4.6. PLAN_PROIECT.md** — document formal bazat pe template
+- [x] **4.1. Integrare Istoric** — DONE 2026-03-23 (tab Istoric + salvare automata in localStorage dupa traducere)
+- [x] **4.2. Editor Markdown avansat** — DONE 2026-03-23 (CodeMirror 6 dark + MathJax 3 live preview cu protectie LaTeX)
+- [x] **4.3. Convertor fisiere complet** — DONE 2026-03-23 (PDF edit: rotire/stergere/reordonare/watermark/optimizare cu UI complet)
+- [x] **4.4. Dictionar pre-populat** — DONE 2026-03-23 (100 termeni RO-SK + 100 RO-EN, filtrare domeniu, reset default)
+- [x] **4.5. Testare E2E cu poze reale** — DONE 2026-03-23 (test_e2e.py: 6 teste, 2 imagini fixture din CLI)
+- [x] **4.6. PLAN_PROIECT.md** — DONE 2026-03-23 (document formal complet: arhitectura, pipeline, riscuri, metrici)
 
 ### FAZA 5 — Extensii Viitoare (mutate in TODO.md)
 
@@ -223,6 +223,12 @@ Roland a confirmat continuarea (2026-03-23) — chei considerate valide.
 | 2026-03-23 | 3.1 Vercel hybrid | DONE | api/translate.py, api/health.py, vercel.json, push OK |
 | 2026-03-23 | 3.2 Vercel link | DONE | vercel link + GitHub connected + env vars setate |
 | 2026-03-23 | 3.4 Deploy LIVE | DONE | https://traduceri-matematica.vercel.app — frontend + Python health OK |
+| 2026-03-23 | 4.1 Istoric | DONE | Tab Istoric in page.tsx, salvare automata dupa traducere |
+| 2026-03-23 | 4.2 Editor MD | DONE | CodeMirror 6 dark + MathJax 3 live preview |
+| 2026-03-23 | 4.3 Convertor | DONE | PDF edit complet: rotire/stergere/reordonare/watermark/optimizare |
+| 2026-03-23 | 4.4 Dictionar | DONE | 100 termeni RO-SK + 100 RO-EN, filtrare domeniu, reset |
+| 2026-03-23 | 4.5 E2E Tests | DONE | test_e2e.py (6 teste), 2 imagini fixture din CLI original |
+| 2026-03-23 | 4.6 PLAN | DONE | PLAN_PROIECT.md complet |
 
 ---
 

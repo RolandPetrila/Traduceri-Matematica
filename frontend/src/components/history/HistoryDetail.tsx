@@ -1,6 +1,7 @@
 "use client";
 
 import type { HistoryEntry } from "@/lib/types";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface HistoryDetailProps {
   entry: HistoryEntry;
@@ -75,7 +76,7 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
           <h4 className="text-sm opacity-60 mb-2">Preview rezultat</h4>
           <div
             className="bg-white rounded-lg p-4 text-gray-900 prose max-w-none max-h-[600px] overflow-auto"
-            dangerouslySetInnerHTML={{ __html: entry.html }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.html) }}
           />
         </div>
       )}

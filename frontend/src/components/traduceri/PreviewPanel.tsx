@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface PreviewPanelProps {
   originalFiles: File[];
@@ -65,7 +66,7 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
           <h4 className="text-sm text-gray-500 mb-2">Traducere</h4>
           <div
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: editedHtml || translatedHtml }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(editedHtml || translatedHtml) }}
           />
         </div>
       </div>
@@ -86,7 +87,7 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
             <h4 className="text-sm opacity-60 mb-2">Preview live</h4>
             <div
               className="w-full h-96 overflow-auto bg-white rounded-lg p-3 text-gray-900 prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: editedHtml }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(editedHtml) }}
             />
           </div>
         </div>

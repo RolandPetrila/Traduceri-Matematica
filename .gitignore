@@ -42,3 +42,14 @@ data/dictionary/*.json
 *.log
 data/logs/*.jsonl
 !data/logs/.gitkeep
+
+.vercel
+
+# Local work files
+99_Roland_Work/
+
+# Build artifacts
+frontend/tsconfig.tsbuildinfo
+
+# Claude local settings
+.claude/settings.local.json

@@ -1,14 +1,15 @@
 "use client";
 
 interface TabNavProps {
-  activeTab: "traduceri" | "convertor";
-  onTabChange: (tab: "traduceri" | "convertor") => void;
+  activeTab: "traduceri" | "convertor" | "istoric";
+  onTabChange: (tab: "traduceri" | "convertor" | "istoric") => void;
 }
 
 export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
   const tabs = [
     { id: "traduceri" as const, label: "Traduceri", icon: "\u{1F4D0}" },
     { id: "convertor" as const, label: "Convertor Fisiere", icon: "\u{1F504}" },
+    { id: "istoric" as const, label: "Istoric", icon: "\u{1F4CB}" },
   ];
 
   return (

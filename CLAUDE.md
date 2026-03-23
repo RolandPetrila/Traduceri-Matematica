@@ -5,9 +5,9 @@ Aplicatie web (PWA) pentru traducerea documentelor de matematica din romana in s
 Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4 printabil.
 
 ## Status
-- **Faza curenta**: FAZA 1+2+3 COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
-- **Progres**: 95+ fisiere, deploy Vercel LIVE, Python health OK, frontend OK
-- **Urmatorul pas**: FAZA 4 — imbunatatiri (Istoric, Editor avansat, Dictionar, E2E testing)
+- **Faza curenta**: FAZE 1-4 COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
+- **Progres**: 100+ fisiere, deploy Vercel LIVE, toate feature-urile implementate
+- **Urmatorul pas**: FAZA 5 — extensii viitoare (vezi TODO.md)
 - **Ultima sesiune**: 2026-03-23
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
@@ -25,12 +25,16 @@ Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4
 
 ## Key Files
 - `CHECKPOINT.md` — plan master cu progres live (checkbox-uri)
+- `PLAN_PROIECT.md` — document formal de planificare (arhitectura, pipeline, riscuri)
 - `TODO.md` — amanari, idei noi, known issues
 - `Cerinte_Roland.md` — document complet cerinte (93 cerinte)
 - `config/languages.json` — limbi suportate si configurari
+- `config/math_terms_ro_sk.json` — dictionar pre-populat RO-SK (100 termeni)
+- `config/math_terms_ro_en.json` — dictionar pre-populat RO-EN (100 termeni)
 - `frontend/` — Next.js app cu tema "tabla verde + creta"
 - `backend/` — Logica Python (OCR, traducere, SVG, conversii)
 - `api/` — Vercel Python serverless functions (translate, health)
+- `tests/test_e2e.py` — teste E2E cu imagini reale
 - `data/logs/` — loguri erori client-side (JSONL)
 - `frontend/src/app/diagnostics/` — pagina diagnosticare erori (/diagnostics)
 
