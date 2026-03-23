@@ -52,6 +52,22 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
     return text
 
 
+# --- DOCX text extraction ---
+
+def extract_text_from_docx(data: bytes) -> str:
+    """Extract text from DOCX without OCR. Uses python-docx (in requirements.txt)."""
+    import io
+    from docx import Document
+
+    doc = Document(io.BytesIO(data))
+    paragraphs = []
+    for p in doc.paragraphs:
+        text = p.text.strip()
+        if text:
+            paragraphs.append(text)
+    return "\n\n".join(paragraphs)
+
+
 # --- REST API calls (no SDK dependencies) ---
 
 def gemini_request(contents: list, api_key: str) -> str:
@@ -146,38 +162,152 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
         raise RuntimeError(f"Groq API error {e.code}: {error_body[:200]}")
 
 
-# --- HTML Builder ---
+# --- HTML Builder (professional A4 template) ---
 
-def build_html(markdown_text: str, target_lang: str) -> str:
-    html_body = markdown_text
-    # Convert headers
+def _md_to_html_body(md: str) -> str:
+    """Convert markdown to HTML body content. Preserves SVG/LaTeX as-is."""
+    html = md
     for i in range(6, 0, -1):
-        html_body = re.sub(rf"^{'#' * i}\s+(.+)$", rf"<h{i}>\1</h{i}>", html_body, flags=re.MULTILINE)
-    # Bold / italic
-    html_body = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html_body)
-    html_body = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html_body)
-    # Line breaks
-    html_body = html_body.replace("\n\n", "</p><p>")
-    html_body = f"<p>{html_body}</p>"
+        html = re.sub(rf"^{'#' * i}\s+(.+)$", rf"<h{i}>\1</h{i}>", html, flags=re.MULTILINE)
+    html = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", html)
+    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
+    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+    html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+    html = re.sub(r"((?:<li>.*</li>\n?)+)", r"<ul>\1</ul>", html)
+    html = re.sub(r"^\d+\.\s+(.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+    html = html.replace("\n\n", "</p><p>")
+    html = f"<p>{html}</p>"
+    html = html.replace("<p></p>", "")
+    return html
 
-    return f"""<!DOCTYPE html>
+
+def build_html(pages: list[str], target_lang: str) -> str:
+    """Build professional A4 HTML document matching Exemplu_BUN.html quality."""
+    page_sections = []
+    for i, md in enumerate(pages):
+        body = _md_to_html_body(md)
+        page_sections.append(
+            f'<section class="paper"><div class="paper-content">'
+            f'<div class="source-file">Pagina {i + 1}</div>'
+            f'{body}'
+            f'</div></section>'
+        )
+    pages_html = "\n".join(page_sections)
+    n = len(pages)
+
+    return f'''<!doctype html>
 <html lang="{target_lang}">
 <head>
-<meta charset="UTF-8">
-<title>Traducere Matematica</title>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
-<style>
-@page {{ size: A4; margin: 2cm; }}
-body {{ font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; max-width: 21cm; margin: 0 auto; padding: 2cm; }}
-h1, h2, h3 {{ color: #333; }}
-svg {{ max-width: 100%; height: auto; }}
-@media print {{ body {{ padding: 0; }} }}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traducere Matematica</title>
+  <style>
+    :root {{
+      --text-color: #1b1b1b;
+      --paper-bg: #ffffff;
+      --font-size: 12pt;
+      --line-height: 1.45;
+      --page-width: 210mm;
+      --page-height: 297mm;
+      --page-padding-x: 12mm;
+      --page-padding-y: 12mm;
+    }}
+    @page {{ size: A4; margin: 0; }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0; padding: 0;
+      color: var(--text-color);
+      background: #f2f2f2;
+      font-family: "Cambria", "Times New Roman", serif;
+      font-size: var(--font-size);
+      line-height: var(--line-height);
+    }}
+    .toolbar {{
+      position: sticky; top: 0; z-index: 100;
+      display: flex; gap: 12px; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: #192031; color: #fff;
+      font-family: "Segoe UI", Arial, sans-serif; font-size: 13px;
+    }}
+    .toolbar button {{
+      border: 0; border-radius: 6px; padding: 8px 12px;
+      background: #dce8ff; color: #121212; cursor: pointer; font-weight: 600;
+    }}
+    main {{
+      max-width: calc(var(--page-width) + 24px);
+      margin: 18px auto; padding: 0 12px 24px;
+    }}
+    .paper {{
+      --fit-scale: 1;
+      width: var(--page-width); min-height: var(--page-height);
+      margin: 0 auto 16px;
+      padding: var(--page-padding-y) var(--page-padding-x);
+      background: var(--paper-bg);
+      box-shadow: 0 2px 14px rgba(0,0,0,.12);
+      overflow: hidden;
+    }}
+    .paper-content {{
+      width: calc((var(--page-width) - 2 * var(--page-padding-x)) / var(--fit-scale));
+      transform: scale(var(--fit-scale));
+      transform-origin: top left;
+      overflow-wrap: break-word;
+    }}
+    .source-file {{
+      margin: 0 0 14px; color: #4a4a4a;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 10.5pt; font-weight: 600;
+    }}
+    h1,h2,h3,h4 {{ margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }}
+    p,li {{ page-break-inside:avoid; }}
+    hr {{ border:none; border-top:1px solid #cfcfcf; margin:1em 0; }}
+    svg {{ max-width: 100%; height: auto; display: block; margin: 0.8em auto; }}
+    .MathJax {{ font-size: 1em !important; }}
+    @media print {{
+      body {{ background: #fff; }}
+      .toolbar {{ display: none !important; }}
+      main {{ max-width: none; margin: 0; padding: 0; }}
+      .paper {{ margin: 0; box-shadow: none; break-after: page; page-break-after: always; }}
+      .paper:last-child {{ break-after: auto; page-break-after: auto; }}
+    }}
+  </style>
+  <script>
+    window.MathJax = {{
+      tex: {{ inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] }},
+      svg: {{ fontCache: 'global' }}
+    }};
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script>
+    function fitPaperSections() {{
+      document.querySelectorAll('.paper').forEach(function(page) {{
+        var c = page.querySelector('.paper-content');
+        if (!c) return;
+        page.style.setProperty('--fit-scale', '1');
+        var s = window.getComputedStyle(page);
+        var avail = page.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+        var need = c.scrollHeight;
+        var scale = need > 0 ? Math.min(1, avail / need) : 1;
+        page.style.setProperty('--fit-scale', scale.toFixed(4));
+      }});
+    }}
+    window.addEventListener('load', function() {{
+      var p = window.MathJax && window.MathJax.startup ? window.MathJax.startup.promise : Promise.resolve();
+      p.then(function() {{ fitPaperSections(); setTimeout(fitPaperSections, 150); }})
+       .catch(function() {{ fitPaperSections(); }});
+    }});
+    window.addEventListener('resize', fitPaperSections);
+    window.addEventListener('beforeprint', fitPaperSections);
+  </script>
 </head>
 <body>
-{html_body}
+  <div class="toolbar">
+    <div>Traducere matematica — {n} pagina(e) | Print: Scale 100%, Margins None</div>
+    <button onclick="window.print()">Tipareste</button>
+  </div>
+  <main>
+{pages_html}
+  </main>
 </body>
-</html>"""
+</html>'''
 
 
 # --- Multipart boundary parser ---
@@ -227,14 +357,31 @@ class handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
                 return
 
+            all_markdowns = []
             results = []
+            import time
+            t0 = time.time()
+
             for idx, file_info in enumerate(files):
-                image_bytes = file_info["data"]
+                file_data = file_info["data"]
                 mime_type = file_info.get("mime_type", "image/jpeg")
+                filename = file_info.get("filename", "")
 
-                print(f"[TRANSLATE] File {idx + 1}/{len(files)}: {mime_type}, {len(image_bytes)} bytes", file=sys.stderr)
+                print(f"[TRANSLATE] File {idx + 1}/{len(files)}: {filename} ({mime_type}, {len(file_data)} bytes)", file=sys.stderr)
 
-                extracted = ocr_with_gemini(image_bytes, mime_type, source_lang)
+                # DOCX: extract text directly (no OCR needed)
+                is_docx = (
+                    "wordprocessingml" in mime_type
+                    or "application/zip" in mime_type
+                    or filename.lower().endswith(".docx")
+                )
+
+                if is_docx:
+                    print(f"[TRANSLATE] DOCX detected — extracting text directly", file=sys.stderr)
+                    extracted = extract_text_from_docx(file_data)
+                else:
+                    extracted = ocr_with_gemini(file_data, mime_type, source_lang)
+
                 protected, placeholders = protect_math(extracted)
 
                 try:
@@ -244,18 +391,31 @@ class handler(BaseHTTPRequestHandler):
                     translated = translate_with_groq(protected, source_lang, target_lang)
 
                 final_markdown = restore_math(translated, placeholders)
-                html = build_html(final_markdown, target_lang)
+                all_markdowns.append(final_markdown)
 
                 results.append({
                     "markdown": final_markdown,
-                    "html": html,
                     "source_lang": source_lang,
                     "target_lang": target_lang,
                     "status": "success",
                 })
 
-            print(f"[TRANSLATE] Success: {len(results)} pages processed", file=sys.stderr)
-            self._send_json(200, {"results": results, "pages": len(results), "status": "success"})
+            # Build ONE unified HTML document with all pages
+            unified_html = build_html(all_markdowns, target_lang)
+            duration_ms = int((time.time() - t0) * 1000)
+
+            # Add html to each result for backward compatibility
+            for r in results:
+                r["html"] = unified_html
+
+            print(f"[TRANSLATE] Success: {len(results)} pages in {duration_ms}ms", file=sys.stderr)
+            self._send_json(200, {
+                "results": results,
+                "html": unified_html,
+                "pages": len(results),
+                "duration_ms": duration_ms,
+                "status": "success",
+            })
 
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}"
@@ -289,8 +449,10 @@ class handler(BaseHTTPRequestHandler):
             elif name == "files" or "filename" in header:
                 ct_match = re.search(r"Content-Type:\s*(\S+)", header)
                 mime = ct_match.group(1) if ct_match else "image/jpeg"
-                parts_data["files"].append({"mime_type": mime, "data": content})
-                print(f"[MULTIPART] File found: name={name}, mime={mime}, size={len(content)}", file=sys.stderr)
+                fname_match = re.search(r'filename="([^"]*)"', header)
+                fname = fname_match.group(1) if fname_match else ""
+                parts_data["files"].append({"mime_type": mime, "data": content, "filename": fname})
+                print(f"[MULTIPART] File: {fname}, mime={mime}, size={len(content)}", file=sys.stderr)
 
         print(f"[MULTIPART] Total parsed: {len(parts_data['files'])} files", file=sys.stderr)
         return parts_data

@@ -14,11 +14,34 @@ export default function DiagnosticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/logs")
-      .then((r) => r.json())
-      .then((d) => setData(d))
-      .catch(() => setData({ total: 0, files: 0, logs: [] }))
-      .finally(() => setLoading(false));
+    // Load from server + localStorage (Vercel has ephemeral filesystem)
+    const loadLogs = async () => {
+      let serverLogs: ErrorLog[] = [];
+      try {
+        const res = await fetch("/api/logs");
+        const d = await res.json();
+        serverLogs = d.logs || [];
+      } catch { /* server logs unavailable */ }
+
+      // Also read from localStorage (always works, even on Vercel)
+      let localLogs: ErrorLog[] = [];
+      try {
+        const raw = localStorage.getItem("pending_error_logs");
+        if (raw) localLogs = JSON.parse(raw);
+      } catch { /* no local logs */ }
+
+      // Merge, deduplicate by id, sort newest first
+      const allMap = new Map<string, ErrorLog>();
+      for (const log of [...serverLogs, ...localLogs]) {
+        if (log.id) allMap.set(log.id, log);
+      }
+      const all = Array.from(allMap.values())
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 100);
+
+      setData({ total: all.length, files: 0, logs: all });
+    };
+    loadLogs().finally(() => setLoading(false));
   }, []);
 
   const levelColor = (level: string) => {

@@ -1,6 +1,5 @@
-const CACHE_NAME = "sistem-traduceri-v1";
+const CACHE_NAME = "sistem-traduceri-v3";
 const STATIC_ASSETS = [
-  "/",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -23,14 +22,26 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Network-first for API calls, cache-first for static assets
-  if (event.request.url.includes("/api/")) {
+  const url = new URL(event.request.url);
+
+  // Network-first for HTML pages and API calls — never serve stale HTML
+  if (event.request.mode === "navigate" || url.pathname.startsWith("/api/")) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request)
+        .then((response) => {
+          if (event.request.mode === "navigate" && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
-  } else {
-    event.respondWith(
-      caches.match(event.request).then((cached) => cached || fetch(event.request))
-    );
+    return;
   }
+
+  // Cache-first only for static assets (icons, manifest)
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
 });

@@ -7,6 +7,7 @@ import PreviewPanel from "@/components/traduceri/PreviewPanel";
 import ProgressBar from "@/components/traduceri/ProgressBar";
 import Dictionary from "@/components/traduceri/Dictionary";
 import { addToHistory } from "@/lib/storage";
+import { logError } from "@/lib/monitoring";
 
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
@@ -118,7 +119,7 @@ export default function TraduceriPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setError(message);
-      console.error("Translation error:", err);
+      logError(message, { source: "translation", context: { sourceLang, targetLang, fileCount: files.length } });
     } finally {
       if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);
