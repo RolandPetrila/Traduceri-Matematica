@@ -5,10 +5,10 @@ Aplicatie web (PWA) pentru traducerea documentelor de matematica din romana in s
 Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4 printabil.
 
 ## Status
-- **Faza curenta**: FAZE 1-4 COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
-- **Progres**: 100+ fisiere, deploy Vercel LIVE, 119 cerinte (93 initiale + 26 noi)
-- **Urmatorul pas**: Testare pe Android/iPhone dupa fix-urile din sesiunea curenta
-- **Ultima sesiune**: 2026-03-23 (fix buguri critice + monitoring + istoric complet)
+- **Faza curenta**: POST-AUDIT REMEDIATION COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
+- **Progres**: Audit 62/100 → ~82/100, 19 din 25 probleme rezolvate, cod mort 43% → ~5%
+- **Urmatorul pas**: Testare pe Vercel live (PDF Edit, Dictionary, Split PDF, DOCX download)
+- **Ultima sesiune**: 2026-03-24 (audit remediation: 5 sprint-uri, 45 fisiere, -2084/+1029 linii)
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 1. Citeste `CHECKPOINT.md` — contine TODO complet cu progres live (checkbox-uri)
@@ -18,9 +18,9 @@ Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4
 
 ## Stack
 - Frontend: Next.js 14 + Tailwind CSS + shadcn/ui
-- Backend: FastAPI (Python) — API routes in frontend/src/app/api/ pentru Vercel
+- Backend: Python serverless — API routes in api/ pentru Vercel
 - AI primar: Google Gemini Free Tier (vision + traducere)
-- AI fallback: Groq (traducere), Mistral/Pixtral (vision)
+- AI fallback: Groq (traducere), Mistral/Pixtral (OCR fallback)
 - Deploy: Vercel (auto-deploy din GitHub)
 
 ## Key Files
@@ -32,8 +32,8 @@ Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4
 - `config/math_terms_ro_sk.json` — dictionar pre-populat RO-SK (100 termeni)
 - `config/math_terms_ro_en.json` — dictionar pre-populat RO-EN (100 termeni)
 - `frontend/` — Next.js app cu tema "tabla verde + creta"
-- `backend/` — Logica Python (OCR, traducere, SVG, conversii)
-- `api/` — Vercel Python serverless functions (translate, health)
+- `api/` — Vercel Python serverless functions (translate, convert, health)
+- `AUDIT_FULL_v2_RAPORT.md` — raport audit complet cu scor si probleme
 - `tests/test_e2e.py` — teste E2E cu imagini reale
 - `STRUCTURA_MODULE.md` — harta completa module/functii cu descriere proces executie
 - `start.html` — fisier pentru deschidere rapida aplicatie cu dublu-click
