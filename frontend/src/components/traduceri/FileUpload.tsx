@@ -8,7 +8,12 @@ interface FileUploadProps {
 }
 
 const MAX_FILES = 10;
-const ACCEPTED = ["image/jpeg", "image/png", "application/pdf"];
+const ACCEPTED = [
+  "image/jpeg",
+  "image/png",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -75,7 +80,7 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
           ref={inputRef}
           type="file"
           multiple
-          accept=".jpg,.jpeg,.png,.pdf"
+          accept=".jpg,.jpeg,.png,.pdf,.docx"
           className="hidden"
           onChange={handleSelect}
         />
@@ -84,7 +89,7 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
           Trage fotografiile aici sau click pentru selectie
         </p>
         <p className="text-sm opacity-50 mt-1">
-          JPG, PNG sau PDF &mdash; maxim {MAX_FILES} fisiere
+          JPG, PNG, PDF sau DOCX &mdash; maxim {MAX_FILES} fisiere
         </p>
       </div>
 

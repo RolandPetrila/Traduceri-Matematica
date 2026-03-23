@@ -7,12 +7,22 @@ import PreviewPanel from "@/components/traduceri/PreviewPanel";
 import ProgressBar from "@/components/traduceri/ProgressBar";
 import Dictionary from "@/components/traduceri/Dictionary";
 
+const STEPS = [
+  { at: 5, label: "Se incarca fisierele..." },
+  { at: 15, label: "Se trimite catre server..." },
+  { at: 30, label: "OCR — se extrage textul din imagine..." },
+  { at: 55, label: "Se traduce textul..." },
+  { at: 75, label: "Se genereaza HTML..." },
+  { at: 90, label: "Se finalizeaza..." },
+];
+
 export default function TraduceriPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [sourceLang, setSourceLang] = useState("ro");
   const [targetLang, setTargetLang] = useState("sk");
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [stepLabel, setStepLabel] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -27,13 +37,25 @@ export default function TraduceriPage() {
     if (files.length === 0) return;
     setIsProcessing(true);
     setProgress(0);
+    setStepLabel(STEPS[0].label);
     setError(null);
     setResult(null);
 
-    // Simulated progress (OCR + translation takes time)
+    // Simulated progress with step labels
+    let currentStep = 0;
     progressTimer.current = setInterval(() => {
-      setProgress((prev) => (prev < 85 ? prev + Math.random() * 8 : prev));
-    }, 800);
+      setProgress((prev) => {
+        const next = prev + Math.random() * 4 + 1;
+        if (next > 92) return prev; // cap at 92% until real response
+        // Update step label
+        const step = STEPS.findIndex((s) => s.at > next);
+        if (step > 0 && step - 1 !== currentStep) {
+          currentStep = step - 1;
+          setStepLabel(STEPS[currentStep].label);
+        }
+        return next;
+      });
+    }, 600);
 
     const formData = new FormData();
     files.forEach((f) => formData.append("files", f));
@@ -46,10 +68,21 @@ export default function TraduceriPage() {
         body: formData,
       });
 
-      const data = await res.json();
+      // Handle non-JSON error responses (Vercel returns HTML on hard crashes)
+      let data;
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(`Server error ${res.status}: ${text.substring(0, 200)}`);
+        }
+        throw new Error("Raspuns neasteptat de la server (nu JSON)");
+      }
 
       if (!res.ok) {
-        throw new Error(data?.error || "Traducerea a esuat");
+        throw new Error(data?.error || `Eroare server: ${res.status}`);
       }
 
       // Python serverless returns {results: [{html, markdown, ...}], pages, status}
@@ -67,6 +100,7 @@ export default function TraduceriPage() {
 
       setResult(allHtml);
       setProgress(100);
+      setStepLabel("Complet!");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setError(message);
@@ -102,7 +136,7 @@ export default function TraduceriPage() {
       </div>
 
       {/* Progress */}
-      {isProcessing && <ProgressBar progress={progress} />}
+      {isProcessing && <ProgressBar progress={progress} label={stepLabel} />}
 
       {/* Error message */}
       {error && (
