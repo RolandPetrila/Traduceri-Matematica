@@ -52,20 +52,89 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
     return text
 
 
-# --- DOCX text extraction ---
+# --- DOCX text extraction (structured) ---
 
 def extract_text_from_docx(data: bytes) -> str:
-    """Extract text from DOCX without OCR. Uses python-docx (in requirements.txt)."""
+    """Extract text from DOCX preserving structure: headings, bold, lists."""
     import io
     from docx import Document
 
     doc = Document(io.BytesIO(data))
-    paragraphs = []
+    lines: list[str] = []
     for p in doc.paragraphs:
         text = p.text.strip()
-        if text:
-            paragraphs.append(text)
-    return "\n\n".join(paragraphs)
+        if not text:
+            continue
+        style_name = (p.style.name if p.style else "").lower()
+
+        # Detect heading styles
+        if "heading 1" in style_name or "title" in style_name:
+            lines.append(f"# {text}")
+        elif "heading 2" in style_name:
+            lines.append(f"## {text}")
+        elif "heading 3" in style_name:
+            lines.append(f"### {text}")
+        elif "list" in style_name:
+            lines.append(f"- {text}")
+        else:
+            # Reconstruct with bold/italic markers from runs
+            parts: list[str] = []
+            for run in p.runs:
+                t = run.text
+                if not t:
+                    continue
+                if run.bold and t.strip():
+                    parts.append(f"**{t}**")
+                elif run.italic and t.strip():
+                    parts.append(f"*{t}*")
+                else:
+                    parts.append(t)
+            lines.append("".join(parts) if parts else text)
+    return "\n\n".join(lines)
+
+
+def format_and_translate_docx(text: str, source_lang: str, target_lang: str) -> str:
+    """Use Gemini to format extracted DOCX text as Markdown+LaTeX+SVG AND translate.
+
+    This produces output identical in quality to the image OCR pipeline.
+    """
+    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GOOGLE_AI_API_KEY not set")
+
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    tgt = lang_names.get(target_lang, target_lang)
+
+    print(f"[DOCX] Format+Translate: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
+    prompt = (
+        f"You are processing text extracted from a {src} math textbook.\n"
+        f"FORMAT it as professional Markdown AND TRANSLATE to {tgt} in one step.\n\n"
+        "FORMATTING RULES:\n"
+        "- Use # and ## for titles and section headings\n"
+        "- Use **bold** for emphasis (e.g. **Example.**, **Observation.**)\n"
+        "- ALL math: LaTeX notation — $\\triangle ABC$, $AB = 4 \\text{ cm}$, $\\angle MON$, etc.\n"
+        "- Numbered items: use 1. 2. 3. format\n"
+        "- Letter options: a) b) c) d) on separate lines\n\n"
+        "SVG FIGURES — for ANY geometric construction or figure described:\n"
+        "- Create inline SVG wrapped in <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
+        "- Use viewBox, width/height attributes, font-family:Cambria,serif\n"
+        "- Label vertices in italic, measurements in #666, angles in #c44 (red) or #1a7 (green)\n"
+        "- Construction steps side-by-side (2 SVGs per step pair)\n"
+        "- Last step: filled polygon with fill=\"#e8f0fe\"\n\n"
+        "TRANSLATION:\n"
+        f"- Translate ALL natural language text to {tgt}\n"
+        "- Use correct mathematical terminology with proper diacritics\n"
+        "- Keep LaTeX and SVG code untouched (only translate text labels inside SVG if needed)\n\n"
+        "Output ONLY the formatted translated Markdown. No code fences, no explanations.\n\n"
+        f"TEXT TO PROCESS:\n{text}"
+    )
+    contents = [{"parts": [{"text": prompt}]}]
+    result = gemini_request(contents, api_key)
+    # Strip code fences if Gemini wraps output
+    result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)
+    result = re.sub(r"\n?```\s*$", "", result, flags=re.MULTILINE)
+    return result
 
 
 # --- REST API calls (no SDK dependencies) ---
@@ -176,19 +245,66 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
 # --- HTML Builder (professional A4 template) ---
 
 def _md_to_html_body(md: str) -> str:
-    """Convert markdown to HTML body content. Preserves SVG/LaTeX as-is."""
-    html = md
+    """Convert markdown to HTML body content. Preserves SVG/div/LaTeX as-is."""
+    # Step 1: Protect SVG and HTML div blocks from paragraph wrapping
+    svg_blocks: dict[str, str] = {}
+    svg_counter = [0]
+
+    def _protect_svg(m: re.Match) -> str:
+        key = f"__SVG_BLOCK_{svg_counter[0]}__"
+        svg_blocks[key] = m.group(0)
+        svg_counter[0] += 1
+        return f"\n{key}\n"
+
+    html = re.sub(r"<div[^>]*>[\s\S]*?</div>", _protect_svg, md)
+    html = re.sub(r"<svg[\s\S]*?</svg>", _protect_svg, html)
+
+    # Step 2: Headings
     for i in range(6, 0, -1):
         html = re.sub(rf"^{'#' * i}\s+(.+)$", rf"<h{i}>\1</h{i}>", html, flags=re.MULTILINE)
+
+    # Step 3: Inline formatting
     html = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", html)
     html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
-    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+    html = re.sub(r"(?<![\\])\*(.+?)\*", r"<em>\1</em>", html)
+
+    # Step 4: Horizontal rules
+    html = re.sub(r"^---+$", r"<hr>", html, flags=re.MULTILINE)
+
+    # Step 5: Unordered lists (- item)
     html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
-    html = re.sub(r"((?:<li>.*</li>\n?)+)", r"<ul>\1</ul>", html)
-    html = re.sub(r"^\d+\.\s+(.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
-    html = html.replace("\n\n", "</p><p>")
-    html = f"<p>{html}</p>"
+    html = re.sub(r"((?:<li>.*</li>\n?)+)", lambda m: "<ul>" + m.group(1) + "</ul>", html)
+
+    # Step 6: Ordered lists (1. item) — wrap in <ol>
+    html = re.sub(r"^\d+\.\s+(.+)$", r"<oli>\1</oli>", html, flags=re.MULTILINE)
+    html = re.sub(r"((?:<oli>.*</oli>\n?)+)", lambda m: "<ol>" + m.group(1).replace("<oli>", "<li>").replace("</oli>", "</li>") + "</ol>", html)
+
+    # Step 7: Letter options (a) b) c) d)) — keep as lines with break
+    html = re.sub(r"^([a-z]\))\s+(.+)$", r"\1 \2<br>", html, flags=re.MULTILINE)
+
+    # Step 8: Wrap remaining text in paragraphs (skip blocks)
+    lines = html.split("\n\n")
+    result_parts = []
+    block_tags = ("<h", "<ul", "<ol", "<li", "<hr", "<div", "<svg", "<table", "__SVG_BLOCK_")
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if any(stripped.startswith(tag) for tag in block_tags):
+            result_parts.append(stripped)
+        else:
+            result_parts.append(f"<p>{stripped}</p>")
+    html = "\n".join(result_parts)
+
+    # Step 9: Clean up
     html = html.replace("<p></p>", "")
+    html = re.sub(r"\n{3,}", "\n\n", html)
+
+    # Step 10: Restore SVG blocks
+    for key, block in svg_blocks.items():
+        html = html.replace(key, block)
+        html = html.replace(f"<p>{key}</p>", block)
+
     return html
 
 
@@ -390,20 +506,21 @@ class handler(BaseHTTPRequestHandler):
                 )
 
                 if is_docx:
-                    print(f"[TRANSLATE] DOCX detected — extracting text directly", file=sys.stderr)
+                    # DOCX: extract structured text, then Gemini formats + translates in one pass
+                    print(f"[TRANSLATE] DOCX detected — extract + format + translate pipeline", file=sys.stderr)
                     extracted = extract_text_from_docx(file_data)
+                    print(f"[TRANSLATE] DOCX extracted {len(extracted)} chars", file=sys.stderr)
+                    final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
                 else:
+                    # Image: OCR with Gemini Vision, then protect math, translate, restore
                     extracted = ocr_with_gemini(file_data, mime_type, source_lang)
-
-                protected, placeholders = protect_math(extracted)
-
-                try:
-                    translated = translate_with_gemini(protected, source_lang, target_lang)
-                except Exception as e:
-                    print(f"[TRANSLATE] Gemini translation failed, trying Groq: {e}", file=sys.stderr)
-                    translated = translate_with_groq(protected, source_lang, target_lang)
-
-                final_markdown = restore_math(translated, placeholders)
+                    protected, placeholders = protect_math(extracted)
+                    try:
+                        translated = translate_with_gemini(protected, source_lang, target_lang)
+                    except Exception as e:
+                        print(f"[TRANSLATE] Gemini translation failed, trying Groq: {e}", file=sys.stderr)
+                        translated = translate_with_groq(protected, source_lang, target_lang)
+                    final_markdown = restore_math(translated, placeholders)
                 all_markdowns.append(final_markdown)
 
                 results.append({
