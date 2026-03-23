@@ -100,6 +100,10 @@ export default function ConvertorPage() {
     formData.append("operation", operation);
     formData.append("target_format", targetFormat);
 
+    if (operation === "split" && pageRange) {
+      formData.append("page_range", pageRange);
+    }
+
     if (operation === "edit-pdf") {
       formData.append("pdf_action", pdfAction);
       if (pdfAction === "rotate") formData.append("rotate_angle", rotateAngle);
@@ -157,7 +161,20 @@ export default function ConvertorPage() {
         fileNames: files.map(f => f.name),
       });
 
-      // Save to conversion history
+      // Save to conversion history with output data for re-download
+      let outputData: string | undefined;
+      let outputMime: string | undefined;
+      try {
+        if (blob.size < 2 * 1024 * 1024) { // Only save if < 2MB to avoid localStorage overflow
+          const arrayBuf = await blob.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuf);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          outputData = btoa(binary);
+          outputMime = blob.type;
+        }
+      } catch { /* skip if encoding fails */ }
+
       addConversionToHistory({
         id: Date.now().toString(),
         date: new Date().toISOString(),
@@ -167,6 +184,8 @@ export default function ConvertorPage() {
         status: "success",
         duration_ms: duration,
         output_filename: a.download,
+        output_data: outputData,
+        output_mime: outputMime,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";

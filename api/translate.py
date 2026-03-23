@@ -212,11 +212,67 @@ def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str
         ]
     }]
     result = gemini_request(contents, api_key)
-    print(f"[OCR] Extracted {len(result)} chars", file=sys.stderr)
     return result
 
 
-def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
+def ocr_with_mistral(image_bytes: bytes, mime_type: str, source_lang: str) -> str:
+    """Fallback OCR using Mistral Pixtral vision model."""
+    api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("MISTRAL_API_KEY not set — fallback OCR indisponibil")
+
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+
+    print(f"[OCR] Mistral fallback: {len(image_bytes)} bytes, lang={source_lang}", file=sys.stderr)
+    ocr_prompt = (
+        f"Extract ALL content from this {src} math textbook page as Markdown.\n"
+        "Use LaTeX for all math ($...$, $$...$$). Use # ## ### for headings.\n"
+        "Use **bold** for key terms. Numbered items as 1. 2. 3.\n"
+        "Output ONLY the Markdown. No code fences, no explanations."
+    )
+    payload = json.dumps({
+        "model": "pixtral-12b-2409",
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": ocr_prompt},
+                {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{image_b64}"}},
+            ],
+        }],
+        "max_tokens": 4096,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.mistral.ai/v1/chat/completions",
+        data=payload,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=55) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return data["choices"][0]["message"]["content"]
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        print(f"[MISTRAL ERROR] Status {e.code}: {error_body[:500]}", file=sys.stderr)
+        raise RuntimeError(f"Mistral API error {e.code}: {error_body[:200]}")
+
+
+def _format_dict_terms(terms: list[dict]) -> str:
+    """Format dictionary terms as a glossary block for the translation prompt."""
+    if not terms:
+        return ""
+    lines = [f"  {t['source']} → {t['target']}" for t in terms if t.get("source") and t.get("target")]
+    if not lines:
+        return ""
+    return (
+        "\n\nMANDATORY TERMINOLOGY — use these exact translations:\n"
+        + "\n".join(lines)
+        + "\n"
+    )
+
+
+def translate_with_gemini(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
@@ -225,6 +281,7 @@ def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
     src = lang_names.get(source_lang, source_lang)
     tgt = lang_names.get(target_lang, target_lang)
 
+    glossary = _format_dict_terms(dict_terms or [])
     print(f"[TRANSLATE] Gemini: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
     translate_prompt = (
         f"Translate this math textbook content from {src} to {tgt}.\n\n"
@@ -241,7 +298,8 @@ def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
         "3. MATH TERMINOLOGY — translate these correctly:\n"
         "   - triangle, angle, segment, perpendicular, parallel\n"
         "   - bisector, median, altitude, circumscribed, inscribed\n"
-        "   - congruent, similar, adjacent, supplementary, complementary\n\n"
+        "   - congruent, similar, adjacent, supplementary, complementary\n"
+        f"{glossary}\n"
         "Output ONLY the translated text. No code fences, no explanations.\n\n"
         f"{text}"
     )
@@ -249,7 +307,7 @@ def translate_with_gemini(text: str, source_lang: str, target_lang: str) -> str:
     return gemini_request(contents, api_key)
 
 
-def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
+def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
     """Call Groq REST API (OpenAI-compatible) directly."""
     api_key = os.environ.get("GROQ_API_KEY", "").strip()
     if not api_key:
@@ -259,6 +317,7 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
     src = lang_names.get(source_lang, source_lang)
     tgt = lang_names.get(target_lang, target_lang)
 
+    glossary = _format_dict_terms(dict_terms or [])
     print(f"[TRANSLATE] Groq fallback: {source_lang} -> {target_lang}", file=sys.stderr)
     url = "https://api.groq.com/openai/v1/chat/completions"
     system_prompt = (
@@ -270,6 +329,7 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str) -> str:
         f"- Use correct {tgt} mathematical terminology with proper diacritics\n"
         "- Keep paragraph structure and line breaks identical\n"
         "- Output ONLY the translated text, no explanations"
+        f"{glossary}"
     )
     payload = json.dumps({
         "model": "llama-3.1-70b-versatile",
@@ -532,7 +592,14 @@ class handler(BaseHTTPRequestHandler):
             target_lang = parts.get("target_lang", "sk")
             files = parts.get("files", [])
 
-            print(f"[TRANSLATE] Parsed: {len(files)} files, {source_lang} -> {target_lang}", file=sys.stderr)
+            # Parse dictionary terms if provided
+            dict_terms = []
+            dict_raw = parts.get("dictionary", "")
+            if dict_raw:
+                try:
+                    dict_terms = json.loads(dict_raw)
+                except (json.JSONDecodeError, TypeError):
+                    pass
 
             if not files:
                 self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
@@ -548,8 +615,6 @@ class handler(BaseHTTPRequestHandler):
                 mime_type = file_info.get("mime_type", "image/jpeg")
                 filename = file_info.get("filename", "")
 
-                print(f"[TRANSLATE] File {idx + 1}/{len(files)}: {filename} ({mime_type}, {len(file_data)} bytes)", file=sys.stderr)
-
                 # DOCX: extract text directly (no OCR needed)
                 is_docx = (
                     "wordprocessingml" in mime_type
@@ -559,19 +624,21 @@ class handler(BaseHTTPRequestHandler):
 
                 if is_docx:
                     # DOCX: extract structured text, then Gemini formats + translates in one pass
-                    print(f"[TRANSLATE] DOCX detected — extract + format + translate pipeline", file=sys.stderr)
                     extracted = extract_text_from_docx(file_data)
-                    print(f"[TRANSLATE] DOCX extracted {len(extracted)} chars", file=sys.stderr)
                     final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
                 else:
-                    # Image: OCR with Gemini Vision, then protect math, translate, restore
-                    extracted = ocr_with_gemini(file_data, mime_type, source_lang)
+                    # Image: OCR with Gemini Vision (fallback: Mistral Pixtral)
+                    try:
+                        extracted = ocr_with_gemini(file_data, mime_type, source_lang)
+                    except Exception as ocr_err:
+                        print(f"[OCR] Gemini OCR failed, trying Mistral: {ocr_err}", file=sys.stderr)
+                        extracted = ocr_with_mistral(file_data, mime_type, source_lang)
                     protected, placeholders = protect_math(extracted)
                     try:
-                        translated = translate_with_gemini(protected, source_lang, target_lang)
+                        translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
                     except Exception as e:
                         print(f"[TRANSLATE] Gemini translation failed, trying Groq: {e}", file=sys.stderr)
-                        translated = translate_with_groq(protected, source_lang, target_lang)
+                        translated = translate_with_groq(protected, source_lang, target_lang, dict_terms)
                     final_markdown = restore_math(translated, placeholders)
                 all_markdowns.append(final_markdown)
 
@@ -585,10 +652,6 @@ class handler(BaseHTTPRequestHandler):
             # Build ONE unified HTML document with all pages
             unified_html = build_html(all_markdowns, target_lang)
             duration_ms = int((time.time() - t0) * 1000)
-
-            # Add html to each result for backward compatibility
-            for r in results:
-                r["html"] = unified_html
 
             print(f"[TRANSLATE] Success: {len(results)} pages in {duration_ms}ms", file=sys.stderr)
             self._send_json(200, {
@@ -626,7 +689,7 @@ class handler(BaseHTTPRequestHandler):
                 continue
             name = name_match.group(1)
 
-            if name in ("source_lang", "target_lang"):
+            if name in ("source_lang", "target_lang", "dictionary"):
                 parts_data[name] = content.decode("utf-8").strip()
             elif name == "files" or "filename" in header:
                 ct_match = re.search(r"Content-Type:\s*(\S+)", header)
@@ -634,9 +697,7 @@ class handler(BaseHTTPRequestHandler):
                 fname_match = re.search(r'filename="([^"]*)"', header)
                 fname = fname_match.group(1) if fname_match else ""
                 parts_data["files"].append({"mime_type": mime, "data": content, "filename": fname})
-                print(f"[MULTIPART] File: {fname}, mime={mime}, size={len(content)}", file=sys.stderr)
 
-        print(f"[MULTIPART] Total parsed: {len(parts_data['files'])} files", file=sys.stderr)
         return parts_data
 
     def _send_json(self, status: int, data: dict):

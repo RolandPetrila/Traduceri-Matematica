@@ -72,6 +72,13 @@ export default function TraduceriPage() {
     formData.append("source_lang", sourceLang);
     formData.append("target_lang", targetLang);
 
+    // Include dictionary terms if available
+    const dictKey = `dict_${sourceLang}_${targetLang}`;
+    const dictRaw = localStorage.getItem(dictKey);
+    if (dictRaw) {
+      formData.append("dictionary", dictRaw);
+    }
+
     try {
       const res = await fetch("/api/translate", {
         method: "POST",
@@ -95,20 +102,14 @@ export default function TraduceriPage() {
         throw new Error(data?.error || `Eroare server: ${res.status}`);
       }
 
-      // Python serverless returns {results: [{html, markdown, ...}], pages, status}
-      const htmlResult =
-        data.results?.[0]?.html || data.html || null;
+      // Python serverless returns {html (unified), results: [{markdown, ...}], pages, status}
+      const htmlResult = data.html || null;
 
       if (!htmlResult) {
         throw new Error("Raspunsul nu contine HTML tradus");
       }
 
-      // Combine all pages if multiple files
-      const allHtml = data.results
-        ? data.results.map((r: { html: string }) => r.html).join("\n<hr>\n")
-        : htmlResult;
-
-      setResult(allHtml);
+      setResult(htmlResult);
       setProgress(100);
       setStepLabel("Complet!");
 
@@ -130,7 +131,7 @@ export default function TraduceriPage() {
         status: data.status || "success",
         duration_ms: data.duration_ms || 0,
         pages: data.pages || files.length,
-        html: allHtml,
+        html: htmlResult,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
@@ -160,6 +161,8 @@ export default function TraduceriPage() {
         <button
           onClick={handleTranslate}
           disabled={files.length === 0 || isProcessing}
+          aria-label="Traduce fisierele selectate"
+          aria-busy={isProcessing}
           className="chalk-btn text-xl px-8 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {isProcessing ? "Se traduce..." : "Traduce"}
@@ -167,7 +170,9 @@ export default function TraduceriPage() {
       </div>
 
       {/* Progress */}
-      {isProcessing && <ProgressBar progress={progress} label={stepLabel} />}
+      <div aria-live="polite" aria-atomic="true">
+        {isProcessing && <ProgressBar progress={progress} label={stepLabel} />}
+      </div>
 
       {/* Error message */}
       {error && (

@@ -59,4 +59,6 @@ export interface ConversionHistoryEntry {
   status: "success" | "error";
   duration_ms: number;
   output_filename: string;
+  output_data?: string; // base64 encoded output for re-download
+  output_mime?: string;
 }

@@ -112,6 +112,168 @@ def md_to_html(data: bytes, name: str) -> dict:
     return {"data": full.encode("utf-8"), "mime": "text/html", "filename": f"{s}.html"}
 
 
+def _text_to_pdf(text: str, title: str = "") -> bytes:
+    """Convert plain/structured text to PDF using fpdf2 (pure Python)."""
+    from fpdf import FPDF
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    # Use built-in Helvetica (supports latin-1; for full Unicode would need font file)
+    pdf.set_font("Helvetica", size=11)
+    if title:
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, title, ln=True)
+        pdf.ln(4)
+        pdf.set_font("Helvetica", size=11)
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("# "):
+            pdf.set_font("Helvetica", "B", 16)
+            pdf.cell(0, 10, stripped[2:], ln=True)
+            pdf.set_font("Helvetica", size=11)
+        elif stripped.startswith("## "):
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.cell(0, 9, stripped[3:], ln=True)
+            pdf.set_font("Helvetica", size=11)
+        elif stripped.startswith("### "):
+            pdf.set_font("Helvetica", "B", 12)
+            pdf.cell(0, 8, stripped[4:], ln=True)
+            pdf.set_font("Helvetica", size=11)
+        elif stripped.startswith("**") and stripped.endswith("**"):
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.multi_cell(0, 6, stripped[2:-2])
+            pdf.set_font("Helvetica", size=11)
+        elif not stripped:
+            pdf.ln(3)
+        else:
+            pdf.multi_cell(0, 6, stripped)
+    return pdf.output()
+
+
+def docx_to_pdf(data: bytes, name: str) -> dict:
+    """Convert DOCX to PDF by extracting text and rendering with fpdf2."""
+    from docx import Document
+
+    doc = Document(io.BytesIO(data))
+    lines: list[str] = []
+    for p in doc.paragraphs:
+        text = p.text.strip()
+        style_name = (p.style.name if p.style else "").lower()
+        if "heading 1" in style_name or "title" in style_name:
+            lines.append(f"# {text}")
+        elif "heading 2" in style_name:
+            lines.append(f"## {text}")
+        elif "heading 3" in style_name:
+            lines.append(f"### {text}")
+        elif not text:
+            lines.append("")
+        else:
+            lines.append(text)
+    content = "\n".join(lines)
+    pdf_bytes = _text_to_pdf(content, _stem(name))
+    return {"data": pdf_bytes, "mime": "application/pdf", "filename": f"{_stem(name)}.pdf"}
+
+
+def md_to_pdf(data: bytes, name: str) -> dict:
+    """Convert Markdown to PDF by rendering text with fpdf2."""
+    text = data.decode("utf-8")
+    pdf_bytes = _text_to_pdf(text, _stem(name))
+    return {"data": pdf_bytes, "mime": "application/pdf", "filename": f"{_stem(name)}.pdf"}
+
+
+def html_to_pdf(data: bytes, name: str) -> dict:
+    """Convert HTML to PDF by stripping tags and rendering text."""
+    text = data.decode("utf-8")
+    # Strip HTML tags, keep text
+    clean = re.sub(r"<script[^>]*>[\s\S]*?</script>", "", text)
+    clean = re.sub(r"<style[^>]*>[\s\S]*?</style>", "", clean)
+    clean = re.sub(r"<br\s*/?>", "\n", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"</(p|div|h[1-6]|li|tr)>", "\n", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"<[^>]+>", "", clean)
+    clean = re.sub(r"&amp;", "&", clean)
+    clean = re.sub(r"&lt;", "<", clean)
+    clean = re.sub(r"&gt;", ">", clean)
+    clean = re.sub(r"&nbsp;", " ", clean)
+    clean = re.sub(r"\n{3,}", "\n\n", clean)
+    pdf_bytes = _text_to_pdf(clean.strip(), _stem(name))
+    return {"data": pdf_bytes, "mime": "application/pdf", "filename": f"{_stem(name)}.pdf"}
+
+
+def html_to_md(data: bytes, name: str) -> dict:
+    """Convert HTML to Markdown with basic structure preservation."""
+    text = data.decode("utf-8")
+    # Remove script/style
+    md = re.sub(r"<script[^>]*>[\s\S]*?</script>", "", text)
+    md = re.sub(r"<style[^>]*>[\s\S]*?</style>", "", md)
+    # Convert headings
+    for i in range(1, 7):
+        md = re.sub(rf"<h{i}[^>]*>(.*?)</h{i}>", rf"{'#' * i} \1\n", md, flags=re.IGNORECASE | re.DOTALL)
+    # Convert formatting
+    md = re.sub(r"<strong>(.*?)</strong>", r"**\1**", md, flags=re.DOTALL)
+    md = re.sub(r"<b>(.*?)</b>", r"**\1**", md, flags=re.DOTALL)
+    md = re.sub(r"<em>(.*?)</em>", r"*\1*", md, flags=re.DOTALL)
+    md = re.sub(r"<i>(.*?)</i>", r"*\1*", md, flags=re.DOTALL)
+    # Convert lists
+    md = re.sub(r"<li>(.*?)</li>", r"- \1\n", md, flags=re.DOTALL)
+    # Line breaks
+    md = re.sub(r"<br\s*/?>", "\n", md, flags=re.IGNORECASE)
+    md = re.sub(r"</(p|div|tr)>", "\n\n", md, flags=re.IGNORECASE)
+    # Strip remaining tags
+    md = re.sub(r"<[^>]+>", "", md)
+    # Clean entities
+    md = re.sub(r"&amp;", "&", md)
+    md = re.sub(r"&lt;", "<", md)
+    md = re.sub(r"&gt;", ">", md)
+    md = re.sub(r"&nbsp;", " ", md)
+    md = re.sub(r"\n{3,}", "\n\n", md)
+    md = md.strip() + "\n"
+    return {"data": md.encode("utf-8"), "mime": "text/markdown", "filename": f"{_stem(name)}.md"}
+
+
+def html_to_docx(data: bytes, name: str) -> dict:
+    """Convert HTML to DOCX with basic structure preservation."""
+    from docx import Document
+    from docx.shared import Pt
+
+    text = data.decode("utf-8")
+    # Strip script/style
+    clean = re.sub(r"<script[^>]*>[\s\S]*?</script>", "", text)
+    clean = re.sub(r"<style[^>]*>[\s\S]*?</style>", "", clean)
+
+    doc = Document()
+    # Extract headings and paragraphs
+    blocks = re.split(r"</(p|div|h[1-6]|li|tr)>", clean, flags=re.IGNORECASE)
+    for block in blocks:
+        # Check for heading
+        h_match = re.search(r"<h([1-6])[^>]*>(.*)", block, re.IGNORECASE | re.DOTALL)
+        if h_match:
+            level = int(h_match.group(1))
+            content = re.sub(r"<[^>]+>", "", h_match.group(2)).strip()
+            if content:
+                doc.add_heading(content, level=min(level, 4))
+            continue
+        # Strip tags for regular text
+        content = re.sub(r"<br\s*/?>", "\n", block, flags=re.IGNORECASE)
+        content = re.sub(r"<[^>]+>", "", content)
+        content = re.sub(r"&amp;", "&", content)
+        content = re.sub(r"&lt;", "<", content)
+        content = re.sub(r"&gt;", ">", content)
+        content = re.sub(r"&nbsp;", " ", content)
+        content = content.strip()
+        if content:
+            p = doc.add_paragraph(content)
+            p.style.font.size = Pt(11)
+
+    buf = io.BytesIO()
+    doc.save(buf)
+    return {
+        "data": buf.getvalue(),
+        "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "filename": f"{_stem(name)}.docx",
+    }
+
+
 def merge_pdfs(files: list[dict]) -> dict:
     from pypdf import PdfWriter, PdfReader
 
@@ -125,17 +287,37 @@ def merge_pdfs(files: list[dict]) -> dict:
     return {"data": buf.getvalue(), "mime": "application/pdf", "filename": "merged.pdf"}
 
 
-def split_pdf(data: bytes) -> dict:
+def _parse_page_range(spec: str, total: int) -> list[int]:
+    """Parse page range spec like '1-3,5,7-10' into 0-based page indices."""
+    if not spec or spec.strip().lower() == "all":
+        return list(range(total))
+    pages: list[int] = []
+    for part in spec.split(","):
+        part = part.strip()
+        if "-" in part:
+            start, end = part.split("-", 1)
+            s = max(1, int(start.strip()))
+            e = min(total, int(end.strip()))
+            pages.extend(range(s - 1, e))
+        else:
+            p = int(part) - 1
+            if 0 <= p < total:
+                pages.append(p)
+    return sorted(set(pages)) if pages else list(range(total))
+
+
+def split_pdf(data: bytes, page_range: str = "") -> dict:
     from pypdf import PdfReader, PdfWriter
 
     reader = PdfReader(io.BytesIO(data))
-    if len(reader.pages) <= 1:
-        return {"data": data, "mime": "application/pdf", "filename": "page_1.pdf"}
+    indices = _parse_page_range(page_range, len(reader.pages))
     writer = PdfWriter()
-    writer.add_page(reader.pages[0])
+    for idx in indices:
+        writer.add_page(reader.pages[idx])
     buf = io.BytesIO()
     writer.write(buf)
-    return {"data": buf.getvalue(), "mime": "application/pdf", "filename": "page_1.pdf"}
+    label = page_range.strip() if page_range.strip() else "all"
+    return {"data": buf.getvalue(), "mime": "application/pdf", "filename": f"pages_{label}.pdf"}
 
 
 def compress_pdf(data: bytes, name: str) -> dict:
@@ -151,9 +333,83 @@ def compress_pdf(data: bytes, name: str) -> dict:
     return {"data": buf.getvalue(), "mime": "application/pdf", "filename": f"compressed_{name}"}
 
 
+# --- PDF Edit operations ---
+
+def edit_pdf(data: bytes, name: str, **kwargs) -> dict:
+    """Handle PDF edit operations: rotate, delete, reorder, optimize, watermark."""
+    from pypdf import PdfReader, PdfWriter
+
+    action = kwargs.get("pdf_action", "")
+    if not action:
+        raise ValueError("Specifica o operatie PDF (rotate/delete/reorder/optimize/watermark)")
+
+    reader = PdfReader(io.BytesIO(data))
+    total = len(reader.pages)
+    writer = PdfWriter()
+
+    if action == "rotate":
+        angle = int(kwargs.get("rotate_angle", "90"))
+        indices = _parse_page_range(kwargs.get("page_range", "all"), total)
+        for i in range(total):
+            page = reader.pages[i]
+            if i in indices:
+                page.rotate(angle)
+            writer.add_page(page)
+
+    elif action == "delete":
+        indices = _parse_page_range(kwargs.get("page_range", ""), total)
+        if not indices:
+            raise ValueError("Specifica paginile de sters")
+        keep = [i for i in range(total) if i not in indices]
+        if not keep:
+            raise ValueError("Nu poti sterge toate paginile")
+        for i in keep:
+            writer.add_page(reader.pages[i])
+
+    elif action == "reorder":
+        seq_str = kwargs.get("reorder_sequence", "")
+        if not seq_str:
+            raise ValueError("Specifica ordinea paginilor (ex: 3,1,2,5,4)")
+        order = [int(x.strip()) - 1 for x in seq_str.split(",") if x.strip().isdigit()]
+        order = [i for i in order if 0 <= i < total]
+        if not order:
+            raise ValueError("Secventa de reordonare invalida")
+        for i in order:
+            writer.add_page(reader.pages[i])
+
+    elif action == "optimize":
+        for page in reader.pages:
+            writer.add_page(page)
+        writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+
+    elif action == "watermark":
+        wm_text = kwargs.get("watermark_text", "WATERMARK")
+        # Create watermark page using fpdf2
+        from fpdf import FPDF
+        wm_pdf = FPDF()
+        wm_pdf.add_page()
+        wm_pdf.set_font("Helvetica", "B", 50)
+        wm_pdf.set_text_color(200, 200, 200)
+        wm_pdf.rotate(45, wm_pdf.w / 2, wm_pdf.h / 2)
+        wm_pdf.text(wm_pdf.w / 4, wm_pdf.h / 2, wm_text)
+        wm_bytes = wm_pdf.output()
+        wm_reader = PdfReader(io.BytesIO(wm_bytes))
+        wm_page = wm_reader.pages[0]
+        for page in reader.pages:
+            page.merge_page(wm_page)
+            writer.add_page(page)
+
+    else:
+        raise ValueError(f"Operatie PDF necunoscuta: {action}")
+
+    buf = io.BytesIO()
+    writer.write(buf)
+    return {"data": buf.getvalue(), "mime": "application/pdf", "filename": f"{_stem(name)}_{action}.pdf"}
+
+
 # --- Router ---
 
-def process(files: list[dict], operation: str, target_format: str) -> dict:
+def process(files: list[dict], operation: str, target_format: str, **kwargs) -> dict:
     if not files:
         raise ValueError("Nu au fost trimise fisiere")
 
@@ -165,9 +421,11 @@ def process(files: list[dict], operation: str, target_format: str) -> dict:
     if operation == "merge":
         return merge_pdfs(files)
     if operation == "split":
-        return split_pdf(data)
+        return split_pdf(data, kwargs.get("page_range", ""))
     if operation == "compress":
         return compress_pdf(data, name)
+    if operation == "edit-pdf":
+        return edit_pdf(data, name, **kwargs)
 
     if operation != "convert" or not target_format:
         raise ValueError(f"Operatiune invalida: {operation}")
@@ -182,9 +440,12 @@ def process(files: list[dict], operation: str, target_format: str) -> dict:
         ("pdf", "docx"): lambda: pdf_to_docx(data, name),
         ("pdf", "html"): lambda: pdf_to_html(data, name),
         ("docx", "html"): lambda: docx_to_html(data, name),
-        ("docx", "pdf"): lambda: docx_to_html(data, name),
+        ("docx", "pdf"): lambda: docx_to_pdf(data, name),
         ("md", "html"): lambda: md_to_html(data, name),
-        ("md", "pdf"): lambda: md_to_html(data, name),
+        ("md", "pdf"): lambda: md_to_pdf(data, name),
+        ("html", "pdf"): lambda: html_to_pdf(data, name),
+        ("html", "md"): lambda: html_to_md(data, name),
+        ("html", "docx"): lambda: html_to_docx(data, name),
     }
     key = (ext, target_format)
     if key in routes:
@@ -203,7 +464,7 @@ def parse_boundary(content_type: str) -> str:
 
 
 def parse_multipart(body: bytes, boundary: str) -> dict:
-    result: dict = {"files": [], "operation": "convert", "target_format": ""}
+    result: dict = {"files": [], "operation": "convert", "target_format": "", "page_range": ""}
     boundary_bytes = f"--{boundary}".encode()
     sections = body.split(boundary_bytes)
 
@@ -223,7 +484,8 @@ def parse_multipart(body: bytes, boundary: str) -> dict:
             continue
         name = name_match.group(1)
 
-        if name in ("operation", "target_format"):
+        if name in ("operation", "target_format", "page_range",
+                     "pdf_action", "rotate_angle", "watermark_text", "reorder_sequence"):
             result[name] = content.decode("utf-8").strip()
         elif name == "files" or "filename" in header:
             fname_match = re.search(r'filename="([^"]*)"', header)
@@ -260,10 +522,13 @@ class handler(BaseHTTPRequestHandler):
             files = parts.get("files", [])
             operation = parts.get("operation", "convert")
             target_format = parts.get("target_format", "")
+            extra = {k: parts[k] for k in ("page_range", "pdf_action", "rotate_angle",
+                                             "watermark_text", "reorder_sequence")
+                     if parts.get(k)}
 
             print(f"[CONVERT] {operation}: {len(files)} files, target={target_format}", file=sys.stderr)
 
-            result = process(files, operation, target_format)
+            result = process(files, operation, target_format, **extra)
 
             out_data = result["data"]
             print(f"[CONVERT OK] {operation}: {result['filename']} ({result['mime']}, {len(out_data)} bytes)", file=sys.stderr)

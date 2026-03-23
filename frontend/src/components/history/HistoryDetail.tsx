@@ -9,23 +9,33 @@ interface HistoryDetailProps {
   onBack: () => void;
 }
 
-function downloadAsDocx(html: string, filename: string) {
-  const docxContent = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:w="urn:schemas-microsoft-com:office:word"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="utf-8">
-    <style>body{font-family:Cambria,serif;font-size:12pt}h1,h2,h3{margin-top:1em}svg{max-width:100%}</style>
-    </head><body>${html}</body></html>`;
-  const blob = new Blob([docxContent], {
-    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+async function downloadAsDocx(html: string, filename: string) {
+  const formData = new FormData();
+  const htmlBlob = new Blob([html], { type: "text/html" });
+  formData.append("files", htmlBlob, "source.html");
+  formData.append("operation", "convert");
+  formData.append("target_format", "docx");
+
+  try {
+    const res = await fetch("/api/convert", { method: "POST", body: formData });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Fallback: download as HTML with .docx extension
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 }
 
 export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
@@ -41,9 +51,9 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
     logAction("Re-download HTML din istoric", { entryId: entry.id });
   };
 
-  const handleDownloadDocx = () => {
+  const handleDownloadDocx = async () => {
     if (!entry.html) return;
-    downloadAsDocx(entry.html, `traducere_${entry.id}.docx`);
+    await downloadAsDocx(entry.html, `traducere_${entry.id}.docx`);
     logAction("Re-download DOCX din istoric", { entryId: entry.id });
   };
 

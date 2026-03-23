@@ -171,8 +171,29 @@ export default function HistoryList() {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-1 text-xs opacity-40 truncate">
-                    {entry.files.join(", ")} &rarr; {entry.output_filename}
+                  <div className="mt-1 flex justify-between items-center">
+                    <span className="text-xs opacity-40 truncate">
+                      {entry.files.join(", ")} &rarr; {entry.output_filename}
+                    </span>
+                    {entry.output_data && (
+                      <button
+                        onClick={() => {
+                          const binary = atob(entry.output_data!);
+                          const bytes = new Uint8Array(binary.length);
+                          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                          const blob = new Blob([bytes], { type: entry.output_mime || "application/octet-stream" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = entry.output_filename;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="chalk-btn text-xs ml-2 flex-shrink-0"
+                      >
+                        Re-download
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

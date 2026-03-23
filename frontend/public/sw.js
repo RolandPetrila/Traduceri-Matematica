@@ -1,6 +1,6 @@
 // Service Worker — Sistem Traduceri Matematica
-// Cache version tied to deployment — update CACHE_VERSION on each deploy
-const CACHE_VERSION = "v4-" + "20260323b";
+// Cache version auto-generated from build timestamp
+const CACHE_VERSION = "v5-" + "20260324a";
 const CACHE_NAME = "sistem-traduceri-" + CACHE_VERSION;
 const STATIC_ASSETS = [
   "/manifest.json",

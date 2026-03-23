@@ -9,28 +9,34 @@ interface PreviewPanelProps {
   translatedHtml: string;
 }
 
-function downloadAsDocx(html: string, filename: string) {
-  // Create a simple DOCX-compatible HTML document
-  const docxContent = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:w="urn:schemas-microsoft-com:office:word"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="utf-8">
-    <style>
-      body { font-family: Cambria, serif; font-size: 12pt; }
-      h1,h2,h3 { margin-top: 1em; }
-      svg { max-width: 100%; }
-    </style>
-    </head><body>${html}</body></html>`;
-  const blob = new Blob([docxContent], {
-    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+async function downloadAsDocx(html: string, filename: string) {
+  // Send HTML to backend for real DOCX generation via python-docx
+  const formData = new FormData();
+  const htmlBlob = new Blob([html], { type: "text/html" });
+  formData.append("files", htmlBlob, "traducere.html");
+  formData.append("operation", "convert");
+  formData.append("target_format", "docx");
+
+  try {
+    const res = await fetch("/api/convert", { method: "POST", body: formData });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Fallback: download as HTML with .docx extension (Word can open it)
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 }
 
 function openPrintView(html: string) {
@@ -64,8 +70,8 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
     logAction("Download HTML", { format: "html" });
   };
 
-  const handleDownloadDocx = () => {
-    downloadAsDocx(currentHtml, "traducere.docx");
+  const handleDownloadDocx = async () => {
+    await downloadAsDocx(currentHtml, "traducere.docx");
     logAction("Download DOCX", { format: "docx" });
   };
 
