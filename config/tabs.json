@@ -1,0 +1,7 @@
+{
+  "tabs": [
+    { "id": "traduceri", "label": "Traduceri", "icon": "📐", "default": true },
+    { "id": "convertor", "label": "Convertor", "icon": "🔄" },
+    { "id": "istoric", "label": "Istoric", "icon": "📋" }
+  ]
+}

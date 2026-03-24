@@ -1,55 +1,72 @@
 # Sistem Traduceri Matematica — CLAUDE.md
+# Versiune: 2.0 | Data: 2026-03-24
 
 ## Overview
 Aplicatie web (PWA) pentru traducerea documentelor de matematica din romana in slovaca/engleza.
-Pipeline: Foto -> AI Vision OCR -> Markdown+LaTeX+SVG -> Traducere AI -> HTML A4 printabil.
+Pipeline v2: Input (JPEG/PDF/DOCX) → OCR structurat (Gemini) → Crop figuri (Pillow) → Traducere (DeepL/Gemini) → HTML A4 printabil.
 
 ## Status
-- **Faza curenta**: POST-AUDIT REMEDIATION COMPLETE — LIVE pe https://traduceri-matematica.vercel.app
-- **Progres**: Audit 62/100 → ~82/100, 19 din 25 probleme rezolvate, cod mort 43% → ~5%
-- **Urmatorul pas**: Testare pe Vercel live (PDF Edit, Dictionary, Split PDF, DOCX download)
-- **Ultima sesiune**: 2026-03-24 (audit remediation: 5 sprint-uri, 45 fisiere, -2084/+1029 linii)
+- **Faza curenta**: REFACTORIZARE v2.0 — Sprint 0 (pregatire structura)
+- **Progres**: Vezi `PLAN_IMPLEMENTARE_v2.md` pentru tracking complet
+- **Deploy**: LIVE pe https://traduceri-matematica.vercel.app
+- **Ultima sesiune**: 2026-03-24
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
-1. Citeste `CHECKPOINT.md` — contine TODO complet cu progres live (checkbox-uri)
-2. Citeste `TODO.md` — contine amanari, idei noi, known issues
-3. Citeste `Cerinte_Roland.md` — 119 cerinte (v2.0)
-4. Continua cu primul task nemarcat din CHECKPOINT.md
+1. Citeste `PLAN_IMPLEMENTARE_v2.md` — sursa UNICA de adevar pt progres
+2. Citeste `CHECKPOINT.md` — context general
+3. Continua cu primul task [ ] nemarcat din PLAN_IMPLEMENTARE_v2.md
+4. Dupa ORICE implementare: marcheaza [x] cu data in plan + commit + push
 
-## Stack
-- Frontend: Next.js 14 + Tailwind CSS + shadcn/ui
-- Backend: Python serverless — API routes in api/ pentru Vercel
-- AI primar: Google Gemini Free Tier (vision + traducere)
-- AI fallback: Groq (traducere), Mistral/Pixtral (OCR fallback)
+## Stack v2
+- Frontend: Next.js 14 + Tailwind CSS
+- Backend: Python serverless (api/) + shared lib (api/lib/)
+- AI OCR: Gemini 2.5 Flash (JSON mode, gratuit)
+- AI Traducere: DeepL Free (principal) + Gemini (fallback) — selectabil din UI
+- AI Fallback: Groq Llama 3.3 (traducere), Mistral Pixtral (OCR)
+- AI Premium: Claude Sonnet/Opus (suspendat — activare la cerere)
+- Figure: Crop din original cu Pillow (nu SVG generat)
 - Deploy: Vercel (auto-deploy din GitHub)
+- Monitoring: Feedback loop complet (10 componente)
 
 ## Key Files
-- `CHECKPOINT.md` — plan master cu progres live (checkbox-uri)
-- `PLAN_PROIECT.md` — document formal de planificare (arhitectura, pipeline, riscuri)
-- `TODO.md` — amanari, idei noi, known issues
-- `Cerinte_Roland.md` — document complet cerinte (93 cerinte)
-- `config/languages.json` — limbi suportate si configurari
-- `config/math_terms_ro_sk.json` — dictionar pre-populat RO-SK (100 termeni)
-- `config/math_terms_ro_en.json` — dictionar pre-populat RO-EN (100 termeni)
+- `PLAN_IMPLEMENTARE_v2.md` — **SURSA UNICA** de adevar (tracking [ ]/[x])
+- `GHID_UTILIZARE_ROLAND.md` — ghid testare per sprint
+- `config/languages.json` — limbi suportate (RO/SK/EN + extensibil)
+- `config/tabs.json` — tab-uri dinamice (extensibil)
+- `config/math_terms_ro_sk.json` — dictionar RO-SK (100 termeni)
+- `api/` — Python serverless + api/lib/ (module partajate)
 - `frontend/` — Next.js app cu tema "tabla verde + creta"
-- `api/` — Vercel Python serverless functions (translate, convert, health)
-- `AUDIT_FULL_v2_RAPORT.md` — raport audit complet cu scor si probleme
-- `tests/test_e2e.py` — teste E2E cu imagini reale
-- `STRUCTURA_MODULE.md` — harta completa module/functii cu descriere proces executie
-- `start.html` — fisier pentru deschidere rapida aplicatie cu dublu-click
-- `frontend/src/app/diagnostics/` — pagina diagnosticare completa (erori + actiuni + info)
+- `docs/` — documentatie (CHANGELOG, ghiduri)
+- `Arhiva_Proiect_Vechi/` — documente din v1 (arhivate)
+- `data/logs/` — loguri feedback loop
+- `dev_server.py` + `DEV_LOCAL.bat` — dezvoltare locala
 
 ## Conventions
 - Limba interfata/documentatie: ROMANA
 - Limba cod/comentarii: ENGLEZA
 - API keys: doar in .env, niciodata in cod
 - Tema UI: tabla verde (#2d5016) + text creta (alb/galben)
-- Toate serviciile: GRATUITE (zero costuri)
-- LaTeX: protejat cu placeholders inainte de procesare Markdown
-- SVG: wrappat in <div> pentru passthrough Markdown
+- Servicii: GRATUITE prioritar (DeepL free, Gemini free)
+- LaTeX: protejat cu placeholders inainte de traducere
+- Figuri: crop din original (nu SVG generat de AI)
+- Dupa ORICE modificare: commit + push automat (Vercel deploy)
+
+## Pipeline v2 (multi-pas)
+```
+Input (JPEG/PDF/DOCX)
+  → [1] Gemini OCR structurat (JSON mode) → text + figuri bbox
+  → [2] Pillow crop figuri + background removal → alb
+  → [3] DeepL/Gemini traducere (selectabil) → text tradus
+  → [4] build_html() + MathJax → HTML A4 printabil
+```
+
+## Proiecte referinta (reutilizare cod)
+- `C:\Users\ALIENWARE\platform-predare\` — LanguageToggle, traducere JSON, cache Blob
+- `C:\Users\ALIENWARE\Desktop\Cristina\Translator_Portable\` — DeepL 2 keys, AzureTranslator, DOCX paragraph translate
+- `C:\Users\ALIENWARE\Desktop\Cristina\Extragere_Traducere_HTML_Codex\` — pipeline CLI original
 
 ## Important
-- Proiectul originar CLI: C:\Users\ALIENWARE\Desktop\Cristina\Extragere_Traducere_HTML_Codex
-- Scripturile Python de acolo se reutilizeaza/adapteaza
 - Fara autentificare — acces direct
 - PWA instalabil pe Windows, Android, iPhone
+- Utilizator principal: Cristina (profesoara matematica)
+- Limbi: RO → SK (principal), RO → EN (secundar), extensibil
