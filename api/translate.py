@@ -266,6 +266,149 @@ def format_and_translate_docx(text: str, source_lang: str, target_lang: str) -> 
     return result
 
 
+# --- Claude API (primary when available — best SVG/formatting quality) ---
+
+
+def claude_ocr_and_translate(image_bytes: bytes, mime_type: str, source_lang: str, target_lang: str) -> str:
+    """OCR + format + translate in one Claude pass. Produces Exemplu_BUN quality."""
+    api_key = os.environ.get("CLAUDE_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("CLAUDE_API_KEY not set")
+
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    tgt = lang_names.get(target_lang, target_lang)
+
+    print(f"[CLAUDE] OCR+Translate: {source_lang} -> {target_lang}, {len(image_bytes)} bytes", file=sys.stderr)
+
+    prompt = (
+        f"Extract ALL content from this {src} math textbook page and TRANSLATE to {tgt}.\n"
+        "Output professional Markdown with LaTeX and inline SVG figures.\n\n"
+        "STRUCTURE:\n"
+        "- # for chapter titles only, ## for section headings\n"
+        "- Construction steps $P_1$:, $P_2$: etc. are PARAGRAPHS, never headings\n"
+        "- **Bold** for key terms: **Example.**, **Observations**\n"
+        "- Ordered lists as 1. 2. with blank line after bold label\n"
+        "- Letter options a) b) c) d) on separate lines\n\n"
+        "MATH — ALL math as LaTeX:\n"
+        "- $\\triangle ABC$, $\\angle MON$, $m(\\angle A) = 60°$\n"
+        "- $[AB]$, $AB = 4 \\text{ cm}$, $\\perp$, $\\parallel$\n\n"
+        "SVG FIGURES — reproduce EVERY geometric figure from the page:\n"
+        "- Wrap in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
+        "- PAIR construction steps side-by-side: $P_1$+$P_2$ share ONE <div> with TWO <svg> elements\n"
+        "- SVG attributes: xmlns, viewBox, width=\"255\" height=\"170\", style=\"font-family:Cambria,serif\"\n"
+        "- Step label: <text x=\"center\" y=\"12\" font-size=\"11\" fill=\"#444\" text-anchor=\"middle\" font-weight=\"bold\">P&#x2081;</text>\n"
+        "- Vertices: <circle r=\"2.5\" fill=\"#333\"/>, labeled italic <text font-style=\"italic\">\n"
+        "- Measurements: fill=\"#666\" font-size=\"10\"\n"
+        "- Angles: arcs stroke=\"#c44\" (red) or stroke=\"#1a7\" (green), fill=\"none\"\n"
+        "- Construction arcs (compass): stroke-dasharray=\"6,3\", colored #c44 or #1a7\n"
+        "- Dashed helper lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
+        "- Solid constructed segments: stroke=\"#333\" stroke-width=\"1.8\"\n"
+        "- Final step: <polygon fill=\"#e8f0fe\" stroke=\"#333\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/>\n"
+        "- Right angle marker: small <rect> at the corner\n\n"
+        "TRANSLATION:\n"
+        f"- Translate ALL natural language to {tgt} with correct mathematical terminology\n"
+        "- Use proper diacritics for the target language\n"
+        "- Keep LaTeX and SVG code untouched (translate text labels inside SVG if needed)\n\n"
+        "Output ONLY the Markdown. No code fences, no explanations."
+    )
+
+    payload = json.dumps({
+        "model": "claude-sonnet-4-6",
+        "max_tokens": 16384,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": mime_type,
+                        "data": image_b64,
+                    },
+                },
+                {"type": "text", "text": prompt},
+            ],
+        }],
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        result = data["content"][0]["text"]
+        # Strip code fences if present
+        result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)
+        result = re.sub(r"\n?```\s*$", "", result, flags=re.MULTILINE)
+        return result
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        print(f"[CLAUDE ERROR] Status {e.code}: {_sanitize_error(error_body[:500])}", file=sys.stderr)
+        raise RuntimeError(f"Claude API error {e.code}")
+
+
+def claude_translate_text(text: str, source_lang: str, target_lang: str) -> str:
+    """Translate text with Claude (for DOCX pipeline)."""
+    api_key = os.environ.get("CLAUDE_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("CLAUDE_API_KEY not set")
+
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    tgt = lang_names.get(target_lang, target_lang)
+
+    print(f"[CLAUDE] Translate text: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
+
+    prompt = (
+        f"Format this {src} math textbook text as professional Markdown and translate to {tgt}.\n\n"
+        "RULES:\n"
+        "- # for titles, ## for sections. Construction steps $P_1$: are paragraphs, NOT headings.\n"
+        "- ALL math as LaTeX. **Bold** for key terms.\n"
+        "- SVG figures for any geometric construction described (same conventions as a math textbook).\n"
+        "- Pair construction steps side-by-side: $P_1$+$P_2$ in one <div> with 2 <svg> elements.\n"
+        "- SVG width=\"255\", vertices italic, angles #c44/#1a7, final polygon fill=\"#e8f0fe\".\n"
+        f"- Translate ALL text to {tgt} with correct mathematical terminology and diacritics.\n\n"
+        "Output ONLY the Markdown. No code fences.\n\n"
+        f"TEXT:\n{text}"
+    )
+
+    payload = json.dumps({
+        "model": "claude-sonnet-4-6",
+        "max_tokens": 16384,
+        "messages": [{"role": "user", "content": prompt}],
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        result = data["content"][0]["text"]
+        result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)
+        result = re.sub(r"\n?```\s*$", "", result, flags=re.MULTILINE)
+        return result
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        print(f"[CLAUDE ERROR] Status {e.code}: {_sanitize_error(error_body[:500])}", file=sys.stderr)
+        raise RuntimeError(f"Claude API error {e.code}")
+
+
 # --- REST API calls (no SDK dependencies) ---
 
 def _sanitize_error(msg: str) -> str:
@@ -782,15 +925,43 @@ class handler(BaseHTTPRequestHandler):
                     or filename.lower().endswith(".docx")
                 )
 
+                # --- Choose provider: Claude (best quality) or Gemini (free) ---
+                has_claude = bool(os.environ.get("CLAUDE_API_KEY", "").strip())
+
                 if is_docx:
-                    # DOCX: extract structured text, then Gemini formats + translates in one pass
                     _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: DOCX | {len(file_data)} bytes")
                     t_docx = time.time()
                     extracted = extract_text_from_docx(file_data)
-                    final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
+                    if has_claude:
+                        _log_to_file("INFO    | Provider: Claude Opus (DOCX)")
+                        try:
+                            final_markdown = claude_translate_text(extracted, source_lang, target_lang)
+                        except Exception as claude_err:
+                            print(f"[CLAUDE] Failed, falling back to Gemini: {claude_err}", file=sys.stderr)
+                            _log_to_file(f"WARN    | Claude esuat: {claude_err} | Fallback: Gemini")
+                            final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
+                    else:
+                        final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
                     _log_to_file(f"OK      | DOCX procesat | Durata: {time.time()-t_docx:.1f}s | Chars: {len(final_markdown)}")
+
+                elif has_claude:
+                    # Image: Claude OCR+Translate in one pass (best quality)
+                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes | Provider: Claude Opus")
+                    t_claude = time.time()
+                    try:
+                        final_markdown = claude_ocr_and_translate(file_data, mime_type, source_lang, target_lang)
+                        _log_to_file(f"OK      | Claude OCR+Translate | Durata: {time.time()-t_claude:.1f}s | Chars: {len(final_markdown)}")
+                    except Exception as claude_err:
+                        print(f"[CLAUDE] Failed, falling back to Gemini: {claude_err}", file=sys.stderr)
+                        _log_to_file(f"WARN    | Claude esuat: {claude_err} | Fallback: Gemini pipeline")
+                        # Fallback to Gemini pipeline
+                        extracted = ocr_with_gemini(file_data, mime_type, source_lang)
+                        protected, placeholders = protect_math(extracted)
+                        translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
+                        final_markdown = restore_math(translated, placeholders)
+
                 else:
-                    # Image: OCR with Gemini Vision (fallback: Mistral Pixtral)
+                    # Image: Gemini OCR + Translate (free tier)
                     _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes")
                     t_ocr = time.time()
                     ocr_provider = "Gemini"
