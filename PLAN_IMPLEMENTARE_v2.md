@@ -110,6 +110,18 @@
 - [ ] Test: upload JPEG → figuri crop pe fundal alb → HTML
 - [x] 2026-03-24 — Commit `18aa9ed` + push → Vercel deploy
 
+### Sprint 2.5: Migrare Vercel → Render (PLANIFICAT)
+- [ ] Creare cont Render.com + conectare GitHub repo
+- [ ] Configurare Render Web Service (Next.js + Python)
+- [ ] Transfer variabile mediu (.env → Render Dashboard)
+- [ ] Configurare build command + start command
+- [ ] Test traducere 1 pagina pe Render
+- [ ] Test traducere 20 pagini pe Render (verificare timeout OK)
+- [ ] Transfer domeniu custom (optional) sau folosire render URL
+- [ ] Dezactivare Vercel deploy (dupa confirmare Render OK)
+- [ ] Actualizare DEV_LOCAL.bat + dev_server.py daca necesar
+- [ ] Commit + push → Render deploy
+
 ### Sprint 3: Preview + Editare Inline + Tab-uri Dinamice
 - [ ] Creaza `frontend/src/lib/tab-config.ts` — tab-uri din config/tabs.json
 - [ ] Refactorizare `TabNav.tsx` — tab-uri dinamice extensibile
