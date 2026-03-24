@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import sys
 import urllib.request
 
@@ -16,22 +17,9 @@ import urllib.request
 def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
     """Extract structured content from an image using Gemini JSON mode.
 
-    Returns:
-        {
-            "title": "...",
-            "sections": [
-                {
-                    "heading": "...",
-                    "content": "paragraph text...",
-                    "type": "heading|paragraph|step|observation"
-                },
-                {
-                    "type": "figure",
-                    "bbox": {"x": 0.1, "y": 0.3, "w": 0.4, "h": 0.25},
-                    "description": "triangle ABC with sides 4,3,5"
-                }
-            ]
-        }
+    Returns dict with "title" and "sections" list.
+    Each section has "type" (heading/paragraph/step/observation/list/figure),
+    "content" (text), and optionally "bbox" (for figures).
     """
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
@@ -43,32 +31,12 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
 
     print(f"[OCR-STRUCT] Processing: {len(image_bytes)} bytes, {mime_type}, {source_lang}", file=sys.stderr)
 
+    # Short, focused prompt — Gemini JSON mode works better with concise instructions
     prompt = (
-        f"Analyze this {src} math textbook page. Return a JSON object with the page structure.\n\n"
-        "Return ONLY valid JSON with this exact structure:\n"
-        "{\n"
-        '  "title": "page title or empty string",\n'
-        '  "sections": [\n'
-        "    {\n"
-        '      "type": "heading|paragraph|step|observation|list",\n'
-        '      "content": "the text content",\n'
-        '      "level": 1 or 2 (for headings only)\n'
-        "    },\n"
-        "    {\n"
-        '      "type": "figure",\n'
-        '      "bbox": {"x": 0.0, "y": 0.0, "w": 1.0, "h": 0.5},\n'
-        '      "description": "what the figure shows"\n'
-        "    }\n"
-        "  ]\n"
-        "}\n\n"
-        "RULES:\n"
-        "- bbox coordinates are FRACTIONS of page size (0.0 to 1.0)\n"
-        "- x,y = top-left corner of the figure region\n"
-        "- ALL math must be LaTeX: $\\triangle ABC$, $\\angle MON$, $AB = 4 \\text{ cm}$\n"
-        "- Construction steps P₁, P₂ etc. have type 'step'\n"
-        "- Identify EVERY figure/diagram region with its bounding box\n"
-        "- Include ALL text content, nothing skipped\n"
-        "- Observations/notes have type 'observation'"
+        f"Analyze this {src} math textbook page. Return JSON with structure:\n"
+        '{{"title":"...","sections":[{{"type":"heading|paragraph|step|observation|list|figure",'
+        '"content":"text here","level":1,"bbox":{{"x":0.1,"y":0.2,"w":0.3,"h":0.2}}}}]}}\n'
+        "Rules: math as LaTeX, steps P1-P4 as type step, figures with bbox (fractions 0-1)."
     )
 
     contents = [{
@@ -92,16 +60,38 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
     try:
         with urllib.request.urlopen(req, timeout=55) as resp:
             data = json.loads(resp.read().decode("utf-8"))
+
         raw = data["candidates"][0]["content"]["parts"][0]["text"]
-        result = json.loads(raw)
+
+        # Parse JSON — Gemini with responseMimeType should return valid JSON
+        # but sometimes LaTeX backslashes cause issues
+        try:
+            result = json.loads(raw)
+        except json.JSONDecodeError:
+            # Fix unescaped LaTeX backslashes: \angle → \\angle etc.
+            fixed = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu\\])', r'\\\\', raw)
+            try:
+                result = json.loads(fixed)
+            except json.JSONDecodeError as e2:
+                print(f"[OCR-STRUCT] JSON parse failed even after fix: {e2}", file=sys.stderr)
+                print(f"[OCR-STRUCT] Raw (first 300): {raw[:300]}", file=sys.stderr)
+                return {"title": "", "sections": [{"type": "paragraph", "content": raw}]}
+
+        # Ensure structure
+        if not isinstance(result, dict):
+            result = {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
+        if "sections" not in result:
+            result["sections"] = []
+
         figure_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure")
-        print(f"[OCR-STRUCT] OK: {len(result.get('sections', []))} sections, {figure_count} figures", file=sys.stderr)
+        total = len(result.get("sections", []))
+        print(f"[OCR-STRUCT] OK: {total} sections, {figure_count} figures", file=sys.stderr)
         return result
-    except json.JSONDecodeError as e:
-        print(f"[OCR-STRUCT] JSON parse error: {e}", file=sys.stderr)
-        # Fallback: return raw text as single section
-        raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-        return {"title": "", "sections": [{"type": "paragraph", "content": raw_text}]}
+
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")[:300]
+        print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)
+        raise
     except Exception as e:
         print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
         raise
