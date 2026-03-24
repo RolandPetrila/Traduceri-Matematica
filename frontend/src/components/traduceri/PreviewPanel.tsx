@@ -74,20 +74,60 @@ export default function PreviewPanel({ originalFiles, translatedHtml, engineName
     : "traducere";
   const suffix = engineName ? `_${engineName}` : "";
 
-  const handleDownloadHtml = () => {
-    const blob = new Blob([currentHtml], { type: "text/html" });
+  /** Save file with "Save As" dialog (if supported) or fallback to download. */
+  async function saveWithDialog(blob: Blob, defaultName: string, mimeType: string) {
+    // Try modern File System Access API (Chrome/Edge — shows "Save As" dialog)
+    if ("showSaveFilePicker" in window) {
+      try {
+        const extMap: Record<string, string> = {
+          "text/html": "html",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+        };
+        const ext = extMap[mimeType] || defaultName.split(".").pop() || "html";
+        const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
+          suggestedName: defaultName,
+          types: [{
+            description: ext.toUpperCase(),
+            accept: { [mimeType]: [`.${ext}`] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        logAction("Download (Save As)", { filename: defaultName });
+        return;
+      } catch (e) {
+        // User cancelled or API not available — fall through to regular download
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    // Fallback: regular download with auto-numbered filename
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${baseName}${suffix}.html`;
+    a.download = defaultName;
     a.click();
     URL.revokeObjectURL(url);
-    logAction("Download HTML", { format: "html", filename: `${baseName}${suffix}.html` });
+    logAction("Download", { filename: defaultName });
+  }
+
+  // Track download count for auto-numbering within same session
+  const [downloadCount, setDownloadCount] = useState(0);
+  const getNumberedName = (ext: string) => {
+    const num = downloadCount > 0 ? `_(${downloadCount})` : "";
+    return `${baseName}${suffix}${num}.${ext}`;
+  };
+
+  const handleDownloadHtml = async () => {
+    const blob = new Blob([currentHtml], { type: "text/html" });
+    await saveWithDialog(blob, getNumberedName("html"), "text/html");
+    setDownloadCount((c) => c + 1);
   };
 
   const handleDownloadDocx = async () => {
-    await downloadAsDocx(currentHtml, `${baseName}${suffix}.docx`);
-    logAction("Download DOCX", { format: "docx", filename: `${baseName}${suffix}.docx` });
+    const filename = getNumberedName("docx");
+    await downloadAsDocx(currentHtml, filename);
+    setDownloadCount((c) => c + 1);
   };
 
   const handlePrintPdf = () => {

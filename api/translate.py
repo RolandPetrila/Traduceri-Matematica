@@ -1267,43 +1267,52 @@ class handler(BaseHTTPRequestHandler):
                         cropped_figs = _crop_all_figures_inline(file_data, sections)
                         _log_to_file(f"INFO    | Crop figuri: {len(cropped_figs)} figuri decupate")
 
-                        # Step 3: Translate text sections
+                        # Step 3: Batch translate — collect all text, translate in ONE call
                         t_tr = time.time()
-                        for sec in sections:
-                            if sec.get("type") in ("paragraph", "heading", "step", "observation", "list"):
-                                content = sec.get("content", "")
-                                if not content.strip():
-                                    continue
-                                if translate_engine == "deepl" and _HAS_DEEPL_LIB and os.environ.get("DEEPL_API_KEY", "").strip():
-                                    pass  # DeepL libs loaded at top level
-                                    try:
-                                        protected = _protect_deepl(content)
-                                        translated = _deepl_translate(protected, target_lang, source_lang)
-                                        sec["content"] = _restore_deepl(translated)
-                                    except Exception:
-                                        # DeepL failed, keep original for now
-                                        pass
-                                else:
-                                    # Gemini translate
-                                    try:
-                                        protected_ph, placeholders = protect_math(content)
-                                        translated = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
-                                        sec["content"] = restore_math(translated, placeholders)
-                                    except Exception:
-                                        pass
-                        # Also translate title
+                        text_indices = []
+                        all_text_parts = []
                         title = page_data.get("title", "")
                         if title:
+                            all_text_parts.append(title)
+                            text_indices.append(("title", -1))
+                        for si, sec in enumerate(sections):
+                            if sec.get("type") in ("paragraph", "heading", "step", "observation", "list"):
+                                content = sec.get("content", "")
+                                if content.strip():
+                                    all_text_parts.append(content)
+                                    text_indices.append(("section", si))
+
+                        if all_text_parts:
+                            # Join with separator, translate as one block
+                            SEP = "\n|||SEPARATOR|||\n"
+                            batch_text = SEP.join(all_text_parts)
+
                             try:
                                 if translate_engine == "deepl" and _HAS_DEEPL_LIB and os.environ.get("DEEPL_API_KEY", "").strip():
-                                    from lib.deepl_client import translate_text as deepl_translate
-                                    page_data["title"] = _deepl_translate(title, target_lang, source_lang)
+                                    protected = _protect_deepl(batch_text)
+                                    translated_batch = _deepl_translate(protected, target_lang, source_lang)
+                                    translated_batch = _restore_deepl(translated_batch)
+                                    tr_prov = "DeepL"
                                 else:
-                                    page_data["title"] = translate_with_gemini(title, source_lang, target_lang, dict_terms)
-                            except Exception:
-                                pass
+                                    protected_ph, placeholders = protect_math(batch_text)
+                                    translated_batch = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
+                                    translated_batch = restore_math(translated_batch, placeholders)
+                                    tr_prov = "Gemini"
+
+                                # Split back and assign to sections
+                                parts = translated_batch.split("|||SEPARATOR|||")
+                                for pi, (kind, idx) in enumerate(text_indices):
+                                    if pi < len(parts):
+                                        text = parts[pi].strip()
+                                        if kind == "title":
+                                            page_data["title"] = text
+                                        else:
+                                            sections[idx]["content"] = text
+                                _log_to_file(f"OK      | Traducere batch | Engine: {tr_prov} | {len(all_text_parts)} parts | Durata: {time.time()-t_tr:.1f}s")
+                            except Exception as tr_err:
+                                print(f"[TRANSLATE] Batch failed: {tr_err}", file=sys.stderr)
+                                _log_to_file(f"WARN    | Traducere batch esuata: {tr_err}")
                         tr_dur = time.time() - t_tr
-                        _log_to_file(f"OK      | Traducere | Engine: {translate_engine} | Durata: {tr_dur:.1f}s")
 
                         all_structured_pages.append(page_data)
                         all_structured_figs.append(cropped_figs)
