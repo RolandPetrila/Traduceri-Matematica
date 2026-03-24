@@ -1145,9 +1145,13 @@ class handler(BaseHTTPRequestHandler):
                     use_structured = True
                     try:
                         from lib.ocr_structured import ocr_structured
+                        print(f"[PIPELINE] Structured OCR import OK", file=sys.stderr)
                         page_data = ocr_structured(file_data, mime_type, source_lang)
+                        print(f"[PIPELINE] Structured OCR returned {len(page_data.get('sections',[]))} sections", file=sys.stderr)
                     except Exception as ocr_err:
+                        import traceback
                         print(f"[OCR-STRUCT] Failed, falling back to legacy: {ocr_err}", file=sys.stderr)
+                        traceback.print_exc(file=sys.stderr)
                         _log_to_file(f"WARN    | OCR structurat esuat: {ocr_err} | Fallback: legacy")
                         use_structured = False
 

@@ -2,14 +2,16 @@
   "functions": {
     "api/translate.py": {
       "runtime": "@vercel/python@4.5.0",
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "lib/**"
     },
     "api/convert.py": {
       "runtime": "@vercel/python@4.5.0",
       "maxDuration": 60
     },
     "api/health.py": {
-      "runtime": "@vercel/python@4.5.0"
+      "runtime": "@vercel/python@4.5.0",
+      "includeFiles": "lib/**"
     }
   }
 }
