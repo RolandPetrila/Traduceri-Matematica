@@ -16,6 +16,11 @@ import traceback
 import urllib.request
 import urllib.parse
 
+# Ensure api/lib/ is importable on both Vercel and local dev
+_api_dir = os.path.dirname(os.path.abspath(__file__))
+if _api_dir not in sys.path:
+    sys.path.insert(0, _api_dir)
+
 
 # --- Local debug logging ---
 
@@ -742,6 +747,12 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
             sec_type = section.get("type", "paragraph")
             content = section.get("content", "")
 
+            # Safety net: demote heading to step if it contains P₁-P₉ pattern
+            if sec_type == "heading" and re.search(
+                r"(?:\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?|P\s*[₁₂₃₄₅₆₇₈₉])\s*[:.]\s*", content
+            ):
+                sec_type = "step"
+
             if sec_type == "heading":
                 level = section.get("level", 2)
                 parts.append(f"<h{level}>{content}</h{level}>")
@@ -1133,7 +1144,7 @@ class handler(BaseHTTPRequestHandler):
                     t_ocr = time.time()
                     use_structured = True
                     try:
-                        from api.lib.ocr_structured import ocr_structured
+                        from lib.ocr_structured import ocr_structured
                         page_data = ocr_structured(file_data, mime_type, source_lang)
                     except Exception as ocr_err:
                         print(f"[OCR-STRUCT] Failed, falling back to legacy: {ocr_err}", file=sys.stderr)
@@ -1147,7 +1158,7 @@ class handler(BaseHTTPRequestHandler):
                         _log_to_file(f"OK      | OCR structurat | {len(sections)} sections | {fig_count} figuri | {ocr_dur:.1f}s")
 
                         # Step 2: Crop figures from original image
-                        from api.lib.figure_crop import crop_all_figures
+                        from lib.figure_crop import crop_all_figures
                         cropped_figs = crop_all_figures(file_data, sections)
                         _log_to_file(f"INFO    | Crop figuri: {len(cropped_figs)} figuri decupate")
 
@@ -1159,8 +1170,8 @@ class handler(BaseHTTPRequestHandler):
                                 if not content.strip():
                                     continue
                                 if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
-                                    from api.lib.math_protect import protect_for_deepl, restore_from_deepl
-                                    from api.lib.deepl_client import translate_text as deepl_translate
+                                    from lib.math_protect import protect_for_deepl, restore_from_deepl
+                                    from lib.deepl_client import translate_text as deepl_translate
                                     try:
                                         protected = protect_for_deepl(content)
                                         translated = deepl_translate(protected, target_lang, source_lang)
@@ -1181,7 +1192,7 @@ class handler(BaseHTTPRequestHandler):
                         if title:
                             try:
                                 if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
-                                    from api.lib.deepl_client import translate_text as deepl_translate
+                                    from lib.deepl_client import translate_text as deepl_translate
                                     page_data["title"] = deepl_translate(title, target_lang, source_lang)
                                 else:
                                     page_data["title"] = translate_with_gemini(title, source_lang, target_lang, dict_terms)
