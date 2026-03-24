@@ -142,18 +142,30 @@ def format_and_translate_docx(text: str, source_lang: str, target_lang: str) -> 
     prompt = (
         f"You are processing text extracted from a {src} math textbook.\n"
         f"FORMAT it as professional Markdown AND TRANSLATE to {tgt} in one step.\n\n"
-        "FORMATTING RULES:\n"
-        "- Use # and ## for titles and section headings\n"
-        "- Use **bold** for emphasis (e.g. **Example.**, **Observation.**)\n"
-        "- ALL math: LaTeX notation — $\\triangle ABC$, $AB = 4 \\text{ cm}$, $\\angle MON$, etc.\n"
-        "- Numbered items: use 1. 2. 3. format\n"
+        "CRITICAL RULES (violating these is an error):\n"
+        "1. Construction steps P₁, P₂, P₃, P₄ are PARAGRAPHS, NEVER headings.\n"
+        "   CORRECT: $P_1$: Zostrojíme uhol...\n"
+        "   WRONG:   # P₁: Zostrojíme uhol...\n"
+        "2. Use # ONLY for real titles (chapter name), ## for sections\n"
+        "3. ALL math MUST be LaTeX: $\\triangle ABC$, $\\angle MON$, $AB = 4 \\text{ cm}$\n"
+        "4. Use **bold** for key terms: **Example.**, **Observations**\n"
+        "5. Bold label + ordered list = separate blocks (empty line between):\n"
+        "   **Observations**\n"
+        "   \\n\n"
+        "   1. First item...\n"
+        "   2. Second item...\n\n"
+        "FORMATTING:\n"
+        "- Numbered items: 1. 2. 3. format\n"
         "- Letter options: a) b) c) d) on separate lines\n\n"
         "SVG FIGURES — for ANY geometric construction or figure described:\n"
-        "- Create inline SVG wrapped in <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
-        "- Use viewBox, width/height attributes, font-family:Cambria,serif\n"
-        "- Label vertices in italic, measurements in #666, angles in #c44 (red) or #1a7 (green)\n"
-        "- Construction steps side-by-side (2 SVGs per step pair)\n"
-        "- Last step: filled polygon with fill=\"#e8f0fe\"\n\n"
+        "- Wrap in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
+        "- PAIR construction steps: P₁+P₂ in ONE <div> (2 SVGs side-by-side), P₃+P₄ in next <div>\n"
+        "- SVG sizing: width=\"255\" height=\"170\"\n"
+        "- Step label: <text> at top center, font-weight=\"bold\", fill=\"#444\" (P₁, P₂, etc.)\n"
+        "- Vertices: italic labels, points as <circle r=\"2.5\" fill=\"#333\"/>\n"
+        "- Measurements: fill=\"#666\", angles: stroke=\"#c44\" (red) or stroke=\"#1a7\" (green)\n"
+        "- Dashed lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
+        "- Final step polygon: fill=\"#e8f0fe\" stroke=\"#333\" stroke-linejoin=\"round\"\n\n"
         "TRANSLATION:\n"
         f"- Translate ALL natural language text to {tgt}\n"
         "- Use correct mathematical terminology with proper diacritics\n"
@@ -212,29 +224,38 @@ def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str
 
     ocr_prompt = (
         f"Extract ALL content from this {src} math textbook page as professional Markdown.\n\n"
+        "CRITICAL RULES (violating these is an error):\n"
+        "1. Construction steps P₁, P₂, P₃, P₄ are PARAGRAPHS, NEVER headings.\n"
+        "   CORRECT: $P_1$: Zostrojíme uhol...\n"
+        "   WRONG:   # P₁: Zostrojíme uhol...\n"
+        "   WRONG:   ### P₁: Zostrojíme uhol...\n"
+        "2. Use # ONLY for real titles (e.g. chapter name), ## for sections, ### for subsections\n"
+        "3. ALL math MUST be LaTeX: $\\triangle ABC$, $\\angle MON$, $m(\\angle A) = 60°$,\n"
+        "   $[AB]$, $AB = 4 \\text{ cm}$, $\\perp$, $\\parallel$. NEVER plain text math.\n"
+        "4. Use **bold** for key terms: **Example.**, **Observation.**, **Observations**\n"
+        "5. Ordered lists: start a NEW line for each item. Bold label + list = separate blocks:\n"
+        "   CORRECT:\n"
+        "   **Observations**\n"
+        "   \\n\n"
+        "   1. First observation...\n"
+        "   2. Second observation...\n\n"
         "STRUCTURE RULES:\n"
-        "- Use # for main titles, ## for section headings, ### for subsections\n"
-        "- Use **bold** for key terms (e.g. **Example.**, **Observation.**, **Definition.**)\n"
         "- Numbered items: 1. 2. 3. format\n"
         "- Letter options: a) b) c) d) on separate lines\n"
         "- Preserve the EXACT order and layout of the original page\n\n"
-        "MATH RULES — ALL math MUST use LaTeX notation:\n"
-        "- Triangles: $\\triangle ABC$\n"
-        "- Angles: $\\angle MON$, $m(\\angle A) = 60°$\n"
-        "- Segments: $[AB]$, $AB = 4 \\text{ cm}$\n"
-        "- Other: $\\perp$, $\\parallel$, $\\cap$, $\\cup$, fractions, etc.\n"
-        "- Inline math: $...$  |  Display math: $$...$$\n"
-        "- NEVER write math as plain text — always LaTeX\n\n"
         "SVG FIGURES — for ANY geometric figure, construction, or diagram:\n"
-        "- Create inline SVG wrapped in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
-        "- SVG attributes: xmlns, viewBox, width, height, style=\"font-family:Cambria,serif\"\n"
-        "- Vertices: labeled in italic (font-style:italic), points as circles r=2.5\n"
+        "- Wrap SVGs in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
+        "- PAIR construction steps side-by-side: P₁+P₂ in ONE <div>, P₃+P₄ in ONE <div>\n"
+        "  Each <div> contains TWO <svg> elements next to each other.\n"
+        "- SVG sizing: width=\"255\" height=\"170\" (or similar proportional size)\n"
+        "- SVG attributes: xmlns, viewBox, style=\"font-family:Cambria,serif\"\n"
+        "- Step label: <text x=\"center\" y=\"12\" font-size=\"11\" fill=\"#444\" text-anchor=\"middle\" font-weight=\"bold\">P₁</text>\n"
+        "- Vertices: labeled italic (font-style:italic), points as <circle r=\"2.5\" fill=\"#333\"/>\n"
         "- Measurements: fill=\"#666\", font-size=\"10\"\n"
         "- Angles: arcs with fill=\"none\" stroke=\"#c44\" (red) or stroke=\"#1a7\" (green)\n"
-        "- Construction steps: group as pairs (P1+P2, P3+P4) side by side in same <div>\n"
-        "- Step labels: P₁, P₂, etc. as <text> at top center, font-weight=\"bold\", fill=\"#444\"\n"
         "- Dashed helper lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
-        "- Final step: filled polygon with fill=\"#e8f0fe\"\n\n"
+        "- Final step polygon: fill=\"#e8f0fe\", stroke=\"#333\", stroke-linejoin=\"round\"\n"
+        "- Solid constructed segments: stroke=\"#333\" stroke-width=\"1.8\"\n\n"
         "Output ONLY the Markdown content. No code fences, no explanations."
     )
     contents = [{
@@ -390,6 +411,15 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
 
 def _md_to_html_body(md: str) -> str:
     """Convert markdown to HTML body content. Preserves SVG/div/LaTeX as-is."""
+    # Step 0: Safety net — demote construction step headings to paragraphs
+    # Gemini sometimes makes P₁/P₂/P₃/P₄ into headings despite prompt instructions
+    md = re.sub(
+        r"^#{1,6}\s*((?:\$?P[_₁₂₃₄₅₆]\$?|P[₁₂₃₄₅₆]):?\s*.+)$",
+        r"\1",
+        md,
+        flags=re.MULTILINE,
+    )
+
     # Step 1: Protect SVG and HTML div blocks from paragraph wrapping
     svg_blocks: dict[str, str] = {}
     svg_counter = [0]
@@ -448,6 +478,13 @@ def _md_to_html_body(md: str) -> str:
     for key, block in svg_blocks.items():
         html = html.replace(key, block)
         html = html.replace(f"<p>{key}</p>", block)
+
+    # Step 11: Fix invalid nesting — extract <ol>/<ul> from inside <p> tags
+    html = re.sub(r"<p>(.*?)<ol>", r"<p>\1</p>\n<ol>", html)
+    html = re.sub(r"</ol></p>", r"</ol>", html)
+    html = re.sub(r"<p>(.*?)<ul>", r"<p>\1</p>\n<ul>", html)
+    html = re.sub(r"</ul></p>", r"</ul>", html)
+    html = html.replace("<p></p>", "")
 
     return html
 
