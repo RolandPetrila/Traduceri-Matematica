@@ -89,27 +89,26 @@
 - [x] 2026-03-24 — Creat `PLAN_IMPLEMENTARE_v2.md` + `GHID_UTILIZARE_ROLAND.md`
 - [x] 2026-03-24 — Commit `bd609c9` + push → Vercel deploy
 
-### Sprint 1: DeepL Integration + Language Toggle
-- [ ] Creaza `api/lib/deepl_client.py` — DeepL REST API (2 keys, auto-fallback, usage)
-- [ ] Creaza `api/lib/math_protect.py` — protect/restore LaTeX (extras din translate.py)
-- [ ] Integreaza DeepL in `api/translate.py` — selectabil ca engine
-- [ ] Creaza `frontend/src/lib/language-context.tsx` — React Context RO/SK/EN
-- [ ] Creaza `frontend/src/components/layout/LanguageToggle.tsx` — toggle in header
-- [ ] Creaza `frontend/src/components/traduceri/EngineSelector.tsx` — DeepL/Gemini dropdown
-- [ ] Integreaza LanguageToggle in Header.tsx
+### Sprint 1: DeepL Integration + Language Toggle (COMPLETAT)
+- [x] 2026-03-24 — Creat `api/lib/deepl_client.py` — DeepL REST (2 keys, auto-fallback, usage)
+- [x] 2026-03-24 — Creat `api/lib/math_protect.py` — LaTeX protection XML `<keep>` + placeholders
+- [x] 2026-03-24 — Integrat DeepL in `api/translate.py` — selectabil cu `translate_engine`
+- [x] 2026-03-24 — Creat `language-context.tsx` + `LanguageToggle.tsx` + `EngineSelector.tsx`
+- [x] 2026-03-24 — Integrat LanguageToggle in Header + LanguageProvider in layout
 - [ ] Test: traducere DeepL → verificare diacritice slovace
 - [ ] Test: switch engine DeepL ↔ Gemini → compara rezultate
-- [ ] Commit + push → Vercel deploy
+- [x] 2026-03-24 — Commit `88baf70` + push → Vercel deploy
 
-### Sprint 2: OCR Structurat + Crop Figuri
-- [ ] Creaza `api/lib/ocr_structured.py` — Gemini JSON mode → JSON structurat
-- [ ] Creaza `api/lib/figure_crop.py` — Pillow crop + background removal → alb
-- [ ] Refactorizare `api/translate.py` — pipeline multi-pas
-- [ ] Fix DOCX: converteste la PDF → trimite la Gemini (nu python-docx extract)
-- [ ] Refactorizare `build_html()` — figuri ca <img base64> nu SVG generat
-- [ ] Test: upload JPEG → JSON → crop figuri → HTML cu figuri originale pe alb
-- [ ] Test: upload DOCX → OCR complet (formule, figuri, layout)
-- [ ] Commit + push → Vercel deploy
+### Sprint 2: OCR Structurat + Crop Figuri (COMPLETAT)
+- [x] 2026-03-24 — Creat `api/lib/ocr_structured.py` — Gemini JSON mode OCR
+- [x] 2026-03-24 — Creat `api/lib/figure_crop.py` — Pillow crop + background removal alb
+- [x] 2026-03-24 — Creat `build_html_structured()` — HTML din JSON + figuri `<img>` base64
+- [x] 2026-03-24 — Integrat pipeline structured in `do_POST` cu legacy fallback
+- [x] 2026-03-24 — Fix filename: `originalName_engine.html`
+- [x] 2026-03-24 — Fix heading demotion regex Unicode P₁-P₉
+- [ ] Fix DOCX: converteste la PDF → Gemini (sprint urmator)
+- [ ] Test: upload JPEG → figuri crop pe fundal alb → HTML
+- [x] 2026-03-24 — Commit `18aa9ed` + push → Vercel deploy
 
 ### Sprint 3: Preview + Editare Inline + Tab-uri Dinamice
 - [ ] Creaza `frontend/src/lib/tab-config.ts` — tab-uri din config/tabs.json
