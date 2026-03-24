@@ -6,6 +6,7 @@ import { logAction } from "@/lib/monitoring";
 interface PreviewPanelProps {
   originalFiles: File[];
   translatedHtml: string;
+  engineName?: string;
 }
 
 async function downloadAsDocx(html: string, filename: string) {
@@ -57,7 +58,7 @@ function extractBodyContent(html: string): string {
   return html;
 }
 
-export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewPanelProps) {
+export default function PreviewPanel({ originalFiles, translatedHtml, engineName }: PreviewPanelProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [editedHtml, setEditedHtml] = useState(translatedHtml);
 
@@ -67,20 +68,26 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
 
   const currentHtml = editedHtml || translatedHtml;
 
+  // Generate filename: originalName_engine.ext
+  const baseName = originalFiles.length > 0
+    ? originalFiles[0].name.replace(/\.[^.]+$/, "")
+    : "traducere";
+  const suffix = engineName ? `_${engineName}` : "";
+
   const handleDownloadHtml = () => {
     const blob = new Blob([currentHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "traducere.html";
+    a.download = `${baseName}${suffix}.html`;
     a.click();
     URL.revokeObjectURL(url);
-    logAction("Download HTML", { format: "html" });
+    logAction("Download HTML", { format: "html", filename: `${baseName}${suffix}.html` });
   };
 
   const handleDownloadDocx = async () => {
-    await downloadAsDocx(currentHtml, "traducere.docx");
-    logAction("Download DOCX", { format: "docx" });
+    await downloadAsDocx(currentHtml, `${baseName}${suffix}.docx`);
+    logAction("Download DOCX", { format: "docx", filename: `${baseName}${suffix}.docx` });
   };
 
   const handlePrintPdf = () => {

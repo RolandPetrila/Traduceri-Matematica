@@ -86,9 +86,13 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
 
 # --- Post-processing pipeline (deterministic fixes for Gemini output) ---
 
-# Matches: # P₁:, ## P₃:, ### $P_1$:, # P4:, etc.
+# Matches construction step headings in ALL formats:
+# # P₁:, ## P₃:, ### $P_1$:, # P4:, # P₁ :, ### P₃: Zostrojíme...
 _STEP_HEADING_RE = re.compile(
-    r"^(#{1,6})\s*((?:\$?P[_₁₂₃₄₅₆₇₈₉\d]\$?|P[₁₂₃₄₅₆₇₈₉])\s*[:.]?\s*.+)$",
+    r"^(#{1,6})\s*((?:"
+    r"\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?"  # P₁, $P_1$, P1
+    r"|P\s*[₁₂₃₄₅₆₇₈₉]"         # P ₁ (with space)
+    r")\s*[:.]?\s*.+)$",
     re.MULTILINE,
 )
 
@@ -640,9 +644,9 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
 def _md_to_html_body(md: str) -> str:
     """Convert markdown to HTML body content. Preserves SVG/div/LaTeX as-is."""
     # Step 0: Safety net — demote construction step headings to paragraphs
-    # Gemini sometimes makes P₁/P₂/P₃/P₄ into headings despite prompt instructions
+    # Catches ALL formats: # P₁:, ## P₃:, ### $P_1$:, # P4:, etc.
     md = re.sub(
-        r"^#{1,6}\s*((?:\$?P[_₁₂₃₄₅₆]\$?|P[₁₂₃₄₅₆]):?\s*.+)$",
+        r"^#{1,6}\s*((?:\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?|P\s*[₁₂₃₄₅₆₇₈₉])\s*[:.]?\s*.+)$",
         r"\1",
         md,
         flags=re.MULTILINE,
@@ -717,8 +721,163 @@ def _md_to_html_body(md: str) -> str:
     return html
 
 
+def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]], target_lang: str) -> str:
+    """Build HTML from structured OCR data + cropped figures.
+
+    Args:
+        pages_data: list of OCR structured JSON per page
+        figures: list of {section_index: base64_png} per page
+        target_lang: language code for html lang attribute
+    """
+    page_sections = []
+    for page_idx, (page, figs) in enumerate(zip(pages_data, figures)):
+        parts = []
+        parts.append(f'<div class="source-file">Pagina {page_idx + 1}</div>')
+
+        title = page.get("title", "")
+        if title:
+            parts.append(f"<h1>{title}</h1>")
+
+        for sec_idx, section in enumerate(page.get("sections", [])):
+            sec_type = section.get("type", "paragraph")
+            content = section.get("content", "")
+
+            if sec_type == "heading":
+                level = section.get("level", 2)
+                parts.append(f"<h{level}>{content}</h{level}>")
+            elif sec_type == "step":
+                parts.append(f"<p>{content}</p>")
+            elif sec_type == "observation":
+                parts.append(f"<p><strong>{content}</strong></p>")
+            elif sec_type == "list":
+                # Content may have numbered items
+                items = [line.strip() for line in content.split("\n") if line.strip()]
+                if items:
+                    parts.append("<ol>")
+                    for item in items:
+                        # Strip leading number/dot
+                        import re as _re
+                        clean = _re.sub(r"^\d+\.\s*", "", item)
+                        parts.append(f"<li>{clean}</li>")
+                    parts.append("</ol>")
+            elif sec_type == "figure":
+                # Insert cropped figure as <img> if available
+                b64 = figs.get(sec_idx, "")
+                if b64:
+                    parts.append(
+                        f'<div style="display:flex;justify-content:center;margin:8px 0">'
+                        f'<img src="data:image/png;base64,{b64}" '
+                        f'alt="{section.get("description", "Figura")}" '
+                        f'style="max-width:100%;height:auto;background:#fff;" />'
+                        f'</div>'
+                    )
+                else:
+                    desc = section.get("description", "")
+                    parts.append(f'<p><em>[Figura: {desc}]</em></p>')
+            else:
+                # paragraph or unknown
+                if content:
+                    parts.append(f"<p>{content}</p>")
+
+        body = "\n".join(parts)
+        page_sections.append(
+            f'<section class="paper"><div class="paper-content">{body}</div></section>'
+        )
+
+    pages_html = "\n".join(page_sections)
+    n = len(pages_data)
+    return _build_html_shell(pages_html, n, target_lang)
+
+
+def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str:
+    """Shared HTML shell (CSS + JS + MathJax) used by both build functions."""
+    return f'''<!doctype html>
+<html lang="{target_lang}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traducere Matematica</title>
+  <style>
+    :root {{
+      --text-color: #1b1b1b; --paper-bg: #ffffff; --font-size: 12pt;
+      --line-height: 1.45; --page-width: 210mm; --page-height: 297mm;
+      --page-padding-x: 12mm; --page-padding-y: 12mm;
+    }}
+    @page {{ size: A4; margin: 0; }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin:0; padding:0; color:var(--text-color); background:#f2f2f2;
+      font-family:"Cambria","Times New Roman",serif; font-size:var(--font-size); line-height:var(--line-height); }}
+    .toolbar {{ position:sticky; top:0; z-index:100; display:flex; gap:12px; align-items:center;
+      justify-content:space-between; padding:10px 14px; background:#192031; color:#fff;
+      font-family:"Segoe UI",Arial,sans-serif; font-size:13px; }}
+    .toolbar button {{ border:0; border-radius:6px; padding:8px 12px; background:#dce8ff;
+      color:#121212; cursor:pointer; font-weight:600; }}
+    main {{ max-width:calc(var(--page-width) + 24px); margin:18px auto; padding:0 12px 24px; }}
+    .paper {{ --fit-scale:1; width:var(--page-width); height:var(--page-height); margin:0 auto 16px;
+      padding:var(--page-padding-y) var(--page-padding-x); background:var(--paper-bg);
+      box-shadow:0 2px 14px rgba(0,0,0,.12); overflow:hidden; }}
+    .paper-content {{ width:calc((var(--page-width) - 2*var(--page-padding-x))/var(--fit-scale));
+      transform:scale(var(--fit-scale)); transform-origin:top left; overflow-wrap:break-word; }}
+    .source-file {{ margin:0 0 14px; color:#4a4a4a; font-family:"Segoe UI",Arial,sans-serif;
+      font-size:10.5pt; font-weight:600; }}
+    h1,h2,h3,h4 {{ margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }}
+    p,li {{ page-break-inside:avoid; }}
+    hr {{ border:none; border-top:1px solid #cfcfcf; margin:1em 0; }}
+    ul, ol {{ margin-top:0.45em; margin-bottom:0.6em; }}
+    li {{ margin-bottom:0.2em; }}
+    img {{ max-width:100%; height:auto; }}
+    svg {{ max-width:100%; height:auto; display:block; margin:0.8em auto; }}
+    .MathJax {{ font-size:1em !important; }}
+    @media print {{
+      body {{ background:#fff; }} .toolbar {{ display:none !important; }}
+      main {{ max-width:none; margin:0; padding:0; }}
+      .paper {{ margin:0; box-shadow:none; break-after:page; page-break-after:always; }}
+      .paper:last-child {{ break-after:auto; page-break-after:auto; }}
+    }}
+  </style>
+  <script>
+    window.MathJax = {{
+      tex: {{ inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] }},
+      svg: {{ fontCache: 'global' }}
+    }};
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script>
+    function fitPaperSections() {{
+      document.querySelectorAll('.paper').forEach(function(page) {{
+        var c = page.querySelector('.paper-content');
+        if (!c) return;
+        page.style.setProperty('--fit-scale', '1');
+        var s = window.getComputedStyle(page);
+        var avail = page.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+        var need = c.scrollHeight;
+        var scale = need > 0 ? Math.min(1, avail / need) : 1;
+        page.style.setProperty('--fit-scale', scale.toFixed(4));
+      }});
+    }}
+    window.addEventListener('load', function() {{
+      var p = window.MathJax && window.MathJax.startup ? window.MathJax.startup.promise : Promise.resolve();
+      p.then(function() {{ fitPaperSections(); setTimeout(fitPaperSections, 150); }})
+       .catch(function() {{ fitPaperSections(); }});
+    }});
+    window.addEventListener('resize', fitPaperSections);
+    window.addEventListener('beforeprint', fitPaperSections);
+  </script>
+</head>
+<body>
+  <div class="toolbar">
+    <div>Traducere matematica — {page_count} pagina(e) | Print: Scale 100%, Margins None</div>
+    <button onclick="window.print()">Tipareste</button>
+  </div>
+  <main>
+{pages_html}
+  </main>
+</body>
+</html>'''
+
+
 def build_html(pages: list[str], target_lang: str) -> str:
-    """Build professional A4 HTML document matching Exemplu_BUN.html quality."""
+    """Build professional A4 HTML from markdown pages (legacy pipeline)."""
     page_sections = []
     for i, md in enumerate(pages):
         body = _md_to_html_body(md)

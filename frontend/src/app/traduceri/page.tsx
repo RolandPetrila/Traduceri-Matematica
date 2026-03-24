@@ -211,6 +211,7 @@ export default function TraduceriPage() {
         <PreviewPanel
           originalFiles={files}
           translatedHtml={result}
+          engineName={translateEngine}
         />
       )}
 
