@@ -1,5 +1,7 @@
 "use client";
 
+import { logAction } from "@/lib/monitoring";
+
 interface TabNavProps {
   activeTab: "traduceri" | "convertor" | "istoric";
   onTabChange: (tab: "traduceri" | "convertor" | "istoric") => void;
@@ -17,7 +19,7 @@ export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
       {tabs.map((tab) => (
         <button
           key={tab.id}
-          onClick={() => onTabChange(tab.id)}
+          onClick={() => { logAction(`Navigare: ${tab.label}`, { tab: tab.id }); onTabChange(tab.id); }}
           className={`px-6 py-3 text-lg font-bold transition-all duration-200 rounded-t-lg ${
             activeTab === tab.id
               ? "tab-active bg-white/5"

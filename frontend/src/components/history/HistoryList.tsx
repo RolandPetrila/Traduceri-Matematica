@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { logAction } from "@/lib/monitoring";
 import { getHistory, clearHistory, getConversionHistory, clearConversionHistory } from "@/lib/storage";
 import type { HistoryEntry, ConversionHistoryEntry } from "@/lib/types";
 import HistoryDetail from "./HistoryDetail";
@@ -20,6 +21,7 @@ export default function HistoryList() {
 
   const handleClearTranslations = () => {
     if (confirm("Stergi tot istoricul de traduceri?")) {
+      logAction("Istoric: traduceri sterse", { count: entries.length });
       clearHistory();
       setEntries([]);
       setSelected(null);
@@ -28,6 +30,7 @@ export default function HistoryList() {
 
   const handleClearConversions = () => {
     if (confirm("Stergi tot istoricul de conversii?")) {
+      logAction("Istoric: conversii sterse", { count: convEntries.length });
       clearConversionHistory();
       setConvEntries([]);
     }
@@ -42,13 +45,13 @@ export default function HistoryList() {
       {/* View mode toggle */}
       <div className="flex gap-2 mb-4">
         <button
-          onClick={() => setViewMode("traduceri")}
+          onClick={() => { logAction("Istoric: mod traduceri"); setViewMode("traduceri"); }}
           className={`chalk-btn text-sm ${viewMode === "traduceri" ? "!border-chalk-yellow !bg-white/10" : ""}`}
         >
           Traduceri ({entries.length})
         </button>
         <button
-          onClick={() => setViewMode("conversii")}
+          onClick={() => { logAction("Istoric: mod conversii"); setViewMode("conversii"); }}
           className={`chalk-btn text-sm ${viewMode === "conversii" ? "!border-chalk-yellow !bg-white/10" : ""}`}
         >
           Conversii ({convEntries.length})
@@ -78,7 +81,7 @@ export default function HistoryList() {
               {entries.map((entry) => (
                 <button
                   key={entry.id}
-                  onClick={() => setSelected(entry)}
+                  onClick={() => { logAction("Istoric: traducere deschisa", { id: entry.id, langs: `${entry.source_lang}->${entry.target_lang}` }); setSelected(entry); }}
                   className="w-full text-left bg-white/5 hover:bg-white/8 rounded-lg px-4 py-3 transition-all"
                 >
                   <div className="flex justify-between items-center">
