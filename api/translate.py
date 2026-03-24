@@ -21,6 +21,112 @@ _api_dir = os.path.dirname(os.path.abspath(__file__))
 if _api_dir not in sys.path:
     sys.path.insert(0, _api_dir)
 
+# Try importing shared libs (may fail on Vercel — inlined functions used as fallback)
+try:
+    from lib.deepl_client import translate_text as _deepl_translate
+    from lib.math_protect import protect_for_deepl as _protect_deepl, restore_from_deepl as _restore_deepl
+    _HAS_DEEPL_LIB = True
+except ImportError:
+    _HAS_DEEPL_LIB = False
+
+
+# --- Inline OCR structured (guaranteed to work on Vercel) ---
+
+
+def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
+    """Structured OCR — inlined to avoid Vercel import issues."""
+    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GOOGLE_AI_API_KEY not set")
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    prompt = (
+        f"Analyze this {src} math textbook page. Return JSON with structure:\n"
+        '{{"title":"...","sections":[{{"type":"heading|paragraph|step|observation|list|figure",'
+        '"content":"text here","level":1,"bbox":{{"x":0.1,"y":0.2,"w":0.3,"h":0.2}}}}]}}\n'
+        "Rules: math as LaTeX, steps P1-P4 as type step, figures with bbox (fractions 0-1)."
+    )
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    payload = json.dumps({
+        "contents": [{"parts": [
+            {"text": prompt},
+            {"inline_data": {"mime_type": mime_type, "data": image_b64}},
+        ]}],
+        "generationConfig": {"responseMimeType": "application/json"},
+    }).encode("utf-8")
+    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=55) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    raw = data["candidates"][0]["content"]["parts"][0]["text"]
+    try:
+        result = json.loads(raw)
+    except json.JSONDecodeError:
+        fixed = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu\\])', r'\\\\', raw)
+        try:
+            result = json.loads(fixed)
+        except json.JSONDecodeError:
+            return {"title": "", "sections": [{"type": "paragraph", "content": raw}]}
+    if not isinstance(result, dict) or "sections" not in result:
+        return {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
+    fig_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure")
+    print(f"[OCR-STRUCT] OK: {len(result['sections'])} sections, {fig_count} figures", file=sys.stderr)
+    return result
+
+
+def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
+    """Crop figures from image — inlined to avoid Vercel import issues."""
+    try:
+        import io
+        from PIL import Image
+    except ImportError:
+        print("[CROP] Pillow not available, skipping figure crop", file=sys.stderr)
+        return {}
+    result = {}
+    img = Image.open(io.BytesIO(image_bytes))
+    w, h = img.size
+    for i, section in enumerate(sections):
+        if section.get("type") != "figure" or not section.get("bbox"):
+            continue
+        bbox = section["bbox"]
+        pad = 5
+        x1 = max(0, int(bbox["x"] * w) - pad)
+        y1 = max(0, int(bbox["y"] * h) - pad)
+        x2 = min(w, int((bbox["x"] + bbox["w"]) * w) + pad)
+        y2 = min(h, int((bbox["y"] + bbox["h"]) * h) + pad)
+        if x2 <= x1 or y2 <= y1:
+            continue
+        cropped = img.crop((x1, y1, x2, y2)).convert("RGBA")
+        cw, ch = cropped.size
+        # Detect and replace background with white
+        corners = []
+        for cx, cy in [(0, 0), (cw - 5, 0), (0, ch - 5), (cw - 5, ch - 5)]:
+            region = cropped.crop((max(0, cx), max(0, cy), min(cw, cx + 5), min(ch, cy + 5)))
+            pixels = list(region.getdata())
+            if pixels:
+                corners.append((
+                    sum(p[0] for p in pixels) // len(pixels),
+                    sum(p[1] for p in pixels) // len(pixels),
+                    sum(p[2] for p in pixels) // len(pixels),
+                ))
+        if corners:
+            bg = tuple(sum(c[j] for c in corners) // len(corners) for j in range(3))
+        else:
+            bg = (245, 245, 245)
+        px = cropped.load()
+        for py_ in range(ch):
+            for px_ in range(cw):
+                r, g, b, a = px[px_, py_]
+                if abs(r - bg[0]) < 40 and abs(g - bg[1]) < 40 and abs(b - bg[2]) < 40:
+                    px[px_, py_] = (255, 255, 255, 255)
+        final = cropped.convert("RGB")
+        buf = io.BytesIO()
+        final.save(buf, format="PNG", optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+        result[i] = b64
+        print(f"[CROP] Figure [{i}]: {cw}x{ch}px", file=sys.stderr)
+    return result
+
 
 # --- Local debug logging ---
 
@@ -1144,14 +1250,10 @@ class handler(BaseHTTPRequestHandler):
                     t_ocr = time.time()
                     use_structured = True
                     try:
-                        from lib.ocr_structured import ocr_structured
-                        print(f"[PIPELINE] Structured OCR import OK", file=sys.stderr)
-                        page_data = ocr_structured(file_data, mime_type, source_lang)
-                        print(f"[PIPELINE] Structured OCR returned {len(page_data.get('sections',[]))} sections", file=sys.stderr)
+                        page_data = _ocr_structured_inline(file_data, mime_type, source_lang)
+                        print(f"[PIPELINE] Structured OCR: {len(page_data.get('sections',[]))} sections", file=sys.stderr)
                     except Exception as ocr_err:
-                        import traceback
                         print(f"[OCR-STRUCT] Failed, falling back to legacy: {ocr_err}", file=sys.stderr)
-                        traceback.print_exc(file=sys.stderr)
                         _log_to_file(f"WARN    | OCR structurat esuat: {ocr_err} | Fallback: legacy")
                         use_structured = False
 
@@ -1162,8 +1264,7 @@ class handler(BaseHTTPRequestHandler):
                         _log_to_file(f"OK      | OCR structurat | {len(sections)} sections | {fig_count} figuri | {ocr_dur:.1f}s")
 
                         # Step 2: Crop figures from original image
-                        from lib.figure_crop import crop_all_figures
-                        cropped_figs = crop_all_figures(file_data, sections)
+                        cropped_figs = _crop_all_figures_inline(file_data, sections)
                         _log_to_file(f"INFO    | Crop figuri: {len(cropped_figs)} figuri decupate")
 
                         # Step 3: Translate text sections
@@ -1173,13 +1274,12 @@ class handler(BaseHTTPRequestHandler):
                                 content = sec.get("content", "")
                                 if not content.strip():
                                     continue
-                                if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
-                                    from lib.math_protect import protect_for_deepl, restore_from_deepl
-                                    from lib.deepl_client import translate_text as deepl_translate
+                                if translate_engine == "deepl" and _HAS_DEEPL_LIB and os.environ.get("DEEPL_API_KEY", "").strip():
+                                    pass  # DeepL libs loaded at top level
                                     try:
-                                        protected = protect_for_deepl(content)
-                                        translated = deepl_translate(protected, target_lang, source_lang)
-                                        sec["content"] = restore_from_deepl(translated)
+                                        protected = _protect_deepl(content)
+                                        translated = _deepl_translate(protected, target_lang, source_lang)
+                                        sec["content"] = _restore_deepl(translated)
                                     except Exception:
                                         # DeepL failed, keep original for now
                                         pass
@@ -1195,9 +1295,9 @@ class handler(BaseHTTPRequestHandler):
                         title = page_data.get("title", "")
                         if title:
                             try:
-                                if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
+                                if translate_engine == "deepl" and _HAS_DEEPL_LIB and os.environ.get("DEEPL_API_KEY", "").strip():
                                     from lib.deepl_client import translate_text as deepl_translate
-                                    page_data["title"] = deepl_translate(title, target_lang, source_lang)
+                                    page_data["title"] = _deepl_translate(title, target_lang, source_lang)
                                 else:
                                     page_data["title"] = translate_with_gemini(title, source_lang, target_lang, dict_terms)
                             except Exception:
