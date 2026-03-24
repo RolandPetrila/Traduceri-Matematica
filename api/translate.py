@@ -84,6 +84,91 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
     return text
 
 
+# --- Post-processing pipeline (deterministic fixes for Gemini output) ---
+
+# Matches: # P₁:, ## P₃:, ### $P_1$:, # P4:, etc.
+_STEP_HEADING_RE = re.compile(
+    r"^(#{1,6})\s*((?:\$?P[_₁₂₃₄₅₆₇₈₉\d]\$?|P[₁₂₃₄₅₆₇₈₉])\s*[:.]?\s*.+)$",
+    re.MULTILINE,
+)
+
+# Matches SVG div blocks
+_SVG_DIV_RE = re.compile(
+    r'(<div[^>]*style="display:flex[^"]*"[^>]*>[\s\S]*?</div>)',
+    re.IGNORECASE,
+)
+
+# Matches width="N" and height="N" in SVG tags
+_SVG_SIZE_RE = re.compile(r'(<svg[^>]*?)width="(\d+)"([^>]*?)height="(\d+)"', re.IGNORECASE)
+
+
+def _post_process_markdown(md: str) -> str:
+    """Deterministic fixes applied AFTER Gemini generates markdown.
+
+    1. Demote construction step headings to paragraphs
+    2. Resize small SVGs to minimum width
+    3. Pair consecutive single-SVG divs side-by-side
+    """
+    # --- Fix 1: Demote construction step headings to paragraphs ---
+    md = _STEP_HEADING_RE.sub(r"\2", md)
+
+    # --- Fix 2: Resize small SVGs (minimum width=200) ---
+    def _resize_svg(m: re.Match) -> str:
+        prefix, w_str, mid, h_str = m.group(1), m.group(2), m.group(3), m.group(4)
+        w, h = int(w_str), int(h_str)
+        if w < 200:
+            scale = 230 / w
+            w = 230
+            h = int(h * scale)
+        return f'{prefix}width="{w}"{mid}height="{h}"'
+
+    md = _SVG_SIZE_RE.sub(_resize_svg, md)
+
+    # --- Fix 3: Pair consecutive single-SVG divs ---
+    # Find all SVG div blocks and their positions
+    svg_divs = list(_SVG_DIV_RE.finditer(md))
+    if len(svg_divs) >= 2:
+        # Work backwards to preserve positions
+        pairs_to_merge = []
+        i = 0
+        while i < len(svg_divs) - 1:
+            div1 = svg_divs[i]
+            div2 = svg_divs[i + 1]
+            # Check if they contain exactly 1 SVG each
+            svg_count_1 = len(re.findall(r"<svg", div1.group(0), re.I))
+            svg_count_2 = len(re.findall(r"<svg", div2.group(0), re.I))
+            # Check if they are close together (only whitespace/text between them, no other blocks)
+            between = md[div1.end():div2.start()].strip()
+            # Pair them if both have 1 SVG and only a construction step paragraph between them
+            is_step_between = bool(re.match(
+                r"^(?:\$?P[_₁₂₃₄₅₆₇₈₉\d]\$?\s*[:.]|P[₁₂₃₄₅₆₇₈₉]\s*[:.]).*$",
+                between, re.DOTALL
+            ))
+            if svg_count_1 == 1 and svg_count_2 == 1 and (not between or is_step_between):
+                pairs_to_merge.append((i, i + 1))
+                i += 2  # Skip the next one since we already paired it
+            else:
+                i += 1
+
+        # Merge pairs (backwards to preserve positions)
+        for idx1, idx2 in reversed(pairs_to_merge):
+            d1 = svg_divs[idx1]
+            d2 = svg_divs[idx2]
+            # Extract SVG elements from each div
+            svg1_match = re.search(r"<svg[\s\S]*?</svg>", d1.group(0), re.I)
+            svg2_match = re.search(r"<svg[\s\S]*?</svg>", d2.group(0), re.I)
+            if svg1_match and svg2_match:
+                merged = (
+                    '<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n'
+                    f"{svg1_match.group(0)}\n{svg2_match.group(0)}\n"
+                    "</div>"
+                )
+                # Replace from start of div1 to end of div2 (including text between)
+                md = md[:d1.start()] + merged + md[d2.end():]
+
+    return md
+
+
 # --- DOCX text extraction (structured) ---
 
 def extract_text_from_docx(data: bytes) -> str:
@@ -735,6 +820,8 @@ class handler(BaseHTTPRequestHandler):
                     _log_to_file(f"OK      | Traducere completa | Provider: {tr_provider} | Durata: {tr_dur:.1f}s")
 
                     final_markdown = restore_math(translated, placeholders)
+                # Post-process: deterministic fixes for heading/SVG issues
+                final_markdown = _post_process_markdown(final_markdown)
                 all_markdowns.append(final_markdown)
 
                 results.append({
