@@ -385,7 +385,7 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
         f"{glossary}"
     )
     payload = json.dumps({
-        "model": "llama-3.1-70b-versatile",
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text},
