@@ -79,14 +79,15 @@
 
 ## Faza 2: Refactorizare v2.0 (IN CURS)
 
-### Sprint 0: Pregatire structura
-- [ ] Creaza `Arhiva_Proiect_Vechi/` — muta MD-uri vechi (AUDIT_FULL, REZULTAT_AUDIT, etc.)
-- [ ] Creaza `api/lib/` folder cu `__init__.py`
-- [ ] Creaza `docs/` folder — muta GHID_FEEDBACK_LOOP.md, COMENZI_SLASH.md
-- [ ] Adauga in `.env`: DEEPL_API_KEY, DEEPL_API_KEY2
-- [ ] Actualizeaza `CLAUDE.md` — regulament v2 (pipeline, structura, reguli)
-- [ ] Creaza `config/tabs.json` — tab-uri initiale
-- [ ] Commit + push → Vercel deploy
+### Sprint 0: Pregatire structura (COMPLETAT)
+- [x] 2026-03-24 — Creaza `Arhiva_Proiect_Vechi/` — mutat AUDIT_FULL, PLAN_PROIECT, REZULTAT_AUDIT, STRUCTURA_MODULE
+- [x] 2026-03-24 — Creaza `api/lib/` folder cu `__init__.py`
+- [x] 2026-03-24 — Creaza `docs/` folder — mutat GHID_FEEDBACK_LOOP.md, COMENZI_SLASH.md, adaugat CHANGELOG.md
+- [x] 2026-03-24 — Adaugat in `.env`: DEEPL_API_KEY, DEEPL_API_KEY2
+- [x] 2026-03-24 — Actualizat `CLAUDE.md` — regulament v2 complet
+- [x] 2026-03-24 — Creat `config/tabs.json` — tab-uri initiale (traduceri, convertor, istoric)
+- [x] 2026-03-24 — Creat `PLAN_IMPLEMENTARE_v2.md` + `GHID_UTILIZARE_ROLAND.md`
+- [x] 2026-03-24 — Commit `bd609c9` + push → Vercel deploy
 
 ### Sprint 1: DeepL Integration + Language Toggle
 - [ ] Creaza `api/lib/deepl_client.py` — DeepL REST API (2 keys, auto-fallback, usage)

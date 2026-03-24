@@ -898,6 +898,9 @@ class handler(BaseHTTPRequestHandler):
                 except (json.JSONDecodeError, TypeError):
                     pass
 
+            # Translation engine selection (from frontend)
+            translate_engine = parts.get("translate_engine", "deepl")
+
             if not files:
                 self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
                 return
@@ -905,7 +908,7 @@ class handler(BaseHTTPRequestHandler):
             file_types = [f.get("mime_type", "?").split("/")[-1] for f in files]
             _log_to_file(
                 f"ACTION  | Traducere initiata | {len(files)} fisier(e) | "
-                f"{source_lang} -> {target_lang} | Tipuri: {', '.join(file_types)}"
+                f"{source_lang} -> {target_lang} | Engine: {translate_engine} | Tipuri: {', '.join(file_types)}"
             )
 
             all_markdowns = []
@@ -963,7 +966,7 @@ class handler(BaseHTTPRequestHandler):
                         final_markdown = restore_math(translated, placeholders)
 
                 else:
-                    # Image: Gemini OCR + Translate (free tier)
+                    # Image: OCR with Gemini/Mistral, then translate with selected engine
                     _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes")
                     t_ocr = time.time()
                     ocr_provider = "Gemini"
@@ -977,18 +980,37 @@ class handler(BaseHTTPRequestHandler):
                     ocr_dur = time.time() - t_ocr
                     _log_to_file(f"OK      | OCR complet | Provider: {ocr_provider} | Durata: {ocr_dur:.1f}s | Chars: {len(extracted)}")
 
-                    protected, placeholders = protect_math(extracted)
-                    _log_to_file(f"INFO    | Math protejat: {len(placeholders)} placeholders")
-
+                    # Translate with selected engine
                     t_tr = time.time()
-                    tr_provider = "Gemini"
-                    try:
-                        translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
-                    except Exception as e:
-                        print(f"[TRANSLATE] Gemini translation failed, trying Groq: {e}", file=sys.stderr)
-                        _log_to_file(f"WARN    | Traducere Gemini esuata: {e} | Fallback: Groq")
-                        tr_provider = "Groq"
-                        translated = translate_with_groq(protected, source_lang, target_lang, dict_terms)
+                    if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
+                        # DeepL: protect LaTeX with XML <keep> tags
+                        from api.lib.math_protect import protect_for_deepl, restore_from_deepl
+                        from api.lib.deepl_client import translate_text as deepl_translate
+                        tr_provider = "DeepL"
+                        protected = protect_for_deepl(extracted)
+                        try:
+                            translated = deepl_translate(protected, target_lang, source_lang)
+                            translated = restore_from_deepl(translated)
+                        except Exception as e:
+                            print(f"[DEEPL] Failed, falling back to Gemini: {e}", file=sys.stderr)
+                            _log_to_file(f"WARN    | DeepL esuat: {e} | Fallback: Gemini")
+                            tr_provider = "Gemini (fallback)"
+                            protected_ph, placeholders = protect_math(extracted)
+                            translated = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
+                            translated = restore_math(translated, placeholders)
+                    else:
+                        # Gemini: protect LaTeX with __MATH_N__ placeholders
+                        tr_provider = "Gemini"
+                        protected, placeholders = protect_math(extracted)
+                        _log_to_file(f"INFO    | Math protejat: {len(placeholders)} placeholders")
+                        try:
+                            translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
+                        except Exception as e:
+                            print(f"[TRANSLATE] Gemini failed, trying Groq: {e}", file=sys.stderr)
+                            _log_to_file(f"WARN    | Gemini esuat: {e} | Fallback: Groq")
+                            tr_provider = "Groq"
+                            translated = translate_with_groq(protected, source_lang, target_lang, dict_terms)
+                        translated = restore_math(translated, placeholders)
                     tr_dur = time.time() - t_tr
                     _log_to_file(f"OK      | Traducere completa | Provider: {tr_provider} | Durata: {tr_dur:.1f}s")
 
@@ -1056,7 +1078,7 @@ class handler(BaseHTTPRequestHandler):
                 continue
             name = name_match.group(1)
 
-            if name in ("source_lang", "target_lang", "dictionary"):
+            if name in ("source_lang", "target_lang", "dictionary", "translate_engine"):
                 parts_data[name] = content.decode("utf-8").strip()
             elif name == "files" or "filename" in header:
                 ct_match = re.search(r"Content-Type:\s*(\S+)", header)

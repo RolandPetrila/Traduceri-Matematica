@@ -9,6 +9,7 @@ import Dictionary from "@/components/traduceri/Dictionary";
 import { addToHistory } from "@/lib/storage";
 import { logError, logAction, logInfo } from "@/lib/monitoring";
 import { validateTranslationOutput } from "@/lib/validator";
+import EngineSelector, { type TranslateEngine } from "@/components/traduceri/EngineSelector";
 
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
@@ -28,6 +29,7 @@ export default function TraduceriPage() {
   const [stepLabel, setStepLabel] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [translateEngine, setTranslateEngine] = useState<TranslateEngine>("deepl");
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -72,6 +74,7 @@ export default function TraduceriPage() {
     files.forEach((f) => formData.append("files", f));
     formData.append("source_lang", sourceLang);
     formData.append("target_lang", targetLang);
+    formData.append("translate_engine", translateEngine);
 
     // Include dictionary terms if available
     const dictKey = `dict_${sourceLang}_${targetLang}`;
@@ -210,6 +213,9 @@ export default function TraduceriPage() {
           translatedHtml={result}
         />
       )}
+
+      {/* Engine selector */}
+      <EngineSelector engine={translateEngine} onEngineChange={setTranslateEngine} />
 
       {/* Dictionary panel */}
       <Dictionary sourceLang={sourceLang} targetLang={targetLang} />

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/monitoring/ErrorBoundary";
 import { MonitoringInit } from "@/components/monitoring/MonitoringInit";
+import { LanguageProvider } from "@/lib/language-context";
 
 export const metadata: Metadata = {
   title: "Sistem Traduceri",
@@ -72,9 +73,11 @@ export default function RootLayout({
 
         <MonitoringInit />
         <ErrorBoundary>
-          <div className="relative z-10">
-            {children}
-          </div>
+          <LanguageProvider>
+            <div className="relative z-10">
+              {children}
+            </div>
+          </LanguageProvider>
         </ErrorBoundary>
       </body>
     </html>
