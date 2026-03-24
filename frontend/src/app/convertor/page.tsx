@@ -10,9 +10,10 @@ const CONVERSION_MAP: Record<string, string[]> = {
   "pdf": ["docx", "html", "jpg", "png"],
   "docx": ["pdf", "html"],
   "jpg": ["pdf", "png"],
+  "jpeg": ["pdf", "png"],
   "png": ["pdf", "jpg"],
   "md": ["html", "pdf"],
-  "html": ["pdf", "md"],
+  "html": ["pdf", "md", "docx"],
 };
 
 const OPERATIONS = [

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { sanitizeHtml } from "@/lib/sanitize";
 import { logAction } from "@/lib/monitoring";
 
 interface PreviewPanelProps {
@@ -10,7 +9,6 @@ interface PreviewPanelProps {
 }
 
 async function downloadAsDocx(html: string, filename: string) {
-  // Send HTML to backend for real DOCX generation via python-docx
   const formData = new FormData();
   const htmlBlob = new Blob([html], { type: "text/html" });
   formData.append("files", htmlBlob, "traducere.html");
@@ -44,9 +42,19 @@ function openPrintView(html: string) {
   if (win) {
     win.document.write(html);
     win.document.close();
-    // Wait for MathJax to load then trigger print
     setTimeout(() => win.print(), 1500);
   }
+}
+
+/** Extract only the <main>...</main> body content from a full HTML document. */
+function extractBodyContent(html: string): string {
+  // Try to extract <main> content first
+  const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+  if (mainMatch) return mainMatch[1];
+  // Fallback: extract <body> content
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) return bodyMatch[1];
+  return html;
 }
 
 export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewPanelProps) {
@@ -121,12 +129,15 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
           )}
         </div>
 
-        {/* Translated */}
-        <div className="bg-white rounded-lg p-4 text-gray-900">
-          <h4 className="text-sm text-gray-500 mb-2">Traducere</h4>
-          <div
-            className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentHtml) }}
+        {/* Translated — iframe for full HTML isolation */}
+        <div className="bg-white rounded-lg overflow-hidden">
+          <h4 className="text-sm text-gray-500 p-4 pb-0 mb-0">Traducere</h4>
+          <iframe
+            srcDoc={currentHtml}
+            title="Traducere preview"
+            className="w-full border-0"
+            style={{ height: "600px" }}
+            sandbox="allow-scripts allow-same-origin"
           />
         </div>
       </div>
@@ -145,9 +156,11 @@ export default function PreviewPanel({ originalFiles, translatedHtml }: PreviewP
           </div>
           <div>
             <h4 className="text-sm opacity-60 mb-2">Preview live</h4>
-            <div
-              className="w-full h-96 overflow-auto bg-white rounded-lg p-3 text-gray-900 prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(editedHtml) }}
+            <iframe
+              srcDoc={editedHtml}
+              title="Editor preview"
+              className="w-full h-96 bg-white rounded-lg border-0"
+              sandbox="allow-scripts allow-same-origin"
             />
           </div>
         </div>
