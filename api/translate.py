@@ -926,7 +926,9 @@ class handler(BaseHTTPRequestHandler):
                 )
 
                 # --- Choose provider: Claude (best quality) or Gemini (free) ---
-                has_claude = bool(os.environ.get("CLAUDE_API_KEY", "").strip())
+                # Claude suspended — use Gemini (free) for all testing
+                # To re-enable: has_claude = bool(os.environ.get("CLAUDE_API_KEY", "").strip())
+                has_claude = False
 
                 if is_docx:
                     _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: DOCX | {len(file_data)} bytes")
