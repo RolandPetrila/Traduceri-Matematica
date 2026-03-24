@@ -163,8 +163,9 @@ export default function TraduceriPage() {
       {/* File upload */}
       <FileUpload files={files} onFilesChange={setFiles} />
 
-      {/* Translate button */}
-      <div className="text-center">
+      {/* Engine selector + Translate button */}
+      <div className="flex flex-col items-center gap-3">
+        <EngineSelector engine={translateEngine} onEngineChange={setTranslateEngine} />
         <button
           onClick={handleTranslate}
           disabled={files.length === 0 || isProcessing}
@@ -214,9 +215,6 @@ export default function TraduceriPage() {
           engineName={translateEngine}
         />
       )}
-
-      {/* Engine selector */}
-      <EngineSelector engine={translateEngine} onEngineChange={setTranslateEngine} />
 
       {/* Dictionary panel */}
       <Dictionary sourceLang={sourceLang} targetLang={targetLang} />

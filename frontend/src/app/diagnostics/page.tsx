@@ -55,9 +55,14 @@ export default function DiagnosticsPage() {
   return (
     <div className="min-h-screen chalkboard-bg p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-chalk-yellow mb-2">
-          Diagnosticare Sistem
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-chalk-yellow">
+            Diagnosticare Sistem
+          </h1>
+          <a href="/" className="chalk-btn text-sm">
+            Inapoi la aplicatie
+          </a>
+        </div>
         <p className="text-chalk-white/60 mb-4 text-sm">
           Loguri complete: traduceri, conversii, erori, actiuni utilizator — pe acest dispozitiv
         </p>
@@ -183,11 +188,6 @@ export default function DiagnosticsPage() {
               </div>
             )}
 
-            <div className="mt-6 text-center">
-              <a href="/" className="text-chalk-yellow hover:underline text-sm">
-                Inapoi la aplicatie
-              </a>
-            </div>
           </>
         )}
       </div>
