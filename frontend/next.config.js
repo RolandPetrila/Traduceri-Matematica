@@ -9,7 +9,6 @@ const nextConfig = {
           { key: 'Content-Type', value: 'application/manifest+json' },
         ],
       },
-      // Prevent aggressive caching on HTML pages and API
       {
         source: '/(.*)',
         headers: [
@@ -25,15 +24,17 @@ const nextConfig = {
       },
     ];
   },
-  // In dev mode, proxy Python API routes to local dev_server.py (port 8000)
-  // On Vercel, VERCEL env var is set — skip rewrites (vercel.json handles routing)
+  // Proxy Python API routes to backend service
+  // On Vercel: vercel.json handles Python functions
+  // On Render/local: proxy to Python backend URL
   async rewrites() {
     if (process.env.VERCEL) return [];
+    const apiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000';
     return {
       fallback: [
-        { source: '/api/translate', destination: 'http://localhost:8000/api/translate' },
-        { source: '/api/convert', destination: 'http://localhost:8000/api/convert' },
-        { source: '/api/health', destination: 'http://localhost:8000/api/health' },
+        { source: '/api/translate', destination: `${apiUrl}/api/translate` },
+        { source: '/api/convert', destination: `${apiUrl}/api/convert` },
+        { source: '/api/health', destination: `${apiUrl}/api/health` },
       ],
     };
   },

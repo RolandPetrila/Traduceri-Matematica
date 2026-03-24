@@ -94,7 +94,8 @@ class DevRouter(BaseHTTPRequestHandler):
 
 def main():
     port = int(os.environ.get("DEV_API_PORT", "8000"))
-    server = HTTPServer(("127.0.0.1", port), DevRouter)
+    host = os.environ.get("DEV_API_HOST", "0.0.0.0")
+    server = HTTPServer((host, port), DevRouter)
     print(f"[DEV] Python API server: http://localhost:{port}", file=sys.stderr, flush=True)
     print("[DEV] Routes: /api/health, /api/translate, /api/convert", file=sys.stderr, flush=True)
 

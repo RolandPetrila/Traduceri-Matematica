@@ -1,0 +1,33 @@
+services:
+  # Frontend — Next.js
+  - type: web
+    name: traduceri-matematica
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PYTHON_API_URL
+        fromService:
+          type: web
+          name: traduceri-api
+          property: hostport
+          envVarKey: RENDER_INTERNAL_URL
+    plan: free
+    region: frankfurt
+
+  # Backend — Python API
+  - type: web
+    name: traduceri-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python dev_server.py
+    envVars:
+      - key: DEV_API_PORT
+        value: "10000"
+      - key: PYTHONUTF8
+        value: "1"
+    plan: free
+    region: frankfurt
