@@ -1,5 +1,12 @@
 from http.server import BaseHTTPRequestHandler
 import json
+import os
+
+BUILD_VERSION = (
+    os.environ.get("NEXT_PUBLIC_BUILD_VERSION")
+    or os.environ.get("VERCEL_GIT_COMMIT_SHA", "")[:7]
+    or "dev"
+)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -9,5 +16,10 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(
-            json.dumps({"status": "ok", "service": "Sistem Traduceri API", "runtime": "vercel-python"}).encode()
+            json.dumps({
+                "status": "ok",
+                "service": "Sistem Traduceri API",
+                "runtime": "vercel-python",
+                "build_version": BUILD_VERSION,
+            }).encode()
         )

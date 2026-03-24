@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import LanguageToggle from "./LanguageToggle";
+import VersionBadge from "./VersionBadge";
 
 export default function Header() {
   return (
@@ -36,6 +37,8 @@ export default function Header() {
         >
           &#x2699; Diagnosticare
         </Link>
+        <span>&middot;</span>
+        <VersionBadge />
       </div>
     </header>
   );
