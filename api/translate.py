@@ -1070,7 +1070,9 @@ class handler(BaseHTTPRequestHandler):
                 f"{source_lang} -> {target_lang} | Engine: {translate_engine} | Tipuri: {', '.join(file_types)}"
             )
 
-            all_markdowns = []
+            all_markdowns = []          # Legacy pipeline
+            all_structured_pages = []   # New structured pipeline
+            all_structured_figs = []    # Cropped figures per page
             results = []
             import time
             t0 = time.time()
@@ -1125,77 +1127,107 @@ class handler(BaseHTTPRequestHandler):
                         final_markdown = restore_math(translated, placeholders)
 
                 else:
-                    # Image: OCR with Gemini/Mistral, then translate with selected engine
-                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes")
+                    # === Image: NEW structured pipeline ===
+                    # Step 1: Structured OCR (JSON with text + figure bboxes)
+                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes | Pipeline: structured")
                     t_ocr = time.time()
-                    ocr_provider = "Gemini"
+                    use_structured = True
                     try:
-                        extracted = ocr_with_gemini(file_data, mime_type, source_lang)
+                        from api.lib.ocr_structured import ocr_structured
+                        page_data = ocr_structured(file_data, mime_type, source_lang)
                     except Exception as ocr_err:
-                        print(f"[OCR] Gemini OCR failed, trying Mistral: {ocr_err}", file=sys.stderr)
-                        _log_to_file(f"WARN    | OCR Gemini esuat: {ocr_err} | Fallback: Mistral")
-                        ocr_provider = "Mistral"
-                        extracted = ocr_with_mistral(file_data, mime_type, source_lang)
-                    ocr_dur = time.time() - t_ocr
-                    _log_to_file(f"OK      | OCR complet | Provider: {ocr_provider} | Durata: {ocr_dur:.1f}s | Chars: {len(extracted)}")
+                        print(f"[OCR-STRUCT] Failed, falling back to legacy: {ocr_err}", file=sys.stderr)
+                        _log_to_file(f"WARN    | OCR structurat esuat: {ocr_err} | Fallback: legacy")
+                        use_structured = False
 
-                    # Translate with selected engine
-                    t_tr = time.time()
-                    if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
-                        # DeepL: protect LaTeX with XML <keep> tags
-                        from api.lib.math_protect import protect_for_deepl, restore_from_deepl
-                        from api.lib.deepl_client import translate_text as deepl_translate
-                        tr_provider = "DeepL"
-                        protected = protect_for_deepl(extracted)
-                        try:
-                            translated = deepl_translate(protected, target_lang, source_lang)
-                            translated = restore_from_deepl(translated)
-                        except Exception as e:
-                            print(f"[DEEPL] Failed, falling back to Gemini: {e}", file=sys.stderr)
-                            _log_to_file(f"WARN    | DeepL esuat: {e} | Fallback: Gemini")
-                            tr_provider = "Gemini (fallback)"
-                            protected_ph, placeholders = protect_math(extracted)
-                            translated = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
-                            translated = restore_math(translated, placeholders)
+                    if use_structured:
+                        ocr_dur = time.time() - t_ocr
+                        sections = page_data.get("sections", [])
+                        fig_count = sum(1 for s in sections if s.get("type") == "figure")
+                        _log_to_file(f"OK      | OCR structurat | {len(sections)} sections | {fig_count} figuri | {ocr_dur:.1f}s")
+
+                        # Step 2: Crop figures from original image
+                        from api.lib.figure_crop import crop_all_figures
+                        cropped_figs = crop_all_figures(file_data, sections)
+                        _log_to_file(f"INFO    | Crop figuri: {len(cropped_figs)} figuri decupate")
+
+                        # Step 3: Translate text sections
+                        t_tr = time.time()
+                        for sec in sections:
+                            if sec.get("type") in ("paragraph", "heading", "step", "observation", "list"):
+                                content = sec.get("content", "")
+                                if not content.strip():
+                                    continue
+                                if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
+                                    from api.lib.math_protect import protect_for_deepl, restore_from_deepl
+                                    from api.lib.deepl_client import translate_text as deepl_translate
+                                    try:
+                                        protected = protect_for_deepl(content)
+                                        translated = deepl_translate(protected, target_lang, source_lang)
+                                        sec["content"] = restore_from_deepl(translated)
+                                    except Exception:
+                                        # DeepL failed, keep original for now
+                                        pass
+                                else:
+                                    # Gemini translate
+                                    try:
+                                        protected_ph, placeholders = protect_math(content)
+                                        translated = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
+                                        sec["content"] = restore_math(translated, placeholders)
+                                    except Exception:
+                                        pass
+                        # Also translate title
+                        title = page_data.get("title", "")
+                        if title:
+                            try:
+                                if translate_engine == "deepl" and os.environ.get("DEEPL_API_KEY", "").strip():
+                                    from api.lib.deepl_client import translate_text as deepl_translate
+                                    page_data["title"] = deepl_translate(title, target_lang, source_lang)
+                                else:
+                                    page_data["title"] = translate_with_gemini(title, source_lang, target_lang, dict_terms)
+                            except Exception:
+                                pass
+                        tr_dur = time.time() - t_tr
+                        _log_to_file(f"OK      | Traducere | Engine: {translate_engine} | Durata: {tr_dur:.1f}s")
+
+                        all_structured_pages.append(page_data)
+                        all_structured_figs.append(cropped_figs)
+
+                        results.append({
+                            "source_lang": source_lang,
+                            "target_lang": target_lang,
+                            "status": "success",
+                            "pipeline": "structured",
+                        })
                     else:
-                        # Gemini: protect LaTeX with __MATH_N__ placeholders
-                        tr_provider = "Gemini"
+                        # Legacy fallback: Gemini OCR + translate
+                        extracted = ocr_with_gemini(file_data, mime_type, source_lang)
+                        ocr_dur = time.time() - t_ocr
+                        _log_to_file(f"OK      | OCR legacy | Durata: {ocr_dur:.1f}s | Chars: {len(extracted)}")
                         protected, placeholders = protect_math(extracted)
-                        _log_to_file(f"INFO    | Math protejat: {len(placeholders)} placeholders")
-                        try:
-                            translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
-                        except Exception as e:
-                            print(f"[TRANSLATE] Gemini failed, trying Groq: {e}", file=sys.stderr)
-                            _log_to_file(f"WARN    | Gemini esuat: {e} | Fallback: Groq")
-                            tr_provider = "Groq"
-                            translated = translate_with_groq(protected, source_lang, target_lang, dict_terms)
-                        translated = restore_math(translated, placeholders)
-                    tr_dur = time.time() - t_tr
-                    _log_to_file(f"OK      | Traducere completa | Provider: {tr_provider} | Durata: {tr_dur:.1f}s")
+                        translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
+                        final_markdown = restore_math(translated, placeholders)
+                        final_markdown = _post_process_markdown(final_markdown)
+                        all_markdowns.append(final_markdown)
+                        results.append({
+                            "source_lang": source_lang,
+                            "target_lang": target_lang,
+                            "status": "success",
+                            "pipeline": "legacy",
+                        })
 
-                    final_markdown = restore_math(translated, placeholders)
-                # Post-process: deterministic fixes for heading/SVG issues
-                final_markdown = _post_process_markdown(final_markdown)
-                all_markdowns.append(final_markdown)
-
-                results.append({
-                    "markdown": final_markdown,
-                    "source_lang": source_lang,
-                    "target_lang": target_lang,
-                    "status": "success",
-                })
-
-            # Build ONE unified HTML document with all pages
-            unified_html = build_html(all_markdowns, target_lang)
+            # Build HTML — structured (new) or markdown (legacy)
             duration_ms = int((time.time() - t0) * 1000)
+            if all_structured_pages:
+                unified_html = build_html_structured(all_structured_pages, all_structured_figs, target_lang)
+                _log_to_file(f"OK      | HTML built (structured) | {len(all_structured_pages)} pagini | {duration_ms}ms")
+            elif all_markdowns:
+                unified_html = build_html(all_markdowns, target_lang)
+                _log_to_file(f"OK      | HTML built (legacy) | {len(all_markdowns)} pagini | {duration_ms}ms")
+            else:
+                unified_html = ""
+                _log_to_file("ERROR   | No pages processed")
 
-            # Log output statistics per page
-            for i, md in enumerate(all_markdowns):
-                stats = _count_output_stats(md)
-                _log_to_file(
-                    f"INFO    | Pagina {i+1} output: LaTeX={stats['latex']} | "
-                    f"SVG={stats['svg']} | Headings={stats['headings']} | Chars={stats['chars']}"
-                )
             _log_to_file(f"OK      | SUCCES TOTAL | {len(results)} pagini | Durata: {duration_ms}ms")
             _log_to_file("")
 
