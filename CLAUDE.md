@@ -6,10 +6,12 @@ Aplicatie web (PWA) pentru traducerea documentelor de matematica din romana in s
 Pipeline v2: Input (JPEG/PDF/DOCX) → OCR structurat (Gemini) → Crop figuri (Pillow) → Traducere (DeepL/Gemini) → HTML A4 printabil.
 
 ## Status
-- **Faza curenta**: REFACTORIZARE v2.0 — Sprint 0 (pregatire structura)
+- **Faza curenta**: REFACTORIZARE v2.0 — Sprint 2.5 (migrare Render)
 - **Progres**: Vezi `PLAN_IMPLEMENTARE_v2.md` pentru tracking complet
-- **Deploy**: LIVE pe https://traduceri-matematica.vercel.app
-- **Ultima sesiune**: 2026-03-24
+- **Deploy**: LIVE pe Render (migrare de la Vercel)
+  - Frontend: https://traduceri-matematica-7sh7.onrender.com
+  - API: https://traduceri-api.onrender.com
+- **Ultima sesiune**: 2026-03-25
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 1. Citeste `PLAN_IMPLEMENTARE_v2.md` — sursa UNICA de adevar pt progres
@@ -25,7 +27,7 @@ Pipeline v2: Input (JPEG/PDF/DOCX) → OCR structurat (Gemini) → Crop figuri (
 - AI Fallback: Groq Llama 3.3 (traducere), Mistral Pixtral (OCR)
 - AI Premium: Claude Sonnet/Opus (suspendat — activare la cerere)
 - Figure: Crop din original cu Pillow (nu SVG generat)
-- Deploy: Vercel (auto-deploy din GitHub)
+- Deploy: Render (auto-deploy din GitHub, free tier, Frankfurt)
 - Monitoring: Feedback loop complet (10 componente)
 
 ## Key Files

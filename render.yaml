@@ -1,20 +1,16 @@
 services:
-  # Frontend — Next.js
+  # Frontend — Next.js (URL: https://traduceri-matematica-7sh7.onrender.com)
   - type: web
-    name: traduceri-matematica
+    name: traduceri-matematica-7sh7
     runtime: node
     rootDir: frontend
     buildCommand: npm install && npm run build
-    startCommand: npm start
+    startCommand: npx next start -p $PORT
     envVars:
       - key: NODE_ENV
         value: production
       - key: PYTHON_API_URL
-        fromService:
-          type: web
-          name: traduceri-api
-          property: hostport
-          envVarKey: RENDER_INTERNAL_URL
+        value: https://traduceri-api.onrender.com
     plan: free
     region: frankfurt
 
@@ -25,9 +21,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python dev_server.py
     envVars:
-      - key: DEV_API_PORT
-        value: "10000"
       - key: PYTHONUTF8
         value: "1"
+      # API keys — set manually in Render Dashboard (Environment tab)
+      # GOOGLE_AI_API_KEY, DEEPL_API_KEY, DEEPL_API_KEY2
+      # GROQ_API_KEY, MISTRAL_API_KEY
     plan: free
     region: frankfurt

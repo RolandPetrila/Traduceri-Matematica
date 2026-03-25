@@ -110,17 +110,21 @@
 - [ ] Test: upload JPEG → figuri crop pe fundal alb → HTML
 - [x] 2026-03-24 — Commit `18aa9ed` + push → Vercel deploy
 
-### Sprint 2.5: Migrare Vercel → Render (PLANIFICAT)
-- [ ] Creare cont Render.com + conectare GitHub repo
-- [ ] Configurare Render Web Service (Next.js + Python)
-- [ ] Transfer variabile mediu (.env → Render Dashboard)
-- [ ] Configurare build command + start command
+### Sprint 2.5: Migrare Vercel → Render (IN CURS)
+- [x] 2026-03-25 — Creare cont Render.com + conectare GitHub repo
+- [x] 2026-03-25 — Configurare Render Web Service backend Python (traduceri-api)
+- [x] 2026-03-25 — Transfer variabile mediu (.env → Render Dashboard) — 8 env vars
+- [x] 2026-03-25 — Configurare Render Web Service frontend Node (traduceri-matematica-7sh7)
+- [x] 2026-03-25 — Configurare build command + start command (npx next start -p $PORT)
+- [x] 2026-03-25 — render.yaml blueprint (2 servicii, frankfurt, free tier)
+- [x] 2026-03-25 — dev_server.py — suport PORT env var (Render)
+- [x] 2026-03-25 — next.config.js — proxy rewrites PYTHON_API_URL
 - [ ] Test traducere 1 pagina pe Render
 - [ ] Test traducere 20 pagini pe Render (verificare timeout OK)
-- [ ] Transfer domeniu custom (optional) sau folosire render URL
+- [x] 2026-03-25 — Folosire render URL-uri (fara domeniu custom)
 - [ ] Dezactivare Vercel deploy (dupa confirmare Render OK)
-- [ ] Actualizare DEV_LOCAL.bat + dev_server.py daca necesar
-- [ ] Commit + push → Render deploy
+- [ ] Commit final + push → Render deploy
+- **URLs**: Frontend: https://traduceri-matematica-7sh7.onrender.com | API: https://traduceri-api.onrender.com
 
 ### Sprint 3: Preview + Editare Inline + Tab-uri Dinamice
 - [ ] Creaza `frontend/src/lib/tab-config.ts` — tab-uri din config/tabs.json
