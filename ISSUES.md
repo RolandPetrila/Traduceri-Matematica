@@ -50,72 +50,47 @@ Serverul local Next.js (`npm run dev`) e util doar pentru UI/layout, NU pentru t
 ---
 
 ## Loguri export — 24.03.2026, 02:01 (referinta originala)
-=== LOGURI EXPORT | 24.03.2026, 02:01:23 | desktop/Windows/Chrome | 29 intrari ===
+=== LOGURI EXPORT | 25.03.2026, 02:21:02 | desktop/Windows/Chrome | 21 intrari ===
 
-[02:00:20] ERROR  | Eroare conversie: 404 — The page could not be found.
-
-NOT_FOUND
- | desktop/Windows/Chrome | /
-                   | Context: {"operation":"convert","targetFormat":"html","fileCount":1}
-[02:00:20] WARN   | API | POST /api/convert | 404 | 157ms | FAIL | desktop/Windows/Chrome | /
+[02:20:33] WARN   | API | GET /api/health | 502 | 118ms | FAIL | desktop/Windows/Chrome | /
                    | Context: {"source":"api-interceptor"}
-[02:00:20] WARN   | API | POST /api/convert | 404 | 154ms | FAIL | desktop/Windows/Chrome | /
+[02:20:33] WARN   | API | GET /api/health | 500 | 30100ms | FAIL | desktop/Windows/Chrome | /
                    | Context: {"source":"api-interceptor"}
-[02:00:20] ACTION | Conversie pornita | desktop/Windows/Chrome | /
-                   | Context: {"operation":"convert","targetFormat":"html","fileCount":1,"fileNames":["pagina 1-10 initiala.pdf"],"fileSizes":[1038627]}
-[02:00:19] ACTION | Convertor: format selectat | desktop/Windows/Chrome | /
-                   | Context: {"format":"html"}
-[02:00:01] ACTION | Navigare: Convertor Fisiere | desktop/Windows/Chrome | /
-                   | Context: {"tab":"convertor"}
-[02:00:00] ERROR  | Server error 404: The page could not be found.
-
-NOT_FOUND
- | desktop/Windows/Chrome | /
+[02:20:23] ERROR  | Server error 500: Internal Server Error | desktop/Windows/Chrome | /
                    | Context: {"sourceLang":"ro","targetLang":"sk","fileCount":1}
-[02:00:00] WARN   | API | POST /api/translate | 404 | 136ms | FAIL | desktop/Windows/Chrome | /
+[02:20:23] WARN   | API | POST /api/translate | 500 | 30242ms | FAIL | desktop/Windows/Chrome | /
                    | Context: {"source":"api-interceptor"}
-[02:00:00] WARN   | API | POST /api/translate | 404 | 133ms | FAIL | desktop/Windows/Chrome | /
-                   | Context: {"source":"api-interceptor"}
-[02:00:00] ACTION | Traducere pornita | desktop/Windows/Chrome | /
+[02:19:53] ACTION | Traducere pornita | desktop/Windows/Chrome | /
                    | Context: {"fileCount":1,"fileNames":["test_page_1.jpeg"],"fileSizes":[256679],"sourceLang":"ro","targetLang":"sk"}
-[01:59:59] ACTION | Fisiere selectate (drag&drop) | desktop/Windows/Chrome | /
-                   | Context: {"count":1,"names":["test_page_1.jpeg"],"sizes":["251KB"],"types":["image/jpeg"]}
-[01:59:56] INFO   | App loaded | desktop/Windows/Chrome | /
-                   | Context: {"url":"http://localhost:3000/","referrer":"http://localhost:3000/diagnostics"}
-[01:59:56] INFO   | App loaded | desktop/Windows/Chrome | /
-                   | Context: {"url":"http://localhost:3000/","referrer":"http://localhost:3000/diagnostics"}
-[01:59:41] ACTION | Navigare: Istoric | desktop/Windows/Chrome | /
-                   | Context: {"tab":"istoric"}
-[01:59:23] ERROR  | Server error 404: The page could not be found.
-
-NOT_FOUND
- | desktop/Windows/Chrome | /
+[02:19:52] ACTION | Engine traducere schimbat | desktop/Windows/Chrome | /
+                   | Context: {"from":"deepl","to":"gemini"}
+[02:19:33] INFO   | API | GET /api/health | 200 | 157ms | OK | desktop/Windows/Chrome | /
+                   | Context: {"source":"api-interceptor"}
+[02:19:03] INFO   | API | GET /api/health | 200 | 142ms | OK | desktop/Windows/Chrome | /
+                   | Context: {"source":"api-interceptor"}
+[02:19:01] INFO   | API | GET /api/health | 200 | 28927ms | OK | desktop/Windows/Chrome | /
+                   | Context: {"source":"api-interceptor"}
+[02:18:47] ERROR  | Server error 500: Internal Server Error | desktop/Windows/Chrome | /
                    | Context: {"sourceLang":"ro","targetLang":"sk","fileCount":1}
-[01:59:23] WARN   | API | POST /api/translate | 404 | 224ms | FAIL | desktop/Windows/Chrome | /
+[02:18:47] WARN   | API | POST /api/translate | 500 | 30275ms | FAIL | desktop/Windows/Chrome | /
                    | Context: {"source":"api-interceptor"}
-[01:59:23] WARN   | API | POST /api/translate | 404 | 221ms | FAIL | desktop/Windows/Chrome | /
+[02:18:17] ACTION | Traducere pornita | desktop/Windows/Chrome | /
+                   | Context: {"fileCount":1,"fileNames":["test_page_1.jpeg"],"fileSizes":[256679],"sourceLang":"ro","targetLang":"sk"}
+[02:18:16] ACTION | Engine traducere schimbat | desktop/Windows/Chrome | /
+                   | Context: {"from":"gemini","to":"deepl"}
+[02:18:15] ACTION | Engine traducere schimbat | desktop/Windows/Chrome | /
+                   | Context: {"from":"deepl","to":"gemini"}
+[02:18:13] ACTION | Fisiere selectate (drag&drop) | desktop/Windows/Chrome | /
+                   | Context: {"count":1,"names":["test_page_1.jpeg"],"sizes":["251KB"],"types":["image/jpeg"]}
+[02:18:06] ACTION | Engine traducere schimbat | desktop/Windows/Chrome | /
+                   | Context: {"from":"gemini","to":"deepl"}
+[02:18:06] ACTION | Engine traducere schimbat | desktop/Windows/Chrome | /
+                   | Context: {"from":"deepl","to":"gemini"}
+[02:18:02] INFO   | API | GET /api/health | 200 | 199ms | OK | desktop/Windows/Chrome | /
                    | Context: {"source":"api-interceptor"}
-[01:59:23] ACTION | Traducere pornita | desktop/Windows/Chrome | /
-                   | Context: {"fileCount":1,"fileNames":["2.Unghiuri. Bisectoare.docx"],"fileSizes":[57471],"sourceLang":"ro","targetLang":"sk"}
-[01:59:21] ACTION | Fisiere selectate (drag&drop) | desktop/Windows/Chrome | /
-                   | Context: {"count":1,"names":["2.Unghiuri. Bisectoare.docx"],"sizes":["56KB"],"types":["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]}
-[01:59:15] ACTION | Navigare: Traduceri | desktop/Windows/Chrome | /
-                   | Context: {"tab":"traduceri"}
-[01:59:15] ACTION | Navigare: Convertor Fisiere | desktop/Windows/Chrome | /
-                   | Context: {"tab":"convertor"}
-[01:59:14] ACTION | Navigare: Traduceri | desktop/Windows/Chrome | /
-                   | Context: {"tab":"traduceri"}
-[01:59:14] ACTION | Navigare: Convertor Fisiere | desktop/Windows/Chrome | /
-                   | Context: {"tab":"convertor"}
-[01:59:09] INFO   | App loaded | desktop/Windows/Chrome | /
-                   | Context: {"url":"http://localhost:3000/","referrer":"http://localhost:3000/"}
-[01:59:09] INFO   | App loaded | desktop/Windows/Chrome | /
-                   | Context: {"url":"http://localhost:3000/","referrer":"http://localhost:3000/"}
-[01:58:58] ERROR  | Failed to fetch RSC payload for http://localhost:3000/. Falling back to browser navigation. TypeError: Failed to fetch | desktop/Windows/Chrome | /
-[01:58:58] ERROR  | Failed to fetch RSC payload for http://localhost:3000/. Falling back to browser navigation. TypeError: Failed to fetch | desktop/Windows/Chrome | /
-[01:58:14] INFO   | App loaded | desktop/Windows/Chrome | /
-                   | Context: {"url":"http://localhost:3000/","referrer":"direct"}
-[01:58:14] INFO   | App loaded | desktop/Windows/Chrome | /
-                   | Context: {"url":"http://localhost:3000/","referrer":"direct"}
----
-
+[02:18:02] INFO   | App loaded | desktop/Windows/Chrome | /
+                   | Context: {"url":"https://traduceri-matematica-7sh7.onrender.com/","referrer":"https://traduceri-matematica-7sh7.onrender.com/"}
+[02:17:59] INFO   | API | GET /api/health | 200 | 119ms | OK | desktop/Windows/Chrome | /
+                   | Context: {"source":"api-interceptor"}
+[02:17:59] INFO   | App loaded | desktop/Windows/Chrome | /
+                   | Context: {"url":"https://traduceri-matematica-7sh7.onrender.com/","referrer":"direct"}

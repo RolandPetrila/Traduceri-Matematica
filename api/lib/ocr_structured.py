@@ -1,7 +1,7 @@
 """Structured OCR using Gemini 2.5 Flash JSON mode.
 
-Extracts text + figure bounding boxes from images/PDFs.
-Returns structured JSON instead of raw markdown.
+Extracts text + generates SVG figures from math textbook images.
+Returns structured JSON with text sections and inline SVG.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
     """Extract structured content from an image using Gemini JSON mode.
 
     Returns dict with "title" and "sections" list.
-    Each section has "type" (heading/paragraph/step/observation/list/figure),
-    "content" (text), and optionally "bbox" (for figures).
+    Section types: heading, paragraph, step, observation, list, figure.
+    Figure sections have "svg" field with inline SVG markup.
     """
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
@@ -31,20 +31,39 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
 
     print(f"[OCR-STRUCT] Processing: {len(image_bytes)} bytes, {mime_type}, {source_lang}", file=sys.stderr)
 
-    # Short, focused prompt — Gemini JSON mode works better with concise instructions
     prompt = (
-        f"Analyze this {src} math textbook page. Return JSON with structure:\n"
-        '{{"title":"...","sections":[{{"type":"heading|paragraph|step|observation|list|figure",'
-        '"content":"text here","level":1,"bbox":{{"x":0.1,"y":0.2,"w":0.3,"h":0.2}}}}]}}\n'
-        "Rules: math as LaTeX, steps P1-P4 as type step, figures with bbox (fractions 0-1)."
+        f"Analyze this {src} math textbook page. Return JSON with this structure:\n"
+        '{{"title":"page title","sections":['
+        '{{"type":"heading","content":"text","level":1}},'
+        '{{"type":"paragraph","content":"text with $LaTeX$ formulas"}},'
+        '{{"type":"step","content":"$P_1$: construction step text"}},'
+        '{{"type":"figure","svg":"<svg>...</svg>","caption":"optional caption"}},'
+        '{{"type":"observation","content":"observation text"}}'
+        ']}}\n\n'
+        "CRITICAL RULES:\n"
+        "1. ALL math notation as LaTeX: $\\triangle ABC$, $\\angle A$, $AB = 4 \\text{{ cm}}$\n"
+        "2. Steps labeled P1, P2 etc as type 'step'\n"
+        "3. For EVERY geometric figure/diagram in the image, generate an INLINE SVG that reproduces it:\n"
+        "   - Use <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 135' width='255' height='172' "
+        "style='font-family:Cambria,serif'>\n"
+        "   - Draw lines, circles, arcs, polygons with proper coordinates\n"
+        "   - Label vertices (A, B, C...) with <text> elements in italic\n"
+        "   - Show angles with <path> arcs, label with degrees\n"
+        "   - Show measurements (4 cm, 5 cm) as <text> near the sides\n"
+        "   - Use colors: #333 for lines, #c44 for angles, #888 for labels, #e8f0fe for fills\n"
+        "   - If multiple construction steps shown side by side, create separate SVGs\n"
+        "   - Put step label (P1, P2...) as bold text at top center of each SVG\n"
+        "4. Group related SVGs: if figure shows P1 and P2 side by side, return TWO svg strings "
+        "in a single figure section as array: {\"type\":\"figure\",\"svg\":[\"<svg>P1</svg>\",\"<svg>P2</svg>\"]}\n"
+        "5. Preserve the EXACT text content — do not summarize or skip any text\n"
+        "6. Bold terms: wrap in **bold** markers\n"
+        "7. Return valid JSON only, no explanation"
     )
 
-    contents = [{
-        "parts": [
-            {"text": prompt},
-            {"inline_data": {"mime_type": mime_type, "data": image_b64}},
-        ]
-    }]
+    contents = [{"parts": [
+        {"text": prompt},
+        {"inline_data": {"mime_type": mime_type, "data": image_b64}},
+    ]}]
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
 
@@ -58,34 +77,31 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
 
     try:
-        with urllib.request.urlopen(req, timeout=55) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
             data = json.loads(resp.read().decode("utf-8"))
 
         raw = data["candidates"][0]["content"]["parts"][0]["text"]
 
-        # Parse JSON — Gemini with responseMimeType should return valid JSON
-        # but sometimes LaTeX backslashes cause issues
         try:
             result = json.loads(raw)
         except json.JSONDecodeError:
-            # Fix unescaped LaTeX backslashes: \angle → \\angle etc.
             fixed = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu\\])', r'\\\\', raw)
             try:
                 result = json.loads(fixed)
             except json.JSONDecodeError as e2:
                 print(f"[OCR-STRUCT] JSON parse failed even after fix: {e2}", file=sys.stderr)
-                print(f"[OCR-STRUCT] Raw (first 300): {raw[:300]}", file=sys.stderr)
+                print(f"[OCR-STRUCT] Raw (first 500): {raw[:500]}", file=sys.stderr)
                 return {"title": "", "sections": [{"type": "paragraph", "content": raw}]}
 
-        # Ensure structure
         if not isinstance(result, dict):
             result = {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
         if "sections" not in result:
             result["sections"] = []
 
         figure_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure")
+        svg_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure" and s.get("svg"))
         total = len(result.get("sections", []))
-        print(f"[OCR-STRUCT] OK: {total} sections, {figure_count} figures", file=sys.stderr)
+        print(f"[OCR-STRUCT] OK: {total} sections, {figure_count} figures ({svg_count} with SVG)", file=sys.stderr)
         return result
 
     except urllib.error.HTTPError as e:

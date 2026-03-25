@@ -526,7 +526,7 @@ def parse_multipart(body: bytes, boundary: str) -> dict:
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
@@ -564,7 +564,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", result["mime"])
             self.send_header("Content-Disposition", f'attachment; filename="{result["filename"]}"')
             self.send_header("Content-Length", str(len(out_data)))
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
             self.send_header("Access-Control-Expose-Headers", "Content-Disposition, Content-Length")
             self.end_headers()
             self.wfile.write(out_data)
@@ -578,7 +578,7 @@ class handler(BaseHTTPRequestHandler):
             error_body = json.dumps({"error": error_msg, "status": "error"}).encode()
             self.send_response(400 if isinstance(e, ValueError) else 500)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
             self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
             self.end_headers()
             self.wfile.write(error_body)

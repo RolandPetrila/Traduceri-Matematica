@@ -53,3 +53,13 @@ frontend/tsconfig.tsbuildinfo
 
 # Claude local settings
 .claude/settings.local.json
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Deep research outputs
+deep_research_*/
+
+# Session notes
+info.md
+dev_server_log.txt

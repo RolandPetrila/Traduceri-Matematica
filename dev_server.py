@@ -18,6 +18,19 @@ from pathlib import Path
 # Ensure api/ is importable
 sys.path.insert(0, str(Path(__file__).parent))
 
+# CORS — restrict to allowed origins (env var or default)
+ALLOWED_ORIGIN = os.environ.get(
+    "ALLOWED_ORIGIN",
+    "https://traduceri-matematica-7sh7.onrender.com"
+)
+
+def _cors_origin(handler) -> str:
+    """Return CORS origin: use ALLOWED_ORIGIN, or * for localhost dev."""
+    origin = handler.headers.get("Origin", "")
+    if "localhost" in origin or "127.0.0.1" in origin:
+        return origin
+    return ALLOWED_ORIGIN
+
 # Load .env BEFORE importing handlers
 _env_file = Path(__file__).parent / ".env"
 if _env_file.exists():
@@ -56,7 +69,7 @@ class DevRouter(BaseHTTPRequestHandler):
         if not cls:
             self.send_response(404)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Access-Control-Allow-Origin", _cors_origin(self))
             self.end_headers()
             self.wfile.write(b'{"error":"Route not found"}')
             return
@@ -87,7 +100,7 @@ class DevRouter(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         """Handle CORS preflight requests."""
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", _cors_origin(self))
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Max-Age", "86400")

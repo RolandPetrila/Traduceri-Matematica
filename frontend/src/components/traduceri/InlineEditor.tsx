@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface InlineEditorProps {
   html: string;
@@ -26,7 +27,7 @@ export default function InlineEditor({ html, onChange }: InlineEditorProps) {
 
   useEffect(() => {
     if (!containerRef.current || isUpdatingRef.current) return;
-    containerRef.current.innerHTML = extractContent(html);
+    containerRef.current.innerHTML = sanitizeHtml(extractContent(html));
     protectNonEditableElements(containerRef.current);
   }, [html]);
 

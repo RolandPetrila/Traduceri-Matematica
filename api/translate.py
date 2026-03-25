@@ -14,7 +14,6 @@ import re
 import sys
 import traceback
 import urllib.request
-import urllib.parse
 
 # Ensure api/lib/ is importable on both Vercel and local dev
 _api_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1141,7 +1140,7 @@ def parse_boundary(content_type: str) -> str:
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
@@ -1415,6 +1414,6 @@ class handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, data: dict):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())
