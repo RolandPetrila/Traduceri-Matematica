@@ -1289,10 +1289,18 @@ class handler(BaseHTTPRequestHandler):
 
                             try:
                                 if translate_engine == "deepl" and _HAS_DEEPL_LIB and os.environ.get("DEEPL_API_KEY", "").strip():
-                                    protected = _protect_deepl(batch_text)
-                                    translated_batch = _deepl_translate(protected, target_lang, source_lang)
-                                    translated_batch = _restore_deepl(translated_batch)
-                                    tr_prov = "DeepL"
+                                    try:
+                                        protected = _protect_deepl(batch_text)
+                                        translated_batch = _deepl_translate(protected, target_lang, source_lang)
+                                        translated_batch = _restore_deepl(translated_batch)
+                                        tr_prov = "DeepL"
+                                    except Exception as deepl_err:
+                                        print(f"[DEEPL] Failed, fallback to Gemini: {deepl_err}", file=sys.stderr)
+                                        _log_to_file(f"WARN    | DeepL esuat: {deepl_err} | Fallback: Gemini")
+                                        protected_ph, placeholders = protect_math(batch_text)
+                                        translated_batch = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
+                                        translated_batch = restore_math(translated_batch, placeholders)
+                                        tr_prov = "Gemini (fallback from DeepL)"
                                 else:
                                     protected_ph, placeholders = protect_math(batch_text)
                                     translated_batch = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
