@@ -119,22 +119,24 @@
 - [x] 2026-03-25 — render.yaml blueprint (2 servicii, frankfurt, free tier)
 - [x] 2026-03-25 — dev_server.py — suport PORT env var (Render)
 - [x] 2026-03-25 — next.config.js — proxy rewrites PYTHON_API_URL
-- [ ] Test traducere 1 pagina pe Render
+- [x] 2026-03-25 — Test traducere 1 pagina pe Render (test_page_2 — Gemini OK, DeepL bug gasit+fixat)
+- [x] 2026-03-25 — Fix: direct API calls (bypass Next.js 30s proxy timeout)
+- [x] 2026-03-25 — Fix: DeepL fallback la Gemini cand traducerea esueaza
 - [ ] Test traducere 20 pagini pe Render (verificare timeout OK)
 - [x] 2026-03-25 — Folosire render URL-uri (fara domeniu custom)
 - [ ] Dezactivare Vercel deploy (dupa confirmare Render OK)
 - [ ] Commit final + push → Render deploy
 - **URLs**: Frontend: https://traduceri-matematica-7sh7.onrender.com | API: https://traduceri-api.onrender.com
 
-### Sprint 3: Preview + Editare Inline + Tab-uri Dinamice
-- [ ] Creaza `frontend/src/lib/tab-config.ts` — tab-uri din config/tabs.json
-- [ ] Refactorizare `TabNav.tsx` — tab-uri dinamice extensibile
-- [ ] Rescriere `PreviewPanel.tsx` — 3 moduri: Vizualizare / HTML A4 / Edit
-- [ ] Creaza `InlineEditor.tsx` — contentEditable pe text, figuri protejate
+### Sprint 3: Preview + Editare Inline + Tab-uri Dinamice (IN CURS)
+- [x] 2026-03-25 — Creat `frontend/src/lib/tab-config.ts` — tab-uri din config/tabs.json
+- [x] 2026-03-25 — Refactorizare `TabNav.tsx` — tab-uri dinamice din JSON config
+- [x] 2026-03-25 — Refactorizare `page.tsx` — foloseste TabId dinamic
+- [x] 2026-03-25 — Rescriere `PreviewPanel.tsx` — 3 moduri: Vizualizare / A4 Printabil / Editare
+- [x] 2026-03-25 — Creat `InlineEditor.tsx` — contentEditable pe text, figuri protejate
 - [ ] Creaza `SideBySide.tsx` — comparatie RO|SK coloane, scroll sync
-- [ ] Integreaza in `traduceri/page.tsx`
 - [ ] Test: editare inline → salvare → export cu text modificat
-- [ ] Commit + push → Vercel deploy
+- [ ] Commit + push → Render deploy
 
 ### Sprint 4: Export Complet + Batch Processing
 - [ ] Export HTML — template Exemplu_BUN cu figuri crop

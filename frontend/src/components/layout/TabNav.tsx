@@ -1,22 +1,17 @@
 "use client";
 
 import { logAction } from "@/lib/monitoring";
+import { TABS, type TabId } from "@/lib/tab-config";
 
 interface TabNavProps {
-  activeTab: "traduceri" | "convertor" | "istoric";
-  onTabChange: (tab: "traduceri" | "convertor" | "istoric") => void;
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
 }
 
 export default function TabNav({ activeTab, onTabChange }: TabNavProps) {
-  const tabs = [
-    { id: "traduceri" as const, label: "Traduceri", icon: "\u{1F4D0}" },
-    { id: "convertor" as const, label: "Convertor Fisiere", icon: "\u{1F504}" },
-    { id: "istoric" as const, label: "Istoric", icon: "\u{1F4CB}" },
-  ];
-
   return (
     <nav className="flex gap-1 border-b border-chalk-white/20 pb-0">
-      {tabs.map((tab) => (
+      {TABS.map((tab) => (
         <button
           key={tab.id}
           onClick={() => { logAction(`Navigare: ${tab.label}`, { tab: tab.id }); onTabChange(tab.id); }}

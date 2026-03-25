@@ -6,9 +6,10 @@ import TabNav from "@/components/layout/TabNav";
 import TraduceriPage from "./traduceri/page";
 import ConvertorPage from "./convertor/page";
 import HistoryList from "@/components/history/HistoryList";
+import { DEFAULT_TAB, type TabId } from "@/lib/tab-config";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"traduceri" | "convertor" | "istoric">("traduceri");
+  const [activeTab, setActiveTab] = useState<TabId>(DEFAULT_TAB);
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-6">
