@@ -10,6 +10,7 @@ import { addToHistory } from "@/lib/storage";
 import { logError, logAction, logInfo } from "@/lib/monitoring";
 import { validateTranslationOutput } from "@/lib/validator";
 import EngineSelector, { type TranslateEngine } from "@/components/traduceri/EngineSelector";
+import BatchPanel from "@/components/traduceri/BatchPanel";
 
 import { API_URL } from "@/lib/api-url";
 
@@ -217,6 +218,9 @@ export default function TraduceriPage() {
           engineName={translateEngine}
         />
       )}
+
+      {/* Batch processing */}
+      <BatchPanel sourceLang={sourceLang} targetLang={targetLang} translateEngine={translateEngine} />
 
       {/* Dictionary panel */}
       <Dictionary sourceLang={sourceLang} targetLang={targetLang} />

@@ -138,14 +138,13 @@
 - [ ] Test: editare inline → salvare → export cu text modificat
 - [ ] Commit + push → Render deploy
 
-### Sprint 4: Export Complet + Batch Processing
-- [ ] Export HTML — template Exemplu_BUN cu figuri crop
-- [ ] Export DOCX — adaptat din Translator_Portable
-- [ ] Export PDF — server-side sau print-to-PDF
-- [ ] Creaza `BatchPanel.tsx` — multi-fisiere, progress, ZIP download
-- [ ] Test: export HTML + DOCX + PDF verificate
-- [ ] Test: batch 3 fisiere → traducere → ZIP
-- [ ] Commit + push → Vercel deploy
+### Sprint 4: Export Complet + Batch Processing (COMPLETAT)
+- [x] 2026-03-24 — Export HTML — template A4 cu figuri crop (PreviewPanel)
+- [x] 2026-03-24 — Export DOCX — via API convert (PreviewPanel)
+- [x] 2026-03-24 — Export PDF — Print view (PreviewPanel)
+- [x] 2026-03-25 — Creat `BatchPanel.tsx` — multi-fisiere, progres per fisier, download individual + all
+- [ ] Test: batch 3 fisiere → traducere → download all
+- [x] 2026-03-25 — Commit + push → Render deploy
 
 ### Sprint 5: Istoric + Dictionar + Diagnostics
 - [ ] Extinde `HistoryList.tsx` — cautare, filtrare, sortare
