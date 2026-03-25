@@ -33,7 +33,7 @@ except ImportError:
 
 
 def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
-    """Structured OCR — inlined to avoid Vercel import issues."""
+    """Structured OCR with SVG figure generation — Exemplu_BUN quality."""
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
@@ -41,10 +41,23 @@ def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str 
     lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
     src = lang_names.get(source_lang, source_lang)
     prompt = (
-        f"Analyze this {src} math textbook page. Return JSON with structure:\n"
-        '{{"title":"...","sections":[{{"type":"heading|paragraph|step|observation|list|figure",'
-        '"content":"text here","level":1,"bbox":{{"x":0.1,"y":0.2,"w":0.3,"h":0.2}}}}]}}\n'
-        "Rules: math as LaTeX, steps P1-P4 as type step, figures with bbox (fractions 0-1)."
+        f"Analyze this {src} math textbook page. Return JSON with this structure:\n"
+        '{{"title":"page title","sections":['
+        '{{"type":"heading","content":"text","level":1}},'
+        '{{"type":"paragraph","content":"text with $LaTeX$ formulas"}},'
+        '{{"type":"step","content":"construction step text"}},'
+        '{{"type":"figure","svg":"<svg>...</svg>","caption":"optional caption"}},'
+        '{{"type":"observation","content":"observation text"}}'
+        ']}}\n\n'
+        "RULES:\n"
+        "1. ALL math as LaTeX: $\\\\triangle ABC$, $\\\\angle A$, $AB = 4$ cm\n"
+        "2. Steps labeled P1, P2 etc as type step\n"
+        "3. For geometric figures, generate inline SVG:\n"
+        "   - viewBox='0 0 200 135', stroke #333, text labels italic\n"
+        "   - Draw lines, arcs, label vertices with <text>\n"
+        "   - If figure too complex, set svg to empty string\n"
+        "4. Preserve ALL text exactly — do not summarize\n"
+        "5. Return valid JSON only"
     )
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = json.dumps({
@@ -55,8 +68,12 @@ def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str 
         "generationConfig": {"responseMimeType": "application/json"},
     }).encode("utf-8")
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=55) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        print(f"[OCR-STRUCT] API error: {e}", file=sys.stderr)
+        raise
     raw = data["candidates"][0]["content"]["parts"][0]["text"]
     try:
         result = json.loads(raw)
@@ -64,12 +81,17 @@ def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str 
         fixed = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu\\])', r'\\\\', raw)
         try:
             result = json.loads(fixed)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e2:
+            print(f"[OCR-STRUCT] JSON parse failed: {e2}", file=sys.stderr)
             return {"title": "", "sections": [{"type": "paragraph", "content": raw}]}
-    if not isinstance(result, dict) or "sections" not in result:
-        return {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
+    if not isinstance(result, dict):
+        result = {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
+    if "sections" not in result:
+        result["sections"] = []
     fig_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure")
-    print(f"[OCR-STRUCT] OK: {len(result['sections'])} sections, {fig_count} figures", file=sys.stderr)
+    svg_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure" and s.get("svg"))
+    total = len(result.get("sections", []))
+    print(f"[OCR-STRUCT] OK: {total} sections, {fig_count} figures ({svg_count} with SVG)", file=sys.stderr)
     return result
 
 

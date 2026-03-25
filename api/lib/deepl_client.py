@@ -93,7 +93,6 @@ def translate_text(
         "source_lang": src,
         "tag_handling": "xml",
         "ignore_tags": ["keep"],
-        "preserve_formatting": 1,
     }
 
     # Try key1 first
