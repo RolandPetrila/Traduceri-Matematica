@@ -11,6 +11,7 @@ import { logError, logAction, logInfo } from "@/lib/monitoring";
 import { validateTranslationOutput } from "@/lib/validator";
 import EngineSelector, { type TranslateEngine } from "@/components/traduceri/EngineSelector";
 import BatchPanel from "@/components/traduceri/BatchPanel";
+import DocumentViewer from "@/components/traduceri/DocumentViewer";
 
 import { API_URL } from "@/lib/api-url";
 
@@ -31,6 +32,7 @@ export default function TraduceriPage() {
   const [progress, setProgress] = useState(0);
   const [stepLabel, setStepLabel] = useState("");
   const [result, setResult] = useState<string | null>(null);
+  const [structuredPages, setStructuredPages] = useState<unknown[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [translateEngine, setTranslateEngine] = useState<TranslateEngine>("deepl");
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -120,6 +122,7 @@ export default function TraduceriPage() {
       validateTranslationOutput(data);
 
       setResult(htmlResult);
+      setStructuredPages(data.structured_pages || null);
       setProgress(100);
       setStepLabel("Complet!");
 
@@ -210,14 +213,23 @@ export default function TraduceriPage() {
         </div>
       )}
 
-      {/* Preview side-by-side */}
-      {result && (
+      {/* Document Viewer with language toggle (or fallback to PreviewPanel) */}
+      {result && structuredPages ? (
+        <DocumentViewer
+          structuredPages={structuredPages as never[]}
+          fullHtml={result}
+          sourceLang={sourceLang}
+          initialTargetLang={targetLang}
+          translateEngine={translateEngine}
+          filename={files[0]?.name?.replace(/\.[^.]+$/, "") || "traducere"}
+        />
+      ) : result ? (
         <PreviewPanel
           originalFiles={files}
           translatedHtml={result}
           engineName={translateEngine}
         />
-      )}
+      ) : null}
 
       {/* Batch processing */}
       <BatchPanel sourceLang={sourceLang} targetLang={targetLang} translateEngine={translateEngine} />

@@ -1369,6 +1369,9 @@ class handler(BaseHTTPRequestHandler):
                 "pages": len(results),
                 "duration_ms": duration_ms,
                 "status": "success",
+                "source_lang": source_lang,
+                "target_lang": target_lang,
+                "structured_pages": all_structured_pages if all_structured_pages else None,
             })
 
         except Exception as e:

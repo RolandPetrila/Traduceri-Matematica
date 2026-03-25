@@ -128,39 +128,36 @@
 - [ ] Commit final + push → Render deploy
 - **URLs**: Frontend: https://traduceri-matematica-7sh7.onrender.com | API: https://traduceri-api.onrender.com
 
-### Sprint 3: Preview + Editare Inline + Tab-uri Dinamice (IN CURS)
-- [x] 2026-03-25 — Creat `frontend/src/lib/tab-config.ts` — tab-uri din config/tabs.json
-- [x] 2026-03-25 — Refactorizare `TabNav.tsx` — tab-uri dinamice din JSON config
-- [x] 2026-03-25 — Refactorizare `page.tsx` — foloseste TabId dinamic
-- [x] 2026-03-25 — Rescriere `PreviewPanel.tsx` — 3 moduri: Vizualizare / A4 Printabil / Editare
-- [x] 2026-03-25 — Creat `InlineEditor.tsx` — contentEditable pe text, figuri protejate
-- [ ] Creaza `SideBySide.tsx` — comparatie RO|SK coloane, scroll sync
-- [ ] Test: editare inline → salvare → export cu text modificat
-- [ ] Commit + push → Render deploy
+### Sprint 3: DocumentViewer + Language Toggle Live (COMPLETAT)
+- [x] 2026-03-25 — Tab-uri dinamice din config/tabs.json (tab-config.ts + TabNav.tsx)
+- [x] 2026-03-25 — PreviewPanel rescris cu 3 moduri (Vizualizare/A4/Editare)
+- [x] 2026-03-25 — InlineEditor.tsx cu contentEditable + sanitizare XSS
+- [x] 2026-03-25 — OCR prompt rescris pentru **SVG inline** (calitate Exemplu_BUN.html)
+- [x] 2026-03-25 — API: `structured_pages` returnat in raspunsul /api/translate
+- [x] 2026-03-25 — API: `/api/translate-text` — endpoint text-only (pentru language switch live)
+- [x] 2026-03-25 — **DocumentViewer.tsx** — prezentare A4 fundal alb + butoane limba RO/SK/EN
+- [x] 2026-03-25 — Language switch live: text se traduce, SVG/figuri raman intacte
+- [x] 2026-03-25 — Cache traduceri per limba (instant switch inapoi)
+- [x] 2026-03-25 — Download HTML/Print per limba activa
+- [x] 2026-03-25 — BatchPanel.tsx — multi-fisiere cu progres individual
 
-### Sprint 4: Export Complet + Batch Processing (COMPLETAT)
-- [x] 2026-03-24 — Export HTML — template A4 cu figuri crop (PreviewPanel)
-- [x] 2026-03-24 — Export DOCX — via API convert (PreviewPanel)
-- [x] 2026-03-24 — Export PDF — Print view (PreviewPanel)
-- [x] 2026-03-25 — Creat `BatchPanel.tsx` — multi-fisiere, progres per fisier, download individual + all
-- [ ] Test: batch 3 fisiere → traducere → download all
-- [x] 2026-03-25 — Commit + push → Render deploy
+### Sprint 3.5: Audit Remediation (COMPLETAT)
+- [x] 2026-03-25 — Sters `frontend/api/` — 1946 linii cod mort duplicat
+- [x] 2026-03-25 — Sters `vercel.json` — config legacy
+- [x] 2026-03-25 — Sters `api/requirements.txt` duplicat
+- [x] 2026-03-25 — CORS restrictiv (ALLOWED_ORIGIN env var, nu wildcard *)
+- [x] 2026-03-25 — Security headers: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
+- [x] 2026-03-25 — Cache-Control: no-store doar pe /api/*, nu pe toate rutele
+- [x] 2026-03-25 — .gitignore cleanup: .playwright-mcp/, deep_research_*/, info.md
+- [x] 2026-03-25 — InlineEditor: sanitizeHtml() pe innerHTML (fix XSS)
 
-### Sprint 5: Istoric + Dictionar + Diagnostics
-- [ ] Extinde `HistoryList.tsx` — cautare, filtrare, sortare
-- [ ] Extinde `Dictionary.tsx` — sync API, import/export
-- [ ] Extinde `diagnostics/page.tsx` — DeepL usage, API health, notificari
-- [ ] Toast notifications — erori, alerte, quota exceeded
-- [ ] Actualizeaza monitoring.ts — log engine, DeepL usage, crop count
-- [ ] Test E2E complet
-- [ ] Commit + push → Vercel deploy
-
-### Sprint 6: Polish + Regulamente Finale
-- [ ] Actualizeaza `CLAUDE.md` — regulament v2 final
-- [ ] Actualizeaza `CHECKPOINT.md` — progres complet
-- [ ] Curatenie cod: stergere cod mort, comentarii outdated
-- [ ] Verifica monitoring local + Vercel
-- [ ] Commit final + push → Vercel deploy
+### Sprint 4: Polish + Teste
+- [ ] Test DocumentViewer: upload JPEG → OCR SVG → language switch RO↔SK↔EN
+- [ ] Test BatchPanel: 3 fisiere → traducere → download all
+- [ ] Extinde diagnostics: DeepL usage tracking in UI
+- [ ] Actualizeaza CLAUDE.md + CHECKPOINT.md cu starea finala
+- [ ] Curatenie cod: stergere comentarii outdated
+- [ ] Commit final + push → Render deploy
 
 ---
 
