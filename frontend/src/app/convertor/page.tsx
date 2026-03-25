@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ProgressBar from "@/components/traduceri/ProgressBar";
 import { logAction, logInfo, logError } from "@/lib/monitoring";
+import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
 
@@ -117,7 +118,7 @@ export default function ConvertorPage() {
     const t0 = Date.now();
 
     try {
-      const res = await fetch("/api/convert", {
+      const res = await fetch(`${API_URL}/api/convert`, {
         method: "POST",
         body: formData,
       });

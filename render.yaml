@@ -11,6 +11,8 @@ services:
         value: production
       - key: PYTHON_API_URL
         value: https://traduceri-api.onrender.com
+      - key: NEXT_PUBLIC_API_URL
+        value: https://traduceri-api.onrender.com
     plan: free
     region: frankfurt
 

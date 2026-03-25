@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_URL } from "@/lib/api-url";
 
 // Vercel auto-sets VERCEL_GIT_COMMIT_SHA at build time
 const BUILD_VERSION =
@@ -18,7 +19,7 @@ export default function VersionBadge() {
     // Check server version every 30 seconds
     const check = async () => {
       try {
-        const res = await fetch("/api/health", { cache: "no-store" });
+        const res = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           const sv = data.build_version || data.version || "";

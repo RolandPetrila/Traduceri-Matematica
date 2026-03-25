@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { logAction } from "@/lib/monitoring";
+import { API_URL } from "@/lib/api-url";
 
 interface PreviewPanelProps {
   originalFiles: File[];
@@ -17,7 +18,7 @@ async function downloadAsDocx(html: string, filename: string) {
   formData.append("target_format", "docx");
 
   try {
-    const res = await fetch("/api/convert", { method: "POST", body: formData });
+    const res = await fetch(`${API_URL}/api/convert`, { method: "POST", body: formData });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

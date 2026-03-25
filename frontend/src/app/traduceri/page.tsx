@@ -11,6 +11,8 @@ import { logError, logAction, logInfo } from "@/lib/monitoring";
 import { validateTranslationOutput } from "@/lib/validator";
 import EngineSelector, { type TranslateEngine } from "@/components/traduceri/EngineSelector";
 
+import { API_URL } from "@/lib/api-url";
+
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
   { at: 15, label: "Se trimite catre server..." },
@@ -84,7 +86,7 @@ export default function TraduceriPage() {
     }
 
     try {
-      const res = await fetch("/api/translate", {
+      const res = await fetch(`${API_URL}/api/translate`, {
         method: "POST",
         body: formData,
       });
