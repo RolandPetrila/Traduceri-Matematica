@@ -145,7 +145,7 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 ---
 
 ## Faza 2: Calitate traduceri + Securitate + Refactorizare backend
-### Completare: 0%
+### Completare: 95% (raman: test Android + PDF mare batching)
 
 ### Scop
 Documentele traduse sa arate ca Exemplu_BUN.html: figuri identice cu originalul, pozitionate corect, formule randate frumos. Plus: reorganizare cod backend, fix-uri securitate, contor DeepL vizibil, cache traduceri persistent, si protectie impotriva abuzului.
@@ -203,27 +203,25 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 - [x] 2026-03-26 — Mesaje eroare in romana: "Prea multe cereri. Incearca din nou in N secunde." / "Limita zilnica atinsa."
 - [x] 2026-03-26 — Test pe Render: 5 cereri rapide la convert -> toate 200 (sub limita), rate limiter activ, build dd1d4b0
 
-**Sprint 2.4: Contor DeepL + Cache traduceri + Fallback**
-- [ ] Endpoint `/api/deepl-usage` — returneaza cota COMBINATA a ambelor chei: caractere consumate total, limita totala (1.000.000), procent. Cristina vede un singur numar, nu stie de 2 chei (audit S10, Roland I4).
-- [ ] Componenta `DeeplUsage.tsx` — bara vizuala (ca un contor de benzina): verde = mult disponibil, galben = 50-80%, rosu = peste 80%
-- [ ] Afisare in pagina Traduceri: "Cota luna: 234.500 / 1.000.000 caractere (23%)"
-- [ ] Daca cota e la >90%: mesaj de avertizare "Cota aproape epuizata, mai poti traduce ~X pagini"
-- [ ] Switch automat la cheie 2 cand cheie 1 se epuizeaza (deja implementat — verificare)
-- [ ] **Cache traduceri persistent** (audit S3): salvare traduceri in localStorage. Cand Cristina traduce o pagina in slovaca, rezultatul ramane salvat chiar daca inchide browser-ul. A doua zi deschide site-ul -> traducerea e inca acolo, fara sa consume iar din cota DeepL. Limita: ~5 MB (cam 30-50 documente). Cand se umple, cele mai vechi se sterg automat.
-- [ ] **Cache versioning** (audit S11): cache-ul are un numar de versiune (ex: "v1"). Cand facem o imbunatatire mare la procesarea documentelor (cum ar fi Sprint 2.2), schimbam versiunea la "v2" -> cache-ul vechi se ignora automat. Altfel Cristina ar vedea traduceri vechi (cu figuri proaste) in loc de cele noi (cu figuri bune). E ca un "reset" controlat.
-- [ ] **Verificare fallback complet** (audit SC2): test cand ambele chei DeepL sunt epuizate -> traducerea trece automat pe Gemini -> mesaj clar in romana: "Cota DeepL epuizata luna aceasta, se foloseste traducerea alternativa (poate fi putin mai putin precisa)"
-- [ ] Test contor: verifica ca numarul combinat afisat corespunde cu realitatea (suma ambelor chei)
-- [ ] Test cache: traduce o pagina, inchide browser, redeschide -> traducerea e salvata
-- [ ] Test cache versioning: schimba versiunea -> cache-ul vechi nu mai apare
+**Sprint 2.4: Contor DeepL + Cache traduceri + Fallback** — COMPLETAT 2026-03-26
+- [x] 2026-03-26 — `/api/deepl-usage` endpoint: cota combinata 2 chei (1M total), warning levels, pagini estimate
+- [x] 2026-03-26 — `DeeplUsage.tsx`: bara vizuala verde/galben/rosu, refresh 60s, in pagina Traduceri
+- [x] 2026-03-26 — Test pe Render: 16.115 / 1.000.000 (1.6%), ~728 pagini disponibile, nivel OK
+- [x] 2026-03-26 — Switch automat cheie 2 — deja implementat in deepl_client.py (verificat)
+- [x] 2026-03-26 — Cache localStorage persistent (`translation-cache.ts`): max 50 entries (~5MB), curatare automata
+- [x] 2026-03-26 — Cache versioning v2: la schimbare versiune -> cache vechi invalidat automat (S11)
+- [x] 2026-03-26 — Integrare in traduceri/page.tsx: check cache inainte de API + save dupa traducere
+- [ ] Verificare fallback DeepL->Gemini end-to-end (SC2) — necesita epuizare cota sau simulare
+- [ ] Test cache: traduce, inchide browser, redeschide -> din cache (Roland verifica manual)
 
-**Sprint 2.5: Teste finale + Deploy**
-- [ ] Commit toate modificarile Faza 2
-- [ ] Push -> Render deploy
-- [ ] Test pe Render live: traducere completa cu figuri (JPEG)
-- [ ] Test pe Render live: traducere PDF cu figuri (via PyMuPDF)
-- [ ] **Test pe telefon Android** (audit S5): incarca o poza facuta cu telefonul -> vizualizare document tradus -> switch limba RO/SK/EN -> confirma ca totul se vede bine pe ecran mic
-- [ ] **Test PDF mare** (audit SC3): incarca un PDF de 25 pagini -> confirma ca se proceseaza in loturi cu mesaj vizibil "Se proceseaza in etape..."
-- [ ] **Multi-JPEG upload** (audit S17, Roland I5): cand Cristina selecteaza mai multe poze JPEG dintr-o data, se combina automat intr-un singur document cu N pagini. Frontend: trimite toate imaginile intr-un singur request. Backend: pipeline.py le proceseaza ca pagini ale aceluiasi document, returneaza un singur HTML. Test: upload 3 poze JPEG -> primeste 1 document cu 3 pagini traduse.
+**Sprint 2.5: Teste finale + Deploy** — COMPLETAT 2026-03-26
+- [x] 2026-03-26 — Commit + Push Sprint 2.1-2.4 -> Render deploy OK (d391b9c)
+- [x] 2026-03-26 — Test JPEG live: 1 pag, 6 figuri crop, 70s, success
+- [x] 2026-03-26 — Test PDF live: 1 pag via PyMuPDF, 1 figura crop, 24.5s, success
+- [x] 2026-03-26 — **Multi-JPEG confirmat** (S17): 2 JPEG -> 1 document cu 2 pagini A4 + 10 figuri, 97s, EN. Functioneaza din prima — frontend trimite N fisiere, backend le proceseaza ca pagini, HTML le combina.
+- [ ] **Test Android** — Roland: deschide site-ul pe telefon, incarca o poza, verifica traducerea, switch limba
+- [ ] **Test PDF mare >20 pag** — procesare in loturi nu e inca implementata (necesar la volum mare)
+- [x] 2026-03-26 — DeepL usage live: 16.115/1M (1.6%), ~728 pagini, contor OK
 
 ### Limite (R14 checklist)
 - Timp executie traducere: 1 pagina = ~10-20 sec (OCR + traducere), 5 pagini = ~1-2 min, 20 pagini = ~5-8 min
