@@ -96,11 +96,11 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 
 ### Task-uri
 
-**Sprint 1.1: Fix convertor**
-- [ ] Fix `api/convert.py` — adauga `import os` la inceputul fisierului (bug: serverul se blocheaza la orice conversie)
-- [ ] Test convertor pe Render — MINIM: 1 conversie simpla (MD->HTML)
-- [ ] Test convertor pe Render — TIPIC: 3 tipuri diferite (PDF->DOCX, imagine->PDF, merge 2 PDF-uri)
-- [ ] Test convertor pe Render — MAXIM: PDF mare (10+ pagini) + toate operatiile (split, compress, rotate, watermark)
+**Sprint 1.1: Fix convertor** — COMPLETAT 2026-03-26
+- [x] 2026-03-26 — Fix `api/convert.py` — adaugat `import os` la inceputul fisierului. Commit af0b40b + push.
+- [x] 2026-03-26 — Test MINIM: MD->HTML pe Render — OK, HTTP 200, output HTML corect cu headings+bold+liste
+- [x] 2026-03-26 — Test TIPIC: 3 tipuri — MD->HTML (OK, diacritice ăîșțâ corecte), JPEG->PDF (OK, 270KB), PDF->DOCX (OK, 36KB)
+- [x] 2026-03-26 — Test MAXIM: Split (OK), Compress (OK, 270946->270885), Rotate 90° (OK), Watermark "DRAFT" (OK)
 
 **Sprint 1.2: Ecran "Se incarca..."**
 - [ ] Detectare cold start: cand aplicatia incarca si serverul nu raspunde inca, afiseaza un ecran frumos

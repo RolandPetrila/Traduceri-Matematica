@@ -78,7 +78,7 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
         ));
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Eroare";
-        logError(`Batch eroare: ${files[i].name}`, { error: msg });
+        logError(`Batch eroare: ${files[i].name}`, { context: { error: msg } });
         setResults((prev) => prev.map((r, idx) =>
           idx === i ? { ...r, status: "error", error: msg } : r
         ));
