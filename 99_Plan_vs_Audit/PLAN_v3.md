@@ -83,7 +83,7 @@ Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: C
 ---
 
 ## Faza 1: Reparatii urgente + Prima impresie
-### Completare: 0%
+### Completare: 100%
 
 ### Scop
 Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesare (ecran de incarcare cand serverul se trezeste).
@@ -110,12 +110,12 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 - [x] 2026-03-26 — Fix pre-existent BatchPanel.tsx: eroare de tip in logError() corectata
 - [x] 2026-03-26 — Test pe Render live: frontend deployed OK, CSS animatie prezenta, API health OK. Ecranul de incarcare apare cand API e indisponibil, dispare cand raspunde.
 
-**Sprint 1.3: Curatenie v2**
-- [ ] Adauga 99_Plan_vs_Audit/ si 99_Blueprints/ in git (scoase din .gitignore)
-- [ ] Dezactivare Vercel deploy (nu mai e necesar, totul e pe Render)
-- [ ] Update CLAUDE.md cu starea actuala
-- [ ] Update CHECKPOINT.md
-- [ ] Commit + Push -> Render deploy
+**Sprint 1.3: Curatenie v2** — COMPLETAT 2026-03-26
+- [x] 2026-03-26 — 99_Plan_vs_Audit/ si 99_Blueprints/ adaugate in git (commit af0b40b)
+- [x] 2026-03-26 — Dezactivare Vercel: Git disconnected via CLI (`vercel git disconnect`). Nu mai face deploy automat la push. Site-ul vechi ramine online dar nu se actualizeaza.
+- [x] 2026-03-26 — CLAUDE.md actualizat la v3.0 (status, key files, stack, 6 module)
+- [x] 2026-03-26 — CHECKPOINT.md actualizat (deploy Render, sesiune 2026-03-26)
+- [x] 2026-03-26 — Commit ec04023 + Push -> Render deploy OK
 
 ### Limite (R14 checklist)
 - Timp executie convertor: 1 pagina = ~2-5 sec, 10 pagini = ~10-20 sec, 50+ pagini = poate depasi 512MB RAM [limita Render]

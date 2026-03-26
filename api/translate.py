@@ -1,6 +1,6 @@
-"""Vercel Python Serverless Function for OCR + Translation.
+"""Python Serverless Function for OCR + Translation (Render).
 
-Uses direct REST API calls (no heavy SDKs) to stay under 250MB limit.
+Uses direct REST API calls (no heavy SDKs).
 Handles POST /api/translate — image files -> AI OCR -> translate -> HTML.
 """
 
@@ -15,12 +15,12 @@ import sys
 import traceback
 import urllib.request
 
-# Ensure api/lib/ is importable on both Vercel and local dev
+# Ensure api/lib/ is importable on both Render and local dev
 _api_dir = os.path.dirname(os.path.abspath(__file__))
 if _api_dir not in sys.path:
     sys.path.insert(0, _api_dir)
 
-# Try importing shared libs (may fail on Vercel — inlined functions used as fallback)
+# Try importing shared libs (inlined functions used as fallback if import fails)
 try:
     from lib.deepl_client import translate_text as _deepl_translate
     from lib.math_protect import protect_for_deepl as _protect_deepl, restore_from_deepl as _restore_deepl
@@ -29,7 +29,7 @@ except ImportError:
     _HAS_DEEPL_LIB = False
 
 
-# --- Inline OCR structured (guaranteed to work on Vercel) ---
+# --- Inline OCR structured (fallback if lib import fails) ---
 
 
 def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
@@ -96,7 +96,7 @@ def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str 
 
 
 def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
-    """Crop figures from image — inlined to avoid Vercel import issues."""
+    """Crop figures from image — inlined as fallback."""
     try:
         import io
         from PIL import Image
@@ -579,7 +579,7 @@ def gemini_request(contents: list, api_key: str) -> str:
 def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str:
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set — configureaza variabila in Vercel dashboard")
+        raise RuntimeError("GOOGLE_AI_API_KEY not set — configureaza variabila in Render dashboard")
 
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     print(f"[OCR] Processing image: {len(image_bytes)} bytes, mime={mime_type}, lang={source_lang}", file=sys.stderr)

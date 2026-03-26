@@ -23,7 +23,7 @@ function writeToFile(entry: string): void {
   try {
     fs.appendFileSync(logFile, entry + "\n", "utf-8");
   } catch {
-    // Ignore write errors (e.g. Vercel read-only fs)
+    // Ignore write errors (e.g. read-only fs on some platforms)
   }
 }
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const log = await request.json();
 
-    // Vercel Log stream (always works, viewable in Vercel dashboard)
+    // Server log stream (viewable in Render dashboard logs)
     console.log(
       `[CLIENT_LOG] ${log.level?.toUpperCase() || "INFO"} | ${log.device?.type || "unknown"} | ${log.device?.os || "unknown"} | ${log.message}`
     );
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   // Logs are now primarily stored in client localStorage
-  // Server-side logs go to Vercel Log stream (console.log)
+  // Server-side logs go to Render Log stream (console.log)
   // In dev mode, logs also go to data/logs/local_debug.log
   return NextResponse.json({
     total: 0,

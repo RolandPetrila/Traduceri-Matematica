@@ -1,4 +1,4 @@
-"""Vercel Python Serverless Function for File Conversion.
+"""Python Serverless Function for File Conversion (Render).
 
 Handles POST /api/convert — convert/merge/split/compress files.
 Dependencies: pypdf, python-docx, Pillow, markdown (in requirements.txt).

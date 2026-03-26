@@ -94,7 +94,7 @@ export default function TraduceriPage() {
         body: formData,
       });
 
-      // Handle non-JSON error responses (Vercel returns HTML on hard crashes)
+      // Handle non-JSON error responses (server may return HTML on hard crashes)
       let data;
       const contentType = res.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {

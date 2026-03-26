@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api-url";
 
-// Vercel auto-sets VERCEL_GIT_COMMIT_SHA at build time
+// Render sets RENDER_GIT_COMMIT at build time
 const BUILD_VERSION =
   process.env.NEXT_PUBLIC_BUILD_VERSION ||
-  process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
+  process.env.NEXT_PUBLIC_RENDER_GIT_COMMIT?.slice(0, 7) ||
   "dev";
 
 type Status = "current" | "updating" | "stale";

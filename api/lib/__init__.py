@@ -1,1 +1,1 @@
-# Shared Python utilities for Vercel serverless functions
+# Shared Python utilities for Render serverless functions

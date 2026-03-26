@@ -32,11 +32,9 @@ const nextConfig = {
       },
     ];
   },
-  // Proxy Python API routes to backend service
-  // On Vercel: vercel.json handles Python functions
-  // On Render/local: proxy to Python backend URL
+  // Proxy Python API routes to backend service (local dev only)
+  // On Render: frontend calls API directly via NEXT_PUBLIC_API_URL
   async rewrites() {
-    if (process.env.VERCEL) return [];
     const apiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000';
     return {
       fallback: [

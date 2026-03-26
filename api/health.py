@@ -4,7 +4,7 @@ import os
 
 BUILD_VERSION = (
     os.environ.get("NEXT_PUBLIC_BUILD_VERSION")
-    or os.environ.get("VERCEL_GIT_COMMIT_SHA", "")[:7]
+    or os.environ.get("RENDER_GIT_COMMIT", "")[:7]
     or "dev"
 )
 
@@ -19,7 +19,7 @@ class handler(BaseHTTPRequestHandler):
             json.dumps({
                 "status": "ok",
                 "service": "Sistem Traduceri API",
-                "runtime": "vercel-python",
+                "runtime": "render-python",
                 "build_version": BUILD_VERSION,
             }).encode()
         )

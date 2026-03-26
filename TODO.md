@@ -12,7 +12,7 @@
 - [x] ~~PDF editing avansat~~ — REZOLVAT 2026-03-24: rotire, stergere, reordonare, watermark, optimizare
 
 ## IDEI NOI
-- [ ] Sincronizare loguri cross-device (Vercel KV / externa)
+- [ ] Sincronizare loguri cross-device (Render KV / externa)
 - [ ] Export istoric ca CSV/JSON
 - [ ] Previzualizare PDF inainte de editare/conversie
 - [ ] Comparatie doua traduceri side-by-side
@@ -39,4 +39,4 @@
 
 ## DECIZII DE LUAT
 - [ ] Regenerare chei API — cheile au fost expuse in erori anterior (acum sanitizate)
-- [ ] MISTRAL_API_KEY trebuie configurat in Vercel dashboard pentru OCR fallback
+- [ ] MISTRAL_API_KEY trebuie configurat in Render dashboard pentru OCR fallback

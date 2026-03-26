@@ -9,7 +9,7 @@ interface FileUploadProps {
 }
 
 const MAX_FILES = 10;
-const MAX_SIZE = 4 * 1024 * 1024; // 4MB — Vercel serverless limit is 4.5MB
+const MAX_SIZE = 4 * 1024 * 1024; // 4MB — safe limit for Render free tier (512MB RAM)
 const ACCEPTED_MIMES = [
   "image/jpeg",
   "image/png",

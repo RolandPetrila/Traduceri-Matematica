@@ -7,11 +7,11 @@
 
 | Pagina | URL |
 |--------|-----|
-| Pagina principala | https://traduceri-matematica.vercel.app |
-| Tab Traduceri | https://traduceri-matematica.vercel.app/traduceri |
-| Tab Convertor | https://traduceri-matematica.vercel.app/convertor |
-| Diagnosticare erori | https://traduceri-matematica.vercel.app/diagnostics |
-| Python API Health | https://traduceri-matematica.vercel.app/api/health |
+| Pagina principala | https://traduceri-matematica-7sh7.onrender.com |
+| Tab Traduceri | https://traduceri-matematica-7sh7.onrender.com/traduceri |
+| Tab Convertor | https://traduceri-matematica-7sh7.onrender.com/convertor |
+| Diagnosticare erori | https://traduceri-matematica-7sh7.onrender.com/diagnostics |
+| Python API Health | https://traduceri-matematica-7sh7.onrender.com/api/health |
 
 ## URL-uri LOCAL (dev)
 
@@ -123,11 +123,11 @@ Cand Roland raporteaza o eroare:
 
 | Simptom | Cauza probabila | Fix rapid |
 |---------|-----------------|-----------|
-| Pagina alba | Build esuat pe Vercel | Verifica Vercel dashboard > Deployments |
+| Pagina alba | Build esuat pe Render | Verifica Render dashboard > Deployments |
 | Eroare 503 la traducere | Backend/Python function down | Verifica /api/health |
 | "Backend unavailable" | BACKEND_URL gresit sau backend oprit | Local: porneste uvicorn |
 | Traducere gresita | Prompt AI suboptimal | Ajusteaza prompt in gemini.py |
 | Figuri lipsa | SVG nu a fost generat de OCR | Verifica prompt OCR in gemini.py |
 | LaTeX rupt | Placeholders nu au fost restaurati | Verifica math_protect.py |
-| PWA nu se instaleaza | manifest.json sau HTTPS lipsa | Vercel = HTTPS automat |
+| PWA nu se instaleaza | manifest.json sau HTTPS lipsa | Render = HTTPS automat |
 | Erori nu apar in /diagnostics | API /api/logs nu scrie | Verifica permisiuni data/logs/ |

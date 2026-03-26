@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Local Python dev server for Vercel Python functions on localhost:8000."""
+"""Local Python dev server for API functions on localhost:8000 (mirrors Render)."""
 
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ ROUTES = {
 
 
 class DevRouter(BaseHTTPRequestHandler):
-    """Routes /api/* to the matching Vercel function handler."""
+    """Routes /api/* to the matching Python function handler."""
 
     def _route(self):
         for prefix, cls in ROUTES.items():

@@ -16,7 +16,7 @@ Aplicatie web (PWA) pentru traducerea documentelor de matematica cu AI.
 - **Frontend**: Next.js 14, Tailwind CSS, shadcn/ui
 - **Backend**: FastAPI (Python)
 - **AI**: Google Gemini (primar), Groq + Mistral (fallback)
-- **Deploy**: Vercel (auto-deploy din GitHub)
+- **Deploy**: Render (auto-deploy din GitHub, Frankfurt, free tier)
 
 ## Setup local
 
