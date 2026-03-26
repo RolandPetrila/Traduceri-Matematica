@@ -40,12 +40,8 @@ try:
 except ImportError:
     _HAS_DEEPL_LIB = False
 
-try:
-    from lib.ocr_structured import ocr_structured
-    from lib.figure_crop import crop_all_figures
-    _HAS_STRUCTURED = True
-except ImportError:
-    _HAS_STRUCTURED = False
+from lib.ocr_structured import ocr_structured
+from lib.figure_crop import crop_all_figures
 
 
 # --- PDF to images (PyMuPDF, DPI 150) ---
@@ -79,116 +75,6 @@ def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
         return []
 
     return pages
-
-
-# --- Inline OCR fallback (if lib imports fail) ---
-
-def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
-    """Structured OCR with figure bbox detection — fallback."""
-    import base64
-    import urllib.request
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set")
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-    prompt = (
-        f"Analyze this {src} math textbook page. Return JSON with this structure:\n"
-        '{{"title":"page title","sections":['
-        '{{"type":"heading","content":"text","level":1}},'
-        '{{"type":"paragraph","content":"text with $LaTeX$ formulas"}},'
-        '{{"type":"step","content":"$P_1$: construction step text"}},'
-        '{{"type":"figure","bbox":{{"x":0.1,"y":0.3,"w":0.4,"h":0.3}},"caption":"optional"}},'
-        '{{"type":"observation","content":"observation text"}}'
-        ']}}\n\n'
-        "RULES:\n"
-        "1. ALL math as LaTeX: $\\\\triangle ABC$, $\\\\angle A$, $AB = 4$ cm\n"
-        "2. Steps labeled P1, P2 etc as type step\n"
-        "3. For figures: return bbox (x,y,w,h as fractions 0.0-1.0 of image size)\n"
-        "   - Be PRECISE — bbox will be used to crop the figure from the image\n"
-        "   - If two figures side by side, return TWO separate figure sections\n"
-        "   - Do NOT generate SVG\n"
-        "4. Preserve ALL text exactly — do not summarize\n"
-        "5. Return valid JSON only"
-    )
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    payload = json.dumps({
-        "contents": [{"parts": [
-            {"text": prompt},
-            {"inline_data": {"mime_type": mime_type, "data": image_b64}},
-        ]}],
-        "generationConfig": {"responseMimeType": "application/json"},
-    }).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except Exception as e:
-        print(f"[OCR-STRUCT] API error: {e}", file=sys.stderr)
-        raise
-    raw = data["candidates"][0]["content"]["parts"][0]["text"]
-    try:
-        result = json.loads(raw)
-    except json.JSONDecodeError:
-        fixed = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu\\])', r'\\\\', raw)
-        try:
-            result = json.loads(fixed)
-        except json.JSONDecodeError:
-            return {"title": "", "sections": [{"type": "paragraph", "content": raw}]}
-    if not isinstance(result, dict):
-        result = {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
-    if "sections" not in result:
-        result["sections"] = []
-    return result
-
-
-def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
-    """Crop figures from image — inline fallback."""
-    try:
-        import io
-        import base64
-        from PIL import Image
-    except ImportError:
-        return {}
-    result = {}
-    img = Image.open(io.BytesIO(image_bytes))
-    w, h = img.size
-    for i, section in enumerate(sections):
-        if section.get("type") != "figure" or not section.get("bbox"):
-            continue
-        bbox = section["bbox"]
-        pad = 5
-        x1 = max(0, int(bbox["x"] * w) - pad)
-        y1 = max(0, int(bbox["y"] * h) - pad)
-        x2 = min(w, int((bbox["x"] + bbox["w"]) * w) + pad)
-        y2 = min(h, int((bbox["y"] + bbox["h"]) * h) + pad)
-        if x2 <= x1 or y2 <= y1:
-            continue
-        cropped = img.crop((x1, y1, x2, y2)).convert("RGBA")
-        cw, ch = cropped.size
-        corners = []
-        for cx, cy in [(0, 0), (cw - 5, 0), (0, ch - 5), (cw - 5, ch - 5)]:
-            region = cropped.crop((max(0, cx), max(0, cy), min(cw, cx + 5), min(ch, cy + 5)))
-            pixels = list(region.getdata())
-            if pixels:
-                corners.append((
-                    sum(p[0] for p in pixels) // len(pixels),
-                    sum(p[1] for p in pixels) // len(pixels),
-                    sum(p[2] for p in pixels) // len(pixels),
-                ))
-        bg = tuple(sum(c[j] for c in corners) // len(corners) for j in range(3)) if corners else (245, 245, 245)
-        px = cropped.load()
-        for py_ in range(ch):
-            for px_ in range(cw):
-                r, g, b, a = px[px_, py_]
-                if abs(r - bg[0]) < 40 and abs(g - bg[1]) < 40 and abs(b - bg[2]) < 40:
-                    px[px_, py_] = (255, 255, 255, 255)
-        final = cropped.convert("RGB")
-        buf = io.BytesIO()
-        final.save(buf, format="PNG", optimize=True)
-        result[i] = base64.b64encode(buf.getvalue()).decode("utf-8")
-    return result
 
 
 # --- Helpers ---
@@ -322,16 +208,14 @@ class handler(BaseHTTPRequestHandler):
                     # Structured pipeline: OCR -> crop -> translate -> HTML
                     t_ocr = time.time()
                     use_structured = True
-                    _ocr_fn = ocr_structured if _HAS_STRUCTURED else _ocr_structured_inline
                     try:
-                        page_data = _ocr_fn(file_data, mime_type, source_lang)
+                        page_data = ocr_structured(file_data, mime_type, source_lang)
                     except Exception:
                         use_structured = False
 
                     if use_structured:
                         sections = page_data.get("sections", [])
-                        _crop_fn = crop_all_figures if _HAS_STRUCTURED else _crop_all_figures_inline
-                        cropped_figs = _crop_fn(file_data, sections)
+                        cropped_figs = crop_all_figures(file_data, sections)
 
                         # Batch translate all text parts in one API call
                         text_indices = []

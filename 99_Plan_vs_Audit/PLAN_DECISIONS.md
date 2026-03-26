@@ -239,3 +239,22 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
 - Contor DeepL: V1 (per cheie) vs V2 (combinat) — Aleasa V2, Roland confirmat
 - Cache: V1 (fara versiune) vs V2 (cu versiune) — Aleasa V2, previne cache stale
 - Rate limiting: V1 (doar traduceri) vs V2 (global diferentiat) — Aleasa V2, protejeaza tot
+
+---
+
+## Runda 6 — 2026-03-26 (Corectii plan T3)
+
+### Decizii luate
+
+- D22: Rate limiter functioneaza pe Render — dev_server.py e entry point-ul si pe productie (confirmat via render.yaml startCommand: `python dev_server.py`). Rate limiter-ul integrat in dev_server.py se aplica la TOATE cererile.
+- D23: Inline fallback-uri (OCR + crop) sterse din translate.py — pe Render lib/ e mereu disponibil, codul duplicat nu mai e necesar. Reducere: 450 -> 334 linii.
+- D24: Criteriu translate.py corectat: ">60% reducere" (nu "sub 200 linii") — reflecta realitatea (1444 -> 334 = 77%)
+
+### Corectii plan aplicate (R19)
+
+- P1: pipeline.py marcat [-] ANULAT in componente afectate
+- P2: Sprint 2.4 si 2.5 corectate la "PARTIAL" (aveau task-uri [ ] necompletate)
+- P3: Criteriu translate.py rescris realist (>60% reducere, nu sub 200 linii)
+- P4: 106 linii fallback inline sterse din translate.py (1444 -> 334, reducere 77%)
+- P5: D22 adaugata (rate limiter pe Render)
+- P6: R19 citita si aplicata

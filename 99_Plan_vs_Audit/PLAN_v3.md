@@ -145,7 +145,7 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 ---
 
 ## Faza 2: Calitate traduceri + Securitate + Refactorizare backend
-### Completare: 95% (raman: test Android + PDF mare batching)
+### Completare: 90% (raman: test Android, PDF mare batching, fallback DeepL->Gemini test, cache test manual)
 
 ### Scop
 Documentele traduse sa arate ca Exemplu_BUN.html: figuri identice cu originalul, pozitionate corect, formule randate frumos. Plus: reorganizare cod backend, fix-uri securitate, contor DeepL vizibil, cache traduceri persistent, si protectie impotriva abuzului.
@@ -156,7 +156,7 @@ Documentele traduse sa arate ca Exemplu_BUN.html: figuri identice cu originalul,
 - `api/lib/figure_crop.py` — crop mai precis + fundal alb + suport PDF via PyMuPDF
 - `api/lib/html_builder.py` — NOU: modul separat pt constructie HTML A4
 - `api/lib/translation_router.py` — NOU: modul separat pt rutare traducere (DeepL/Gemini/Groq)
-- `api/lib/pipeline.py` — NOU: orchestrare flux complet OCR->crop->traducere->HTML
+- `api/lib/pipeline.py` — [-] ANULAT (orchestrarea ramane in translate.py do_POST)
 - `api/lib/rate_limiter.py` — NOU: protectie impotriva abuzului (10 req/min per IP)
 - `api/deepl_usage.py` — NOU: endpoint cota DeepL
 - `frontend/src/components/traduceri/DocumentViewer.tsx` — pozitionare figuri corecta
@@ -203,7 +203,7 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 - [x] 2026-03-26 — Mesaje eroare in romana: "Prea multe cereri. Incearca din nou in N secunde." / "Limita zilnica atinsa."
 - [x] 2026-03-26 — Test pe Render: 5 cereri rapide la convert -> toate 200 (sub limita), rate limiter activ, build dd1d4b0
 
-**Sprint 2.4: Contor DeepL + Cache traduceri + Fallback** — COMPLETAT 2026-03-26
+**Sprint 2.4: Contor DeepL + Cache traduceri + Fallback** — PARTIAL 2026-03-26 (2 task-uri ramase)
 - [x] 2026-03-26 — `/api/deepl-usage` endpoint: cota combinata 2 chei (1M total), warning levels, pagini estimate
 - [x] 2026-03-26 — `DeeplUsage.tsx`: bara vizuala verde/galben/rosu, refresh 60s, in pagina Traduceri
 - [x] 2026-03-26 — Test pe Render: 16.115 / 1.000.000 (1.6%), ~728 pagini disponibile, nivel OK
@@ -214,7 +214,7 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 - [ ] Verificare fallback DeepL->Gemini end-to-end (SC2) — necesita epuizare cota sau simulare
 - [ ] Test cache: traduce, inchide browser, redeschide -> din cache (Roland verifica manual)
 
-**Sprint 2.5: Teste finale + Deploy** — COMPLETAT 2026-03-26
+**Sprint 2.5: Teste finale + Deploy** — PARTIAL 2026-03-26 (2 task-uri ramase)
 - [x] 2026-03-26 — Commit + Push Sprint 2.1-2.4 -> Render deploy OK (d391b9c)
 - [x] 2026-03-26 — Test JPEG live: 1 pag, 6 figuri crop, 70s, success
 - [x] 2026-03-26 — Test PDF live: 1 pag via PyMuPDF, 1 figura crop, 24.5s, success
@@ -236,7 +236,7 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 ### Criterii de acceptare
 - Output traducere arata ca Exemplu_BUN.html (figuri identice, pozitionate corect, formule frumoase)
 - Figuri corecte si din PDF (nu doar din JPEG) — via PyMuPDF
-- translate.py redus la sub 200 linii (restul in module separate)
+- translate.py refactorizat — reducere >60% fata de original (1444 -> sub 500), cu html_builder.py si translation_router.py extrase in module separate
 - Contor DeepL vizibil in pagina Traduceri
 - Cache traduceri persistent (nu se pierd la inchidere browser)
 - Rate limiting activ (10 req/min per IP)
