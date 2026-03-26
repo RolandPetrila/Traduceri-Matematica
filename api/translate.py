@@ -48,10 +48,43 @@ except ImportError:
     _HAS_STRUCTURED = False
 
 
+# --- PDF to images (PyMuPDF, DPI 150) ---
+
+def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
+    """Convert each PDF page to a PNG image using PyMuPDF.
+
+    Returns list of (image_bytes, mime_type) per page.
+    DPI 150 = good quality with low memory (~100MB for 10 pages on 512MB Render).
+    """
+    try:
+        import pymupdf
+    except ImportError:
+        print("[PDF] PyMuPDF not installed, cannot process PDF", file=sys.stderr)
+        return []
+
+    pages = []
+    try:
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        total = len(doc)
+        print(f"[PDF] Converting {total} pages at DPI {dpi}", file=sys.stderr)
+        for page_num in range(total):
+            page = doc[page_num]
+            pix = page.get_pixmap(dpi=dpi)
+            img_bytes = pix.tobytes("png")
+            pages.append((img_bytes, "image/png"))
+            print(f"[PDF] Page {page_num+1}/{total}: {pix.width}x{pix.height}px, {len(img_bytes)} bytes", file=sys.stderr)
+        doc.close()
+    except Exception as e:
+        print(f"[PDF] Error converting PDF: {e}", file=sys.stderr)
+        return []
+
+    return pages
+
+
 # --- Inline OCR fallback (if lib imports fail) ---
 
 def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
-    """Structured OCR with SVG figure generation — fallback."""
+    """Structured OCR with figure bbox detection — fallback."""
     import base64
     import urllib.request
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
@@ -65,17 +98,17 @@ def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str 
         '{{"title":"page title","sections":['
         '{{"type":"heading","content":"text","level":1}},'
         '{{"type":"paragraph","content":"text with $LaTeX$ formulas"}},'
-        '{{"type":"step","content":"construction step text"}},'
-        '{{"type":"figure","svg":"<svg>...</svg>","caption":"optional caption"}},'
+        '{{"type":"step","content":"$P_1$: construction step text"}},'
+        '{{"type":"figure","bbox":{{"x":0.1,"y":0.3,"w":0.4,"h":0.3}},"caption":"optional"}},'
         '{{"type":"observation","content":"observation text"}}'
         ']}}\n\n'
         "RULES:\n"
         "1. ALL math as LaTeX: $\\\\triangle ABC$, $\\\\angle A$, $AB = 4$ cm\n"
         "2. Steps labeled P1, P2 etc as type step\n"
-        "3. For geometric figures, generate inline SVG:\n"
-        "   - viewBox='0 0 200 135', stroke #333, text labels italic\n"
-        "   - Draw lines, arcs, label vertices with <text>\n"
-        "   - If figure too complex, set svg to empty string\n"
+        "3. For figures: return bbox (x,y,w,h as fractions 0.0-1.0 of image size)\n"
+        "   - Be PRECISE — bbox will be used to crop the figure from the image\n"
+        "   - If two figures side by side, return TWO separate figure sections\n"
+        "   - Do NOT generate SVG\n"
         "4. Preserve ALL text exactly — do not summarize\n"
         "5. Return valid JSON only"
     )
@@ -263,7 +296,17 @@ class handler(BaseHTTPRequestHandler):
                 mime_type = file_info.get("mime_type", "image/jpeg")
                 filename = file_info.get("filename", "")
                 is_docx = "wordprocessingml" in mime_type or filename.lower().endswith(".docx")
+                is_pdf = mime_type == "application/pdf" or filename.lower().endswith(".pdf")
                 has_claude = False  # Claude suspended
+
+                # PDF: convert each page to image, process individually
+                if is_pdf and not is_docx:
+                    pdf_pages = _pdf_to_images(file_data)
+                    if pdf_pages:
+                        for pg_idx, (pg_bytes, pg_mime) in enumerate(pdf_pages):
+                            files.append({"data": pg_bytes, "mime_type": pg_mime, "filename": f"{filename}_p{pg_idx+1}.png"})
+                        continue  # Skip this file, process extracted pages
+                    # Fallback: treat as regular image (might fail, but try)
 
                 if is_docx:
                     extracted = extract_text_from_docx(file_data)
@@ -279,14 +322,16 @@ class handler(BaseHTTPRequestHandler):
                     # Structured pipeline: OCR -> crop -> translate -> HTML
                     t_ocr = time.time()
                     use_structured = True
+                    _ocr_fn = ocr_structured if _HAS_STRUCTURED else _ocr_structured_inline
                     try:
-                        page_data = _ocr_structured_inline(file_data, mime_type, source_lang)
+                        page_data = _ocr_fn(file_data, mime_type, source_lang)
                     except Exception:
                         use_structured = False
 
                     if use_structured:
                         sections = page_data.get("sections", [])
-                        cropped_figs = _crop_all_figures_inline(file_data, sections)
+                        _crop_fn = crop_all_figures if _HAS_STRUCTURED else _crop_all_figures_inline
+                        cropped_figs = _crop_fn(file_data, sections)
 
                         # Batch translate all text parts in one API call
                         text_indices = []

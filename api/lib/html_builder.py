@@ -85,6 +85,13 @@ def _md_to_html_body(md: str) -> str:
     return html
 
 
+def _build_figure_pair():
+    """Sentinel for paired figure state tracking."""
+    pass
+
+_build_figure_pair._skip_next = False
+
+
 def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]], target_lang: str) -> str:
     """Build HTML from structured OCR data + cropped figures.
 
@@ -95,7 +102,9 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
     """
     page_sections = []
     for page_idx, (page, figs) in enumerate(zip(pages_data, figures)):
+        _build_figure_pair._skip_next = False  # Reset for each page
         parts = []
+        sections = page.get("sections", [])
         parts.append(f'<div class="source-file">Pagina {page_idx + 1}</div>')
 
         title = page.get("title", "")
@@ -133,17 +142,50 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
             elif sec_type == "figure":
                 # Insert cropped figure as <img> if available
                 b64 = figs.get(sec_idx, "")
+                caption = section.get("caption", "")
                 if b64:
-                    parts.append(
-                        f'<div style="display:flex;justify-content:center;margin:8px 0">'
-                        f'<img src="data:image/png;base64,{b64}" '
-                        f'alt="{section.get("description", "Figura")}" '
-                        f'style="max-width:100%;height:auto;background:#fff;" />'
-                        f'</div>'
-                    )
+                    # Check if next section is also a figure (paired: P1+P2 side by side)
+                    next_idx = sec_idx + 1
+                    next_sec = sections[next_idx] if next_idx < len(sections) else None
+                    next_is_figure = next_sec and next_sec.get("type") == "figure"
+                    next_b64 = figs.get(next_idx, "") if next_is_figure else ""
+
+                    if next_b64 and not getattr(_build_figure_pair, '_skip_next', False):
+                        # Render paired figures side by side
+                        next_caption = next_sec.get("caption", "") if next_sec else ""
+                        parts.append(
+                            f'<div style="display:flex;justify-content:center;gap:12px;margin:10px 0">'
+                            f'<div style="text-align:center">'
+                            f'<img src="data:image/png;base64,{b64}" '
+                            f'alt="{caption or "Figura"}" '
+                            f'style="max-width:48%;height:auto;background:#fff;border:1px solid #eee;" />'
+                            f'{"<p><em>" + caption + "</em></p>" if caption else ""}'
+                            f'</div>'
+                            f'<div style="text-align:center">'
+                            f'<img src="data:image/png;base64,{next_b64}" '
+                            f'alt="{next_caption or "Figura"}" '
+                            f'style="max-width:48%;height:auto;background:#fff;border:1px solid #eee;" />'
+                            f'{"<p><em>" + next_caption + "</em></p>" if next_caption else ""}'
+                            f'</div>'
+                            f'</div>'
+                        )
+                        _build_figure_pair._skip_next = True
+                    elif getattr(_build_figure_pair, '_skip_next', False):
+                        # This figure was already rendered as part of a pair
+                        _build_figure_pair._skip_next = False
+                    else:
+                        # Single figure
+                        parts.append(
+                            f'<div style="display:flex;justify-content:center;margin:8px 0">'
+                            f'<img src="data:image/png;base64,{b64}" '
+                            f'alt="{caption or "Figura"}" '
+                            f'style="max-width:90%;height:auto;background:#fff;border:1px solid #eee;" />'
+                            f'</div>'
+                            f'{"<p style=\"text-align:center\"><em>" + caption + "</em></p>" if caption else ""}'
+                        )
                 else:
-                    desc = section.get("description", "")
-                    parts.append(f'<p><em>[Figura: {desc}]</em></p>')
+                    desc = section.get("caption", section.get("description", ""))
+                    parts.append(f'<p><em>[Figura: {desc or "indisponibila"}]</em></p>')
             else:
                 # paragraph or unknown
                 if content:
