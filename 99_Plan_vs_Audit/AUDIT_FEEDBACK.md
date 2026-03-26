@@ -415,3 +415,113 @@ Dar decizia D17 spune: numar combinat, 1.000.000 total.
 > **Evaluare**: Plan gata de executie. Dupa aceste 2 corectii, T1 poate incepe Faza 1.
 >
 > Feedback complet in `99_Plan_vs_Audit/AUDIT_FEEDBACK.md`.
+
+---
+---
+
+# AUDIT FEEDBACK — Runda 4 (verificare executie)
+# Data: 2026-03-26 | Sursa: PLAN_v3.md (Sprint 1.1+1.2 completate) + cod sursa verificat
+# Status: NOU
+
+---
+
+## Rezumat
+
+T1 a executat Sprint 1.1 si Sprint 1.2 din Faza 1. Am verificat codul implementat contra cerintelor din plan. **Totul e corect.** Sprint 1.3 (curatenie) ramane de executat. Am gasit 0 probleme in cod, doar 2 observatii administrative.
+
+---
+
+## Verificare Sprint 1.1: Fix convertor — CONFIRMAT
+
+| Task | Plan | Cod | Verdict |
+|------|------|-----|---------|
+| Fix import os | Adauga `import os` in convert.py | Prezent la linia 12 | OK |
+| Test MINIM (MD→HTML) | HTTP 200, output corect | Confirmat de T1 | OK |
+| Test TIPIC (3 tipuri) | MD→HTML, JPEG→PDF, PDF→DOCX | Toate OK, diacritice corecte | OK |
+| Test MAXIM (operatii) | Split, Compress, Rotate, Watermark | Toate OK | OK |
+
+Commit: `af0b40b` — pushed.
+
+---
+
+## Verificare Sprint 1.2: Ecran "Se incarca..." — CONFIRMAT
+
+Componenta: `frontend/src/components/layout/ServerWakeup.tsx` (109 linii)
+
+| Cerinta | Implementare | Verdict |
+|---------|--------------|---------|
+| Poll /api/health la 3 secunde | `POLL_INTERVAL_MS = 3_000` + `setTimeout` | OK |
+| Design tabla verde + animatie | `radial-gradient #2d5016→#1a3009` + 3 puncte galben-creta animate | OK |
+| Mesaj in romana | "Se pregateste aplicatia..." | OK |
+| Dispare automat la raspuns server | `if (res.ok) setStatus("ready")` | OK |
+| Timeout 120 secunde | `TIMEOUT_MS = 120_000` | OK |
+| Mesaj eroare + retry in romana | "Serverul nu raspunde momentan" + buton "Incearca din nou" | OK |
+
+Bonus: fix `BatchPanel.tsx` — logError() avea semnatura gresita, acum corecta.
+
+Commit: `0149df0` — pushed.
+
+---
+
+## Criterii de acceptare Faza 1 — verificare
+
+| Criteriu | Status |
+|----------|--------|
+| Cristina poate converti PDF↔Word pe site-ul live | PASS (Sprint 1.1 test TIPIC) |
+| Ecran frumos la prima accesare (nu pagina goala) | PASS (ServerWakeup cu tema tabla) |
+| Dupa 30-60 sec, aplicatia se incarca normal | PASS (auto-dismiss la raspuns server) |
+| Mesaj clar + retry daca serverul nu raspunde dupa 120s | PASS (verificat in cod) |
+
+**Faza 1 completare reala: ~66%** (Sprint 1.1 + 1.2 gata, Sprint 1.3 ramas)
+
+---
+
+## Observatii administrative
+
+### O1: Plan metadata neactualizat
+PLAN_v3.md inca spune:
+- Linia 2: `Status: IN PLANIFICARE` — ar trebui `IN EXECUTIE`
+- Linia 4: `Completare: 0%` — ar trebui `~15%` (Faza 1 partial completa)
+- Faza 1 header: `Completare: 0%` — ar trebui `~66%`
+**Recomandare**: T1 sa actualizeze metadata planului dupa fiecare sprint completat. Tracking-ul pierde valoare daca nu reflecta realitatea.
+
+### O2: RUNDA_CURENTA.md stale
+Inca spune "Gata de executie — T1 asteapta confirmarea lui Roland pentru Sprint 1.1". Dar Sprint 1.1 si 1.2 sunt deja completate.
+**Recomandare**: T1 sa actualizeze la: "Faza 1 in executie — Sprint 1.1+1.2 completate, Sprint 1.3 urmeaza."
+
+---
+
+## Sugestii CRITICE
+
+(Niciuna.)
+
+---
+
+## Sugestii IMPORTANTE
+
+(Niciuna — implementarea e corecta.)
+
+---
+
+## Intrebari pentru Roland
+
+(Niciuna.)
+
+---
+
+## Text gata de copiat catre T1 (Runda 4 — verificare executie)
+
+> **De la T2 (Runda 4 — VERIFICARE)**: Am verificat codul Sprint 1.1 si 1.2 contra planului. **Totul e corect:**
+>
+> - Sprint 1.1: `import os` prezent, toate 4 niveluri de test trecute. OK.
+> - Sprint 1.2: ServerWakeup.tsx — 109 linii, toate 6 cerinte implementate corect (poll 3s, tema tabla, timeout 120s, mesaje romana, retry). OK.
+> - Bonus: fix BatchPanel logError() — corect.
+> - Criterii acceptare Faza 1: 4/4 PASS.
+>
+> **2 observatii administrative:**
+> 1. Actualizeaza metadata plan: status "IN EXECUTIE", completare ~15%, Faza 1 ~66%.
+> 2. Actualizeaza RUNDA_CURENTA.md cu starea reala (Sprint 1.1+1.2 gata).
+>
+> Sprint 1.3 (curatenie) ramane. Dupa el, Faza 1 e 100% si se poate trece la Faza 2.
+>
+> Feedback complet in `99_Plan_vs_Audit/AUDIT_FEEDBACK.md`.

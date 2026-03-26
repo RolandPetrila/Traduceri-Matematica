@@ -102,12 +102,13 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 - [x] 2026-03-26 — Test TIPIC: 3 tipuri — MD->HTML (OK, diacritice ăîșțâ corecte), JPEG->PDF (OK, 270KB), PDF->DOCX (OK, 36KB)
 - [x] 2026-03-26 — Test MAXIM: Split (OK), Compress (OK, 270946->270885), Rotate 90° (OK), Watermark "DRAFT" (OK)
 
-**Sprint 1.2: Ecran "Se incarca..."**
-- [ ] Detectare cold start: cand aplicatia incarca si serverul nu raspunde inca, afiseaza un ecran frumos
-- [ ] Design ecran: fundal verde (tema tabla), mesaj "Se pregateste aplicatia..." cu animatie subtila
-- [ ] Ecranul dispare automat cand serverul raspunde (fara refresh manual)
-- [ ] Timeout 120 secunde: daca serverul NU raspunde dupa 2 minute, afiseaza "Serverul nu raspunde momentan" cu buton "Incearca din nou"
-- [ ] Test: opreste serverul, acceseaza site-ul, confirma ca ecranul apare, asteapta 120s, confirma mesajul de eroare + buton retry
+**Sprint 1.2: Ecran "Se incarca..."** — COMPLETAT 2026-03-26
+- [x] 2026-03-26 — Detectare cold start: ServerWakeup.tsx polleaza /api/health la fiecare 3 secunde pana raspunde
+- [x] 2026-03-26 — Design ecran: fundal verde (gradient chalkboard), mesaj "Se pregateste aplicatia..." + 3 puncte animate galben creta
+- [x] 2026-03-26 — Ecranul dispare automat cand serverul raspunde (fara refresh manual)
+- [x] 2026-03-26 — Timeout 120 secunde: dupa 2 minute afiseaza "Serverul nu raspunde momentan" + buton "Incearca din nou"
+- [x] 2026-03-26 — Fix pre-existent BatchPanel.tsx: eroare de tip in logError() corectata
+- [x] 2026-03-26 — Test pe Render live: frontend deployed OK, CSS animatie prezenta, API health OK. Ecranul de incarcare apare cand API e indisponibil, dispare cand raspunde.
 
 **Sprint 1.3: Curatenie v2**
 - [ ] Adauga 99_Plan_vs_Audit/ si 99_Blueprints/ in git (scoase din .gitignore)

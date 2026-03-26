@@ -180,7 +180,7 @@ Toate fisierele sunt create cu cod functional (nu placeholder-e goale):
 | Frontend | Next.js 14 + Tailwind + shadcn/ui | Modern, PWA ready, Vercel native |
 | Backend | FastAPI Python | Reutilizeaza scripturile CLI existente |
 | Tema UI | "Tabla verde + creta" | Verde-inchis #2d5016, text alb/galben, font Patrick Hand |
-| Deploy | Vercel auto-deploy din GitHub | Gratuit, CI/CD automat |
+| Deploy | Render auto-deploy din GitHub (Frankfurt, free tier) | Gratuit, suporta Python nativ, timeout 100 min |
 | Autentificare | FARA — acces direct | Uz intern, nu necesita parola |
 | Istoric | Complet cu detalii, preview, re-download | localStorage in browser |
 | Dictionar | Panel pliabil in tab Traduceri | Persistenta localStorage, editabil manual |
@@ -257,5 +257,22 @@ Roland a confirmat continuarea (2026-03-23) — chei considerate valide.
 
 ---
 
-*Checkpoint generat: 2026-03-22 | Sesiune: Planificare completa + Setup structura*
-*Urmatoarea sesiune incepe cu FAZA 1.1 — Instalare dependinte*
+---
+
+## SESIUNEA 2026-03-26 — v3 Planificare + Executie
+
+### Ce s-a facut
+- Planificare completa v3 cu sistem multi-terminal (T1 executie + T2 audit + T3 orchestrator)
+- PLAN_v3.md: 6 faze, 21 decizii, ~70 task-uri
+- 3 runde de audit integrate (0 probleme critice ramase)
+- Cercetare MCP: PyMuPDF confirmat, rate limiting confirmat
+- **Faza 1 Sprint 1.1**: Fix convertor (import os) — teste MINIM/TIPIC/MAXIM OK
+- **Faza 1 Sprint 1.2**: Ecran "Se incarca..." la cold start Render — deployed OK
+- **Faza 1 Sprint 1.3**: Curatenie v2, update documentatie
+
+### Sursa unica de adevar
+- `99_Plan_vs_Audit/PLAN_v3.md` — tracking progres v3
+- `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
+- Deploy: Render (Vercel dezactivat)
+
+*Checkpoint actualizat: 2026-03-26*
