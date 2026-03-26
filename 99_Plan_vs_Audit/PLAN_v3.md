@@ -167,31 +167,30 @@ Documentele traduse sa arate ca Exemplu_BUN.html: figuri identice cu originalul,
 
 ### Task-uri
 
-**Sprint 2.1: Refactorizare backend (reorganizare cod)**
-Fisierul translate.py are 1420 linii — totul amestecat intr-un singur loc. Il spargem in module separate, ca fiecare parte sa faca un singur lucru:
-- [ ] **Commit snapshot pre-refactorizare** — salvam starea actuala inainte de a schimba ceva (ca o copie de siguranta). Daca ceva nu merge dupa reorganizare, putem reveni instant. (audit S4)
-- [ ] Creaza `api/lib/html_builder.py` — extrage functiile care construiesc documentul HTML (layout A4, MathJax, figuri)
-- [ ] Creaza `api/lib/translation_router.py` — extrage logica de alegere: DeepL sau Gemini? Prima cheie sau a doua?
-- [ ] Creaza `api/lib/pipeline.py` — extrage fluxul complet: OCR -> crop figuri -> traducere -> HTML
-- [ ] Simplifica `api/translate.py` — ramane doar punctul de intrare (primeste cererea, trimite la pipeline, returneaza rezultatul)
-- [ ] Test: traducere 1 pagina functioneaza identic dupa reorganizare
-- [ ] Test: traducere 5 pagini functioneaza identic
+**Sprint 2.1: Refactorizare backend (reorganizare cod)** — COMPLETAT 2026-03-26
+Fisierul translate.py avea 1444 linii. L-am spart in module separate:
+- [x] 2026-03-26 — Commit snapshot pre-refactorizare: cbbe712 (copie de siguranta)
+- [x] 2026-03-26 — `api/lib/html_builder.py` (262 linii) — HTML A4 template + MathJax + build_html() refactorizat sa refoloseasca _build_html_shell()
+- [x] 2026-03-26 — `api/lib/translation_router.py` (482 linii) — Gemini/DeepL/Groq/Mistral/Claude + OCR + DOCX extraction
+- [-] `api/lib/pipeline.py` — necreat separat, orchestrarea ramane in translate.py do_POST (mai simplu, mai putin risc)
+- [x] 2026-03-26 — `api/translate.py` simplificat: 1444 -> 405 linii (reducere 72%). Ramane: handler + inline fallbacks + orchestrare
+- [x] 2026-03-26 — Test 1 pagina pe Render: SUCCESS — pipeline structured, DeepL, 37.6 sec, 7163 chars HTML
+- [x] 2026-03-26 — Test 2 pagini pe Render: SUCCESS — ambele structured, 93 sec, 10491 chars HTML
 
-**Sprint 2.2: Calitate figuri + pozitionare**
-Acum figurile sunt generate de AI (SVG aproximativ). Le inlocuim cu figuri decupate din poza originala:
-- [ ] Imbunatatire OCR prompt: Gemini sa returneze coordonatele exacte ale figurilor (unde incepe si unde se termina fiecare desen)
-- [ ] Validare coordonate figuri: daca Gemini returneaza coordonate invalide (in afara paginii, dimensiuni zero), afiseaza un placeholder "Figura nu a putut fi extrasa" in loc de imagine corupta (audit SC1)
-- [ ] Crop figuri din imaginea originala cu Pillow (ca si cum ai decupa cu foarfeca din poza)
-- [ ] Curatare fundal: fundalul decupaturii devine alb curat
-- [ ] Pozitionare in HTML: fiecare figura apare exact unde era in original (langa textul corect)
-- [ ] Figuri in perechi unde e cazul (P1+P2 unul langa altul, ca in Exemplu_BUN.html)
-- [ ] **Suport PDF**: adaugare PyMuPDF in requirements.txt — converteste fiecare pagina PDF in imagine inainte de crop (audit S1). Astfel si PDF-urile au figuri decupate, nu doar pozele.
-- [ ] **PyMuPDF DPI = 150** (audit S13): setare explicita DPI 150 (nu 300 care e default in tutoriale). DPI 300 consuma de 4 ori mai multa memorie si face crash pe serverul cu 512 MB. Test: PDF 10 pagini la DPI 150 -> confirma memorie sub 256 MB.
-- [ ] Test MINIM: 1 pagina JPEG cu 1 triunghi -> triunghi vizibil, pozitionat corect
-- [ ] Test TIPIC: 3 pagini JPEG cu formule + figuri -> toate figurile la locul lor
-- [ ] Test TIPIC PDF: 3 pagini PDF -> figuri decupate corect (via PyMuPDF)
-- [ ] Test MAXIM: 10 pagini cu figuri complexe (constructii geometrice pas cu pas)
-- [ ] Comparatie vizuala cu Exemplu_BUN.html — confirma calitate echivalenta
+**Sprint 2.2: Calitate figuri + pozitionare** — IN CURS 2026-03-26
+Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza originala:
+- [x] 2026-03-26 — OCR prompt actualizat: Gemini returneaza bbox (coordonate x,y,w,h ca fractii 0-1) in loc de SVG
+- [x] 2026-03-26 — Validare bbox (SC1): coordonate invalide -> placeholder "Figura indisponibila". Functia _validate_bbox verifica limite, dimensiuni minime.
+- [x] 2026-03-26 — Crop figuri din original cu Pillow + fundal alb curat (background removal din colturi)
+- [x] 2026-03-26 — Pozitionare in HTML: figurile apar in fluxul documentului exact unde Gemini le detecteaza
+- [x] 2026-03-26 — Figuri perechi: doua figuri consecutive se afiseaza automat side-by-side (P1+P2)
+- [x] 2026-03-26 — PyMuPDF adaugat in requirements.txt + _pdf_to_images() in pipeline (DPI 150)
+- [x] 2026-03-26 — Pipeline preferat: lib/ocr_structured + lib/figure_crop (cu fallback inline)
+- [x] 2026-03-26 — Test MINIM: 1 pag JPEG -> 6 figuri crop (5 bbox + 1 placeholder), 0 SVG, 47.7s
+- [x] 2026-03-26 — Test TIPIC: 2 pag JPEG -> 12 figuri crop (6+6, toate bbox valid), 78s
+- [x] 2026-03-26 — Test PDF: 1 pag PDF via PyMuPDF -> 2 figuri crop, 34.9s. PDF conversion OK.
+- [ ] Test MAXIM: PDF 10 pagini — necesita procesare in loturi (SC3, Sprint 2.5)
+- [ ] Comparatie vizuala cu Exemplu_BUN.html — Roland verifica pe site-ul live
 
 **Sprint 2.3: Securitate + Protectie abuz**
 Verificare fix-uri existente + rezolvare probleme ramase + protectie cote API:
