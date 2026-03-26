@@ -47,6 +47,8 @@ from api.translate import handler as TranslateHandler
 from api.translate_text import handler as TranslateTextHandler
 from api.convert import handler as ConvertHandler
 
+from api.lib.rate_limiter import is_rate_limited, start_cleanup_timer
+
 print("[DEV] Handlers imported OK", file=sys.stderr, flush=True)
 
 ROUTES = {
@@ -75,6 +77,20 @@ class DevRouter(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"error":"Route not found"}')
             return
+
+        # Rate limiting (skip OPTIONS and health checks)
+        if method == "POST":
+            endpoint = self.path.split("?")[0]  # strip query params
+            limited, msg = is_rate_limited(self, endpoint)
+            if limited:
+                self.send_response(429)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", _cors_origin(self))
+                self.send_header("Retry-After", "60")
+                self.end_headers()
+                import json
+                self.wfile.write(json.dumps({"error": msg, "status": "rate_limited"}).encode())
+                return
 
         # Borrow handler's custom methods (_parse_multipart, _send_json, etc.)
         borrowed = []
@@ -117,8 +133,10 @@ def main():
     port = int(os.environ.get("PORT", os.environ.get("DEV_API_PORT", "8000")))
     host = os.environ.get("DEV_API_HOST", "0.0.0.0")
     server = HTTPServer((host, port), DevRouter)
+    start_cleanup_timer()
     print(f"[DEV] Python API server: http://localhost:{port}", file=sys.stderr, flush=True)
     print("[DEV] Routes: /api/health, /api/translate, /api/convert", file=sys.stderr, flush=True)
+    print("[DEV] Rate limiting: active on POST endpoints", file=sys.stderr, flush=True)
 
     try:
         server.serve_forever()
