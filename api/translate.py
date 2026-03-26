@@ -1,6 +1,6 @@
 """Python Serverless Function for OCR + Translation (Render).
 
-Uses direct REST API calls (no heavy SDKs).
+Thin handler — delegates to lib/ modules for OCR, translation, and HTML building.
 Handles POST /api/translate — image files -> AI OCR -> translate -> HTML.
 """
 
@@ -8,32 +8,52 @@ from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler
 import json
-import base64
 import os
 import re
 import sys
+import time
 import traceback
-import urllib.request
 
-# Ensure api/lib/ is importable on both Render and local dev
+# Ensure api/lib/ is importable
 _api_dir = os.path.dirname(os.path.abspath(__file__))
 if _api_dir not in sys.path:
     sys.path.insert(0, _api_dir)
 
-# Try importing shared libs (inlined functions used as fallback if import fails)
+# --- Lib imports ---
+from lib.html_builder import build_html, build_html_structured
+from lib.translation_router import (
+    gemini_request,
+    ocr_with_gemini,
+    translate_with_gemini,
+    translate_with_groq,
+    extract_text_from_docx,
+    format_and_translate_docx,
+    claude_ocr_and_translate,
+    claude_translate_text,
+    _sanitize_error,
+)
+from lib.math_protect import protect_for_deepl, restore_from_deepl
+
 try:
     from lib.deepl_client import translate_text as _deepl_translate
-    from lib.math_protect import protect_for_deepl as _protect_deepl, restore_from_deepl as _restore_deepl
     _HAS_DEEPL_LIB = True
 except ImportError:
     _HAS_DEEPL_LIB = False
 
+try:
+    from lib.ocr_structured import ocr_structured
+    from lib.figure_crop import crop_all_figures
+    _HAS_STRUCTURED = True
+except ImportError:
+    _HAS_STRUCTURED = False
 
-# --- Inline OCR structured (fallback if lib import fails) ---
 
+# --- Inline OCR fallback (if lib imports fail) ---
 
 def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
-    """Structured OCR with SVG figure generation — Exemplu_BUN quality."""
+    """Structured OCR with SVG figure generation — fallback."""
+    import base64
+    import urllib.request
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
@@ -81,27 +101,22 @@ def _ocr_structured_inline(image_bytes: bytes, mime_type: str, source_lang: str 
         fixed = re.sub(r'(?<!\\)\\(?!["\\/bfnrtu\\])', r'\\\\', raw)
         try:
             result = json.loads(fixed)
-        except json.JSONDecodeError as e2:
-            print(f"[OCR-STRUCT] JSON parse failed: {e2}", file=sys.stderr)
+        except json.JSONDecodeError:
             return {"title": "", "sections": [{"type": "paragraph", "content": raw}]}
     if not isinstance(result, dict):
         result = {"title": "", "sections": [{"type": "paragraph", "content": str(result)}]}
     if "sections" not in result:
         result["sections"] = []
-    fig_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure")
-    svg_count = sum(1 for s in result.get("sections", []) if s.get("type") == "figure" and s.get("svg"))
-    total = len(result.get("sections", []))
-    print(f"[OCR-STRUCT] OK: {total} sections, {fig_count} figures ({svg_count} with SVG)", file=sys.stderr)
     return result
 
 
 def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
-    """Crop figures from image — inlined as fallback."""
+    """Crop figures from image — inline fallback."""
     try:
         import io
+        import base64
         from PIL import Image
     except ImportError:
-        print("[CROP] Pillow not available, skipping figure crop", file=sys.stderr)
         return {}
     result = {}
     img = Image.open(io.BytesIO(image_bytes))
@@ -119,7 +134,6 @@ def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
             continue
         cropped = img.crop((x1, y1, x2, y2)).convert("RGBA")
         cw, ch = cropped.size
-        # Detect and replace background with white
         corners = []
         for cx, cy in [(0, 0), (cw - 5, 0), (0, ch - 5), (cw - 5, ch - 5)]:
             region = cropped.crop((max(0, cx), max(0, cy), min(cw, cx + 5), min(ch, cy + 5)))
@@ -130,10 +144,7 @@ def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
                     sum(p[1] for p in pixels) // len(pixels),
                     sum(p[2] for p in pixels) // len(pixels),
                 ))
-        if corners:
-            bg = tuple(sum(c[j] for c in corners) // len(corners) for j in range(3))
-        else:
-            bg = (245, 245, 245)
+        bg = tuple(sum(c[j] for c in corners) // len(corners) for j in range(3)) if corners else (245, 245, 245)
         px = cropped.load()
         for py_ in range(ch):
             for px_ in range(cw):
@@ -143,69 +154,43 @@ def _crop_all_figures_inline(image_bytes: bytes, sections: list) -> dict:
         final = cropped.convert("RGB")
         buf = io.BytesIO()
         final.save(buf, format="PNG", optimize=True)
-        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-        result[i] = b64
-        print(f"[CROP] Figure [{i}]: {cw}x{ch}px", file=sys.stderr)
+        result[i] = base64.b64encode(buf.getvalue()).decode("utf-8")
     return result
 
 
-# --- Local debug logging ---
-
+# --- Helpers ---
 
 def _log_to_file(message: str) -> None:
     """Append log entry to data/logs/local_debug.log (local dev only)."""
-    log_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "logs"
-    )
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "logs")
     if not os.path.isdir(log_dir):
         return
-    log_file = os.path.join(log_dir, "local_debug.log")
     try:
         from datetime import datetime
-
         ts = datetime.now().strftime("%H:%M:%S")
-        with open(log_file, "a", encoding="utf-8") as f:
+        with open(log_dir + "/local_debug.log", "a", encoding="utf-8") as f:
             f.write(f"[{ts}] {message}\n")
     except Exception:
         pass
 
 
-def _count_output_stats(markdown: str) -> dict:
-    """Count LaTeX formulas, SVG figures, headings in output."""
-    return {
-        "latex": len(re.findall(r"\$[^\$\n]+?\$", markdown))
-        + len(re.findall(r"\$\$[\s\S]+?\$\$", markdown)),
-        "svg": len(re.findall(r"<svg", markdown, re.IGNORECASE)),
-        "headings": len(re.findall(r"^#{1,6}\s", markdown, re.MULTILINE)),
-        "chars": len(markdown),
-    }
-
-
-# --- Math protection ---
-
-LATEX_PATTERNS = [
-    r"\$\$[\s\S]+?\$\$",
-    r"\$[^\$\n]+?\$",
-    r"\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}",
-    r"\\[a-zA-Z]+\{[^}]*\}",
-    r"\\[a-zA-Z]+",
-]
-
-SVG_PATTERN = r"<div[^>]*>[\s\S]*?<svg[\s\S]*?</svg>[\s\S]*?</div>"
-HTML_PATTERN = r"<[^>]+>"
-
-
 def protect_math(text: str) -> tuple[str, dict[str, str]]:
+    """Protect LaTeX/SVG/HTML from translation."""
     placeholders = {}
     counter = [0]
-
     def _replace(match: re.Match) -> str:
         key = f"__MATH_{counter[0]}__"
         placeholders[key] = match.group(0)
         counter[0] += 1
         return key
-
-    for pattern in [SVG_PATTERN] + LATEX_PATTERNS + [HTML_PATTERN]:
+    patterns = [
+        r"<div[^>]*>[\s\S]*?<svg[\s\S]*?</svg>[\s\S]*?</div>",
+        r"\$\$[\s\S]+?\$\$", r"\$[^\$\n]+?\$",
+        r"\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}",
+        r"\\[a-zA-Z]+\{[^}]*\}", r"\\[a-zA-Z]+",
+        r"<[^>]+>",
+    ]
+    for pattern in patterns:
         text = re.sub(pattern, _replace, text)
     return text, placeholders
 
@@ -216,944 +201,13 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
     return text
 
 
-# --- Post-processing pipeline (deterministic fixes for Gemini output) ---
-
-# Matches construction step headings in ALL formats:
-# # P₁:, ## P₃:, ### $P_1$:, # P4:, # P₁ :, ### P₃: Zostrojíme...
-_STEP_HEADING_RE = re.compile(
-    r"^(#{1,6})\s*((?:"
-    r"\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?"  # P₁, $P_1$, P1
-    r"|P\s*[₁₂₃₄₅₆₇₈₉]"         # P ₁ (with space)
-    r")\s*[:.]?\s*.+)$",
-    re.MULTILINE,
-)
-
-# Matches SVG div blocks
-_SVG_DIV_RE = re.compile(
-    r'(<div[^>]*style="display:flex[^"]*"[^>]*>[\s\S]*?</div>)',
-    re.IGNORECASE,
-)
-
-# Matches width="N" and height="N" in SVG tags
-_SVG_SIZE_RE = re.compile(r'(<svg[^>]*?)width="(\d+)"([^>]*?)height="(\d+)"', re.IGNORECASE)
-
-
-def _post_process_markdown(md: str) -> str:
-    """Deterministic fixes applied AFTER Gemini generates markdown.
-
-    1. Demote construction step headings to paragraphs
-    2. Resize small SVGs to minimum width
-    3. Pair consecutive single-SVG divs side-by-side
-    """
-    # --- Fix 1: Demote construction step headings to paragraphs ---
-    md = _STEP_HEADING_RE.sub(r"\2", md)
-
-    # --- Fix 2: Resize small SVGs (minimum width=200) ---
-    def _resize_svg(m: re.Match) -> str:
-        prefix, w_str, mid, h_str = m.group(1), m.group(2), m.group(3), m.group(4)
-        w, h = int(w_str), int(h_str)
-        if w < 200:
-            scale = 230 / w
-            w = 230
-            h = int(h * scale)
-        return f'{prefix}width="{w}"{mid}height="{h}"'
-
-    md = _SVG_SIZE_RE.sub(_resize_svg, md)
-
-    # --- Fix 3: Pair consecutive single-SVG divs ---
-    # Find all SVG div blocks and their positions
-    svg_divs = list(_SVG_DIV_RE.finditer(md))
-    if len(svg_divs) >= 2:
-        # Work backwards to preserve positions
-        pairs_to_merge = []
-        i = 0
-        while i < len(svg_divs) - 1:
-            div1 = svg_divs[i]
-            div2 = svg_divs[i + 1]
-            # Check if they contain exactly 1 SVG each
-            svg_count_1 = len(re.findall(r"<svg", div1.group(0), re.I))
-            svg_count_2 = len(re.findall(r"<svg", div2.group(0), re.I))
-            # Check if they are close together (only whitespace/text between them, no other blocks)
-            between = md[div1.end():div2.start()].strip()
-            # Pair them if both have 1 SVG and only a construction step paragraph between them
-            is_step_between = bool(re.match(
-                r"^(?:\$?P[_₁₂₃₄₅₆₇₈₉\d]\$?\s*[:.]|P[₁₂₃₄₅₆₇₈₉]\s*[:.]).*$",
-                between, re.DOTALL
-            ))
-            if svg_count_1 == 1 and svg_count_2 == 1 and (not between or is_step_between):
-                pairs_to_merge.append((i, i + 1))
-                i += 2  # Skip the next one since we already paired it
-            else:
-                i += 1
-
-        # Merge pairs (backwards to preserve positions)
-        for idx1, idx2 in reversed(pairs_to_merge):
-            d1 = svg_divs[idx1]
-            d2 = svg_divs[idx2]
-            # Extract SVG elements from each div
-            svg1_match = re.search(r"<svg[\s\S]*?</svg>", d1.group(0), re.I)
-            svg2_match = re.search(r"<svg[\s\S]*?</svg>", d2.group(0), re.I)
-            if svg1_match and svg2_match:
-                merged = (
-                    '<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n'
-                    f"{svg1_match.group(0)}\n{svg2_match.group(0)}\n"
-                    "</div>"
-                )
-                # Replace from start of div1 to end of div2 (including text between)
-                md = md[:d1.start()] + merged + md[d2.end():]
-
-    return md
-
-
-# --- DOCX text extraction (structured) ---
-
-def extract_text_from_docx(data: bytes) -> str:
-    """Extract text from DOCX preserving structure: headings, bold, lists."""
-    import io
-    from docx import Document
-
-    doc = Document(io.BytesIO(data))
-    lines: list[str] = []
-    for p in doc.paragraphs:
-        text = p.text.strip()
-        if not text:
-            continue
-        style_name = (p.style.name if p.style else "").lower()
-
-        # Detect heading styles
-        if "heading 1" in style_name or "title" in style_name:
-            lines.append(f"# {text}")
-        elif "heading 2" in style_name:
-            lines.append(f"## {text}")
-        elif "heading 3" in style_name:
-            lines.append(f"### {text}")
-        elif "list" in style_name:
-            lines.append(f"- {text}")
-        else:
-            # Reconstruct with bold/italic markers from runs
-            parts: list[str] = []
-            for run in p.runs:
-                t = run.text
-                if not t:
-                    continue
-                if run.bold and t.strip():
-                    parts.append(f"**{t}**")
-                elif run.italic and t.strip():
-                    parts.append(f"*{t}*")
-                else:
-                    parts.append(t)
-            lines.append("".join(parts) if parts else text)
-    return "\n\n".join(lines)
-
-
-def format_and_translate_docx(text: str, source_lang: str, target_lang: str) -> str:
-    """Use Gemini to format extracted DOCX text as Markdown+LaTeX+SVG AND translate.
-
-    This produces output identical in quality to the image OCR pipeline.
-    """
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set")
-
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-    tgt = lang_names.get(target_lang, target_lang)
-
-    print(f"[DOCX] Format+Translate: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
-    prompt = (
-        f"You are processing text extracted from a {src} math textbook.\n"
-        f"FORMAT it as professional Markdown AND TRANSLATE to {tgt} in one step.\n\n"
-        "CRITICAL RULES (violating these is an error):\n"
-        "1. Construction steps P₁, P₂, P₃, P₄ are PARAGRAPHS, NEVER headings.\n"
-        "   CORRECT: $P_1$: Zostrojíme uhol...\n"
-        "   WRONG:   # P₁: Zostrojíme uhol...\n"
-        "2. Use # ONLY for real titles (chapter name), ## for sections\n"
-        "3. ALL math MUST be LaTeX: $\\triangle ABC$, $\\angle MON$, $AB = 4 \\text{ cm}$\n"
-        "4. Use **bold** for key terms: **Example.**, **Observations**\n"
-        "5. Bold label + ordered list = separate blocks (empty line between):\n"
-        "   **Observations**\n"
-        "   \\n\n"
-        "   1. First item...\n"
-        "   2. Second item...\n\n"
-        "FORMATTING:\n"
-        "- Numbered items: 1. 2. 3. format\n"
-        "- Letter options: a) b) c) d) on separate lines\n\n"
-        "SVG FIGURES — for ANY geometric construction or figure described:\n"
-        "- Wrap in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
-        "- PAIR construction steps: P₁+P₂ in ONE <div> (2 SVGs side-by-side), P₃+P₄ in next <div>\n"
-        "- SVG sizing: width=\"255\" height=\"170\"\n"
-        "- Step label: <text> at top center, font-weight=\"bold\", fill=\"#444\" (P₁, P₂, etc.)\n"
-        "- Vertices: italic labels, points as <circle r=\"2.5\" fill=\"#333\"/>\n"
-        "- Measurements: fill=\"#666\", angles: stroke=\"#c44\" (red) or stroke=\"#1a7\" (green)\n"
-        "- Dashed lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
-        "- Final step polygon: fill=\"#e8f0fe\" stroke=\"#333\" stroke-linejoin=\"round\"\n\n"
-        "TRANSLATION:\n"
-        f"- Translate ALL natural language text to {tgt}\n"
-        "- Use correct mathematical terminology with proper diacritics\n"
-        "- Keep LaTeX and SVG code untouched (only translate text labels inside SVG if needed)\n\n"
-        "Output ONLY the formatted translated Markdown. No code fences, no explanations.\n\n"
-        f"TEXT TO PROCESS:\n{text}"
-    )
-    contents = [{"parts": [{"text": prompt}]}]
-    result = gemini_request(contents, api_key)
-    # Strip code fences if Gemini wraps output
-    result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)
-    result = re.sub(r"\n?```\s*$", "", result, flags=re.MULTILINE)
-    return result
-
-
-# --- Claude API (primary when available — best SVG/formatting quality) ---
-
-
-def claude_ocr_and_translate(image_bytes: bytes, mime_type: str, source_lang: str, target_lang: str) -> str:
-    """OCR + format + translate in one Claude pass. Produces Exemplu_BUN quality."""
-    api_key = os.environ.get("CLAUDE_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("CLAUDE_API_KEY not set")
-
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-    tgt = lang_names.get(target_lang, target_lang)
-
-    print(f"[CLAUDE] OCR+Translate: {source_lang} -> {target_lang}, {len(image_bytes)} bytes", file=sys.stderr)
-
-    prompt = (
-        f"Extract ALL content from this {src} math textbook page and TRANSLATE to {tgt}.\n"
-        "Output professional Markdown with LaTeX and inline SVG figures.\n\n"
-        "STRUCTURE:\n"
-        "- # for chapter titles only, ## for section headings\n"
-        "- Construction steps $P_1$:, $P_2$: etc. are PARAGRAPHS, never headings\n"
-        "- **Bold** for key terms: **Example.**, **Observations**\n"
-        "- Ordered lists as 1. 2. with blank line after bold label\n"
-        "- Letter options a) b) c) d) on separate lines\n\n"
-        "MATH — ALL math as LaTeX:\n"
-        "- $\\triangle ABC$, $\\angle MON$, $m(\\angle A) = 60°$\n"
-        "- $[AB]$, $AB = 4 \\text{ cm}$, $\\perp$, $\\parallel$\n\n"
-        "SVG FIGURES — reproduce EVERY geometric figure from the page:\n"
-        "- Wrap in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
-        "- PAIR construction steps side-by-side: $P_1$+$P_2$ share ONE <div> with TWO <svg> elements\n"
-        "- SVG attributes: xmlns, viewBox, width=\"255\" height=\"170\", style=\"font-family:Cambria,serif\"\n"
-        "- Step label: <text x=\"center\" y=\"12\" font-size=\"11\" fill=\"#444\" text-anchor=\"middle\" font-weight=\"bold\">P&#x2081;</text>\n"
-        "- Vertices: <circle r=\"2.5\" fill=\"#333\"/>, labeled italic <text font-style=\"italic\">\n"
-        "- Measurements: fill=\"#666\" font-size=\"10\"\n"
-        "- Angles: arcs stroke=\"#c44\" (red) or stroke=\"#1a7\" (green), fill=\"none\"\n"
-        "- Construction arcs (compass): stroke-dasharray=\"6,3\", colored #c44 or #1a7\n"
-        "- Dashed helper lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
-        "- Solid constructed segments: stroke=\"#333\" stroke-width=\"1.8\"\n"
-        "- Final step: <polygon fill=\"#e8f0fe\" stroke=\"#333\" stroke-width=\"1.8\" stroke-linejoin=\"round\"/>\n"
-        "- Right angle marker: small <rect> at the corner\n\n"
-        "TRANSLATION:\n"
-        f"- Translate ALL natural language to {tgt} with correct mathematical terminology\n"
-        "- Use proper diacritics for the target language\n"
-        "- Keep LaTeX and SVG code untouched (translate text labels inside SVG if needed)\n\n"
-        "Output ONLY the Markdown. No code fences, no explanations."
-    )
-
-    payload = json.dumps({
-        "model": "claude-sonnet-4-6",
-        "max_tokens": 16384,
-        "messages": [{
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": mime_type,
-                        "data": image_b64,
-                    },
-                },
-                {"type": "text", "text": prompt},
-            ],
-        }],
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        result = data["content"][0]["text"]
-        # Strip code fences if present
-        result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)
-        result = re.sub(r"\n?```\s*$", "", result, flags=re.MULTILINE)
-        return result
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")
-        print(f"[CLAUDE ERROR] Status {e.code}: {_sanitize_error(error_body[:500])}", file=sys.stderr)
-        raise RuntimeError(f"Claude API error {e.code}")
-
-
-def claude_translate_text(text: str, source_lang: str, target_lang: str) -> str:
-    """Translate text with Claude (for DOCX pipeline)."""
-    api_key = os.environ.get("CLAUDE_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("CLAUDE_API_KEY not set")
-
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-    tgt = lang_names.get(target_lang, target_lang)
-
-    print(f"[CLAUDE] Translate text: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
-
-    prompt = (
-        f"Format this {src} math textbook text as professional Markdown and translate to {tgt}.\n\n"
-        "RULES:\n"
-        "- # for titles, ## for sections. Construction steps $P_1$: are paragraphs, NOT headings.\n"
-        "- ALL math as LaTeX. **Bold** for key terms.\n"
-        "- SVG figures for any geometric construction described (same conventions as a math textbook).\n"
-        "- Pair construction steps side-by-side: $P_1$+$P_2$ in one <div> with 2 <svg> elements.\n"
-        "- SVG width=\"255\", vertices italic, angles #c44/#1a7, final polygon fill=\"#e8f0fe\".\n"
-        f"- Translate ALL text to {tgt} with correct mathematical terminology and diacritics.\n\n"
-        "Output ONLY the Markdown. No code fences.\n\n"
-        f"TEXT:\n{text}"
-    )
-
-    payload = json.dumps({
-        "model": "claude-sonnet-4-6",
-        "max_tokens": 16384,
-        "messages": [{"role": "user", "content": prompt}],
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=payload,
-        headers={
-            "Content-Type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        result = data["content"][0]["text"]
-        result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)
-        result = re.sub(r"\n?```\s*$", "", result, flags=re.MULTILINE)
-        return result
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")
-        print(f"[CLAUDE ERROR] Status {e.code}: {_sanitize_error(error_body[:500])}", file=sys.stderr)
-        raise RuntimeError(f"Claude API error {e.code}")
-
-
-# --- REST API calls (no SDK dependencies) ---
-
-def _sanitize_error(msg: str) -> str:
-    """Remove API keys/tokens from error messages."""
-    import re as _re
-    # Strip anything that looks like an API key (long alphanumeric strings)
-    sanitized = _re.sub(r'(Bearer\s+)\S+', r'\1[REDACTED]', msg)
-    sanitized = _re.sub(r'(key=)\S+', r'\1[REDACTED]', sanitized)
-    sanitized = _re.sub(r'gsk_\S+', '[REDACTED_GROQ_KEY]', sanitized)
-    sanitized = _re.sub(r'AIza\S+', '[REDACTED_GOOGLE_KEY]', sanitized)
-    return sanitized
-
-
-def gemini_request(contents: list, api_key: str) -> str:
-    """Call Google Gemini REST API directly."""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    payload = json.dumps({"contents": contents}).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=55) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")
-        print(f"[GEMINI ERROR] Status {e.code}: {error_body[:500]}", file=sys.stderr)
-        raise RuntimeError(f"Gemini API error {e.code}: {error_body[:200]}")
-    except Exception as e:
-        print(f"[GEMINI ERROR] {type(e).__name__}: {e}", file=sys.stderr)
-        raise
-
-
-def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str:
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set — configureaza variabila in Render dashboard")
-
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-    print(f"[OCR] Processing image: {len(image_bytes)} bytes, mime={mime_type}, lang={source_lang}", file=sys.stderr)
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-
-    ocr_prompt = (
-        f"Extract ALL content from this {src} math textbook page as professional Markdown.\n\n"
-        "CRITICAL RULES (violating these is an error):\n"
-        "1. Construction steps P₁, P₂, P₃, P₄ are PARAGRAPHS, NEVER headings.\n"
-        "   CORRECT: $P_1$: Zostrojíme uhol...\n"
-        "   WRONG:   # P₁: Zostrojíme uhol...\n"
-        "   WRONG:   ### P₁: Zostrojíme uhol...\n"
-        "2. Use # ONLY for real titles (e.g. chapter name), ## for sections, ### for subsections\n"
-        "3. ALL math MUST be LaTeX: $\\triangle ABC$, $\\angle MON$, $m(\\angle A) = 60°$,\n"
-        "   $[AB]$, $AB = 4 \\text{ cm}$, $\\perp$, $\\parallel$. NEVER plain text math.\n"
-        "4. Use **bold** for key terms: **Example.**, **Observation.**, **Observations**\n"
-        "5. Ordered lists: start a NEW line for each item. Bold label + list = separate blocks:\n"
-        "   CORRECT:\n"
-        "   **Observations**\n"
-        "   \\n\n"
-        "   1. First observation...\n"
-        "   2. Second observation...\n\n"
-        "STRUCTURE RULES:\n"
-        "- Numbered items: 1. 2. 3. format\n"
-        "- Letter options: a) b) c) d) on separate lines\n"
-        "- Preserve the EXACT order and layout of the original page\n\n"
-        "SVG FIGURES — for ANY geometric figure, construction, or diagram:\n"
-        "- Wrap SVGs in: <div style=\"display:flex;gap:16px;justify-content:center;margin:6px 0\">\n"
-        "- PAIR construction steps side-by-side: P₁+P₂ in ONE <div>, P₃+P₄ in ONE <div>\n"
-        "  Each <div> contains TWO <svg> elements next to each other.\n"
-        "- SVG sizing: width=\"255\" height=\"170\" (or similar proportional size)\n"
-        "- SVG attributes: xmlns, viewBox, style=\"font-family:Cambria,serif\"\n"
-        "- Step label: <text x=\"center\" y=\"12\" font-size=\"11\" fill=\"#444\" text-anchor=\"middle\" font-weight=\"bold\">P₁</text>\n"
-        "- Vertices: labeled italic (font-style:italic), points as <circle r=\"2.5\" fill=\"#333\"/>\n"
-        "- Measurements: fill=\"#666\", font-size=\"10\"\n"
-        "- Angles: arcs with fill=\"none\" stroke=\"#c44\" (red) or stroke=\"#1a7\" (green)\n"
-        "- Dashed helper lines: stroke-dasharray=\"5,3\" stroke=\"#aaa\"\n"
-        "- Final step polygon: fill=\"#e8f0fe\", stroke=\"#333\", stroke-linejoin=\"round\"\n"
-        "- Solid constructed segments: stroke=\"#333\" stroke-width=\"1.8\"\n\n"
-        "Output ONLY the Markdown content. No code fences, no explanations."
-    )
-    contents = [{
-        "parts": [
-            {"text": ocr_prompt},
-            {"inline_data": {"mime_type": mime_type, "data": image_b64}},
-        ]
-    }]
-    result = gemini_request(contents, api_key)
-    return result
-
-
-def ocr_with_mistral(image_bytes: bytes, mime_type: str, source_lang: str) -> str:
-    """Fallback OCR using Mistral Pixtral vision model."""
-    api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("MISTRAL_API_KEY not set — fallback OCR indisponibil")
-
-    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-
-    print(f"[OCR] Mistral fallback: {len(image_bytes)} bytes, lang={source_lang}", file=sys.stderr)
-    ocr_prompt = (
-        f"Extract ALL content from this {src} math textbook page as Markdown.\n"
-        "Use LaTeX for all math ($...$, $$...$$). Use # ## ### for headings.\n"
-        "Use **bold** for key terms. Numbered items as 1. 2. 3.\n"
-        "Output ONLY the Markdown. No code fences, no explanations."
-    )
-    payload = json.dumps({
-        "model": "pixtral-12b-2409",
-        "messages": [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": ocr_prompt},
-                {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{image_b64}"}},
-            ],
-        }],
-        "max_tokens": 4096,
-    }).encode("utf-8")
-    req = urllib.request.Request(
-        "https://api.mistral.ai/v1/chat/completions",
-        data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=55) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"]
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")
-        print(f"[MISTRAL ERROR] Status {e.code}: {error_body[:500]}", file=sys.stderr)
-        raise RuntimeError(f"Mistral API error {e.code}: {error_body[:200]}")
-
-
-def _format_dict_terms(terms: list[dict]) -> str:
-    """Format dictionary terms as a glossary block for the translation prompt."""
-    if not terms:
-        return ""
-    lines = [f"  {t['source']} → {t['target']}" for t in terms if t.get("source") and t.get("target")]
-    if not lines:
-        return ""
-    return (
-        "\n\nMANDATORY TERMINOLOGY — use these exact translations:\n"
-        + "\n".join(lines)
-        + "\n"
-    )
-
-
-def translate_with_gemini(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set")
-
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-    tgt = lang_names.get(target_lang, target_lang)
-
-    glossary = _format_dict_terms(dict_terms or [])
-    print(f"[TRANSLATE] Gemini: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
-    translate_prompt = (
-        f"Translate this math textbook content from {src} to {tgt}.\n\n"
-        "CRITICAL RULES — violating ANY of these is an error:\n"
-        "1. PRESERVE EXACTLY as-is (do NOT modify):\n"
-        "   - All LaTeX: $...$, $$...$$, \\begin...\\end blocks\n"
-        "   - All HTML/SVG blocks: <div>, <svg>, <table>, etc.\n"
-        "   - All Markdown formatting: #, ##, **, *, -, 1. 2. 3.\n"
-        "   - Placeholders like __MATH_N__\n\n"
-        "2. TRANSLATE only natural language text:\n"
-        f"   - Use correct {tgt} mathematical terminology\n"
-        "   - Use proper diacritics for the target language\n"
-        "   - Keep the same paragraph structure and line breaks\n\n"
-        "3. MATH TERMINOLOGY — translate these correctly:\n"
-        "   - triangle, angle, segment, perpendicular, parallel\n"
-        "   - bisector, median, altitude, circumscribed, inscribed\n"
-        "   - congruent, similar, adjacent, supplementary, complementary\n"
-        f"{glossary}\n"
-        "Output ONLY the translated text. No code fences, no explanations.\n\n"
-        f"{text}"
-    )
-    contents = [{"parts": [{"text": translate_prompt}]}]
-    return gemini_request(contents, api_key)
-
-
-def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
-    """Call Groq REST API (OpenAI-compatible) directly."""
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("GROQ_API_KEY not set")
-
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
-    src = lang_names.get(source_lang, source_lang)
-    tgt = lang_names.get(target_lang, target_lang)
-
-    glossary = _format_dict_terms(dict_terms or [])
-    print(f"[TRANSLATE] Groq fallback: {source_lang} -> {target_lang}", file=sys.stderr)
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    system_prompt = (
-        f"You are a math textbook translator from {src} to {tgt}.\n"
-        "RULES:\n"
-        "- Preserve ALL LaTeX ($...$, $$...$$), HTML/SVG blocks, Markdown formatting EXACTLY\n"
-        "- Preserve placeholders like __MATH_N__ without modification\n"
-        "- Translate ONLY natural language text\n"
-        f"- Use correct {tgt} mathematical terminology with proper diacritics\n"
-        "- Keep paragraph structure and line breaks identical\n"
-        "- Output ONLY the translated text, no explanations"
-        f"{glossary}"
-    )
-    payload = json.dumps({
-        "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": text},
-        ],
-        "temperature": 0.1,
-        "max_tokens": 4096,
-    }).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, headers={
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"]
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")
-        print(f"[GROQ ERROR] Status {e.code}: {error_body[:500]}", file=sys.stderr)
-        raise RuntimeError(f"Groq API error {e.code}: {error_body[:200]}")
-
-
-# --- HTML Builder (professional A4 template) ---
-
-def _md_to_html_body(md: str) -> str:
-    """Convert markdown to HTML body content. Preserves SVG/div/LaTeX as-is."""
-    # Step 0: Safety net — demote construction step headings to paragraphs
-    # Catches ALL formats: # P₁:, ## P₃:, ### $P_1$:, # P4:, etc.
-    md = re.sub(
-        r"^#{1,6}\s*((?:\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?|P\s*[₁₂₃₄₅₆₇₈₉])\s*[:.]?\s*.+)$",
-        r"\1",
-        md,
-        flags=re.MULTILINE,
-    )
-
-    # Step 1: Protect SVG and HTML div blocks from paragraph wrapping
-    svg_blocks: dict[str, str] = {}
-    svg_counter = [0]
-
-    def _protect_svg(m: re.Match) -> str:
-        key = f"__SVG_BLOCK_{svg_counter[0]}__"
-        svg_blocks[key] = m.group(0)
-        svg_counter[0] += 1
-        return f"\n{key}\n"
-
-    html = re.sub(r"<div[^>]*>[\s\S]*?</div>", _protect_svg, md)
-    html = re.sub(r"<svg[\s\S]*?</svg>", _protect_svg, html)
-
-    # Step 2: Headings
-    for i in range(6, 0, -1):
-        html = re.sub(rf"^{'#' * i}\s+(.+)$", rf"<h{i}>\1</h{i}>", html, flags=re.MULTILINE)
-
-    # Step 3: Inline formatting
-    html = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", html)
-    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
-    html = re.sub(r"(?<![\\])\*(.+?)\*", r"<em>\1</em>", html)
-
-    # Step 4: Horizontal rules
-    html = re.sub(r"^---+$", r"<hr>", html, flags=re.MULTILINE)
-
-    # Step 5: Unordered lists (- item)
-    html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
-    html = re.sub(r"((?:<li>.*</li>\n?)+)", lambda m: "<ul>" + m.group(1) + "</ul>", html)
-
-    # Step 6: Ordered lists (1. item) — wrap in <ol>
-    html = re.sub(r"^\d+\.\s+(.+)$", r"<oli>\1</oli>", html, flags=re.MULTILINE)
-    html = re.sub(r"((?:<oli>.*</oli>\n?)+)", lambda m: "<ol>" + m.group(1).replace("<oli>", "<li>").replace("</oli>", "</li>") + "</ol>", html)
-
-    # Step 7: Letter options (a) b) c) d)) — keep as lines with break
-    html = re.sub(r"^([a-z]\))\s+(.+)$", r"\1 \2<br>", html, flags=re.MULTILINE)
-
-    # Step 8: Wrap remaining text in paragraphs (skip blocks)
-    lines = html.split("\n\n")
-    result_parts = []
-    block_tags = ("<h", "<ul", "<ol", "<li", "<hr", "<div", "<svg", "<table", "__SVG_BLOCK_")
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if any(stripped.startswith(tag) for tag in block_tags):
-            result_parts.append(stripped)
-        else:
-            result_parts.append(f"<p>{stripped}</p>")
-    html = "\n".join(result_parts)
-
-    # Step 9: Clean up
-    html = html.replace("<p></p>", "")
-    html = re.sub(r"\n{3,}", "\n\n", html)
-
-    # Step 10: Restore SVG blocks
-    for key, block in svg_blocks.items():
-        html = html.replace(key, block)
-        html = html.replace(f"<p>{key}</p>", block)
-
-    # Step 11: Fix invalid nesting — extract <ol>/<ul> from inside <p> tags
-    html = re.sub(r"<p>(.*?)<ol>", r"<p>\1</p>\n<ol>", html)
-    html = re.sub(r"</ol></p>", r"</ol>", html)
-    html = re.sub(r"<p>(.*?)<ul>", r"<p>\1</p>\n<ul>", html)
-    html = re.sub(r"</ul></p>", r"</ul>", html)
-    html = html.replace("<p></p>", "")
-
-    return html
-
-
-def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]], target_lang: str) -> str:
-    """Build HTML from structured OCR data + cropped figures.
-
-    Args:
-        pages_data: list of OCR structured JSON per page
-        figures: list of {section_index: base64_png} per page
-        target_lang: language code for html lang attribute
-    """
-    page_sections = []
-    for page_idx, (page, figs) in enumerate(zip(pages_data, figures)):
-        parts = []
-        parts.append(f'<div class="source-file">Pagina {page_idx + 1}</div>')
-
-        title = page.get("title", "")
-        if title:
-            parts.append(f"<h1>{title}</h1>")
-
-        for sec_idx, section in enumerate(page.get("sections", [])):
-            sec_type = section.get("type", "paragraph")
-            content = section.get("content", "")
-
-            # Safety net: demote heading to step if it contains P₁-P₉ pattern
-            if sec_type == "heading" and re.search(
-                r"(?:\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?|P\s*[₁₂₃₄₅₆₇₈₉])\s*[:.]\s*", content
-            ):
-                sec_type = "step"
-
-            if sec_type == "heading":
-                level = section.get("level", 2)
-                parts.append(f"<h{level}>{content}</h{level}>")
-            elif sec_type == "step":
-                parts.append(f"<p>{content}</p>")
-            elif sec_type == "observation":
-                parts.append(f"<p><strong>{content}</strong></p>")
-            elif sec_type == "list":
-                # Content may have numbered items
-                items = [line.strip() for line in content.split("\n") if line.strip()]
-                if items:
-                    parts.append("<ol>")
-                    for item in items:
-                        # Strip leading number/dot
-                        import re as _re
-                        clean = _re.sub(r"^\d+\.\s*", "", item)
-                        parts.append(f"<li>{clean}</li>")
-                    parts.append("</ol>")
-            elif sec_type == "figure":
-                # Insert cropped figure as <img> if available
-                b64 = figs.get(sec_idx, "")
-                if b64:
-                    parts.append(
-                        f'<div style="display:flex;justify-content:center;margin:8px 0">'
-                        f'<img src="data:image/png;base64,{b64}" '
-                        f'alt="{section.get("description", "Figura")}" '
-                        f'style="max-width:100%;height:auto;background:#fff;" />'
-                        f'</div>'
-                    )
-                else:
-                    desc = section.get("description", "")
-                    parts.append(f'<p><em>[Figura: {desc}]</em></p>')
-            else:
-                # paragraph or unknown
-                if content:
-                    parts.append(f"<p>{content}</p>")
-
-        body = "\n".join(parts)
-        page_sections.append(
-            f'<section class="paper"><div class="paper-content">{body}</div></section>'
-        )
-
-    pages_html = "\n".join(page_sections)
-    n = len(pages_data)
-    return _build_html_shell(pages_html, n, target_lang)
-
-
-def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str:
-    """Shared HTML shell (CSS + JS + MathJax) used by both build functions."""
-    return f'''<!doctype html>
-<html lang="{target_lang}">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Traducere Matematica</title>
-  <style>
-    :root {{
-      --text-color: #1b1b1b; --paper-bg: #ffffff; --font-size: 12pt;
-      --line-height: 1.45; --page-width: 210mm; --page-height: 297mm;
-      --page-padding-x: 12mm; --page-padding-y: 12mm;
-    }}
-    @page {{ size: A4; margin: 0; }}
-    * {{ box-sizing: border-box; }}
-    body {{ margin:0; padding:0; color:var(--text-color); background:#f2f2f2;
-      font-family:"Cambria","Times New Roman",serif; font-size:var(--font-size); line-height:var(--line-height); }}
-    .toolbar {{ position:sticky; top:0; z-index:100; display:flex; gap:12px; align-items:center;
-      justify-content:space-between; padding:10px 14px; background:#192031; color:#fff;
-      font-family:"Segoe UI",Arial,sans-serif; font-size:13px; }}
-    .toolbar button {{ border:0; border-radius:6px; padding:8px 12px; background:#dce8ff;
-      color:#121212; cursor:pointer; font-weight:600; }}
-    main {{ max-width:calc(var(--page-width) + 24px); margin:18px auto; padding:0 12px 24px; }}
-    .paper {{ --fit-scale:1; width:var(--page-width); height:var(--page-height); margin:0 auto 16px;
-      padding:var(--page-padding-y) var(--page-padding-x); background:var(--paper-bg);
-      box-shadow:0 2px 14px rgba(0,0,0,.12); overflow:hidden; }}
-    .paper-content {{ width:calc((var(--page-width) - 2*var(--page-padding-x))/var(--fit-scale));
-      transform:scale(var(--fit-scale)); transform-origin:top left; overflow-wrap:break-word; }}
-    .source-file {{ margin:0 0 14px; color:#4a4a4a; font-family:"Segoe UI",Arial,sans-serif;
-      font-size:10.5pt; font-weight:600; }}
-    h1,h2,h3,h4 {{ margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }}
-    p,li {{ page-break-inside:avoid; }}
-    hr {{ border:none; border-top:1px solid #cfcfcf; margin:1em 0; }}
-    ul, ol {{ margin-top:0.45em; margin-bottom:0.6em; }}
-    li {{ margin-bottom:0.2em; }}
-    img {{ max-width:100%; height:auto; }}
-    svg {{ max-width:100%; height:auto; display:block; margin:0.8em auto; }}
-    .MathJax {{ font-size:1em !important; }}
-    @media print {{
-      body {{ background:#fff; }} .toolbar {{ display:none !important; }}
-      main {{ max-width:none; margin:0; padding:0; }}
-      .paper {{ margin:0; box-shadow:none; break-after:page; page-break-after:always; }}
-      .paper:last-child {{ break-after:auto; page-break-after:auto; }}
-    }}
-  </style>
-  <script>
-    window.MathJax = {{
-      tex: {{ inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] }},
-      svg: {{ fontCache: 'global' }}
-    }};
-  </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <script>
-    function fitPaperSections() {{
-      document.querySelectorAll('.paper').forEach(function(page) {{
-        var c = page.querySelector('.paper-content');
-        if (!c) return;
-        page.style.setProperty('--fit-scale', '1');
-        var s = window.getComputedStyle(page);
-        var avail = page.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
-        var need = c.scrollHeight;
-        var scale = need > 0 ? Math.min(1, avail / need) : 1;
-        page.style.setProperty('--fit-scale', scale.toFixed(4));
-      }});
-    }}
-    window.addEventListener('load', function() {{
-      var p = window.MathJax && window.MathJax.startup ? window.MathJax.startup.promise : Promise.resolve();
-      p.then(function() {{ fitPaperSections(); setTimeout(fitPaperSections, 150); }})
-       .catch(function() {{ fitPaperSections(); }});
-    }});
-    window.addEventListener('resize', fitPaperSections);
-    window.addEventListener('beforeprint', fitPaperSections);
-  </script>
-</head>
-<body>
-  <div class="toolbar">
-    <div>Traducere matematica — {page_count} pagina(e) | Print: Scale 100%, Margins None</div>
-    <button onclick="window.print()">Tipareste</button>
-  </div>
-  <main>
-{pages_html}
-  </main>
-</body>
-</html>'''
-
-
-def build_html(pages: list[str], target_lang: str) -> str:
-    """Build professional A4 HTML from markdown pages (legacy pipeline)."""
-    page_sections = []
-    for i, md in enumerate(pages):
-        body = _md_to_html_body(md)
-        page_sections.append(
-            f'<section class="paper"><div class="paper-content">'
-            f'<div class="source-file">Pagina {i + 1}</div>'
-            f'{body}'
-            f'</div></section>'
-        )
-    pages_html = "\n".join(page_sections)
-    n = len(pages)
-
-    return f'''<!doctype html>
-<html lang="{target_lang}">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Traducere Matematica</title>
-  <style>
-    :root {{
-      --text-color: #1b1b1b;
-      --paper-bg: #ffffff;
-      --font-size: 12pt;
-      --line-height: 1.45;
-      --page-width: 210mm;
-      --page-height: 297mm;
-      --page-padding-x: 12mm;
-      --page-padding-y: 12mm;
-    }}
-    @page {{ size: A4; margin: 0; }}
-    * {{ box-sizing: border-box; }}
-    body {{
-      margin: 0; padding: 0;
-      color: var(--text-color);
-      background: #f2f2f2;
-      font-family: "Cambria", "Times New Roman", serif;
-      font-size: var(--font-size);
-      line-height: var(--line-height);
-    }}
-    .toolbar {{
-      position: sticky; top: 0; z-index: 100;
-      display: flex; gap: 12px; align-items: center; justify-content: space-between;
-      padding: 10px 14px; background: #192031; color: #fff;
-      font-family: "Segoe UI", Arial, sans-serif; font-size: 13px;
-    }}
-    .toolbar button {{
-      border: 0; border-radius: 6px; padding: 8px 12px;
-      background: #dce8ff; color: #121212; cursor: pointer; font-weight: 600;
-    }}
-    main {{
-      max-width: calc(var(--page-width) + 24px);
-      margin: 18px auto; padding: 0 12px 24px;
-    }}
-    .paper {{
-      --fit-scale: 1;
-      width: var(--page-width); height: var(--page-height);
-      margin: 0 auto 16px;
-      padding: var(--page-padding-y) var(--page-padding-x);
-      background: var(--paper-bg);
-      box-shadow: 0 2px 14px rgba(0,0,0,.12);
-      overflow: hidden;
-    }}
-    .paper-content {{
-      width: calc((var(--page-width) - 2 * var(--page-padding-x)) / var(--fit-scale));
-      transform: scale(var(--fit-scale));
-      transform-origin: top left;
-      overflow-wrap: break-word;
-    }}
-    .source-file {{
-      margin: 0 0 14px; color: #4a4a4a;
-      font-family: "Segoe UI", Arial, sans-serif;
-      font-size: 10.5pt; font-weight: 600;
-    }}
-    h1,h2,h3,h4 {{ margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }}
-    p,li {{ page-break-inside:avoid; }}
-    hr {{ border:none; border-top:1px solid #cfcfcf; margin:1em 0; }}
-    ul, ol {{ margin-top: 0.45em; margin-bottom: 0.6em; }}
-    li {{ margin-bottom: 0.2em; }}
-    svg {{ max-width: 100%; height: auto; display: block; margin: 0.8em auto; }}
-    .MathJax {{ font-size: 1em !important; }}
-    @media print {{
-      body {{ background: #fff; }}
-      .toolbar {{ display: none !important; }}
-      main {{ max-width: none; margin: 0; padding: 0; }}
-      .paper {{ margin: 0; box-shadow: none; break-after: page; page-break-after: always; }}
-      .paper:last-child {{ break-after: auto; page-break-after: auto; }}
-    }}
-  </style>
-  <script>
-    window.MathJax = {{
-      tex: {{ inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] }},
-      svg: {{ fontCache: 'global' }}
-    }};
-  </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <script>
-    function fitPaperSections() {{
-      document.querySelectorAll('.paper').forEach(function(page) {{
-        var c = page.querySelector('.paper-content');
-        if (!c) return;
-        page.style.setProperty('--fit-scale', '1');
-        var s = window.getComputedStyle(page);
-        var avail = page.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
-        var need = c.scrollHeight;
-        var scale = need > 0 ? Math.min(1, avail / need) : 1;
-        page.style.setProperty('--fit-scale', scale.toFixed(4));
-      }});
-    }}
-    window.addEventListener('load', function() {{
-      var p = window.MathJax && window.MathJax.startup ? window.MathJax.startup.promise : Promise.resolve();
-      p.then(function() {{ fitPaperSections(); setTimeout(fitPaperSections, 150); }})
-       .catch(function() {{ fitPaperSections(); }});
-    }});
-    window.addEventListener('resize', fitPaperSections);
-    window.addEventListener('beforeprint', fitPaperSections);
-  </script>
-</head>
-<body>
-  <div class="toolbar">
-    <div>Traducere matematica — {n} pagina(e) | Print: Scale 100%, Margins None</div>
-    <button onclick="window.print()">Tipareste</button>
-  </div>
-  <main>
-{pages_html}
-  </main>
-</body>
-</html>'''
-
-
-# --- Multipart boundary parser ---
+# --- Multipart parser ---
 
 def parse_boundary(content_type: str) -> str:
-    """Extract boundary from Content-Type, handling quotes and extra params."""
     for part in content_type.split(";"):
         part = part.strip()
         if part.startswith("boundary="):
-            boundary = part[len("boundary="):]
-            return boundary.strip('"').strip("'")
+            return part[len("boundary="):].strip('"').strip("'")
     raise ValueError(f"No boundary found in Content-Type: {content_type}")
 
 
@@ -1171,22 +225,19 @@ class handler(BaseHTTPRequestHandler):
         try:
             content_type = self.headers.get("Content-Type", "")
             content_length = int(self.headers.get("Content-Length", 0))
-
             print(f"[TRANSLATE] Request: content_type={content_type[:80]}, size={content_length}", file=sys.stderr)
-
             body = self.rfile.read(content_length)
 
             if "multipart/form-data" in content_type:
-                boundary = parse_boundary(content_type)
-                parts = self._parse_multipart(body, boundary)
+                parts = self._parse_multipart(body, parse_boundary(content_type))
             else:
                 parts = json.loads(body)
 
             source_lang = parts.get("source_lang", "ro")
             target_lang = parts.get("target_lang", "sk")
             files = parts.get("files", [])
+            translate_engine = parts.get("translate_engine", "deepl")
 
-            # Parse dictionary terms if provided
             dict_terms = []
             dict_raw = parts.get("dictionary", "")
             if dict_raw:
@@ -1195,101 +246,49 @@ class handler(BaseHTTPRequestHandler):
                 except (json.JSONDecodeError, TypeError):
                     pass
 
-            # Translation engine selection (from frontend)
-            translate_engine = parts.get("translate_engine", "deepl")
-
             if not files:
                 self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
                 return
 
-            file_types = [f.get("mime_type", "?").split("/")[-1] for f in files]
-            _log_to_file(
-                f"ACTION  | Traducere initiata | {len(files)} fisier(e) | "
-                f"{source_lang} -> {target_lang} | Engine: {translate_engine} | Tipuri: {', '.join(file_types)}"
-            )
+            _log_to_file(f"ACTION  | Traducere initiata | {len(files)} fisier(e) | {source_lang} -> {target_lang} | Engine: {translate_engine}")
 
-            all_markdowns = []          # Legacy pipeline
-            all_structured_pages = []   # New structured pipeline
-            all_structured_figs = []    # Cropped figures per page
+            all_markdowns = []
+            all_structured_pages = []
+            all_structured_figs = []
             results = []
-            import time
             t0 = time.time()
 
             for idx, file_info in enumerate(files):
                 file_data = file_info["data"]
                 mime_type = file_info.get("mime_type", "image/jpeg")
                 filename = file_info.get("filename", "")
-
-                # DOCX: extract text directly (no OCR needed)
-                is_docx = (
-                    "wordprocessingml" in mime_type
-                    or "application/zip" in mime_type
-                    or filename.lower().endswith(".docx")
-                )
-
-                # --- Choose provider: Claude (best quality) or Gemini (free) ---
-                # Claude suspended — use Gemini (free) for all testing
-                # To re-enable: has_claude = bool(os.environ.get("CLAUDE_API_KEY", "").strip())
-                has_claude = False
+                is_docx = "wordprocessingml" in mime_type or filename.lower().endswith(".docx")
+                has_claude = False  # Claude suspended
 
                 if is_docx:
-                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: DOCX | {len(file_data)} bytes")
-                    t_docx = time.time()
                     extracted = extract_text_from_docx(file_data)
-                    if has_claude:
-                        _log_to_file("INFO    | Provider: Claude Opus (DOCX)")
-                        try:
-                            final_markdown = claude_translate_text(extracted, source_lang, target_lang)
-                        except Exception as claude_err:
-                            print(f"[CLAUDE] Failed, falling back to Gemini: {claude_err}", file=sys.stderr)
-                            _log_to_file(f"WARN    | Claude esuat: {claude_err} | Fallback: Gemini")
-                            final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
-                    else:
-                        final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
-                    _log_to_file(f"OK      | DOCX procesat | Durata: {time.time()-t_docx:.1f}s | Chars: {len(final_markdown)}")
-
+                    final_markdown = format_and_translate_docx(extracted, source_lang, target_lang)
                 elif has_claude:
-                    # Image: Claude OCR+Translate in one pass (best quality)
-                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes | Provider: Claude Opus")
-                    t_claude = time.time()
                     try:
                         final_markdown = claude_ocr_and_translate(file_data, mime_type, source_lang, target_lang)
-                        _log_to_file(f"OK      | Claude OCR+Translate | Durata: {time.time()-t_claude:.1f}s | Chars: {len(final_markdown)}")
-                    except Exception as claude_err:
-                        print(f"[CLAUDE] Failed, falling back to Gemini: {claude_err}", file=sys.stderr)
-                        _log_to_file(f"WARN    | Claude esuat: {claude_err} | Fallback: Gemini pipeline")
-                        # Fallback to Gemini pipeline
+                    except Exception:
                         extracted = ocr_with_gemini(file_data, mime_type, source_lang)
-                        protected, placeholders = protect_math(extracted)
-                        translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
-                        final_markdown = restore_math(translated, placeholders)
-
+                        protected, ph = protect_math(extracted)
+                        final_markdown = restore_math(translate_with_gemini(protected, source_lang, target_lang, dict_terms), ph)
                 else:
-                    # === Image: NEW structured pipeline ===
-                    # Step 1: Structured OCR (JSON with text + figure bboxes)
-                    _log_to_file(f"INFO    | Fisier {idx+1}/{len(files)}: {mime_type} | {len(file_data)} bytes | Pipeline: structured")
+                    # Structured pipeline: OCR -> crop -> translate -> HTML
                     t_ocr = time.time()
                     use_structured = True
                     try:
                         page_data = _ocr_structured_inline(file_data, mime_type, source_lang)
-                        print(f"[PIPELINE] Structured OCR: {len(page_data.get('sections',[]))} sections", file=sys.stderr)
-                    except Exception as ocr_err:
-                        print(f"[OCR-STRUCT] Failed, falling back to legacy: {ocr_err}", file=sys.stderr)
-                        _log_to_file(f"WARN    | OCR structurat esuat: {ocr_err} | Fallback: legacy")
+                    except Exception:
                         use_structured = False
 
                     if use_structured:
-                        ocr_dur = time.time() - t_ocr
                         sections = page_data.get("sections", [])
-                        fig_count = sum(1 for s in sections if s.get("type") == "figure")
-                        _log_to_file(f"OK      | OCR structurat | {len(sections)} sections | {fig_count} figuri | {ocr_dur:.1f}s")
-
-                        # Step 2: Crop figures from original image
                         cropped_figs = _crop_all_figures_inline(file_data, sections)
-                        _log_to_file(f"INFO    | Crop figuri: {len(cropped_figs)} figuri decupate")
 
-                        # Step 3: Batch translate — collect all text, translate in ONE call
-                        t_tr = time.time()
+                        # Batch translate all text parts in one API call
                         text_indices = []
                         all_text_parts = []
                         title = page_data.get("title", "")
@@ -1304,85 +303,53 @@ class handler(BaseHTTPRequestHandler):
                                     text_indices.append(("section", si))
 
                         if all_text_parts:
-                            # Join with separator, translate as one block
                             SEP = "\n|||SEPARATOR|||\n"
                             batch_text = SEP.join(all_text_parts)
-
                             try:
                                 if translate_engine == "deepl" and _HAS_DEEPL_LIB and os.environ.get("DEEPL_API_KEY", "").strip():
                                     try:
-                                        protected = _protect_deepl(batch_text)
+                                        protected = protect_for_deepl(batch_text)
                                         translated_batch = _deepl_translate(protected, target_lang, source_lang)
-                                        translated_batch = _restore_deepl(translated_batch)
-                                        tr_prov = "DeepL"
-                                    except Exception as deepl_err:
-                                        print(f"[DEEPL] Failed, fallback to Gemini: {deepl_err}", file=sys.stderr)
-                                        _log_to_file(f"WARN    | DeepL esuat: {deepl_err} | Fallback: Gemini")
-                                        protected_ph, placeholders = protect_math(batch_text)
-                                        translated_batch = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
-                                        translated_batch = restore_math(translated_batch, placeholders)
-                                        tr_prov = "Gemini (fallback from DeepL)"
+                                        translated_batch = restore_from_deepl(translated_batch)
+                                    except Exception:
+                                        protected_ph, ph = protect_math(batch_text)
+                                        translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
                                 else:
-                                    protected_ph, placeholders = protect_math(batch_text)
-                                    translated_batch = translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms)
-                                    translated_batch = restore_math(translated_batch, placeholders)
-                                    tr_prov = "Gemini"
+                                    protected_ph, ph = protect_math(batch_text)
+                                    translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
 
-                                # Split back and assign to sections
-                                parts = translated_batch.split("|||SEPARATOR|||")
-                                for pi, (kind, idx) in enumerate(text_indices):
-                                    if pi < len(parts):
-                                        text = parts[pi].strip()
+                                parts_tr = translated_batch.split("|||SEPARATOR|||")
+                                for pi, (kind, si) in enumerate(text_indices):
+                                    if pi < len(parts_tr):
+                                        text = parts_tr[pi].strip()
                                         if kind == "title":
                                             page_data["title"] = text
                                         else:
-                                            sections[idx]["content"] = text
-                                _log_to_file(f"OK      | Traducere batch | Engine: {tr_prov} | {len(all_text_parts)} parts | Durata: {time.time()-t_tr:.1f}s")
+                                            sections[si]["content"] = text
                             except Exception as tr_err:
                                 print(f"[TRANSLATE] Batch failed: {tr_err}", file=sys.stderr)
-                                _log_to_file(f"WARN    | Traducere batch esuata: {tr_err}")
-                        tr_dur = time.time() - t_tr
 
                         all_structured_pages.append(page_data)
                         all_structured_figs.append(cropped_figs)
-
-                        results.append({
-                            "source_lang": source_lang,
-                            "target_lang": target_lang,
-                            "status": "success",
-                            "pipeline": "structured",
-                        })
+                        results.append({"source_lang": source_lang, "target_lang": target_lang, "status": "success", "pipeline": "structured"})
+                        continue
                     else:
-                        # Legacy fallback: Gemini OCR + translate
+                        # Legacy fallback
                         extracted = ocr_with_gemini(file_data, mime_type, source_lang)
-                        ocr_dur = time.time() - t_ocr
-                        _log_to_file(f"OK      | OCR legacy | Durata: {ocr_dur:.1f}s | Chars: {len(extracted)}")
-                        protected, placeholders = protect_math(extracted)
-                        translated = translate_with_gemini(protected, source_lang, target_lang, dict_terms)
-                        final_markdown = restore_math(translated, placeholders)
-                        final_markdown = _post_process_markdown(final_markdown)
-                        all_markdowns.append(final_markdown)
-                        results.append({
-                            "source_lang": source_lang,
-                            "target_lang": target_lang,
-                            "status": "success",
-                            "pipeline": "legacy",
-                        })
+                        protected, ph = protect_math(extracted)
+                        final_markdown = restore_math(translate_with_gemini(protected, source_lang, target_lang, dict_terms), ph)
 
-            # Build HTML — structured (new) or markdown (legacy)
+                all_markdowns.append(final_markdown)
+                results.append({"source_lang": source_lang, "target_lang": target_lang, "status": "success", "pipeline": "legacy" if not is_docx else "docx"})
+
+            # Build HTML
             duration_ms = int((time.time() - t0) * 1000)
             if all_structured_pages:
                 unified_html = build_html_structured(all_structured_pages, all_structured_figs, target_lang)
-                _log_to_file(f"OK      | HTML built (structured) | {len(all_structured_pages)} pagini | {duration_ms}ms")
             elif all_markdowns:
                 unified_html = build_html(all_markdowns, target_lang)
-                _log_to_file(f"OK      | HTML built (legacy) | {len(all_markdowns)} pagini | {duration_ms}ms")
             else:
                 unified_html = ""
-                _log_to_file("ERROR   | No pages processed")
-
-            _log_to_file(f"OK      | SUCCES TOTAL | {len(results)} pagini | Durata: {duration_ms}ms")
-            _log_to_file("")
 
             print(f"[TRANSLATE] Success: {len(results)} pages in {duration_ms}ms", file=sys.stderr)
             self._send_json(200, {
@@ -1398,8 +365,6 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             error_msg = _sanitize_error(f"{type(e).__name__}: {str(e)}")
-            _log_to_file(f"ERROR   | Traducere esuata | {error_msg}")
-            _log_to_file("")
             print(f"[TRANSLATE ERROR] {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             self._send_json(500, {"error": error_msg, "status": "error"})
@@ -1408,7 +373,6 @@ class handler(BaseHTTPRequestHandler):
         parts_data = {"files": [], "source_lang": "ro", "target_lang": "sk"}
         boundary_bytes = f"--{boundary}".encode()
         sections = body.split(boundary_bytes)
-
         for section in sections[1:]:
             if section.strip() in (b"--", b"", b"--\r\n"):
                 continue
@@ -1419,12 +383,10 @@ class handler(BaseHTTPRequestHandler):
             content = section[header_end + 4:]
             if content.endswith(b"\r\n"):
                 content = content[:-2]
-
             name_match = re.search(r'name="([^"]+)"', header)
             if not name_match:
                 continue
             name = name_match.group(1)
-
             if name in ("source_lang", "target_lang", "dictionary", "translate_engine"):
                 parts_data[name] = content.decode("utf-8").strip()
             elif name == "files" or "filename" in header:
@@ -1433,7 +395,6 @@ class handler(BaseHTTPRequestHandler):
                 fname_match = re.search(r'filename="([^"]*)"', header)
                 fname = fname_match.group(1) if fname_match else ""
                 parts_data["files"].append({"mime_type": mime, "data": content, "filename": fname})
-
         return parts_data
 
     def _send_json(self, status: int, data: dict):
