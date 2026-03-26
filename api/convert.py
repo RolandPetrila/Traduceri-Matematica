@@ -9,6 +9,7 @@ from __future__ import annotations
 from http.server import BaseHTTPRequestHandler
 import io
 import json
+import os
 import re
 import sys
 import traceback
