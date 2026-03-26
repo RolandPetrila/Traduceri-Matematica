@@ -12,6 +12,8 @@ import { validateTranslationOutput } from "@/lib/validator";
 import EngineSelector, { type TranslateEngine } from "@/components/traduceri/EngineSelector";
 import BatchPanel from "@/components/traduceri/BatchPanel";
 import DocumentViewer from "@/components/traduceri/DocumentViewer";
+import DeeplUsage from "@/components/traduceri/DeeplUsage";
+import { getCachedTranslation, cacheTranslation } from "@/lib/translation-cache";
 
 import { API_URL } from "@/lib/api-url";
 
@@ -67,9 +69,22 @@ export default function TraduceriPage() {
       });
     }, 600);
 
+    // Check cache first — avoid re-consuming DeepL quota
+    const fileNames = files.map(f => f.name);
+    const cached = getCachedTranslation(fileNames, sourceLang, targetLang);
+    if (cached) {
+      if (progressTimer.current) clearInterval(progressTimer.current);
+      setResult(cached);
+      setProgress(100);
+      setStepLabel("Din cache (salvat anterior)");
+      logAction("Traducere din cache", { fileNames, sourceLang, targetLang });
+      setIsProcessing(false);
+      return;
+    }
+
     logAction("Traducere pornita", {
       fileCount: files.length,
-      fileNames: files.map(f => f.name),
+      fileNames,
       fileSizes: files.map(f => f.size),
       sourceLang,
       targetLang,
@@ -133,6 +148,9 @@ export default function TraduceriPage() {
         targetLang,
         fileNames: files.map(f => f.name),
       });
+
+      // Save to cache (avoid re-consuming DeepL quota)
+      cacheTranslation(files.map(f => f.name), sourceLang, targetLang, htmlResult);
 
       // Save to history
       addToHistory({
@@ -236,6 +254,9 @@ export default function TraduceriPage() {
 
       {/* Dictionary panel */}
       <Dictionary sourceLang={sourceLang} targetLang={targetLang} />
+
+      {/* DeepL usage counter */}
+      <DeeplUsage />
     </div>
   );
 }

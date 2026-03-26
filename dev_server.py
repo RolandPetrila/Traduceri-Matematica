@@ -46,6 +46,7 @@ from api.health import handler as HealthHandler
 from api.translate import handler as TranslateHandler
 from api.translate_text import handler as TranslateTextHandler
 from api.convert import handler as ConvertHandler
+from api.deepl_usage import handler as DeeplUsageHandler
 
 from api.lib.rate_limiter import is_rate_limited, start_cleanup_timer
 
@@ -53,6 +54,7 @@ print("[DEV] Handlers imported OK", file=sys.stderr, flush=True)
 
 ROUTES = {
     "/api/health": HealthHandler,
+    "/api/deepl-usage": DeeplUsageHandler,
     "/api/translate-text": TranslateTextHandler,
     "/api/translate": TranslateHandler,
     "/api/convert": ConvertHandler,

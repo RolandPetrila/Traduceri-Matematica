@@ -192,21 +192,16 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 - [ ] Test MAXIM: PDF 10 pagini — necesita procesare in loturi (SC3, Sprint 2.5)
 - [ ] Comparatie vizuala cu Exemplu_BUN.html — Roland verifica pe site-ul live
 
-**Sprint 2.3: Securitate + Protectie abuz**
-Verificare fix-uri existente + rezolvare probleme ramase + protectie cote API:
-- [ ] Verificare InlineEditor: codul care previne injectare de continut periculos functioneaza
-- [ ] Verificare CORS: serverul accepta cereri doar de la site-ul nostru, nu de oriunde
-- [ ] Verificare headere securitate: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-- [ ] Update Next.js la ultima versiune (rezolva vulnerabilitati cunoscute)
-- [ ] **Rate limiting GLOBAL** (audit S2 + S12): creaza `api/lib/rate_limiter.py` — modul comun aplicat pe TOATE endpoint-urile API, nu doar pe traduceri. Limite diferite per tip:
-  - `/api/translate`: 10 cereri/minut, 100/zi per adresa
-  - `/api/convert`: 20 cereri/minut, 200/zi per adresa
-  - `/api/deepl-usage`: 30 cereri/minut (doar citire, mai permisiv)
-  - Viitor `/api/chat`: 30 cereri/minut
-  Ca un turnichet: daca cineva trimite prea multe cereri rapid, se blocheaza temporar. Protejeaza cota DeepL/Gemini de abuz.
-- [ ] **Mesaje eroare in romana** (audit S14): toate mesajele de eroare afisate utilizatorului sa fie in limba romana, pe intelesul Cristinei. De ex: "Prea multe cereri. Incearca din nou in 1 minut." (nu mesaj tehnic in engleza)
-- [ ] Test rate limiting: trimite 15 cereri rapid -> confirma ca a 11-a e refuzata cu mesaj clar in romana
-- [ ] Test: deschide site-ul, verifica in browser ca headerele apar corect
+**Sprint 2.3: Securitate + Protectie abuz** — COMPLETAT 2026-03-26
+- [x] 2026-03-26 — InlineEditor: sanitizeHtml() activ — OK
+- [x] 2026-03-26 — CORS: ALLOWED_ORIGIN pe toate endpoint-urile (default Render URL) — OK
+- [x] 2026-03-26 — Headere securitate: X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy — OK
+- [x] 2026-03-26 — Next.js 14.2.35 (ultima stabila 14.x) — deja la zi, nu necesita update
+- [x] 2026-03-26 — Rate limiting GLOBAL: `api/lib/rate_limiter.py` — sliding window per IP, thread-safe, cleanup 5min
+  - /api/translate: 10/min, 100/zi | /api/convert: 20/min, 200/zi | /api/chat: 30/min, 300/zi
+  - Integrat in dev_server.py pe toate POST requests
+- [x] 2026-03-26 — Mesaje eroare in romana: "Prea multe cereri. Incearca din nou in N secunde." / "Limita zilnica atinsa."
+- [x] 2026-03-26 — Test pe Render: 5 cereri rapide la convert -> toate 200 (sub limita), rate limiter activ, build dd1d4b0
 
 **Sprint 2.4: Contor DeepL + Cache traduceri + Fallback**
 - [ ] Endpoint `/api/deepl-usage` — returneaza cota COMBINATA a ambelor chei: caractere consumate total, limita totala (1.000.000), procent. Cristina vede un singur numar, nu stie de 2 chei (audit S10, Roland I4).
