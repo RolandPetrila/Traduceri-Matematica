@@ -57,6 +57,21 @@ export default function ServerWakeup({
     };
   }, [attempt]);
 
+  useEffect(() => {
+    if (status !== "ready") return;
+
+    // Keep backend alive every 4 minutes to prevent Render sleep
+    const keepAlive = setInterval(async () => {
+      try {
+        await fetch(HEALTH_ENDPOINT, { signal: AbortSignal.timeout(5000) });
+      } catch {
+        // Ignore errors — this is just a keep-alive ping
+      }
+    }, 4 * 60 * 1000);
+
+    return () => clearInterval(keepAlive);
+  }, [status]);
+
   if (status === "ready") return <>{children}</>;
 
   return (

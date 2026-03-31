@@ -9,6 +9,11 @@ import sys
 import urllib.request
 import urllib.error
 
+try:
+    from .retry import retry_with_backoff
+except ImportError:
+    from lib.retry import retry_with_backoff
+
 
 __all__ = [
     "extract_text_from_docx",
@@ -39,9 +44,13 @@ def gemini_request(contents: list, api_key: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
     payload = json.dumps({"contents": contents}).encode("utf-8")
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-    try:
+
+    def _call():
         with urllib.request.urlopen(req, timeout=55) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            return json.loads(resp.read().decode("utf-8"))
+
+    try:
+        data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
         return data["candidates"][0]["content"]["parts"][0]["text"]
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")
@@ -141,9 +150,13 @@ def ocr_with_mistral(image_bytes: bytes, mime_type: str, source_lang: str) -> st
         data=payload,
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
     )
-    try:
+
+    def _call():
         with urllib.request.urlopen(req, timeout=55) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            return json.loads(resp.read().decode("utf-8"))
+
+    try:
+        data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
         return data["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")
@@ -237,9 +250,13 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
     })
-    try:
+
+    def _call():
         with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            return json.loads(resp.read().decode("utf-8"))
+
+    try:
+        data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
         return data["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")

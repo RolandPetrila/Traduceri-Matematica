@@ -71,7 +71,7 @@ export default function TraduceriPage() {
 
     // Check cache first — avoid re-consuming DeepL quota
     const fileNames = files.map(f => f.name);
-    const cached = getCachedTranslation(fileNames, sourceLang, targetLang);
+    const cached = getCachedTranslation(files, sourceLang, targetLang);
     if (cached) {
       if (progressTimer.current) clearInterval(progressTimer.current);
       setResult(cached);
@@ -150,7 +150,7 @@ export default function TraduceriPage() {
       });
 
       // Save to cache (avoid re-consuming DeepL quota)
-      cacheTranslation(files.map(f => f.name), sourceLang, targetLang, htmlResult);
+      cacheTranslation(files, sourceLang, targetLang, htmlResult);
 
       // Save to history
       addToHistory({

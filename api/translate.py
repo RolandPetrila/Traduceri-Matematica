@@ -142,8 +142,14 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            content_type = self.headers.get("Content-Type", "")
+            MAX_BODY_SIZE = 4 * 1024 * 1024 + 4096  # 4MB + overhead for form fields
+
             content_length = int(self.headers.get("Content-Length", 0))
+            if content_length > MAX_BODY_SIZE:
+                self._send_json(413, {"error": "Fisierul depaseste limita de 4MB", "status": "error"})
+                return
+
+            content_type = self.headers.get("Content-Type", "")
             print(f"[TRANSLATE] Request: content_type={content_type[:80]}, size={content_length}", file=sys.stderr)
             body = self.rfile.read(content_length)
 
@@ -177,22 +183,46 @@ class handler(BaseHTTPRequestHandler):
             results = []
             t0 = time.time()
 
-            for idx, file_info in enumerate(files):
+            # PHASE 1: Expand PDFs to images (safe — no mutation during iteration)
+            BATCH_SIZE = 5  # Process PDF in batches to limit memory (D16)
+            expanded_files = []
+            for file_info in files:
+                mime_type = file_info.get("mime_type", "image/jpeg")
+                filename = file_info.get("filename", "")
+                is_pdf = mime_type == "application/pdf" or filename.lower().endswith(".pdf")
+                is_docx = "wordprocessingml" in mime_type or filename.lower().endswith(".docx")
+
+                if is_pdf and not is_docx:
+                    pdf_pages = _pdf_to_images(file_info["data"])
+                    if pdf_pages:
+                        total_pages = len(pdf_pages)
+                        if total_pages > BATCH_SIZE:
+                            print(f"[PDF] Large document ({total_pages} pages), processing in batches of {BATCH_SIZE}", file=sys.stderr)
+                        for pg_idx, (pg_bytes, pg_mime) in enumerate(pdf_pages):
+                            expanded_files.append({
+                                "data": pg_bytes, "mime_type": pg_mime,
+                                "filename": f"{filename}_p{pg_idx+1}.png"
+                            })
+                        # Free original PDF data and page list to reclaim memory
+                        del pdf_pages
+                        file_info["data"] = b""  # Release original PDF bytes
+                        continue
+                    # Fallback: treat as regular image (might fail, but try)
+                expanded_files.append(file_info)
+
+            # Limit total pages to prevent memory exhaustion on 512MB Render
+            MAX_PAGES = 30
+            if len(expanded_files) > MAX_PAGES:
+                print(f"[TRANSLATE] WARNING: {len(expanded_files)} pages exceeds limit of {MAX_PAGES}, truncating", file=sys.stderr)
+                expanded_files = expanded_files[:MAX_PAGES]
+
+            # PHASE 2: Process all files (images + expanded PDF pages + DOCX)
+            for idx, file_info in enumerate(expanded_files):
                 file_data = file_info["data"]
                 mime_type = file_info.get("mime_type", "image/jpeg")
                 filename = file_info.get("filename", "")
                 is_docx = "wordprocessingml" in mime_type or filename.lower().endswith(".docx")
-                is_pdf = mime_type == "application/pdf" or filename.lower().endswith(".pdf")
                 has_claude = False  # Claude suspended
-
-                # PDF: convert each page to image, process individually
-                if is_pdf and not is_docx:
-                    pdf_pages = _pdf_to_images(file_data)
-                    if pdf_pages:
-                        for pg_idx, (pg_bytes, pg_mime) in enumerate(pdf_pages):
-                            files.append({"data": pg_bytes, "mime_type": pg_mime, "filename": f"{filename}_p{pg_idx+1}.png"})
-                        continue  # Skip this file, process extracted pages
-                    # Fallback: treat as regular image (might fail, but try)
 
                 if is_docx:
                     extracted = extract_text_from_docx(file_data)

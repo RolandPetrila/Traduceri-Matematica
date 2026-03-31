@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 
@@ -68,6 +68,38 @@ export default function DocumentViewer({
   const [sourcePages] = useState<StructuredPage[] | null>(null);
 
   const currentPages = cacheRef.current[activeLang] || structuredPages;
+
+  // Load MathJax into the page (once)
+  useEffect(() => {
+    // Load MathJax config if not present
+    if (!document.getElementById("mathjax-config")) {
+      const cfg = document.createElement("script");
+      cfg.id = "mathjax-config";
+      cfg.textContent = `window.MathJax = {
+        tex: { inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] },
+        svg: { fontCache: 'global' }
+      };`;
+      document.head.appendChild(cfg);
+    }
+    // Load MathJax script if not present
+    if (!document.getElementById("mathjax-script")) {
+      const script = document.createElement("script");
+      script.id = "mathjax-script";
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+
+  // Re-typeset math after render or language switch
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if ((window as any).MathJax?.typesetPromise) {
+        (window as any).MathJax.typesetPromise().catch(() => {});
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [activeLang, currentPages]);
 
   const switchLanguage = useCallback(async (targetLang: string) => {
     if (targetLang === activeLang) return;
@@ -159,6 +191,32 @@ export default function DocumentViewer({
     }
   };
 
+  const handleDownloadDocx = async () => {
+    const html = buildHtmlFromPages(currentPages, activeLang);
+    const formData = new FormData();
+    const htmlBlob = new Blob([html], { type: "text/html" });
+    formData.append("files", htmlBlob, "traducere.html");
+    formData.append("operation", "convert");
+    formData.append("target_format", "docx");
+
+    try {
+      const res = await fetch(`${API_URL}/api/convert`, { method: "POST", body: formData });
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}_${activeLang}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      logAction("Download DOCX", { lang: activeLang });
+    } catch (err) {
+      logError(err instanceof Error ? err.message : "DOCX download failed", { context: { lang: activeLang } });
+      // Fallback: download as HTML
+      handleDownloadHtml();
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Toolbar: language toggle + actions */}
@@ -190,6 +248,9 @@ export default function DocumentViewer({
           </button>
           <button onClick={handlePrint} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
             Print / PDF
+          </button>
+          <button onClick={handleDownloadDocx} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
+            DOCX
           </button>
         </div>
       </div>

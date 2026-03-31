@@ -85,13 +85,6 @@ def _md_to_html_body(md: str) -> str:
     return html
 
 
-def _build_figure_pair():
-    """Sentinel for paired figure state tracking."""
-    pass
-
-_build_figure_pair._skip_next = False
-
-
 def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]], target_lang: str) -> str:
     """Build HTML from structured OCR data + cropped figures.
 
@@ -102,7 +95,7 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
     """
     page_sections = []
     for page_idx, (page, figs) in enumerate(zip(pages_data, figures)):
-        _build_figure_pair._skip_next = False  # Reset for each page
+        skip_next = False
         parts = []
         sections = page.get("sections", [])
         parts.append(f'<div class="source-file">Pagina {page_idx + 1}</div>')
@@ -150,7 +143,7 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
                     next_is_figure = next_sec and next_sec.get("type") == "figure"
                     next_b64 = figs.get(next_idx, "") if next_is_figure else ""
 
-                    if next_b64 and not getattr(_build_figure_pair, '_skip_next', False):
+                    if next_b64 and not skip_next:
                         # Render paired figures side by side
                         next_caption = next_sec.get("caption", "") if next_sec else ""
                         parts.append(
@@ -169,10 +162,10 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
                             f'</div>'
                             f'</div>'
                         )
-                        _build_figure_pair._skip_next = True
-                    elif getattr(_build_figure_pair, '_skip_next', False):
+                        skip_next = True
+                    elif skip_next:
                         # This figure was already rendered as part of a pair
-                        _build_figure_pair._skip_next = False
+                        skip_next = False
                     else:
                         # Single figure
                         parts.append(

@@ -22,9 +22,12 @@ interface CacheStore {
   entries: Record<string, CacheEntry>;
 }
 
-function generateKey(fileNames: string[], sourceLang: string, targetLang: string): string {
-  const sorted = [...fileNames].sort().join("|");
-  return `${sorted}::${sourceLang}::${targetLang}`;
+function generateKey(files: File[], sourceLang: string, targetLang: string): string {
+  const fileSignature = files
+    .map(f => `${f.name}:${f.size}:${f.lastModified}`)
+    .sort()
+    .join("|");
+  return `${fileSignature}::${sourceLang}::${targetLang}`;
 }
 
 function loadStore(): CacheStore {
@@ -70,12 +73,12 @@ function evictOldest(store: CacheStore, count: number): void {
  * Get cached translation HTML, or null if not cached.
  */
 export function getCachedTranslation(
-  fileNames: string[],
+  files: File[],
   sourceLang: string,
   targetLang: string
 ): string | null {
   const store = loadStore();
-  const key = generateKey(fileNames, sourceLang, targetLang);
+  const key = generateKey(files, sourceLang, targetLang);
   const entry = store.entries[key];
   if (entry && entry.version === CACHE_VERSION) {
     return entry.html;
@@ -87,7 +90,7 @@ export function getCachedTranslation(
  * Save a translation to cache.
  */
 export function cacheTranslation(
-  fileNames: string[],
+  files: File[],
   sourceLang: string,
   targetLang: string,
   html: string
@@ -100,7 +103,7 @@ export function cacheTranslation(
     evictOldest(store, entryCount - MAX_ENTRIES + 5);
   }
 
-  const key = generateKey(fileNames, sourceLang, targetLang);
+  const key = generateKey(files, sourceLang, targetLang);
   store.entries[key] = {
     html,
     targetLang,

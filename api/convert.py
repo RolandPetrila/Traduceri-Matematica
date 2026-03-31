@@ -137,42 +137,60 @@ def md_to_html(data: bytes, name: str) -> dict:
     return {"data": full.encode("utf-8"), "mime": "text/html", "filename": f"{s}.html"}
 
 
+def _load_dejavu_font(pdf_obj) -> str:
+    """Load DejaVu Sans font into FPDF object for full Unicode diacritics support.
+
+    Returns the font family name to use with set_font().
+    Falls back to 'Helvetica' if font files are not found.
+    """
+    fonts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+    regular = os.path.join(fonts_dir, "DejaVuSans.ttf")
+    bold = os.path.join(fonts_dir, "DejaVuSans-Bold.ttf")
+    if os.path.isfile(regular) and os.path.isfile(bold):
+        pdf_obj.add_font("DejaVu", "", regular)
+        pdf_obj.add_font("DejaVu", "B", bold)
+        return "DejaVu"
+    # Fallback: built-in Helvetica (no diacritics support)
+    return "Helvetica"
+
+
 def _text_to_pdf(text: str, title: str = "") -> bytes:
     """Convert plain/structured text to PDF using fpdf2 (pure Python)."""
     from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
 
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
+    font_name = _load_dejavu_font(pdf)
     pdf.add_page()
-    # Use built-in Helvetica (supports latin-1; for full Unicode would need font file)
-    pdf.set_font("Helvetica", size=11)
+    pdf.set_font(font_name, size=11)
     if title:
-        pdf.set_font("Helvetica", "B", 16)
-        pdf.cell(0, 10, title, ln=True)
+        pdf.set_font(font_name, "B", 16)
+        pdf.cell(0, 10, title, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(4)
-        pdf.set_font("Helvetica", size=11)
+        pdf.set_font(font_name, size=11)
     for line in text.split("\n"):
         stripped = line.strip()
         if stripped.startswith("# "):
-            pdf.set_font("Helvetica", "B", 16)
-            pdf.cell(0, 10, stripped[2:], ln=True)
-            pdf.set_font("Helvetica", size=11)
+            pdf.set_font(font_name, "B", 16)
+            pdf.multi_cell(0, 10, stripped[2:], new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font(font_name, size=11)
         elif stripped.startswith("## "):
-            pdf.set_font("Helvetica", "B", 14)
-            pdf.cell(0, 9, stripped[3:], ln=True)
-            pdf.set_font("Helvetica", size=11)
+            pdf.set_font(font_name, "B", 14)
+            pdf.multi_cell(0, 9, stripped[3:], new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font(font_name, size=11)
         elif stripped.startswith("### "):
-            pdf.set_font("Helvetica", "B", 12)
-            pdf.cell(0, 8, stripped[4:], ln=True)
-            pdf.set_font("Helvetica", size=11)
+            pdf.set_font(font_name, "B", 12)
+            pdf.multi_cell(0, 8, stripped[4:], new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font(font_name, size=11)
         elif stripped.startswith("**") and stripped.endswith("**"):
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.multi_cell(0, 6, stripped[2:-2])
-            pdf.set_font("Helvetica", size=11)
+            pdf.set_font(font_name, "B", 11)
+            pdf.multi_cell(0, 6, stripped[2:-2], new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font(font_name, size=11)
         elif not stripped:
             pdf.ln(3)
         else:
-            pdf.multi_cell(0, 6, stripped)
+            pdf.multi_cell(0, 6, stripped, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     return pdf.output()
 
 
@@ -412,8 +430,9 @@ def edit_pdf(data: bytes, name: str, **kwargs) -> dict:
         # Create watermark page using fpdf2
         from fpdf import FPDF
         wm_pdf = FPDF()
+        wm_font = _load_dejavu_font(wm_pdf)
         wm_pdf.add_page()
-        wm_pdf.set_font("Helvetica", "B", 50)
+        wm_pdf.set_font(wm_font, "B", 50)
         wm_pdf.set_text_color(200, 200, 200)
         wm_pdf.rotate(45, wm_pdf.w / 2, wm_pdf.h / 2)
         wm_pdf.text(wm_pdf.w / 4, wm_pdf.h / 2, wm_text)
@@ -534,8 +553,19 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            content_type = self.headers.get("Content-Type", "")
+            MAX_BODY_SIZE = 4 * 1024 * 1024 + 4096  # 4MB + overhead
+
             content_length = int(self.headers.get("Content-Length", 0))
+            if content_length > MAX_BODY_SIZE:
+                error_body = json.dumps({"error": "Fisierul depaseste limita de 4MB", "status": "error"}).encode()
+                self.send_response(413)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
+                self.end_headers()
+                self.wfile.write(error_body)
+                return
+
+            content_type = self.headers.get("Content-Type", "")
             body = self.rfile.read(content_length)
 
             if "multipart/form-data" in content_type:

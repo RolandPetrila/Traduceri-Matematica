@@ -14,6 +14,11 @@ import re
 import sys
 import urllib.request
 
+try:
+    from .retry import retry_with_backoff
+except ImportError:
+    from lib.retry import retry_with_backoff
+
 
 def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
     """Extract structured content from an image using Gemini JSON mode.
@@ -75,8 +80,11 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
 
     try:
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+        def _call():
+            with urllib.request.urlopen(req, timeout=90) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+
+        data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
 
         raw = data["candidates"][0]["content"]["parts"][0]["text"]
 
