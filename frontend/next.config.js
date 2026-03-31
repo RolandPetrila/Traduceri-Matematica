@@ -50,6 +50,7 @@ const nextConfig = {
         { source: '/api/translate', destination: `${apiUrl}/api/translate` },
         { source: '/api/convert', destination: `${apiUrl}/api/convert` },
         { source: '/api/health', destination: `${apiUrl}/api/health` },
+        { source: '/api/deepl-usage', destination: `${apiUrl}/api/deepl-usage` },
       ],
     };
   },
