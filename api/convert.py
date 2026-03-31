@@ -14,29 +14,15 @@ import re
 import sys
 import traceback
 
+# Ensure api/lib/ is importable
+_api_dir = os.path.dirname(os.path.abspath(__file__))
+if _api_dir not in sys.path:
+    sys.path.insert(0, _api_dir)
 
-
-# --- Local debug logging ---
-
-
-def _log_to_file(message: str) -> None:
-    """Append log entry to data/logs/local_debug.log (local dev only)."""
-    import os
-
-    log_dir = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "logs"
-    )
-    if not os.path.isdir(log_dir):
-        return
-    log_file = os.path.join(log_dir, "local_debug.log")
-    try:
-        from datetime import datetime
-
-        ts = datetime.now().strftime("%H:%M:%S")
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {message}\n")
-    except Exception:
-        pass
+try:
+    from lib.multipart import parse_boundary, log_to_file
+except ImportError:
+    from api.lib.multipart import parse_boundary, log_to_file
 
 
 # --- Helpers ---
@@ -497,15 +483,6 @@ def process(files: list[dict], operation: str, target_format: str, **kwargs) -> 
     raise ValueError(f"Conversie {ext} -> {target_format} nu e suportata")
 
 
-# --- Multipart parser ---
-
-def parse_boundary(content_type: str) -> str:
-    for part in content_type.split(";"):
-        part = part.strip()
-        if part.startswith("boundary="):
-            return part[len("boundary="):].strip('"').strip("'")
-    raise ValueError("No boundary in Content-Type")
-
 
 def parse_multipart(body: bytes, boundary: str) -> dict:
     result: dict = {"files": [], "operation": "convert", "target_format": "", "page_range": ""}
@@ -582,13 +559,13 @@ class handler(BaseHTTPRequestHandler):
                      if parts.get(k)}
 
             print(f"[CONVERT] {operation}: {len(files)} files, target={target_format}", file=sys.stderr)
-            _log_to_file(f"ACTION  | Conversie initiata | {operation} | {len(files)} fisier(e) | Target: {target_format}")
+            log_to_file(f"ACTION  | Conversie initiata | {operation} | {len(files)} fisier(e) | Target: {target_format}")
 
             result = process(files, operation, target_format, **extra)
 
             out_data = result["data"]
-            _log_to_file(f"OK      | Conversie completa | {result['filename']} | {len(out_data)} bytes")
-            _log_to_file("")
+            log_to_file(f"OK      | Conversie completa | {result['filename']} | {len(out_data)} bytes")
+            log_to_file("")
             print(f"[CONVERT OK] {operation}: {result['filename']} ({result['mime']}, {len(out_data)} bytes)", file=sys.stderr)
 
             self.send_response(200)
@@ -602,8 +579,8 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             error_msg = str(e)
-            _log_to_file(f"ERROR   | Conversie esuata | {type(e).__name__}: {error_msg}")
-            _log_to_file("")
+            log_to_file(f"ERROR   | Conversie esuata | {type(e).__name__}: {error_msg}")
+            log_to_file("")
             print(f"[CONVERT ERROR] {type(e).__name__}: {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             error_body = json.dumps({"error": error_msg, "status": "error"}).encode()

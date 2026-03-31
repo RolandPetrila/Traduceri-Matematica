@@ -1,47 +1,67 @@
-# Sistem Traduceri
+# Sistem Traduceri Matematica
 
-Aplicatie web (PWA) pentru traducerea documentelor de matematica cu AI.
+Aplicatie web (PWA) pentru traducerea documentelor matematice cu AI — RO, SK, EN.
+Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 
-## Functionalitati
+## Live
 
-- **Traducere documente**: Foto/PDF -> OCR AI -> Markdown+LaTeX -> Traducere -> HTML A4 printabil
-- **Limbi**: Romana, Slovaca, Engleza (extensibil)
-- **Figuri geometrice**: SVG inline cu constructii precise
-- **Convertor fisiere**: PDF, DOCX, IMG, MD, HTML — merge, split, compress
-- **Dictionar terminologic**: Invata din corectii, asigura consistenta
-- **PWA**: Instalabil pe Windows, Android, iPhone
+- **Frontend**: https://traduceri-matematica-7sh7.onrender.com
+- **API**: https://traduceri-api.onrender.com
 
 ## Stack
 
-- **Frontend**: Next.js 14, Tailwind CSS, shadcn/ui
-- **Backend**: FastAPI (Python)
-- **AI**: Google Gemini (primar), Groq + Mistral (fallback)
-- **Deploy**: Render (auto-deploy din GitHub, Frankfurt, free tier)
+- **Frontend**: Next.js 14 + Tailwind CSS + TypeScript
+- **Backend**: Python serverless (api/) + shared lib (api/lib/)
+- **AI OCR**: Gemini 2.5 Flash (JSON mode)
+- **AI Traducere**: DeepL Free (principal) + Gemini (fallback)
+- **Figuri**: Crop din original cu Pillow (bbox de la OCR)
+- **Deploy**: Render (auto-deploy din GitHub, free tier, Frankfurt)
 
-## Setup local
+## Dezvoltare locala
 
 ```bash
-# 1. Clone
-git clone https://github.com/RolandPetrila/Traduceri-Matematica.git
-cd Traduceri-Matematica
-
-# 2. Configureaza API keys
+# 1. Copiaza .env.example in .env si completeaza cheile API
 cp .env.example .env
-# Editeaza .env cu cheile tale
 
-# 3. Backend
-cd backend
+# 2. Instaleaza dependente
+cd frontend && npm install
 pip install -r requirements.txt
-uvicorn app.main:app --reload
 
-# 4. Frontend (alt terminal)
-cd frontend
-npm install
-npm run dev
+# 3. Porneste serverele
+# Terminal 1: Backend Python
+python dev_server.py
+
+# Terminal 2: Frontend Next.js
+cd frontend && npm run dev
 ```
 
-Deschide http://localhost:3000
+Frontend: http://localhost:3000
+Backend API: http://localhost:8000
 
-## Tema UI
+## Structura
 
-"Tabla verde + creta" — interfata cu aspect de tabla scolara, dedicata matematicii.
+```
+api/                  Python API handlers
+  lib/                Module partajate (OCR, traducere, HTML, crop)
+  fonts/              DejaVu Sans (pentru PDF diacritice)
+frontend/             Next.js 14 app
+  src/app/            Pagini (traduceri, convertor, diagnostics)
+  src/components/     Componente React
+  src/lib/            Utilitare (cache, monitoring, storage)
+config/               Configuratie (limbi, tab-uri, dictionar)
+99_Plan_vs_Audit/     Planificare si tracking
+```
+
+## API Endpoints
+
+| Endpoint | Metoda | Descriere |
+|----------|--------|-----------|
+| `/api/health` | GET | Health check + versiune |
+| `/api/translate` | POST | OCR + traducere fisiere (JPEG/PDF/DOCX) |
+| `/api/translate-text` | POST | Traducere text (fara OCR) |
+| `/api/convert` | POST | Conversie fisiere (PDF/DOCX/HTML/MD/IMG) |
+| `/api/deepl-usage` | GET | Cota DeepL combinata (2 chei) |
+
+## Licenta
+
+Proiect privat — uz intern.

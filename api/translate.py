@@ -33,6 +33,7 @@ from lib.translation_router import (
     _sanitize_error,
 )
 from lib.math_protect import protect_for_deepl, restore_from_deepl
+from lib.multipart import parse_boundary, log_to_file
 
 try:
     from lib.deepl_client import translate_text as _deepl_translate
@@ -79,22 +80,14 @@ def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
 
 # --- Helpers ---
 
-def _log_to_file(message: str) -> None:
-    """Append log entry to data/logs/local_debug.log (local dev only)."""
-    log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "logs")
-    if not os.path.isdir(log_dir):
-        return
-    try:
-        from datetime import datetime
-        ts = datetime.now().strftime("%H:%M:%S")
-        with open(log_dir + "/local_debug.log", "a", encoding="utf-8") as f:
-            f.write(f"[{ts}] {message}\n")
-    except Exception:
-        pass
-
 
 def protect_math(text: str) -> tuple[str, dict[str, str]]:
-    """Protect LaTeX/SVG/HTML from translation."""
+    """Protect LaTeX/SVG/HTML from translation.
+
+    NOTE: differs from lib.math_protect.protect_with_placeholders — this version
+    also protects bare HTML tags (<[^>]+>) which the shared version does not.
+    Kept separate to avoid breaking the legacy fallback pipeline.
+    """
     placeholders = {}
     counter = [0]
     def _replace(match: re.Match) -> str:
@@ -119,15 +112,6 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
         text = text.replace(key, value)
     return text
 
-
-# --- Multipart parser ---
-
-def parse_boundary(content_type: str) -> str:
-    for part in content_type.split(";"):
-        part = part.strip()
-        if part.startswith("boundary="):
-            return part[len("boundary="):].strip('"').strip("'")
-    raise ValueError(f"No boundary found in Content-Type: {content_type}")
 
 
 # --- Main Handler ---
@@ -175,7 +159,7 @@ class handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
                 return
 
-            _log_to_file(f"ACTION  | Traducere initiata | {len(files)} fisier(e) | {source_lang} -> {target_lang} | Engine: {translate_engine}")
+            log_to_file(f"ACTION  | Traducere initiata | {len(files)} fisier(e) | {source_lang} -> {target_lang} | Engine: {translate_engine}")
 
             all_markdowns = []
             all_structured_pages = []
@@ -212,8 +196,10 @@ class handler(BaseHTTPRequestHandler):
 
             # Limit total pages to prevent memory exhaustion on 512MB Render
             MAX_PAGES = 30
+            truncated_from = 0
             if len(expanded_files) > MAX_PAGES:
-                print(f"[TRANSLATE] WARNING: {len(expanded_files)} pages exceeds limit of {MAX_PAGES}, truncating", file=sys.stderr)
+                truncated_from = len(expanded_files)
+                print(f"[TRANSLATE] WARNING: {truncated_from} pages exceeds limit of {MAX_PAGES}, truncating", file=sys.stderr)
                 expanded_files = expanded_files[:MAX_PAGES]
 
             # PHASE 2: Process all files (images + expanded PDF pages + DOCX)
@@ -320,6 +306,7 @@ class handler(BaseHTTPRequestHandler):
                 "source_lang": source_lang,
                 "target_lang": target_lang,
                 "structured_pages": all_structured_pages if all_structured_pages else None,
+                "warning": f"Documentul a fost trunchiat de la {truncated_from} la {MAX_PAGES} pagini (limita server)" if truncated_from > MAX_PAGES else None,
             })
 
         except Exception as e:

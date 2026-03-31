@@ -7,8 +7,8 @@
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm start",
-    "backend": "cd backend && uvicorn app.main:app --reload --port 8000",
-    "install:all": "cd frontend && npm install && cd ../backend && pip install -r requirements.txt",
+    "backend": "python dev_server.py",
+    "install:all": "cd frontend && npm install && cd .. && pip install -r requirements.txt",
     "dev:full": "concurrently \"npm run backend\" \"npm run dev\""
   },
   "repository": {

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 interface StructuredSection {
   type: string;
@@ -63,9 +64,6 @@ export default function DocumentViewer({
   const cacheRef = useRef<TranslationCache>({
     [initialTargetLang]: structuredPages,
   });
-
-  // Store source text for re-translation
-  const [sourcePages] = useState<StructuredPage[] | null>(null);
 
   const currentPages = cacheRef.current[activeLang] || structuredPages;
 
@@ -131,6 +129,7 @@ export default function DocumentViewer({
           target_lang: targetLang,
           translate_engine: translateEngine,
         }),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -295,7 +294,7 @@ function RenderSection({ section }: { section: StructuredSection }) {
     return (
       <div style={{ display: "flex", gap: "16px", justifyContent: "center", margin: "6px 0" }}>
         {svgs.map((s, i) => (
-          <div key={i} dangerouslySetInnerHTML={{ __html: s }} />
+          <div key={i} dangerouslySetInnerHTML={{ __html: sanitizeHtml(s) }} />
         ))}
       </div>
     );
@@ -326,7 +325,8 @@ function RenderSection({ section }: { section: StructuredSection }) {
 /** Render text with LaTeX — uses dangerouslySetInnerHTML for MathJax processing */
 function renderMathText(text: string): JSX.Element {
   // Convert **bold** to <strong>
-  const processed = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  const safe = sanitizeHtml(text);
+  const processed = safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   return <span dangerouslySetInnerHTML={{ __html: processed }} />;
 }
 

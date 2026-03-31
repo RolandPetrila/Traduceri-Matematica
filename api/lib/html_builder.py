@@ -127,15 +127,14 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
                 if items:
                     parts.append("<ol>")
                     for item in items:
-                        # Strip leading number/dot
-                        import re as _re
-                        clean = _re.sub(r"^\d+\.\s*", "", item)
+                        clean = re.sub(r"^\d+\.\s*", "", item)
                         parts.append(f"<li>{clean}</li>")
                     parts.append("</ol>")
             elif sec_type == "figure":
                 # Insert cropped figure as <img> if available
                 b64 = figs.get(sec_idx, "")
                 caption = section.get("caption", "")
+                safe_caption = (caption or "Figura").replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
                 if b64:
                     # Check if next section is also a figure (paired: P1+P2 side by side)
                     next_idx = sec_idx + 1
@@ -146,17 +145,18 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
                     if next_b64 and not skip_next:
                         # Render paired figures side by side
                         next_caption = next_sec.get("caption", "") if next_sec else ""
+                        safe_next_caption = (next_caption or "Figura").replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
                         parts.append(
                             f'<div style="display:flex;justify-content:center;gap:12px;margin:10px 0">'
                             f'<div style="text-align:center">'
                             f'<img src="data:image/png;base64,{b64}" '
-                            f'alt="{caption or "Figura"}" '
+                            f'alt="{safe_caption}" '
                             f'style="max-width:48%;height:auto;background:#fff;border:1px solid #eee;" />'
                             f'{"<p><em>" + caption + "</em></p>" if caption else ""}'
                             f'</div>'
                             f'<div style="text-align:center">'
                             f'<img src="data:image/png;base64,{next_b64}" '
-                            f'alt="{next_caption or "Figura"}" '
+                            f'alt="{safe_next_caption}" '
                             f'style="max-width:48%;height:auto;background:#fff;border:1px solid #eee;" />'
                             f'{"<p><em>" + next_caption + "</em></p>" if next_caption else ""}'
                             f'</div>'
@@ -171,7 +171,7 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
                         parts.append(
                             f'<div style="display:flex;justify-content:center;margin:8px 0">'
                             f'<img src="data:image/png;base64,{b64}" '
-                            f'alt="{caption or "Figura"}" '
+                            f'alt="{safe_caption}" '
                             f'style="max-width:90%;height:auto;background:#fff;border:1px solid #eee;" />'
                             f'</div>'
                             f'{"<p style=\"text-align:center\"><em>" + caption + "</em></p>" if caption else ""}'
