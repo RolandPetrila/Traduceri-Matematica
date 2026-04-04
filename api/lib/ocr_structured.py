@@ -56,7 +56,9 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         "3. Bold terms: **bold** markers\n"
         "4. Preserve EXACT text — do not summarize or skip\n"
         "5. If a word is hyphenated across a line break, join it into one word\n"
-        "6. Lists: numbered (1. 2.) or lettered (a) b))\n\n"
+        "6. Lists: numbered (1. 2.) or lettered (a) b))\n"
+        "7. IGNORE page numbers (standalone numbers like 205, 206 at edges) — do NOT include them\n"
+        "8. 'Observatie.' / 'Exemplu.' / 'Definitie.' etc. MUST be bold: **Observatie.**\n\n"
 
         "FIGURE RULES — CRITICAL:\n"
         "7. For EVERY geometric figure/diagram, generate INLINE SVG code in the 'svg' field\n"

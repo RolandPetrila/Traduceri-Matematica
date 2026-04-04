@@ -85,8 +85,11 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
     }).encode("utf-8")
 
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=55) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        raise RuntimeError(f"Gemini translation timeout/error: {e}")
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
