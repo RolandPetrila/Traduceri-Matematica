@@ -91,8 +91,6 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         {"inline_data": {"mime_type": mime_type, "data": image_b64}},
     ]}]
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={api_key}"
-
     payload = json.dumps({
         "contents": contents,
         "generationConfig": {
@@ -100,15 +98,40 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         },
     }).encode("utf-8")
 
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    # Fallback chain: Pro (better quality) → Flash (higher quota)
+    # Pro: 100 RPD, 5 RPM. Flash: 250 RPD, 10 RPM.
+    MODELS = ["gemini-2.5-pro", "gemini-2.5-flash"]
+    data = None
+
+    for model_name in MODELS:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        try:
+            def _call(r=req):
+                with urllib.request.urlopen(r, timeout=180) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+
+            data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
+            print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and model_name != MODELS[-1]:
+                print(f"[OCR-STRUCT] {model_name} rate limited (429), falling back to {MODELS[-1]}", file=sys.stderr)
+                continue
+            error_body = e.read().decode("utf-8", errors="replace")[:300]
+            print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)
+            raise
+        except Exception as e:
+            if "429" in str(e) and model_name != MODELS[-1]:
+                print(f"[OCR-STRUCT] {model_name} quota exceeded, trying {MODELS[-1]}", file=sys.stderr)
+                continue
+            print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
+            raise
+
+    if data is None:
+        raise RuntimeError("All Gemini models failed")
 
     try:
-        def _call():
-            with urllib.request.urlopen(req, timeout=180) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-
-        data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
-
         raw = data["candidates"][0]["content"]["parts"][0]["text"]
 
         try:
@@ -151,12 +174,8 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         print(f"[OCR-STRUCT] OK: {total} sections, {figure_count} figures ({svg_count} with SVG)", file=sys.stderr)
         return result
 
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8", errors="replace")[:300]
-        print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)
-        raise
     except Exception as e:
-        print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
+        print(f"[OCR-STRUCT] Parse error: {e}", file=sys.stderr)
         raise
 
 
