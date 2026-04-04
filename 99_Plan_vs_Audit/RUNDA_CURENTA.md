@@ -1,5 +1,44 @@
-# RUNDA CURENTA — Runda 14: METODA 3 PASI (Sprint 2.6)
-# Actualizat: 2026-04-04 de T3 (orchestrator)
+# RUNDA CURENTA — Runda 14: METODA 3 PASI (Sprint 2.6) + FALLBACK GEMINI
+# Actualizat: 2026-04-04 de T3 (orchestrator) — v2 (adaugat INTERVENTIE 0)
+
+---
+
+## INTERVENTIE 0: Fallback Gemini Pro → Flash [P0 URGENT — executa PRIMUL]
+
+**Fisier:** `api/lib/ocr_structured.py` — linia ~94
+**Problema:** Gemini 2.5 Pro pe free tier are doar **100 cereri/zi** (5 RPM). [CERT — sursa: Google AI docs, aprilie 2026]. Flash are 250 RPD si 10 RPM. Daca Cristina proceseaza 15+ pagini intr-o zi, Pro se blocheaza si OCR-ul nu mai merge deloc.
+
+**Solutia:** Pastreaza Pro ca default (calitate mai buna), dar daca primeste 429 (rate limited) → retry automat cu Flash.
+
+**Implementare:**
+
+```python
+MODELS = ["gemini-2.5-pro", "gemini-2.5-flash"]
+
+for model_name in MODELS:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    try:
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=180) as resp:
+            if resp.status == 200:
+                # success — parse and return
+                print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
+                break
+    except urllib.error.HTTPError as e:
+        if e.code == 429 and model_name != MODELS[-1]:
+            print(f"[OCR-STRUCT] {model_name} rate limited (429), falling back to {MODELS[-1]}", file=sys.stderr)
+            continue
+        raise
+    except Exception as e:
+        if "429" in str(e) and model_name != MODELS[-1]:
+            print(f"[OCR-STRUCT] {model_name} quota exceeded, trying {MODELS[-1]}", file=sys.stderr)
+            continue
+        raise
+```
+
+**Ce se schimba:** doar `ocr_structured.py` — URL-ul devine dinamic in loc de hardcodat.
+**Ce NU se schimba:** prompt-ul, validarea, restul fisierului.
+**STOP dupa implementare:** NU, continua cu Interventiile 1-4.
 
 ---
 
@@ -160,13 +199,15 @@ Cand Cristina editeaza un paragraf, textul editat trebuie salvat in `structuredP
 ## ORDINE EXECUTIE
 
 ```
-Pas 1: Creaza /api/ocr (endpoint OCR fara traducere)
+Pas 0: INTERVENTIE 0 — Fallback Gemini Pro → Flash (ocr_structured.py)
+Pas 1: INTERVENTIE 1 — Creaza /api/ocr (endpoint OCR fara traducere)
 Pas 2: Inregistreaza ruta in dev_server.py
-Pas 3: Actualizeaza page.tsx (apeleaza /api/ocr, nu /api/translate)
-Pas 4: Actualizeaza DocumentViewer.tsx (buton Original + porneste cu RO + contentEditable)
-Pas 5: STOP — raporteaza ce ai facut, asteapta confirmare Roland
-Pas 6: Commit + push → Render deploy
-Pas 7: Roland testeaza pe Render live cu test_page_1.jpeg
+Pas 3: INTERVENTIE 2 — Actualizeaza page.tsx (apeleaza /api/ocr, nu /api/translate)
+Pas 4: INTERVENTIE 3 — Actualizeaza DocumentViewer.tsx (buton Original + porneste cu RO + contentEditable)
+Pas 5: INTERVENTIE 4 — ContentEditable per paragraf
+Pas 6: STOP — raporteaza ce ai facut, asteapta confirmare Roland
+Pas 7: Commit + push → Render deploy
+Pas 8: Roland testeaza pe Render live cu test_page_1.jpeg
 ```
 
 ---
@@ -184,6 +225,7 @@ Output-ul e OK cand:
 - [ ] Formulele LaTeX se randeaza corect cu MathJax in pasii RO si SK
 - [ ] Butoane vizibile in toolbar: Original | RO | SK (minim)
 - [ ] NU se face traducere la upload — doar OCR
+- [ ] Gemini Pro → Flash fallback functional (daca Pro da 429, trece automat la Flash)
 
 ---
 

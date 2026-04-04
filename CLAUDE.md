@@ -1,17 +1,18 @@
 # Sistem Traduceri Matematica — CLAUDE.md
-# Versiune: 3.1 | Data: 2026-04-03
+# Versiune: 3.2 | Data: 2026-04-05
 
 ## Overview
 Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 Flow unic: Upload fisier → Gemini OCR (text + SVG figuri + LaTeX) → Afisare in pagina web ca original (A4, paginat) → Traducere ON-DEMAND prin switch limba (doar textul, elementele matematice raman intacte).
 
 ## Status
-- **Faza curenta**: v3.1 — Runda 11 (Top 10 Imbunatatiri)
+- **Faza curenta**: v3.2 — Fix Layout + NLLB HF Spaces
 - **Progres**: Vezi `99_Plan_vs_Audit/PLAN_v3.md` — SURSA UNICA de adevar
 - **Deploy**: LIVE pe Render (auto-deploy din GitHub)
   - Frontend: https://traduceri-matematica-7sh7.onrender.com
   - API: https://traduceri-api.onrender.com
-- **Ultima sesiune**: 2026-04-03
+- **Ultima sesiune**: 2026-04-05
+- **Problema activa**: Layout deformat la upload imagine (fitPaperSections + overflow:hidden)
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 1. Citeste `99_Plan_vs_Audit/PLAN_v3.md` — sursa UNICA de adevar pt progres
@@ -20,12 +21,11 @@ Flow unic: Upload fisier → Gemini OCR (text + SVG figuri + LaTeX) → Afisare 
 4. Continua cu primul task [ ] nemarcat din PLAN_v3.md
 5. Dupa ORICE implementare: marcheaza [x] cu data in plan + commit + push
 
-## Stack v3
+## Stack v3.2
 - Frontend: Next.js 14 + Tailwind CSS
 - Backend: Python serverless (api/) + shared lib (api/lib/)
-- AI OCR: Gemini 2.5 Flash (JSON mode, gratuit, 250 cereri/zi) — extrage text + genereaza SVG figuri inline
-- AI Traducere: DeepL Free (principal, 2 chei = 1M car/luna) — DOAR text, DOAR la cerere (switch limba)
-- AI Fallback: Groq Llama 3.3 (traducere fallback + chat), Gemini (traducere fallback), Mistral Pixtral (OCR fallback)
+- AI OCR: Gemini 2.5 Pro → Flash fallback (JSON mode, gratuit) — extrage text + SVG figuri inline
+- AI Traducere: DeepL Free (principal) → Gemini → NLLB HF Spaces (planificat) → Groq Llama 3.3
 - Figure: SVG inline generat de Gemini la OCR (ca in Exemplu_BUN.html)
 - Deploy: Render (auto-deploy din GitHub, free tier, Frankfurt)
 - Monitoring: Feedback loop complet (10 componente)
@@ -33,15 +33,15 @@ Flow unic: Upload fisier → Gemini OCR (text + SVG figuri + LaTeX) → Afisare 
 ## Key Files
 - `99_Plan_vs_Audit/PLAN_v3.md` — **SURSA UNICA** de adevar (tracking [ ]/[x])
 - `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice
-- `99_Plan_vs_Audit/AUDIT_FEEDBACK.md` — feedback auditor
 - `99_Plan_vs_Audit/RUNDA_CURENTA.md` — discutia curenta
-- `99_Plan_vs_Audit/T1_REGULAMENT.md` — regulament terminal executie
+- `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md` — imbunatatiri planificate
+- `99_Roland_Work/Exemplu_BUN.html` — **REFERINTA CALITATE** (standard minim output)
 - `config/languages.json` — limbi suportate (RO/SK/EN + extensibil)
-- `config/tabs.json` — tab-uri dinamice (extensibil)
 - `config/math_terms_ro_sk.json` — dictionar RO-SK (100 termeni)
-- `api/` — Python serverless + api/lib/ (module partajate)
-- `frontend/` — Next.js app cu tema "tabla verde + creta"
-- `docs/` — documentatie (CHANGELOG, ghiduri)
+- `api/lib/ocr_structured.py` — OCR Gemini JSON mode (Pro→Flash fallback)
+- `api/lib/html_builder.py` — constructor HTML A4 din JSON structurat
+- `api/lib/math_protect.py` — protectie formule la traducere
+- `api/lib/translation_router.py` — routare DeepL/Gemini/Groq
 - `dev_server.py` + `DEV_LOCAL.bat` — dezvoltare locala
 
 ## Conventions
