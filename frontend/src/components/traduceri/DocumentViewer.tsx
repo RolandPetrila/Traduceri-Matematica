@@ -396,6 +396,14 @@ function RenderSection({ section }: { section: StructuredSection }) {
   }
 
   if (type === "heading") {
+    // Downgrade very long "headings" to paragraphs (Gemini OCR misclassification)
+    if ((content || "").length > 200) {
+      return (
+        <p contentEditable suppressContentEditableWarning style={{ marginBottom: "0.3em", outline: "none" }}>
+          {renderMathText(content || "")}
+        </p>
+      );
+    }
     const Tag = `h${Math.min(level || 2, 4)}` as keyof JSX.IntrinsicElements;
     return (
       <Tag
@@ -559,6 +567,10 @@ function buildSectionHtml(sec: StructuredSection): string {
   }
 
   if (sec.type === "heading") {
+    // Downgrade very long "headings" to paragraphs (Gemini OCR misclassification)
+    if ((sec.content || "").length > 200) {
+      return `<p>${sec.content || ""}</p>\n`;
+    }
     const tag = `h${Math.min(sec.level || 2, 4)}`;
     return `<${tag}>${sec.content || ""}</${tag}>\n`;
   }

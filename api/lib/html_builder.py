@@ -128,6 +128,9 @@ def _render_section(section: dict, figs: dict | None = None) -> str:
         sec_type = "step"
 
     if sec_type == "heading":
+        # Downgrade very long "headings" to paragraphs (OCR misclassification)
+        if len(content) > 200:
+            return f"<p>{content}</p>"
         level = section.get("level", 2)
         return f"<h{level}>{content}</h{level}>"
 

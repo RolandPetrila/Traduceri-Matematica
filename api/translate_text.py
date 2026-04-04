@@ -27,6 +27,40 @@ except ImportError:
     _HAS_DEEPL = False
 
 
+def _collect_texts_recursive(sections: list) -> list:
+    """Recursively collect translatable texts from sections (including two_column sub-sections)."""
+    texts = []
+    for s in sections:
+        if s.get("type") == "figure":
+            pass  # figures have no translatable text
+        elif s.get("type") == "two_column":
+            texts.extend(_collect_texts_recursive(s.get("left", [])))
+            texts.extend(_collect_texts_recursive(s.get("right", [])))
+        else:
+            texts.append(s.get("content", ""))
+    return texts
+
+
+def _apply_translations_recursive(sections: list, parts_iter) -> list:
+    """Recursively apply translated texts back to sections in order."""
+    result = []
+    for s in sections:
+        if s.get("type") == "figure":
+            result.append(s)
+        elif s.get("type") == "two_column":
+            new_s = dict(s)
+            new_s["left"] = _apply_translations_recursive(s.get("left", []), parts_iter)
+            new_s["right"] = _apply_translations_recursive(s.get("right", []), parts_iter)
+            result.append(new_s)
+        else:
+            new_s = dict(s)
+            translated_text = next(parts_iter, None)
+            if translated_text is not None:
+                new_s["content"] = translated_text.strip()
+            result.append(new_s)
+    return result
+
+
 def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
     """Translate text using Gemini API."""
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
@@ -90,9 +124,9 @@ class handler(BaseHTTPRequestHandler):
 
             t0 = time.time()
 
-            # Collect all translatable text
+            # Collect all translatable text (recursive — includes two_column sub-sections)
             SEP = "\n|||SEP|||\n"
-            texts = [s.get("content", "") for s in sections if s.get("type") != "figure"]
+            texts = _collect_texts_recursive(sections)
             batch = SEP.join(texts)
 
             # Translate
@@ -113,19 +147,10 @@ class handler(BaseHTTPRequestHandler):
                 self._send_json(500, {"error": f"Translation failed: {e}"}, origin)
                 return
 
-            # Split back and rebuild sections
+            # Split back and rebuild sections (recursive — two_column sub-sections included)
             parts = translated.split("|||SEP|||")
-            result_sections = []
-            text_idx = 0
-            for s in sections:
-                if s.get("type") == "figure":
-                    result_sections.append(s)  # figures unchanged
-                else:
-                    new_s = dict(s)
-                    if text_idx < len(parts):
-                        new_s["content"] = parts[text_idx].strip()
-                    text_idx += 1
-                    result_sections.append(new_s)
+            parts_iter = iter(parts)
+            result_sections = _apply_translations_recursive(sections, parts_iter)
 
             duration_ms = int((time.time() - t0) * 1000)
             print(f"[TRANSLATE-TEXT] {prov}: {len(texts)} sections in {duration_ms}ms", file=sys.stderr)
