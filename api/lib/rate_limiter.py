@@ -15,6 +15,7 @@ from collections import defaultdict
 # --- Configuration per endpoint ---
 # (requests_per_minute, requests_per_day)
 RATE_LIMITS: dict[str, tuple[int, int]] = {
+    "/api/ocr": (10, 100),
     "/api/translate": (10, 100),
     "/api/translate-text": (10, 100),
     "/api/convert": (20, 200),

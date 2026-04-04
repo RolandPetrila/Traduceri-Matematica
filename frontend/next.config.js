@@ -46,6 +46,7 @@ const nextConfig = {
     const apiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000';
     return {
       fallback: [
+        { source: '/api/ocr', destination: `${apiUrl}/api/ocr` },
         { source: '/api/translate-text', destination: `${apiUrl}/api/translate-text` },
         { source: '/api/translate', destination: `${apiUrl}/api/translate` },
         { source: '/api/convert', destination: `${apiUrl}/api/convert` },

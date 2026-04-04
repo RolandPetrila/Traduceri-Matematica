@@ -43,6 +43,7 @@ if _env_file.exists():
 
 # Pre-import all handlers at startup
 from api.health import handler as HealthHandler
+from api.ocr import handler as OcrHandler
 from api.translate import handler as TranslateHandler
 from api.translate_text import handler as TranslateTextHandler
 from api.convert import handler as ConvertHandler
@@ -55,6 +56,7 @@ print("[DEV] Handlers imported OK", file=sys.stderr, flush=True)
 ROUTES = {
     "/api/health": HealthHandler,
     "/api/deepl-usage": DeeplUsageHandler,
+    "/api/ocr": OcrHandler,
     "/api/translate-text": TranslateTextHandler,
     "/api/translate": TranslateHandler,
     "/api/convert": ConvertHandler,

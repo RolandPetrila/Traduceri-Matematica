@@ -1413,3 +1413,236 @@ Recomand: DA — un test v4 cu prompt-ul nou, comparat vizual cu Exemplu_BUN, in
 > **Ce trebuie**: Inainte de integrarea in pipeline, IMBUNATATESTE prompt-ul cu 7 cerinte explicite (geometrie corecta, punctat/solid, culori diferite, puncte varfuri, "cm", proportii, raze din varfuri). Genereaza un v4 test si compara cu Exemplu_BUN. DUPA ce v4 e aprobat de Roland → integreaza in pipeline.
 >
 > Feedback complet in `99_Plan_vs_Audit/AUDIT_FEEDBACK.md`.
+
+---
+---
+
+# AUDIT FEEDBACK — Runda 10 (verificare cod Runda 13 — Fix cauza radacina SVG)
+# Data: 2026-04-04 | Sursa: RUNDA_CURENTA.md + cod verificat (ocr_structured.py, html_builder.py, translate.py) + PLAN_DECISIONS.md Runda 7
+# Status: NOU
+
+---
+
+## Rezumat
+
+T1 a implementat toate 4 interventiile din Runda 13 (fix cauza radacina SVG). Am verificat codul linie cu linie contra deciziilor D28-D32 si contra celor 7 cerinte SVG din Runda 9. **Implementarea e corecta si bine facuta.** Am gasit **0 probleme CRITICE**, **3 IMPORTANTE** si **3 OPTIONALE**. Cea mai importanta: trecerea la Gemini Pro reduce capacitatea OCR de la 250 la 100 cereri/zi — planul R14 trebuie actualizat.
+
+---
+
+## Verificare INTERVENTIE 1 — Upgrade Gemini 2.5 Pro (D28)
+
+| Element | Asteptare | Cod | Verdict |
+|---------|-----------|-----|---------|
+| Model | gemini-2.5-pro | `ocr_structured.py` linia 94: URL contine `gemini-2.5-pro` | OK |
+| Timeout | Marit (Pro dureaza mai mult) | Linia 107: `timeout=180` (era 90) | OK |
+| Retry | Pastrat | Linia 110: `retry_with_backoff(max_retries=2)` | OK |
+
+---
+
+## Verificare INTERVENTIE 2 — Prompt OCR nou (D29)
+
+### Contra celor 7 cerinte din Runda 9:
+
+| # | Cerinta Runda 9 | In prompt? | Unde | Verdict |
+|---|-----------------|-----------|------|---------|
+| 1 | Geometrie corecta (triunghi 3-4-5 dreptunghic) | DA | Linia 77-78: "Calculate coordinates using TRIGONOMETRY... a 3-4-5 triangle is RIGHT-angled" | OK |
+| 2 | Linii punctate pt constructie | DA | Linia 65: `stroke-dasharray='5,3'` + Linia 66: solid `stroke-width='1.8'` | OK |
+| 3 | Culori diferite pt unghiuri | DA | Linia 71: rosu #c44, verde #1a7, albastru #47c | OK |
+| 4 | Puncte la varfuri | DA | Linia 67: `<circle r='2.5'>` + eticheta italic | OK |
+| 5 | Unitati "cm" | DA | Linia 68: "'4 cm' not '4'" | OK |
+| 6 | Proportii realiste (segmente diferite) | **PARTIAL** | Linia 76: "viewBox adapted per figure" + trigonometrie, dar NU spune explicit "segmente proportional diferite" | ATENTIE |
+| 7 | Raze din varfuri (nu din centru) | **IMPLICIT** | Trigonometria ajuta, dar NU spune explicit "rays START from named vertex" | ATENTIE |
+
+### Alte elemente prompt:
+
+| Element | Status | Detalii |
+|---------|--------|---------|
+| "Do NOT generate SVG" vechi | STERS | Nu mai exista in prompt |
+| SVG inline cerut explicit | DA | Linia 61-62: "generate INLINE SVG code" |
+| Unghi drept = patratel | DA | Linia 72: "small square marker (polyline), NOT arc" |
+| Arce compas punctate | DA | Linia 74: `stroke-dasharray='4,3'` |
+| Fill triunghi final | DA | Linia 73: `fill='#e8f0fe'` |
+| Lipire cuvinte despartite | DA | Linia 59: "join it into one word" (fix "compa- sului") |
+| Two_column layout | DA | Liniile 80-84 |
+| JSON-only output | DA | Linia 86: "Return ONLY valid JSON" |
+
+**Scor prompt: 5/7 cerinte explicite, 2/7 implicite (partial acoperite prin trigonometrie)**
+
+---
+
+## Verificare INTERVENTIE 3 — html_builder.py refactorizat (D31)
+
+| Element | Asteptare | Cod | Verdict |
+|---------|-----------|-----|---------|
+| _render_section() recursiv | DA | Liniile 119-183 | OK |
+| Handler `figure` cu SVG inline | DA | Liniile 152-166: `html += svg_code` direct in HTML | OK |
+| Handler `two_column` cu CSS grid | DA | Liniile 168-177: `grid-template-columns:1fr 1fr` | OK |
+| Caption escapata (XSS) | DA | Linia 159: `replace('<', '&lt;')` | OK |
+| Safety net P1-P9 in heading | DA | Liniile 125-128: demote heading→step | OK |
+| Fallback cand SVG lipseste | DA | Liniile 164-166: "[Figura: indisponibila]" | OK |
+
+---
+
+## Verificare INTERVENTIE 4 — translate.py actualizat (D30, D32)
+
+| Element | Asteptare | Cod | Verdict |
+|---------|-----------|-----|---------|
+| Import crop STERS | DA | Linia 45: "# figure_crop DEPRECATED (D3/D24)" | OK |
+| Apel crop scos | DA | Linia 235: `cropped_figs = {}` | OK |
+| _collect_text() recursiv | DA | Liniile 244-254: recursie in two_column left/right | OK |
+| Write-back cu secs_ref/index | DA | Liniile 275-278: `secs_ref[si]["content"] = text` | OK |
+| DeepL fallback Gemini | DA | Liniile 262-269: try deepl, except → gemini | OK |
+
+---
+
+## Sugestii CRITICE
+
+(Niciuna — implementarea este corecta.)
+
+---
+
+## Sugestii IMPORTANTE
+
+### S29: Limita Gemini Pro redusa de la 250 la 100 cereri/zi — plan R14 neactualizat
+
+**Ce spune planul (R14)**: "Gemini OCR: 250 cereri/zi, 10/min"
+**Ce e in realitate cu Pro**: **100 cereri/zi, 5 cereri/minut** (plan gratuit Gemini 2.5 Pro)
+
+**Ce inseamna pentru Cristina:**
+- Cu Flash (inainte): putea procesa pana la 250 pagini/zi
+- Cu Pro (acum): poate procesa maxim **100 pagini/zi** (de 2.5x mai putin)
+- Volumul tipic (5-10 pagini/zi): **OK, incape lejer**
+- PDF mare 20 pagini: consuma 20% din cota zilnica — acceptabil
+- Rate limit 5/min: daca trimite 6 pagini intr-un minut, a 6-a asteapta retry
+
+**Ce trebuie facut:**
+1. T1 sa actualizeze tabelul R14 din PLAN_v3.md: "Gemini OCR: **100 cereri/zi, 5/min** (Pro)"
+2. Optional: fallback pe Flash pentru PDF-uri foarte mari (30+ pagini)
+
+### S30: 2 din 7 cerinte Runda 9 sunt implicite, nu explicite in prompt
+
+**Cerinta 6 (proportii):** Prompt-ul zice "viewBox adapted per figure" dar NU zice explicit: "Daca AB = 4 cm si MN = 6 cm, deseneaza-le proportional diferite, nu amandoua pe toata latimea."
+
+**Cerinta 7 (raze din varfuri):** Prompt-ul zice "trigonometrie" dar NU zice explicit: "Razele de constructie pornesc din varful numit, nu din centrul figurii."
+
+**De ce conteaza:** Acestea erau 2 din cele 4 probleme CRITICE din Runda 9 (C1: triunghi gresit, C2: raze din centru). Trigonometria ajuta, dar Gemini Pro ar putea tot sa faca aceleasi greseli daca nu primeste instructiune explicita.
+
+**Recomandare** [RECOMANDAT]: Adauga 2 randuri in prompt, dupa linia 78:
+- `"   n) Proportional segment lengths: if AB=4cm and CD=6cm, draw AB shorter than CD\n"`
+- `"   o) Construction rays/arcs START from their named vertex (e.g. arc from A, not from center)\n"`
+
+Costa 0, reduce riscul de repetare a erorilor din v3.
+
+### S31: SVG de la Gemini inserat fara sanitizare — risc XSS teoretic
+
+**Ce face codul:** `html_builder.py` linia 157: `html += svg_code` — SVG-ul de la Gemini e inserat direct in HTML, fara nicio filtrare.
+
+**Caption-ul e protejat** (linia 159: escape `<` si `>`), dar SVG-ul NU.
+
+**De ce conteaza:** SVG poate contine JavaScript:
+- `<svg onload="alert(1)">` — eveniment JS
+- `<script>` in interiorul SVG — cod executabil
+- `<foreignObject>` — HTML arbitrar
+
+**Cat de probabil e?** Foarte improbabil — Gemini e sursa controlata, nu input utilizator. Dar un filtru minimal e o practica buna.
+
+**Recomandare:** Filtru minimal pe SVG inainte de insertie — scoate `<script>`, `onload=`, `onclick=`, `javascript:`, `<foreignObject>`. 5-10 linii de cod, 0 impact pe performanta.
+
+---
+
+## Sugestii OPTIONALE
+
+### S32: ORCHESTRATOR_STATUS.md e stale (Runda 12, dar suntem in 13)
+
+ORCHESTRATOR_STATUS.md inca spune "Runda 12: PROTOTIP + CALITATE SVG — 0% (asteapta T1)".
+**Recomandare:** T3 sa actualizeze dupa deploy.
+
+### S33: figure_crop.py inca exista (148 linii cod mort)
+
+Fisierul `api/lib/figure_crop.py` contine `crop_all_figures()` care NU mai e apelata. Pastrat ca backup (S24 Runda 7).
+**Recomandare:** Sterge dupa prima confirmare vizuala de Roland pe site-ul live.
+
+### S34: BATCH_SIZE = 5 declarat dar neutilizat real
+
+`translate.py` linia 172: `BATCH_SIZE = 5` si log "processing in batches of 5", dar procesarea e secventiala per pagina.
+**Recomandare:** Sterge variabila, rescrie log-ul. Corectie cosmetica.
+
+---
+
+## Scenarii neacoperite
+
+### SC8: Gemini Pro 5 RPM hit pe multi-page upload
+
+**Ce se intampla:** Cristina incarca PDF cu 10 pagini. Sistemul trimite 10 cereri OCR la Gemini una dupa alta. Daca se proceseaza prea rapid, cererea 6 primeste HTTP 429 (rate limit).
+
+**Solutie propusa:** retry_with_backoff ar trebui sa gestioneze HTTP 429 cu delay progresiv. De verificat ca HTTP 429 e tratat in blocul except, nu doar erori de retea. Alternativ: adauga delay de 12-15 secunde intre cereri OCR consecutive.
+
+---
+
+## Intrebari pentru Roland
+
+### I11: Vrei sa vezi rezultatul pe Render inainte de a aproba commit-ul?
+T1 asteapta confirmare inainte de commit + push. Recomand: aproba commit-ul — fix-ul e solid, poate fi testat imediat pe Render.
+
+### I12: Cota Gemini 100/zi (Pro) e suficienta?
+Cu Flash era 250/zi. Pro e de 2.5x mai putin. Volumul tipic incape lejer, dar la zile cu 50+ pagini s-ar putea bloca. E OK asa sau vrei fallback pe Flash?
+
+---
+
+## Evaluare generala — Runda 13
+
+| Criteriu | Evaluare | Nota |
+|----------|----------|------|
+| **Cod vs Decizii** | **95%** | D28-D32 implementate corect. Decalaj minor: 2 cerinte prompt implicite |
+| **Calitate cod** | **90%** | Curat, recursiv, bine structurat. SVG nesanitizat (risc scazut) |
+| **Runda 9 cerinte** | **5/7 explicite** | 2 cerinte (proportii, raze) implicite |
+| **Costuri** | **100% gratuit** | Pro gratuit, limita mai mica |
+| **Risc deploy** | **LOW** | 3 fisiere backend, worst case = SVG imperfecte dar text OK |
+| **Monitorizare** | **80%** | Log-uri bune. Lipseste: monitorizare tokeni output |
+
+**Concluzie: Codul e gata de commit + push.** Cele 3 sugestii importante pot fi adresate si dupa deploy — nu sunt blocante.
+
+---
+
+## Verificare implementare
+
+### Interventii Runda 13 — toate OK
+- [x] Model Gemini 2.5 Pro in ocr_structured.py
+- [x] Timeout 180s
+- [x] Prompt rescris cu SVG inline + 12 conventii geometrie
+- [x] "Do NOT generate SVG" STERS complet
+- [x] Validare SVG recursiva (two_column)
+- [x] html_builder _render_section() recursiv
+- [x] Handler figure SVG inline
+- [x] Handler two_column CSS grid
+- [x] translate.py: crop_all_figures() scos
+- [x] _collect_text() recursiv (two_column)
+- [x] "Join hyphenated words" in prompt
+
+### De verificat DUPA deploy pe Render
+- [ ] Test vizual: upload test_page_1.jpeg → verifica SVG-uri
+- [ ] Comparatie cu Exemplu_BUN: triunghi 3-4-5 dreptunghic? Culori diferite? "cm"?
+- [ ] Test two_column: figuri side-by-side
+- [ ] Test traducere: switch RO → SK, SVG + LaTeX intacte
+- [ ] Cota Gemini Pro: functioneaza fara rate limit pe 5-10 pagini
+
+---
+
+## Text gata de copiat catre T1 (Runda 10)
+
+> **De la T2 (Runda 10 — VERIFICARE COD Runda 13):**
+>
+> Am verificat codul modificat linie cu linie. **Implementare corecta.** 0 critice.
+>
+> **Scor: 5/7 cerinte Runda 9 explicite in prompt.** 2 cerinte (proportii segmente + raze din varfuri) sunt IMPLICITE prin trigonometrie, dar nu garantate. Recomand 2 randuri in prompt (costa 0, reduce risc):
+> - "Proportional segment lengths: if AB=4cm and CD=6cm, draw AB shorter than CD"
+> - "Construction rays START from their named vertex, not from center"
+>
+> **3 sugestii importante (NEBLOCANTE):**
+> 1. **Limita Pro 100 RPD** (S29): Planul R14 zice 250/zi dar Pro are 100/zi si 5/min. Actualizeaza tabelul. Volumul Cristinei incape, dar PDF mare = 20% din cota zilnica.
+> 2. **2 cerinte prompt implicite** (S30): Adauga 2 randuri pt proportii si raze din varfuri.
+> 3. **SVG nesanitizat** (S31): SVG inserat direct fara filtru. Risc scazut, dar 5 linii de cod rezolva.
+>
+> **Concluzie: Codul e gata de commit + push.** Sugestiile pot fi adresate si dupa deploy.
+>
+> Feedback complet in `99_Plan_vs_Audit/AUDIT_FEEDBACK.md`.

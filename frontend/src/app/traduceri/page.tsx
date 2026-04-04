@@ -13,7 +13,6 @@ import EngineSelector, { type TranslateEngine } from "@/components/traduceri/Eng
 import BatchPanel from "@/components/traduceri/BatchPanel";
 import DocumentViewer from "@/components/traduceri/DocumentViewer";
 import DeeplUsage from "@/components/traduceri/DeeplUsage";
-import { getCachedTranslation, cacheTranslation } from "@/lib/translation-cache";
 
 import { API_URL } from "@/lib/api-url";
 
@@ -21,8 +20,8 @@ const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
   { at: 15, label: "Se trimite catre server..." },
   { at: 30, label: "OCR — se extrage textul din imagine..." },
-  { at: 55, label: "Se traduce textul..." },
-  { at: 75, label: "Se genereaza HTML..." },
+  { at: 60, label: "Se genereaza figurile SVG..." },
+  { at: 80, label: "Se construieste documentul..." },
   { at: 90, label: "Se finalizeaza..." },
 ];
 
@@ -35,6 +34,7 @@ export default function TraduceriPage() {
   const [stepLabel, setStepLabel] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [structuredPages, setStructuredPages] = useState<unknown[] | null>(null);
+  const [originalFiles, setOriginalFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [translateEngine, setTranslateEngine] = useState<TranslateEngine>("deepl");
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -45,21 +45,22 @@ export default function TraduceriPage() {
     };
   }, []);
 
-  const handleTranslate = async () => {
+  const handleProcess = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
     setProgress(0);
     setStepLabel(STEPS[0].label);
     setError(null);
     setResult(null);
+    setStructuredPages(null);
+    setOriginalFiles([...files]);
 
     // Simulated progress with step labels
     let currentStep = 0;
     progressTimer.current = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + Math.random() * 4 + 1;
-        if (next > 92) return prev; // cap at 92% until real response
-        // Update step label
+        const next = prev + Math.random() * 3 + 0.5;
+        if (next > 92) return prev;
         const step = STEPS.findIndex((s) => s.at > next);
         if (step > 0 && step - 1 !== currentStep) {
           currentStep = step - 1;
@@ -67,49 +68,25 @@ export default function TraduceriPage() {
         }
         return next;
       });
-    }, 600);
+    }, 800);
 
-    // Check cache first — avoid re-consuming DeepL quota
-    const fileNames = files.map(f => f.name);
-    const cached = getCachedTranslation(files, sourceLang, targetLang);
-    if (cached) {
-      if (progressTimer.current) clearInterval(progressTimer.current);
-      setResult(cached);
-      setProgress(100);
-      setStepLabel("Din cache (salvat anterior)");
-      logAction("Traducere din cache", { fileNames, sourceLang, targetLang });
-      setIsProcessing(false);
-      return;
-    }
-
-    logAction("Traducere pornita", {
+    logAction("OCR pornit", {
       fileCount: files.length,
-      fileNames,
+      fileNames: files.map(f => f.name),
       fileSizes: files.map(f => f.size),
       sourceLang,
-      targetLang,
     });
 
     const formData = new FormData();
     files.forEach((f) => formData.append("files", f));
     formData.append("source_lang", sourceLang);
-    formData.append("target_lang", targetLang);
-    formData.append("translate_engine", translateEngine);
-
-    // Include dictionary terms if available
-    const dictKey = `dict_${sourceLang}_${targetLang}`;
-    const dictRaw = localStorage.getItem(dictKey);
-    if (dictRaw) {
-      formData.append("dictionary", dictRaw);
-    }
 
     try {
-      const res = await fetch(`${API_URL}/api/translate`, {
+      const res = await fetch(`${API_URL}/api/ocr`, {
         method: "POST",
         body: formData,
       });
 
-      // Handle non-JSON error responses (server may return HTML on hard crashes)
       let data;
       const contentType = res.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
@@ -126,14 +103,11 @@ export default function TraduceriPage() {
         throw new Error(data?.error || `Eroare server: ${res.status}`);
       }
 
-      // Python serverless returns {html (unified), results: [{markdown, ...}], pages, status}
       const htmlResult = data.html || null;
-
       if (!htmlResult) {
-        throw new Error("Raspunsul nu contine HTML tradus");
+        throw new Error("Raspunsul nu contine HTML");
       }
 
-      // Validate output quality
       validateTranslationOutput(data);
 
       setResult(htmlResult);
@@ -141,16 +115,12 @@ export default function TraduceriPage() {
       setProgress(100);
       setStepLabel("Complet!");
 
-      logInfo("Traducere reusita", {
+      logInfo("OCR reusit", {
         pages: data.pages || files.length,
         duration_ms: data.duration_ms || 0,
         sourceLang,
-        targetLang,
         fileNames: files.map(f => f.name),
       });
-
-      // Save to cache (avoid re-consuming DeepL quota)
-      cacheTranslation(files, sourceLang, targetLang, htmlResult);
 
       // Save to history
       addToHistory({
@@ -158,7 +128,7 @@ export default function TraduceriPage() {
         date: new Date().toISOString(),
         files: files.map((f) => f.name),
         source_lang: sourceLang,
-        target_lang: targetLang,
+        target_lang: sourceLang,
         status: data.status || "success",
         duration_ms: data.duration_ms || 0,
         pages: data.pages || files.length,
@@ -167,7 +137,7 @@ export default function TraduceriPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setError(message);
-      logError(message, { source: "translation", context: { sourceLang, targetLang, fileCount: files.length } });
+      logError(message, { source: "ocr", context: { sourceLang, fileCount: files.length } });
     } finally {
       if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);
@@ -187,17 +157,17 @@ export default function TraduceriPage() {
       {/* File upload */}
       <FileUpload files={files} onFilesChange={setFiles} />
 
-      {/* Engine selector + Translate button */}
+      {/* Engine selector + Process button */}
       <div className="flex flex-col items-center gap-3">
         <EngineSelector engine={translateEngine} onEngineChange={setTranslateEngine} />
         <button
-          onClick={handleTranslate}
+          onClick={handleProcess}
           disabled={files.length === 0 || isProcessing}
-          aria-label="Traduce fisierele selectate"
+          aria-label="Proceseaza fisierele selectate"
           aria-busy={isProcessing}
           className="chalk-btn text-xl px-8 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          {isProcessing ? "Se traduce..." : "Traduce"}
+          {isProcessing ? "Se proceseaza..." : "Proceseaza"}
         </button>
       </div>
 
@@ -223,15 +193,15 @@ export default function TraduceriPage() {
       {result && !isProcessing && !error && (
         <div className="rounded-lg p-4 text-center" style={{ background: "rgba(74, 222, 128, 0.15)", border: "1px solid #4ade80" }}>
           <p className="text-lg font-bold" style={{ color: "#4ade80" }}>
-            Traducere reusita!
+            Document procesat!
           </p>
           <p className="text-sm opacity-70 mt-1">
-            Rezultatul e mai jos. Salvat automat in tab-ul Istoric.
+            Foloseste butoanele Original / RO / SK pentru a naviga intre variante.
           </p>
         </div>
       )}
 
-      {/* Document Viewer with language toggle (or fallback to PreviewPanel) */}
+      {/* Document Viewer with 3-step method (or fallback to PreviewPanel) */}
       {result && structuredPages ? (
         <DocumentViewer
           structuredPages={structuredPages as never[]}
@@ -240,6 +210,7 @@ export default function TraduceriPage() {
           initialTargetLang={targetLang}
           translateEngine={translateEngine}
           filename={files[0]?.name?.replace(/\.[^.]+$/, "") || "traducere"}
+          originalFiles={originalFiles}
         />
       ) : result ? (
         <PreviewPanel

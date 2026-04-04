@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -11,6 +11,8 @@ interface StructuredSection {
   svg?: string | string[];
   level?: number;
   caption?: string;
+  left?: StructuredSection[];
+  right?: StructuredSection[];
 }
 
 interface StructuredPage {
@@ -23,18 +25,20 @@ interface TranslationCache {
 }
 
 interface DocumentViewerProps {
-  /** Original structured pages from OCR */
+  /** Original structured pages from OCR (source language) */
   structuredPages: StructuredPage[];
   /** The full HTML for download/print */
   fullHtml: string;
   /** Source language of the document */
   sourceLang: string;
-  /** Currently selected target language */
+  /** Default target language for translation */
   initialTargetLang: string;
   /** Engine for translation */
   translateEngine: string;
   /** Original filename for downloads */
   filename?: string;
+  /** Original uploaded files (for "Original" view) */
+  originalFiles?: File[];
 }
 
 const LANGUAGES = [
@@ -44,12 +48,10 @@ const LANGUAGES = [
 ];
 
 /**
- * DocumentViewer — presents translated math documents with live language switching.
- *
- * Architecture (adapted from platform-predare):
- * - Stores structured pages per language in cache
- * - Language toggle translates ONLY text (SVG figures stay intact)
- * - A4 white paper presentation with MathJax
+ * DocumentViewer — 3-step method (D23):
+ *   Original: uploaded image (read-only)
+ *   RO: OCR result (editable)
+ *   SK/EN: translated on-demand (editable)
  */
 export default function DocumentViewer({
   structuredPages,
@@ -58,18 +60,35 @@ export default function DocumentViewer({
   initialTargetLang,
   translateEngine,
   filename = "traducere",
+  originalFiles,
 }: DocumentViewerProps) {
-  const [activeLang, setActiveLang] = useState(initialTargetLang);
+  // Start with source language (RO), not target (SK)
+  const [activeLang, setActiveLang] = useState(sourceLang);
+  const [showOriginal, setShowOriginal] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+
+  // Cache: source language pages are pre-loaded
   const cacheRef = useRef<TranslationCache>({
-    [initialTargetLang]: structuredPages,
+    [sourceLang]: structuredPages,
   });
+
+  // Object URLs for original image display
+  const originalUrls = useMemo(() => {
+    if (!originalFiles || originalFiles.length === 0) return [];
+    return originalFiles.map((f) => URL.createObjectURL(f));
+  }, [originalFiles]);
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      originalUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [originalUrls]);
 
   const currentPages = cacheRef.current[activeLang] || structuredPages;
 
   // Load MathJax into the page (once)
   useEffect(() => {
-    // Load MathJax config if not present
     if (!document.getElementById("mathjax-config")) {
       const cfg = document.createElement("script");
       cfg.id = "mathjax-config";
@@ -79,7 +98,6 @@ export default function DocumentViewer({
       };`;
       document.head.appendChild(cfg);
     }
-    // Load MathJax script if not present
     if (!document.getElementById("mathjax-script")) {
       const script = document.createElement("script");
       script.id = "mathjax-script";
@@ -91,15 +109,23 @@ export default function DocumentViewer({
 
   // Re-typeset math after render or language switch
   useEffect(() => {
+    if (showOriginal) return;
     const timer = setTimeout(() => {
       if ((window as any).MathJax?.typesetPromise) {
         (window as any).MathJax.typesetPromise().catch(() => {});
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [activeLang, currentPages]);
+  }, [activeLang, currentPages, showOriginal]);
+
+  const handleOriginal = useCallback(() => {
+    setShowOriginal(true);
+    logAction("Vizualizare original", {});
+  }, []);
 
   const switchLanguage = useCallback(async (targetLang: string) => {
+    setShowOriginal(false);
+
     if (targetLang === activeLang) return;
 
     // Check cache first
@@ -109,13 +135,16 @@ export default function DocumentViewer({
       return;
     }
 
-    // Need to translate
+    // Need to translate on-demand
     setIsTranslating(true);
-    logAction("Traducere live pornita", { from: activeLang, to: targetLang });
+    logAction("Traducere on-demand pornita", { from: sourceLang, to: targetLang });
 
     try {
+      // Use source language pages for translation (not current — always translate from original)
+      const sourcePages = cacheRef.current[sourceLang] || structuredPages;
+
       // Flatten all sections for translation
-      const allSections = currentPages.flatMap((p) => [
+      const allSections = sourcePages.flatMap((p) => [
         ...(p.title ? [{ type: "heading", content: p.title, level: 1 }] : []),
         ...p.sections,
       ]);
@@ -125,11 +154,11 @@ export default function DocumentViewer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text_sections: allSections,
-          source_lang: activeLang,
+          source_lang: sourceLang,
           target_lang: targetLang,
           translate_engine: translateEngine,
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(60000),
       });
 
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -140,7 +169,7 @@ export default function DocumentViewer({
       const newPages: StructuredPage[] = [];
       let secIdx = 0;
 
-      for (const page of currentPages) {
+      for (const page of sourcePages) {
         const newPage: StructuredPage = { title: page.title, sections: [] };
         if (page.title && secIdx < translated.length) {
           newPage.title = translated[secIdx]?.content || page.title;
@@ -159,14 +188,14 @@ export default function DocumentViewer({
 
       cacheRef.current[targetLang] = newPages;
       setActiveLang(targetLang);
-      logAction("Traducere live reusita", { to: targetLang, duration: data.duration_ms });
+      logAction("Traducere on-demand reusita", { to: targetLang, duration: data.duration_ms });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Eroare traducere";
-      logError(msg, { context: { from: activeLang, to: targetLang } });
+      logError(msg, { context: { from: sourceLang, to: targetLang } });
     } finally {
       setIsTranslating(false);
     }
-  }, [activeLang, currentPages, translateEngine]);
+  }, [activeLang, sourceLang, structuredPages, translateEngine]);
 
   const handleDownloadHtml = () => {
     const html = buildHtmlFromPages(currentPages, activeLang);
@@ -211,23 +240,37 @@ export default function DocumentViewer({
       logAction("Download DOCX", { lang: activeLang });
     } catch (err) {
       logError(err instanceof Error ? err.message : "DOCX download failed", { context: { lang: activeLang } });
-      // Fallback: download as HTML
       handleDownloadHtml();
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* Toolbar: language toggle + actions */}
+      {/* Toolbar: Original + language toggle + actions */}
       <div className="flex justify-between items-center flex-wrap gap-3 p-3 bg-[#192031] rounded-lg">
         <div className="flex gap-1">
+          {/* Original button */}
+          {originalFiles && originalFiles.length > 0 && (
+            <button
+              onClick={handleOriginal}
+              disabled={isTranslating}
+              className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
+                showOriginal
+                  ? "bg-amber-400 text-[#192031]"
+                  : "bg-white/10 text-white hover:bg-white/20"
+              } disabled:opacity-50`}
+            >
+              Original
+            </button>
+          )}
+          {/* Language buttons */}
           {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               onClick={() => switchLanguage(lang.code)}
               disabled={isTranslating}
               className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                activeLang === lang.code
+                !showOriginal && activeLang === lang.code
                   ? "bg-white text-[#192031]"
                   : "bg-white/10 text-white hover:bg-white/20"
               } disabled:opacity-50`}
@@ -242,52 +285,82 @@ export default function DocumentViewer({
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={handleDownloadHtml} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
-            HTML
-          </button>
-          <button onClick={handlePrint} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
-            Print / PDF
-          </button>
-          <button onClick={handleDownloadDocx} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
-            DOCX
-          </button>
+          {!showOriginal && (
+            <>
+              <button onClick={handleDownloadHtml} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
+                HTML
+              </button>
+              <button onClick={handlePrint} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
+                Print / PDF
+              </button>
+              <button onClick={handleDownloadDocx} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
+                DOCX
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* A4 Paper render — white background */}
+      {/* Content area */}
       <div className="bg-gray-200 p-6 rounded-lg">
-        {currentPages.map((page, pageIdx) => (
-          <div
-            key={pageIdx}
-            className="bg-white mx-auto mb-4 shadow-lg overflow-hidden"
-            style={{
-              width: "210mm",
-              minHeight: "297mm",
-              padding: "12mm",
-              fontFamily: '"Cambria", "Times New Roman", serif',
-              fontSize: "12pt",
-              lineHeight: 1.45,
-              color: "#1b1b1b",
-            }}
-          >
-            {page.title && (
-              <h1 style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22 }}>
-                {page.title}
-              </h1>
-            )}
-            {page.sections.map((sec, secIdx) => (
-              <RenderSection key={secIdx} section={sec} />
-            ))}
-          </div>
-        ))}
+        {showOriginal ? (
+          /* STEP 1: Original — uploaded images in A4 frame */
+          originalUrls.map((url, idx) => (
+            <div
+              key={idx}
+              className="bg-white mx-auto mb-4 shadow-lg flex items-center justify-center"
+              style={{
+                width: "210mm",
+                minHeight: "297mm",
+                padding: "12mm",
+              }}
+            >
+              <img
+                src={url}
+                alt={`Original pagina ${idx + 1}`}
+                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              />
+            </div>
+          ))
+        ) : (
+          /* STEP 2/3: HTML document (RO or translated) — editable */
+          currentPages.map((page, pageIdx) => (
+            <div
+              key={`${activeLang}-${pageIdx}`}
+              className="bg-white mx-auto mb-4 shadow-lg overflow-hidden"
+              style={{
+                width: "210mm",
+                minHeight: "297mm",
+                padding: "12mm",
+                fontFamily: '"Cambria", "Times New Roman", serif',
+                fontSize: "12pt",
+                lineHeight: 1.45,
+                color: "#1b1b1b",
+              }}
+            >
+              {page.title && (
+                <h1
+                  contentEditable
+                  suppressContentEditableWarning
+                  style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22, outline: "none" }}
+                >
+                  {page.title}
+                </h1>
+              )}
+              {page.sections.map((sec, secIdx) => (
+                <RenderSection key={secIdx} section={sec} />
+              ))}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-/** Render a single structured section */
+/** Render a single structured section — recursive for two_column */
 function RenderSection({ section }: { section: StructuredSection }) {
-  const { type, content, svg, level, caption } = section;
+  const { type, content, svg, level, caption, left, right } = section;
 
   if (type === "figure" && svg) {
     const svgs = Array.isArray(svg) ? svg : [svg];
@@ -300,31 +373,100 @@ function RenderSection({ section }: { section: StructuredSection }) {
     );
   }
 
+  if (type === "figure") {
+    const desc = caption || "";
+    return <p><em>[Figura: {desc || "indisponibila"}]</em></p>;
+  }
+
+  if (type === "two_column") {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", margin: "10px 0" }}>
+        <div>
+          {(left || []).map((s, i) => (
+            <RenderSection key={`l${i}`} section={s} />
+          ))}
+        </div>
+        <div>
+          {(right || []).map((s, i) => (
+            <RenderSection key={`r${i}`} section={s} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (type === "heading") {
     const Tag = `h${Math.min(level || 2, 4)}` as keyof JSX.IntrinsicElements;
-    return <Tag style={{ marginTop: "1.1em", marginBottom: "0.42em", lineHeight: 1.22 }}>{renderMathText(content || "")}</Tag>;
+    return (
+      <Tag
+        contentEditable
+        suppressContentEditableWarning
+        style={{ marginTop: "1.1em", marginBottom: "0.42em", lineHeight: 1.22, outline: "none" }}
+      >
+        {renderMathText(content || "")}
+      </Tag>
+    );
   }
 
   if (type === "step") {
-    return <p style={{ marginBottom: "0.3em" }}>{renderMathText(content || "")}</p>;
-  }
-
-  if (type === "observation") {
     return (
-      <p style={{ marginBottom: "0.3em" }}>
-        <strong>Poznámka. </strong>
+      <p
+        contentEditable
+        suppressContentEditableWarning
+        style={{ marginBottom: "0.3em", outline: "none" }}
+      >
         {renderMathText(content || "")}
       </p>
     );
   }
 
-  // paragraph, list, etc
-  return <p style={{ marginBottom: "0.3em" }}>{renderMathText(content || "")}</p>;
+  if (type === "observation") {
+    return (
+      <p
+        contentEditable
+        suppressContentEditableWarning
+        style={{ marginBottom: "0.3em", outline: "none" }}
+      >
+        <strong>{renderMathText(content || "")}</strong>
+      </p>
+    );
+  }
+
+  if (type === "list") {
+    const items = (content || "").split("\n").filter((l) => l.trim());
+    return (
+      <ol style={{ marginTop: "0.45em", marginBottom: "0.6em" }}>
+        {items.map((item, i) => {
+          const clean = item.replace(/^\d+\.\s*/, "");
+          return (
+            <li
+              key={i}
+              contentEditable
+              suppressContentEditableWarning
+              style={{ marginBottom: "0.2em", outline: "none" }}
+            >
+              {renderMathText(clean)}
+            </li>
+          );
+        })}
+      </ol>
+    );
+  }
+
+  // paragraph or unknown
+  return (
+    <p
+      contentEditable
+      suppressContentEditableWarning
+      style={{ marginBottom: "0.3em", outline: "none" }}
+    >
+      {renderMathText(content || "")}
+    </p>
+  );
 }
 
 /** Render text with LaTeX — uses dangerouslySetInnerHTML for MathJax processing */
 function renderMathText(text: string): JSX.Element {
-  // Convert **bold** to <strong>
   const safe = sanitizeHtml(text);
   const processed = safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   return <span dangerouslySetInnerHTML={{ __html: processed }} />;
@@ -341,18 +483,7 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
       content += `<h1>${page.title}</h1>\n`;
     }
     for (const sec of page.sections) {
-      if (sec.type === "figure" && sec.svg) {
-        const svgs = Array.isArray(sec.svg) ? sec.svg : [sec.svg];
-        content += `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n`;
-        content += svgs.join("\n");
-        content += `\n</div>\n`;
-      } else if (sec.type === "heading") {
-        const tag = `h${Math.min(sec.level || 2, 4)}`;
-        content += `<${tag}>${sec.content || ""}</${tag}>\n`;
-      } else {
-        const text = (sec.content || "").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        content += `<p>${text}</p>\n`;
-      }
+      content += buildSectionHtml(sec);
     }
     body += `<section class="paper"><div class="paper-content">\n${content}</div></section>\n`;
   }
@@ -408,4 +539,41 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
   <main>${body}</main>
 </body>
 </html>`;
+}
+
+/** Build HTML for a single section — recursive for two_column */
+function buildSectionHtml(sec: StructuredSection): string {
+  if (sec.type === "figure" && sec.svg) {
+    const svgs = Array.isArray(sec.svg) ? sec.svg : [sec.svg];
+    return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n${svgs.join("\n")}\n</div>\n`;
+  }
+
+  if (sec.type === "two_column") {
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;">';
+    html += "<div>";
+    for (const s of sec.left || []) html += buildSectionHtml(s);
+    html += "</div><div>";
+    for (const s of sec.right || []) html += buildSectionHtml(s);
+    html += "</div></div>\n";
+    return html;
+  }
+
+  if (sec.type === "heading") {
+    const tag = `h${Math.min(sec.level || 2, 4)}`;
+    return `<${tag}>${sec.content || ""}</${tag}>\n`;
+  }
+
+  if (sec.type === "list") {
+    const items = (sec.content || "").split("\n").filter((l) => l.trim());
+    let html = "<ol>";
+    for (const item of items) {
+      const clean = item.replace(/^\d+\.\s*/, "");
+      html += `<li>${clean}</li>`;
+    }
+    html += "</ol>\n";
+    return html;
+  }
+
+  const text = (sec.content || "").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  return `<p>${text}</p>\n`;
 }
