@@ -42,7 +42,7 @@ except ImportError:
     _HAS_DEEPL_LIB = False
 
 from lib.ocr_structured import ocr_structured
-from lib.figure_crop import crop_all_figures
+# figure_crop DEPRECATED (D3/D24) — SVG figures are now generated inline by Gemini
 
 
 # --- PDF to images (PyMuPDF, DPI 150) ---
@@ -231,21 +231,29 @@ class handler(BaseHTTPRequestHandler):
 
                     if use_structured:
                         sections = page_data.get("sections", [])
-                        cropped_figs = crop_all_figures(file_data, sections)
+                        cropped_figs = {}  # SVG figures are inline in sections (D3)
 
                         # Batch translate all text parts in one API call
-                        text_indices = []
+                        text_indices = []  # list of (sections_ref, index) for write-back
                         all_text_parts = []
                         title = page_data.get("title", "")
                         if title:
                             all_text_parts.append(title)
-                            text_indices.append(("title", -1))
-                        for si, sec in enumerate(sections):
-                            if sec.get("type") in ("paragraph", "heading", "step", "observation", "list"):
-                                content = sec.get("content", "")
-                                if content.strip():
-                                    all_text_parts.append(content)
-                                    text_indices.append(("section", si))
+                            text_indices.append((None, "title"))
+
+                        def _collect_text(secs, parent_ref=None):
+                            """Collect translatable text from sections, including two_column."""
+                            for si, sec in enumerate(secs):
+                                if sec.get("type") in ("paragraph", "heading", "step", "observation", "list"):
+                                    content = sec.get("content", "")
+                                    if content.strip():
+                                        all_text_parts.append(content)
+                                        text_indices.append((secs, si))
+                                elif sec.get("type") == "two_column":
+                                    _collect_text(sec.get("left", []))
+                                    _collect_text(sec.get("right", []))
+
+                        _collect_text(sections)
 
                         if all_text_parts:
                             SEP = "\n|||SEPARATOR|||\n"
@@ -264,13 +272,13 @@ class handler(BaseHTTPRequestHandler):
                                     translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
 
                                 parts_tr = translated_batch.split("|||SEPARATOR|||")
-                                for pi, (kind, si) in enumerate(text_indices):
+                                for pi, (secs_ref, si) in enumerate(text_indices):
                                     if pi < len(parts_tr):
                                         text = parts_tr[pi].strip()
-                                        if kind == "title":
+                                        if si == "title":
                                             page_data["title"] = text
                                         else:
-                                            sections[si]["content"] = text
+                                            secs_ref[si]["content"] = text
                             except Exception as tr_err:
                                 print(f"[TRANSLATE] Batch failed: {tr_err}", file=sys.stderr)
 

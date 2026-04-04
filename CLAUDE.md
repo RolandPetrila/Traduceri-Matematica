@@ -1,17 +1,17 @@
 # Sistem Traduceri Matematica — CLAUDE.md
-# Versiune: 3.0 | Data: 2026-03-26
+# Versiune: 3.1 | Data: 2026-04-03
 
 ## Overview
 Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
-Pipeline: Input (JPEG/PDF/DOCX) -> OCR structurat (Gemini) -> Crop figuri (Pillow) -> Traducere (DeepL/Gemini) -> HTML A4 printabil.
+Flow unic: Upload fisier → Gemini OCR (text + SVG figuri + LaTeX) → Afisare in pagina web ca original (A4, paginat) → Traducere ON-DEMAND prin switch limba (doar textul, elementele matematice raman intacte).
 
 ## Status
-- **Faza curenta**: v3.0 — Faza 1 in executie (reparatii + ecran incarcare)
+- **Faza curenta**: v3.1 — Runda 11 (Top 10 Imbunatatiri)
 - **Progres**: Vezi `99_Plan_vs_Audit/PLAN_v3.md` — SURSA UNICA de adevar
 - **Deploy**: LIVE pe Render (auto-deploy din GitHub)
   - Frontend: https://traduceri-matematica-7sh7.onrender.com
   - API: https://traduceri-api.onrender.com
-- **Ultima sesiune**: 2026-03-26
+- **Ultima sesiune**: 2026-04-03
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 1. Citeste `99_Plan_vs_Audit/PLAN_v3.md` — sursa UNICA de adevar pt progres
@@ -23,10 +23,10 @@ Pipeline: Input (JPEG/PDF/DOCX) -> OCR structurat (Gemini) -> Crop figuri (Pillo
 ## Stack v3
 - Frontend: Next.js 14 + Tailwind CSS
 - Backend: Python serverless (api/) + shared lib (api/lib/)
-- AI OCR: Gemini 2.5 Flash (JSON mode, gratuit, 250 cereri/zi)
-- AI Traducere: DeepL Free (principal, 2 chei = 1M car/luna) + Gemini (fallback)
-- AI Fallback: Groq Llama 3.3 (traducere + chat), Mistral Pixtral (OCR)
-- Figure: Crop din original cu Pillow (nu SVG generat)
+- AI OCR: Gemini 2.5 Flash (JSON mode, gratuit, 250 cereri/zi) — extrage text + genereaza SVG figuri inline
+- AI Traducere: DeepL Free (principal, 2 chei = 1M car/luna) — DOAR text, DOAR la cerere (switch limba)
+- AI Fallback: Groq Llama 3.3 (traducere fallback + chat), Gemini (traducere fallback), Mistral Pixtral (OCR fallback)
+- Figure: SVG inline generat de Gemini la OCR (ca in Exemplu_BUN.html)
 - Deploy: Render (auto-deploy din GitHub, free tier, Frankfurt)
 - Monitoring: Feedback loop complet (10 componente)
 
@@ -50,18 +50,48 @@ Pipeline: Input (JPEG/PDF/DOCX) -> OCR structurat (Gemini) -> Crop figuri (Pillo
 - API keys: doar in .env, niciodata in cod
 - Tema UI: tabla verde (#2d5016) + text creta (alb/galben)
 - Servicii: GRATUITE prioritar (DeepL free, Gemini free)
-- LaTeX: protejat cu placeholders inainte de traducere
-- Figuri: crop din original (nu SVG generat de AI)
+- LaTeX: protejat cu placeholders la traducere, randat cu MathJax
+- Figuri: SVG inline generat de Gemini (ca Exemplu_BUN.html)
 - Dupa ORICE modificare: commit + push automat (Render deploy)
 
-## Pipeline v3 (multi-pas)
+## Flow UNIC traducere — Metoda unificata 3 pasi (definitiva)
 ```
-Input (JPEG/PDF/DOCX)
-  -> [1] Gemini OCR structurat (JSON mode) -> text + figuri bbox
-  -> [2] Pillow crop figuri + background removal -> alb
-  -> [3] DeepL/Gemini traducere (selectabil) -> text tradus
-  -> [4] build_html() + MathJax -> HTML A4 printabil
+[UPLOAD] Cristina incarca fisier (JPEG/PDF/DOCX)
+  |
+  v
+[PAS 1] ORIGINAL — Imaginea/fisierul incarcat, afisat ca atare (100% fidel, read-only)
+  |       Referinta vizuala — asa arata manualul original
+  v
+[PAS 2] HTML RO — Reconstructie OCR (Gemini: text + SVG figuri + LaTeX), EDITABIL
+  |       Cristina poate corecta erori OCR (text gresit, diacritice, formule)
+  |       ~85% fidel fata de original, dar editarea ridica la ~95%+
+  v
+[PAS 3] HTML TRADUS — Traducere on-demand (DeepL), EDITABIL
+          Acelasi HTML ca pasul 2, doar textul tradus in limba dorita (SK/EN)
+          Figuri SVG + formule LaTeX + layout = INTACTE
+          Cristina poate corecta erori de traducere
 ```
+
+### Butoane in toolbar: `Original` | `RO` | `SK` + navigare pagina 1/N
+### Editare: pasii 2 si 3 sunt editabili (contentEditable) — pasul 1 e read-only
+
+### Ce se traduce vs ce ramane intact (la switch RO → SK)
+| Element | Pas 2 (RO) | Pas 3 (SK) |
+|---------|------------|------------|
+| Text paragraf | Original, editabil | TRADUS, editabil |
+| Titluri/headings | Original, editabil | TRADUS, editabil |
+| Formule LaTeX | INTACT | INTACT |
+| Figuri SVG | INTACT | INTACT |
+| Structura (ol/ul) | INTACT | INTACT |
+| Layout A4 | INTACT | INTACT |
+
+### Fidelitate per format input
+| Format input | Pas 1 (original) | Pas 2-3 (HTML) | Cu editare manuala |
+|-------------|-------------------|----------------|-------------------|
+| JPEG (poze manual) | 100% | ~80-85% | ~95%+ |
+| PDF (scanat) | 100% | ~80-85% | ~95%+ |
+| PDF (text nativ) | 100% | ~85-90% | ~97%+ |
+| DOCX (Word) | 100% | ~55-65% | ~80%+ |
 
 ## Module planificate (6 total)
 1. **Traduceri** — prioritar, in executie (Faza 1-2)

@@ -67,13 +67,13 @@
 
 ### Decizii luate
 
-- D4: Figurile trebuie sa fie identice cu originalul si pozitionate exact ca in document — Motiv: standardul Exemplu_BUN.html (crop din original, nu redesenate de AI)
+- D4: ~~INLOCUITA de D3 actualizat (2026-03-27)~~ — Figurile sunt SVG generat de Gemini (ca Exemplu_BUN.html), NU crop din original. La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - D5: Convertorul trebuie reparat urgent (bug `import os`) — Motiv: nefunctional pe Render, blocat complet
 - D6: Ordinea modulelor viitoare: Chat AI (3) -> Calculator (4) -> Teste (5+6) — Motiv: Chat AI e cel mai versatil si util pentru Cristina
 
 ### Cerinte confirmate
 
-- C5: Calitate figuri = nivel Exemplu_BUN.html (decupate din original, fundal alb, pozitionate corect)
+- C5: ~~ACTUALIZAT~~ — Calitate figuri = nivel Exemplu_BUN.html (SVG generat de Gemini, nu decupate din original). Raman INTACTE la switch limba.
 - C6: Fix convertor = prioritate in Faza 1 a planului
 - C7: Chat AI = primul modul nou dupa Traduceri+Convertor
 
@@ -258,3 +258,39 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
 - P4: 106 linii fallback inline sterse din translate.py (1444 -> 334, reducere 77%)
 - P5: D22 adaugata (rate limiter pe Render)
 - P6: R19 citita si aplicata
+
+---
+
+## Runda 7 — 2026-04-04 (Integrare Audit Runde 7-9 + Fix cauza radacina SVG)
+
+### Intrebari puse
+
+- Q1: Prototip static (A), direct in live (B), sau ambele (C)?
+  -> Raspuns Roland: **B — Direct in live.** Fix-ul e in 2 fisiere backend, risc LOW.
+
+- Q2: Cum apare originalul in Pas 1? Imagine simpla (A), cadru A4 (B), viewer cu zoom (C)?
+  -> Raspuns Roland: **B — Cadru A4.** Profesional, se compara usor cu HTML.
+
+- Q3: Finalizez Faza 2 intai (A), direct la 3 pasi (B), sau integrat ca Sprint 2.6 (C)?
+  -> Raspuns Roland: **C — Integrat ca Sprint 2.6.** Sprint 2.2 (fix SVG) acum, Sprint 2.6 (3 pasi) dupa.
+
+### Decizii luate
+
+- D28: Upgrade OCR de la Gemini 2.5 Flash la **Gemini 2.5 Pro** — Motiv: calitate semnificativ mai buna la intelegerea layout-ului, precizia geometrica, respectarea instructiunilor complexe. Limita free tier Pro (5 RPM, 100 RPD) suficienta pt volumul mic.
+- D29: Prompt OCR RESCRIS COMPLET — de la bbox/crop la SVG inline cu 12 conventii geometrie scolara obligatorii. Rezolva cauza radacina (S21/D24).
+- D30: figure_crop.py DEPRECIAT — apelul crop_all_figures() scos din translate.py. SVG-urile sunt inline in sectiuni.
+- D31: html_builder.py refactorizat cu _render_section() recursiv — suporta `figure` cu SVG inline si `two_column` layout (CSS grid).
+- D32: Traducere extinsă la two_column — _collect_text() recursiv colecteaza text si din sub-sectiunile left/right.
+
+### Cerinte confirmate
+
+- C22: Completare Faza 2 corecta: ~55% (nu 90%)
+- C23: S21-S28 + Runda 9 integrate (audit)
+- C24: Prioritate: fix SVG (acum) → test pe Render → Sprint 2.6 (3 pasi)
+
+### Variante cercetate (R16)
+
+- V1: Gemini 2.5 Flash (model actual) — PRO: 250 RPD, rapid / CONTRA: calitate SVG insuficienta (5/10 vs Exemplu_BUN)
+- V2: Gemini 2.5 Pro — PRO: calitate mult mai buna, trigonometrie corecta, layout 2 coloane / CONTRA: 100 RPD (nu 250), 5 RPM
+- Aleasa: V2 (Pro) — Motiv: volumul lui Cristina (cateva pagini/zi) incape in 100 RPD. Calitatea SVG e critica.
+- Surse: Google AI docs, RUNDA_CURENTA.md analiza T3

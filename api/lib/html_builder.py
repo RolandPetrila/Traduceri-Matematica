@@ -86,103 +86,25 @@ def _md_to_html_body(md: str) -> str:
 
 
 def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]], target_lang: str) -> str:
-    """Build HTML from structured OCR data + cropped figures.
+    """Build HTML from structured OCR data with inline SVG figures.
 
     Args:
         pages_data: list of OCR structured JSON per page
-        figures: list of {section_index: base64_png} per page
+        figures: list of {section_index: base64_png} per page (legacy, may be empty)
         target_lang: language code for html lang attribute
     """
     page_sections = []
-    for page_idx, (page, figs) in enumerate(zip(pages_data, figures)):
-        skip_next = False
+    for page_idx, page in enumerate(pages_data):
+        figs = figures[page_idx] if page_idx < len(figures) else {}
         parts = []
-        sections = page.get("sections", [])
         parts.append(f'<div class="source-file">Pagina {page_idx + 1}</div>')
 
         title = page.get("title", "")
         if title:
             parts.append(f"<h1>{title}</h1>")
 
-        for sec_idx, section in enumerate(page.get("sections", [])):
-            sec_type = section.get("type", "paragraph")
-            content = section.get("content", "")
-
-            # Safety net: demote heading to step if it contains P₁-P₉ pattern
-            if sec_type == "heading" and re.search(
-                r"(?:\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?|P\s*[₁₂₃₄₅₆₇₈₉])\s*[:.]\s*", content
-            ):
-                sec_type = "step"
-
-            if sec_type == "heading":
-                level = section.get("level", 2)
-                parts.append(f"<h{level}>{content}</h{level}>")
-            elif sec_type == "step":
-                parts.append(f"<p>{content}</p>")
-            elif sec_type == "observation":
-                parts.append(f"<p><strong>{content}</strong></p>")
-            elif sec_type == "list":
-                # Content may have numbered items
-                items = [line.strip() for line in content.split("\n") if line.strip()]
-                if items:
-                    parts.append("<ol>")
-                    for item in items:
-                        clean = re.sub(r"^\d+\.\s*", "", item)
-                        parts.append(f"<li>{clean}</li>")
-                    parts.append("</ol>")
-            elif sec_type == "figure":
-                # Insert cropped figure as <img> if available
-                b64 = figs.get(sec_idx, "")
-                caption = section.get("caption", "")
-                safe_caption = (caption or "Figura").replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
-                if b64:
-                    # Check if next section is also a figure (paired: P1+P2 side by side)
-                    next_idx = sec_idx + 1
-                    next_sec = sections[next_idx] if next_idx < len(sections) else None
-                    next_is_figure = next_sec and next_sec.get("type") == "figure"
-                    next_b64 = figs.get(next_idx, "") if next_is_figure else ""
-
-                    if next_b64 and not skip_next:
-                        # Render paired figures side by side
-                        next_caption = next_sec.get("caption", "") if next_sec else ""
-                        safe_next_caption = (next_caption or "Figura").replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
-                        parts.append(
-                            f'<div style="display:flex;justify-content:center;gap:12px;margin:10px 0">'
-                            f'<div style="text-align:center">'
-                            f'<img src="data:image/png;base64,{b64}" '
-                            f'alt="{safe_caption}" '
-                            f'style="max-width:48%;height:auto;background:#fff;border:1px solid #eee;" />'
-                            f'{"<p><em>" + caption + "</em></p>" if caption else ""}'
-                            f'</div>'
-                            f'<div style="text-align:center">'
-                            f'<img src="data:image/png;base64,{next_b64}" '
-                            f'alt="{safe_next_caption}" '
-                            f'style="max-width:48%;height:auto;background:#fff;border:1px solid #eee;" />'
-                            f'{"<p><em>" + next_caption + "</em></p>" if next_caption else ""}'
-                            f'</div>'
-                            f'</div>'
-                        )
-                        skip_next = True
-                    elif skip_next:
-                        # This figure was already rendered as part of a pair
-                        skip_next = False
-                    else:
-                        # Single figure
-                        parts.append(
-                            f'<div style="display:flex;justify-content:center;margin:8px 0">'
-                            f'<img src="data:image/png;base64,{b64}" '
-                            f'alt="{safe_caption}" '
-                            f'style="max-width:90%;height:auto;background:#fff;border:1px solid #eee;" />'
-                            f'</div>'
-                            f'{"<p style=\"text-align:center\"><em>" + caption + "</em></p>" if caption else ""}'
-                        )
-                else:
-                    desc = section.get("caption", section.get("description", ""))
-                    parts.append(f'<p><em>[Figura: {desc or "indisponibila"}]</em></p>')
-            else:
-                # paragraph or unknown
-                if content:
-                    parts.append(f"<p>{content}</p>")
+        for section in page.get("sections", []):
+            parts.append(_render_section(section, figs))
 
         body = "\n".join(parts)
         page_sections.append(
@@ -192,6 +114,73 @@ def build_html_structured(pages_data: list[dict], figures: list[dict[int, str]],
     pages_html = "\n".join(page_sections)
     n = len(pages_data)
     return _build_html_shell(pages_html, n, target_lang)
+
+
+def _render_section(section: dict, figs: dict | None = None) -> str:
+    """Render a single section to HTML. Recursive for two_column."""
+    sec_type = section.get("type", "paragraph")
+    content = section.get("content", "")
+
+    # Safety net: demote heading to step if it contains P₁-P₉ pattern
+    if sec_type == "heading" and re.search(
+        r"(?:\$?P[_₁₂₃₄₅₆₇₈₉\d]+\$?|P\s*[₁₂₃₄₅₆₇₈₉])\s*[:.]\s*", content
+    ):
+        sec_type = "step"
+
+    if sec_type == "heading":
+        level = section.get("level", 2)
+        return f"<h{level}>{content}</h{level}>"
+
+    elif sec_type == "step":
+        return f"<p>{content}</p>"
+
+    elif sec_type == "observation":
+        return f"<p><strong>{content}</strong></p>"
+
+    elif sec_type == "list":
+        items = [line.strip() for line in content.split("\n") if line.strip()]
+        if items:
+            html = "<ol>"
+            for item in items:
+                clean = re.sub(r"^\d+\.\s*", "", item)
+                html += f"<li>{clean}</li>"
+            html += "</ol>"
+            return html
+        return ""
+
+    elif sec_type == "figure":
+        svg_code = section.get("svg", "")
+        caption = section.get("caption", "")
+        if svg_code:
+            # SVG inline — direct from Gemini (D3/D26/D27)
+            html = '<div class="figure-container" style="text-align:center;margin:12px 0;">'
+            html += svg_code
+            if caption:
+                safe_cap = caption.replace('<', '&lt;').replace('>', '&gt;')
+                html += f'<p style="font-size:0.9em;color:#555;margin-top:4px;"><em>{safe_cap}</em></p>'
+            html += '</div>'
+            return html
+        else:
+            # Fallback: no SVG available
+            desc = caption or section.get("description", "")
+            return f'<p><em>[Figura: {desc or "indisponibila"}]</em></p>'
+
+    elif sec_type == "two_column":
+        html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;">'
+        html += '<div>'
+        for s in section.get("left", []):
+            html += _render_section(s, figs)
+        html += '</div><div>'
+        for s in section.get("right", []):
+            html += _render_section(s, figs)
+        html += '</div></div>'
+        return html
+
+    else:
+        # paragraph or unknown
+        if content:
+            return f"<p>{content}</p>"
+        return ""
 
 
 def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str:

@@ -87,14 +87,31 @@ Cand Roland scrie **"t2"** (cu sau fara context suplimentar):
 - [ ] [criteriu de verificare 2]
 ```
 
-### R4 — Verificare implementare
+### R4 — Detectare inconsistente plan vs implementare
+La FIECARE audit, verifica OBLIGATORIU:
+- Criteriile de acceptare din plan sunt realiste? (nu forteaza implementare gresita?)
+- Sprint-urile marcate "COMPLETAT" au TOATE task-urile [x]?
+- Componentele listate ca "NOU" au fost intr-adevar create? Cele anulate sunt marcate [-]?
+- Limitele R14 estimate corespund cu realitatea masurata?
+- Exista decizii care se contrazic intre ele?
+
+Daca gasesti inconsistente:
+1. **OPRESTE** si semnaleaza ca problema CRITICA in AUDIT_FEEDBACK.md
+2. Descrie: ce spune planul vs ce e real
+3. Propune solutia: rescrie criteriu, actualizeaza status, etc.
+4. Marcheaza: "ATENTIE: Planul trebuie corectat INAINTE de a continua executia"
+
+**Exemplu**: Criteriu "sub 200 linii" dar componenta auxiliara anulata → criteriul e nerealist.
+Solutia: rescrie criteriul, nu forta codul.
+
+### R5 — Verificare implementare cod
 Cand Roland cere verificarea codului implementat:
 1. Citeste `git diff` sau fisierele modificate
 2. Verifica daca implementarea respecta planul
 3. Verifica calitate: securitate, performanta, edge cases
 4. Scrie rezultatul in AUDIT_FEEDBACK.md (sectiunea "Verificare implementare")
 
-### R5 — Cercetare activa cu MCP-uri
+### R6 — Cercetare activa cu MCP-uri
 T2 are acces la MCP-uri si le foloseste PROACTIV pentru a fundamenta feedback-ul:
 
 **Ce folosesti direct (fara sa intrebi):**

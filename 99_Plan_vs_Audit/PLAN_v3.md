@@ -1,6 +1,6 @@
 # PLAN v3 — Traduceri Matematica
 # Status: IN EXECUTIE
-# Data start: 2026-03-26 | Ultima actualizare: 2026-03-27
+# Data start: 2026-03-26 | Ultima actualizare: 2026-04-03
 # Completare: ~45% (Faza 1: 100%, Faza 2: 90%, Faza 3-6: 0%)
 
 ---
@@ -13,7 +13,18 @@
 
 ## Viziune
 
-Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca). Upload document matematic (poza/PDF/Word) -> OCR inteligent -> vizualizare A4 cu formule si figuri -> traducere RO/SK/EN cu un singur click -> print/download. Plus: convertor fisiere, chat AI, calculator, corectare si generare teste.
+Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
+
+**Flow UNIC traducere — Metoda unificata 3 pasi (definitiva):**
+1. Upload document matematic (poza/PDF/Word)
+2. **Pas 1 — ORIGINAL**: fisierul afisat ca atare (imagine/PDF), 100% fidel, read-only
+3. **Pas 2 — HTML RO**: reconstructie OCR (Gemini: text + SVG + LaTeX), EDITABIL — Cristina corecteaza erori
+4. **Pas 3 — HTML TRADUS**: acelasi HTML, text tradus on-demand (DeepL), EDITABIL — Cristina corecteaza traducerea
+5. Figuri SVG + formule LaTeX + layout = INTACTE in pasii 2-3
+6. Butoane: `Original` | `RO` | `SK` + navigare pagina 1/N
+7. Cache local → switch instant la revenire
+
+Plus: convertor fisiere, chat AI, calculator, corectare si generare teste.
 
 ---
 
@@ -23,7 +34,7 @@ Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: C
 |---|---------|-----------------|-------------|-------|
 | D1 | Abordare v2->v3 | Refactorizare + Extindere | Rebuild complet | Codul existent functioneaza, doar trebuie reorganizat |
 | D2 | Scope plan | Modular progressiv | Tot sau nimic | Focus pe urgent (Modul 1+2), restul schitat |
-| D3 | Figuri document | Crop din poza originala (Pillow) | SVG generat de AI | Identice cu originalul, nu aproximari |
+| D3 | Figuri document | **SVG generat de Gemini** la OCR (ca Exemplu_BUN.html) | ~~Crop cu Pillow~~ (abandonat — bbox imprecis) | SVG consistent, dovedit functional. Figurile raman INTACTE la switch limba. |
 | D4 | Ordine module noi | Chat AI -> Calculator -> Teste | Calculator primul | Chat AI e cel mai versatil |
 | D5 | Traducere primara | DeepL Free (2 chei) | Gemini traducere | DeepL e mai precis pt limbi europene |
 | D6 | OCR | Gemini 2.5 Flash (JSON mode) | Mistral Pixtral | Gemini e mai precis si gratuit |
@@ -42,6 +53,11 @@ Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: C
 | D19 | Rate limiting scope | Global pe TOATE endpoint-urile (limite diferite) | Doar pe traduceri | Protejeaza si convertorul si viitorul chat (audit S12) |
 | D20 | PyMuPDF DPI | 150 (economie memorie) | 300 (default) | DPI 300 = 4x memorie, crash pe 512MB (audit S13) |
 | D21 | Multi-JPEG upload | 1 document combinat (5 poze = 5 pagini) | 5 documente separate | Cristina vrea 1 document tradus, nu 5 (Roland I5) |
+| D23 | **Flow traducere — Metoda unificata 3 pasi** | Pas 1: Original (imagine, read-only) → Pas 2: HTML RO editabil (OCR) → Pas 3: HTML tradus editabil (DeepL on-demand). Figuri SVG + LaTeX = INTACTE. Butoane: Original/RO/SK | ~~Traducere imediata la upload~~ | **METODA DEFINITIVA 2026-04-03**: 3 pasi cu editare in pasii 2-3 |
+| D24 | Figuri lipsa bug | Prompt OCR interzicea SVG (linia 54: "Do NOT generate SVG") | - | Cauza root gasita — prompt-ul blocheaza SVG-urile |
+| D25 | DeepL rol | DOAR traducere text, DOAR la switch buton limba. Nu ruleaza la upload, nu traduce formule/figuri | ~~Traducere la upload~~ | Parte din flow-ul unic D23 |
+| D26 | Gemini rol | OCR + generare SVG figuri inline (la upload). NU traducere | ~~OCR + bbox~~ | Gemini genereaza si figurile SVG inline (dovedit de Exemplu_BUN.html) |
+| D27 | Prompt OCR | Cere SVG inline + text structurat (ca in Exemplu_BUN.html) | ~~Bbox coordonate~~ | SVG generat e consistent, bbox e imprecis |
 
 ---
 
@@ -148,18 +164,18 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 ### Completare: 90% (raman: test Android, PDF mare batching, fallback DeepL->Gemini test, cache test manual)
 
 ### Scop
-Documentele traduse sa arate ca Exemplu_BUN.html: figuri identice cu originalul, pozitionate corect, formule randate frumos. Plus: reorganizare cod backend, fix-uri securitate, contor DeepL vizibil, cache traduceri persistent, si protectie impotriva abuzului.
+Documentele sa arate ca Exemplu_BUN.html: figuri SVG inline, formule LaTeX randate cu MathJax, text structurat — afisate in pagina web ca original (A4, paginat). Traducerea se face ON-DEMAND prin switch buton limba (doar textul, restul intact). Plus: reorganizare cod backend, fix-uri securitate, contor DeepL vizibil, cache traduceri persistent, si protectie impotriva abuzului.
 
 ### Componente afectate
 - `api/translate.py` — split in module mai mici in `api/lib/`
-- `api/lib/ocr_structured.py` — imbunatatire crop figuri
-- `api/lib/figure_crop.py` — crop mai precis + fundal alb + suport PDF via PyMuPDF
-- `api/lib/html_builder.py` — NOU: modul separat pt constructie HTML A4
+- `api/lib/ocr_structured.py` — OCR structurat: text + SVG figuri inline + LaTeX
+- `api/lib/figure_crop.py` — [-] DEPRECIAT (D3: SVG generat de Gemini inlocuieste crop)
+- `api/lib/html_builder.py` — NOU: modul separat pt constructie HTML A4 (format original + switch limba)
 - `api/lib/translation_router.py` — NOU: modul separat pt rutare traducere (DeepL/Gemini/Groq)
 - `api/lib/pipeline.py` — [-] ANULAT (orchestrarea ramane in translate.py do_POST)
 - `api/lib/rate_limiter.py` — NOU: protectie impotriva abuzului (10 req/min per IP)
 - `api/deepl_usage.py` — NOU: endpoint cota DeepL
-- `frontend/src/components/traduceri/DocumentViewer.tsx` — pozitionare figuri corecta
+- `frontend/src/components/traduceri/DocumentViewer.tsx` — afisare document original A4 + switch limba
 - `frontend/src/components/traduceri/DeeplUsage.tsx` — NOU: contor DeepL vizibil
 - `frontend/src/lib/translation-cache.ts` — NOU: cache traduceri localStorage
 - `frontend/package.json` — update Next.js (CVEs)
@@ -177,18 +193,14 @@ Fisierul translate.py avea 1444 linii. L-am spart in module separate:
 - [x] 2026-03-26 — Test 1 pagina pe Render: SUCCESS — pipeline structured, DeepL, 37.6 sec, 7163 chars HTML
 - [x] 2026-03-26 — Test 2 pagini pe Render: SUCCESS — ambele structured, 93 sec, 10491 chars HTML
 
-**Sprint 2.2: Calitate figuri + pozitionare** — IN CURS 2026-03-26
-Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza originala:
-- [x] 2026-03-26 — OCR prompt actualizat: Gemini returneaza bbox (coordonate x,y,w,h ca fractii 0-1) in loc de SVG
-- [x] 2026-03-26 — Validare bbox (SC1): coordonate invalide -> placeholder "Figura indisponibila". Functia _validate_bbox verifica limite, dimensiuni minime.
-- [x] 2026-03-26 — Crop figuri din original cu Pillow + fundal alb curat (background removal din colturi)
+**Sprint 2.2: Figuri SVG inline + pozitionare** — ACTUALIZAT 2026-04-03
+Metoda schimbata: ~~crop Pillow~~ → **SVG generat de Gemini** (D3 actualizat 2026-03-27).
+Figurile sunt generate de Gemini ca SVG inline (ca in Exemplu_BUN.html), nu decupate din original.
+La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
+- [x] 2026-03-27 — D3 schimbat: SVG generat de Gemini confirmat de Roland (test vizual OK)
 - [x] 2026-03-26 — Pozitionare in HTML: figurile apar in fluxul documentului exact unde Gemini le detecteaza
 - [x] 2026-03-26 — Figuri perechi: doua figuri consecutive se afiseaza automat side-by-side (P1+P2)
 - [x] 2026-03-26 — PyMuPDF adaugat in requirements.txt + _pdf_to_images() in pipeline (DPI 150)
-- [x] 2026-03-26 — Pipeline preferat: lib/ocr_structured + lib/figure_crop (cu fallback inline)
-- [x] 2026-03-26 — Test MINIM: 1 pag JPEG -> 6 figuri crop (5 bbox + 1 placeholder), 0 SVG, 47.7s
-- [x] 2026-03-26 — Test TIPIC: 2 pag JPEG -> 12 figuri crop (6+6, toate bbox valid), 78s
-- [x] 2026-03-26 — Test PDF: 1 pag PDF via PyMuPDF -> 2 figuri crop, 34.9s. PDF conversion OK.
 - [ ] Test MAXIM: PDF 10 pagini — necesita procesare in loturi (SC3, Sprint 2.5)
 - [ ] Comparatie vizuala cu Exemplu_BUN.html — Roland verifica pe site-ul live
 
@@ -234,8 +246,9 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 - PDF mare: >20 pagini se proceseaza in loturi de 5 (previne epuizare memorie server 512 MB)
 
 ### Criterii de acceptare
-- Output traducere arata ca Exemplu_BUN.html (figuri identice, pozitionate corect, formule frumoase)
-- Figuri corecte si din PDF (nu doar din JPEG) — via PyMuPDF
+- Output arata ca Exemplu_BUN.html (SVG figuri inline, formule LaTeX, text structurat, A4 paginat)
+- Documentul se afiseaza in pagina web ca original, traducerea se face ON-DEMAND prin switch buton limba
+- La switch: DOAR textul se traduce, figuri SVG + formule LaTeX = INTACTE
 - translate.py refactorizat — reducere >60% fata de original (1444 -> sub 500), cu html_builder.py si translation_router.py extrase in module separate
 - Contor DeepL vizibil in pagina Traduceri
 - Cache traduceri persistent (nu se pierd la inchidere browser)
@@ -244,16 +257,17 @@ Figurile erau generate de AI (SVG aproximativ). Acum sunt decupate din poza orig
 - Fallback Gemini functioneaza end-to-end cand DeepL e epuizat
 - Test pe telefon Android OK
 
-### Exemple de utilizare
+### Exemple de utilizare (metoda unificata 3 pasi)
 1. Cristina fotografiaza 5 pagini de manual cu telefonul
 2. Le incarca pe site (drag & drop sau selectie fisiere)
-3. Apasa "Traduce in Slovaca"
-4. Vede progresul: "Pagina 1/5... 2/5..."
-5. Rezultatul apare: text tradus + formule + figuri identice cu originalul
-6. Apasa RO -> vede originalul. Apasa SK -> vede traducerea. Switch instant (din cache).
-7. In josul paginii vede: "Cota DeepL: 12.340 / 1.000.000 caractere (1%)"
-8. Apasa Print -> document A4 perfect
-9. Inchide browserul, revine a doua zi -> traducerea e inca acolo (din localStorage)
+3. **Pas 1 — Original**: vede imaginile originale din manual (100% fidele), paginat 1/5, 2/5...
+4. **Apasa butonul RO**: vede HTML-ul reconstruit (text + SVG figuri + LaTeX), poate edita daca OCR-ul a gresit
+5. **Apasa butonul SK**: vede HTML-ul tradus in slovaca, poate edita daca traducerea e gresita
+6. Figurile SVG, formulele LaTeX, layout-ul = **identice** in RO si SK
+7. **Apasa Original**: revine la imaginea din manual (referinta)
+8. In josul paginii vede: "Cota DeepL: 12.340 / 1.000.000 caractere (1%)"
+9. Apasa Print (din orice pas) → document A4 perfect
+10. Inchide browserul, revine a doua zi → totul e inca acolo (din localStorage)
 
 ---
 

@@ -62,14 +62,26 @@ Dupa fiecare runda de intrebari/raspunsuri cu Roland:
 - Adauga note daca implementarea difera de plan
 - NU sterge task-uri — marcheaza `[-]` cu motiv daca se anuleaza
 
-### R5 — Citire AUDIT_FEEDBACK.md
+### R5 — Comanda "t1"
 Cand Roland iti spune **"t1"** (cu sau fara context suplimentar):
+
+**Pas A — Citeste RUNDA_CURENTA.md:**
+1. Citeste `99_Plan_vs_Audit/RUNDA_CURENTA.md` complet
+2. Daca contine instructiuni de executie (interventii, task-uri, modificari de cod) → **EXECUTA-LE** in ordinea descrisa
+3. Respecta punctele STOP daca sunt indicate (asteapta feedback Roland)
+4. Dupa executie, raporteaza ce ai facut
+
+**Pas B — Citeste AUDIT_FEEDBACK.md (MEREU, nu doar cand RUNDA_CURENTA e goala):**
 1. Citeste `99_Plan_vs_Audit/AUDIT_FEEDBACK.md` complet
 2. Analizeaza sugestiile auditului
 3. Daca exista sectiunea "Cerinte MCP pentru T1": executa cercetarile cerute cu MCP-urile indicate (firecrawl, WebSearch, etc.) si integreaza rezultatele in plan
 4. Propune-i lui Roland cum sa integreze feedback-ul
 5. Intreaba: "Esti de acord cu integrarea acestor sugestii?"
 6. Dupa integrare, marcheaza in AUDIT_FEEDBACK.md sectiunea ca "[INTEGRAT]" la sfarsit
+
+**Ordinea:** Mai intai Pas A (executie instructiuni T3), apoi Pas B (integrare feedback T2). Ambele se executa la fiecare comanda "t1".
+
+**Cu context suplimentar** (ex: `t1 executa doar interventie 2`): respecta instructiunea explicita.
 
 ### R6 — Commit + Push dupa fiecare sprint
 - Dupa ORICE implementare completa: `git add` + `git commit` + `git push`
@@ -157,6 +169,34 @@ La FIECARE decizie tehnica, scrie in PLAN_DECISIONS.md:
 - Surse verificate: [link/tool folosit]
 ```
 Roland si T2 trebuie sa vada TOT traseul de gandire, nu doar concluzia.
+
+### R19 — Detectare inconsistente plan vs implementare
+Daca in timpul implementarii descoperi ca:
+- Un criteriu din plan e NEREALIST (ex: "sub 200 linii" dar realitatea cere 350)
+- O componenta planificata a fost anulata dar inca apare ca "NOU" in plan
+- Un sprint e marcat "COMPLETAT" dar are task-uri necompletate
+- Limitele R14 estimate in plan nu corespund cu realitatea masurata
+- O decizie tehnica contrazice o alta decizie din plan
+
+**OPRESTE executia** si:
+1. Descrie inconsistenta gasita (ce spune planul vs ce e real)
+2. Propune solutia (rescrie criteriu, actualizeaza status, etc.)
+3. Asteapta confirmarea lui Roland inainte de a continua
+4. NU "impinge" implementarea sa se potriveasca unui criteriu gresit — criteriul se corecteaza, nu codul
+
+**Exemplu**: Planul spune "translate.py sub 200 linii" dar pipeline.py a fost anulat, deci 344 linii e corect. Solutia: rescrie criteriul la ">60% reducere", nu forta codul in 200 linii.
+
+### R20 — Auto-verificare calitate INAINTE de livrare
+NU livra NICIODATA un fisier HTML, un output de traducere, sau orice rezultat vizual fara sa il verifici TU INSUTI:
+
+1. Compara cu Exemplu_BUN.html (99_Roland_Work/Exemplu_BUN.html) pe TOATE criteriile:
+   - Figuri: linii dashed/solide corecte? Cercuri pe varfuri? Masuri cu "cm"? Culori diferentiate? Subscript P₁? Unghi drept cu patratel?
+   - Text: complet? Bold pe termeni cheie? Formule LaTeX corecte? Cuvinte reunite (fara cratima)?
+   - Layout: paginare corecta? A4? Print-ready?
+2. Daca ORICE criteriu nu trece → ajusteaza si regenereaza
+3. NU intreba Roland "vezi ceva gresit?" — TU trebuie sa vezi PRIMUL
+
+Documentele sunt pentru predare GIMNAZIU si LICEU (Romania) — trebuie sa respecte TOATE conventiile geometriei scolare din planul de invatamant in vigoare.
 
 ### R11 — Blueprint dupa fiecare implementare
 Dupa finalizarea oricarei functii / modul / componenta / tab:
