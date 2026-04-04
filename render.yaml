@@ -30,3 +30,13 @@ services:
       # GROQ_API_KEY, MISTRAL_API_KEY
     plan: free
     region: frankfurt
+
+  # Keep-alive cron — pings both services every 14 min to prevent cold starts
+  - type: cron
+    name: keepalive
+    runtime: python
+    schedule: "*/14 * * * *"
+    buildCommand: ""
+    startCommand: python keepalive.py
+    plan: free
+    region: frankfurt
