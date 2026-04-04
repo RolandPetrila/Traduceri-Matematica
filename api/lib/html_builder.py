@@ -197,7 +197,7 @@ def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str
   <style>
     :root {{
       --text-color: #1b1b1b; --paper-bg: #ffffff; --font-size: 12pt;
-      --line-height: 1.45; --page-width: 210mm; --page-height: 297mm;
+      --line-height: 1.45; --page-width: 210mm;
       --page-padding-x: 12mm; --page-padding-y: 12mm;
     }}
     @page {{ size: A4; margin: 0; }}
@@ -210,11 +210,10 @@ def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str
     .toolbar button {{ border:0; border-radius:6px; padding:8px 12px; background:#dce8ff;
       color:#121212; cursor:pointer; font-weight:600; }}
     main {{ max-width:calc(var(--page-width) + 24px); margin:18px auto; padding:0 12px 24px; }}
-    .paper {{ --fit-scale:1; width:var(--page-width); height:var(--page-height); margin:0 auto 16px;
+    .paper {{ width:var(--page-width); min-height:297mm; margin:0 auto 16px;
       padding:var(--page-padding-y) var(--page-padding-x); background:var(--paper-bg);
-      box-shadow:0 2px 14px rgba(0,0,0,.12); overflow:hidden; }}
-    .paper-content {{ width:calc((var(--page-width) - 2*var(--page-padding-x))/var(--fit-scale));
-      transform:scale(var(--fit-scale)); transform-origin:top left; overflow-wrap:break-word; }}
+      box-shadow:0 2px 14px rgba(0,0,0,.12); }}
+    .paper-content {{ overflow-wrap:break-word; }}
     .source-file {{ margin:0 0 14px; color:#4a4a4a; font-family:"Segoe UI",Arial,sans-serif;
       font-size:10.5pt; font-weight:600; }}
     h1,h2,h3,h4 {{ margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }}
@@ -239,27 +238,6 @@ def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str
     }};
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <script>
-    function fitPaperSections() {{
-      document.querySelectorAll('.paper').forEach(function(page) {{
-        var c = page.querySelector('.paper-content');
-        if (!c) return;
-        page.style.setProperty('--fit-scale', '1');
-        var s = window.getComputedStyle(page);
-        var avail = page.clientHeight - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
-        var need = c.scrollHeight;
-        var scale = need > 0 ? Math.min(1, avail / need) : 1;
-        page.style.setProperty('--fit-scale', scale.toFixed(4));
-      }});
-    }}
-    window.addEventListener('load', function() {{
-      var p = window.MathJax && window.MathJax.startup ? window.MathJax.startup.promise : Promise.resolve();
-      p.then(function() {{ fitPaperSections(); setTimeout(fitPaperSections, 150); }})
-       .catch(function() {{ fitPaperSections(); }});
-    }});
-    window.addEventListener('resize', fitPaperSections);
-    window.addEventListener('beforeprint', fitPaperSections);
-  </script>
 </head>
 <body>
   <div class="toolbar">

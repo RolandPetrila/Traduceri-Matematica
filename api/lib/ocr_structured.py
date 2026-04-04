@@ -77,11 +77,15 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         "   m) Calculate coordinates using TRIGONOMETRY for accurate geometry\n"
         "      (e.g. a 3-4-5 triangle is RIGHT-angled, draw it with a right angle)\n\n"
 
-        "LAYOUT RULES:\n"
-        "10. If the page has side-by-side content (e.g. P1 figure left, P2 figure right):\n"
-        "    - Use type 'two_column' with 'left' and 'right' arrays of sections\n"
-        "    - Each side can contain text, steps, and figures\n"
-        "11. Preserve the exact visual layout of the original page\n\n"
+        "LAYOUT RULES — CRITICAL:\n"
+        "10. ALWAYS use type 'two_column' when ANY of these appear side-by-side on the page:\n"
+        "    - A figure next to text or next to another figure\n"
+        "    - Construction step P1 left + P2 right (VERY common in geometry pages)\n"
+        "    - Any two elements that visually appear in columns, not stacked vertically\n"
+        "    Do NOT linearize side-by-side content into sequential sections.\n"
+        "    'two_column' has 'left': [...sections] and 'right': [...sections].\n"
+        "    Each side can contain steps, figures, text, observations.\n"
+        "11. Preserve the EXACT visual layout of the original page — vertical order AND column layout.\n\n"
 
         "Return ONLY valid JSON, no explanation or markdown wrapper."
     )
