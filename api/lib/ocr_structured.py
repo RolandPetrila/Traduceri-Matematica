@@ -98,9 +98,9 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         },
     }).encode("utf-8")
 
-    # Fallback chain: Pro (better quality) → Flash (higher quota)
-    # Pro: 100 RPD, 5 RPM. Flash: 250 RPD, 10 RPM.
-    MODELS = ["gemini-2.5-pro", "gemini-2.5-flash"]
+    # Fallback chain: Flash (1000 RPD) → Flash-Lite (1500 RPD) → Pro (100 RPD, quality)
+    # Flash-Lite added 2026-04-06 (G1): 30 RPM / 1500 RPD — total Gemini capacity: 2600 RPD
+    MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
     data = None
 
     for model_name in MODELS:
@@ -116,16 +116,23 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
             break
         except urllib.error.HTTPError as e:
             if e.code == 429 and model_name != MODELS[-1]:
-                print(f"[OCR-STRUCT] {model_name} rate limited (429), falling back to {MODELS[-1]}", file=sys.stderr)
+                print(f"[OCR-STRUCT] {model_name} rate limited (429), trying next model", file=sys.stderr)
                 continue
             error_body = e.read().decode("utf-8", errors="replace")[:300]
             print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)
+            if model_name == MODELS[-1]:
+                # All Gemini tiers exhausted — try Mistral OCR as last resort
+                print("[OCR-STRUCT] All Gemini tiers exhausted, trying Mistral OCR fallback", file=sys.stderr)
+                return _ocr_with_mistral_structured(image_bytes, mime_type, src)
             raise
         except Exception as e:
             if "429" in str(e) and model_name != MODELS[-1]:
-                print(f"[OCR-STRUCT] {model_name} quota exceeded, trying {MODELS[-1]}", file=sys.stderr)
+                print(f"[OCR-STRUCT] {model_name} quota exceeded, trying next model", file=sys.stderr)
                 continue
             print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
+            if model_name == MODELS[-1]:
+                print("[OCR-STRUCT] All Gemini tiers failed, trying Mistral OCR fallback", file=sys.stderr)
+                return _ocr_with_mistral_structured(image_bytes, mime_type, src)
             raise
 
     if data is None:
@@ -183,6 +190,63 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
     except Exception as e:
         print(f"[OCR-STRUCT] Parse error: {e}", file=sys.stderr)
         raise
+
+
+def _ocr_with_mistral_structured(image_bytes: bytes, mime_type: str, src_lang_name: str) -> dict:
+    """G2 — Mistral OCR fallback when all Gemini tiers are exhausted.
+
+    Uses Mistral OCR API (1B tokens/month free, EU servers).
+    Returns structured dict compatible with html_builder.py.
+    Note: returns Markdown text sections only — no SVG figures generated.
+    """
+    api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("MISTRAL_API_KEY not set — Mistral OCR fallback unavailable")
+
+    b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+    if mime_type == "application/pdf":
+        doc_obj = {"type": "document_url", "document_url": f"data:application/pdf;base64,{b64}"}
+    else:
+        doc_obj = {"type": "image_url", "image_url": f"data:{mime_type};base64,{b64}"}
+
+    payload = json.dumps({
+        "model": "mistral-ocr-latest",
+        "document": doc_obj,
+        "include_image_base64": False,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.mistral.ai/v1/ocr",
+        data=payload,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")[:300]
+        print(f"[OCR-STRUCT] Mistral OCR HTTP {e.code}: {error_body}", file=sys.stderr)
+        raise RuntimeError(f"Mistral OCR error {e.code}: {error_body[:200]}")
+
+    # Convert Mistral pages to structured sections compatible with html_builder
+    sections = []
+    pages = result.get("pages", [])
+    for page in pages:
+        markdown_text = page.get("markdown", "").strip()
+        if markdown_text:
+            sections.append({
+                "type": "paragraph",
+                "content": markdown_text,
+            })
+
+    print(f"[OCR-STRUCT] Mistral OCR fallback: {len(pages)} pages, {len(sections)} sections", file=sys.stderr)
+    return {
+        "title": "",
+        "sections": sections,
+        "source": "mistral-ocr",  # Flag for downstream: no SVG figures available
+    }
 
 
 def _count_figures(sections: list) -> int:

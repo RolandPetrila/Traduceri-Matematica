@@ -26,6 +26,8 @@ from lib.translation_router import (
     ocr_with_gemini,
     translate_with_gemini,
     translate_with_groq,
+    translate_with_nllb,
+    translate_with_openrouter,
     extract_text_from_docx,
     format_and_translate_docx,
     claude_ocr_and_translate,
@@ -264,12 +266,31 @@ class handler(BaseHTTPRequestHandler):
                                         protected = protect_for_deepl(batch_text)
                                         translated_batch = _deepl_translate(protected, target_lang, source_lang)
                                         translated_batch = restore_from_deepl(translated_batch)
-                                    except Exception:
-                                        protected_ph, ph = protect_math(batch_text)
-                                        translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
+                                    except Exception as deepl_err:
+                                        print(f"[TRANSLATE] DeepL failed: {deepl_err}, trying NLLB", file=sys.stderr)
+                                        try:
+                                            # G3: NLLB — direct ro->sk, no English pivot
+                                            translated_batch = translate_with_nllb(batch_text, source_lang, target_lang, dict_terms)
+                                        except Exception as nllb_err:
+                                            print(f"[TRANSLATE] NLLB failed: {nllb_err}, trying OpenRouter", file=sys.stderr)
+                                            try:
+                                                # G4: OpenRouter auto — free model selection
+                                                protected_ph, ph = protect_math(batch_text)
+                                                translated_batch = restore_math(translate_with_openrouter(protected_ph, source_lang, target_lang, dict_terms), ph)
+                                            except Exception as or_err:
+                                                print(f"[TRANSLATE] OpenRouter failed: {or_err}, using Gemini", file=sys.stderr)
+                                                protected_ph, ph = protect_math(batch_text)
+                                                translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
                                 else:
                                     protected_ph, ph = protect_math(batch_text)
-                                    translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
+                                    try:
+                                        translated_batch = restore_math(translate_with_gemini(protected_ph, source_lang, target_lang, dict_terms), ph)
+                                    except Exception as gem_err:
+                                        print(f"[TRANSLATE] Gemini failed: {gem_err}, trying NLLB", file=sys.stderr)
+                                        try:
+                                            translated_batch = translate_with_nllb(batch_text, source_lang, target_lang, dict_terms)
+                                        except Exception:
+                                            translated_batch = restore_math(translate_with_groq(protected_ph, source_lang, target_lang, dict_terms), ph)
 
                                 parts_tr = translated_batch.split("|||SEPARATOR|||")
                                 for pi, (secs_ref, si) in enumerate(text_indices):

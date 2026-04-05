@@ -25,6 +25,8 @@ __all__ = [
     "ocr_with_mistral",
     "translate_with_gemini",
     "translate_with_groq",
+    "translate_with_nllb",
+    "translate_with_openrouter",
 ]
 
 
@@ -262,6 +264,125 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
         error_body = e.read().decode("utf-8", errors="replace")
         print(f"[GROQ ERROR] Status {e.code}: {error_body[:500]}", file=sys.stderr)
         raise RuntimeError(f"Groq API error {e.code}: {error_body[:200]}")
+
+
+def translate_with_nllb(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
+    """G3 — Translate using NLLB-200 via HuggingFace Inference API.
+
+    Direct ro->sk without English pivot. 1000 req/day free.
+    Note: cold start 30-60s if model is not loaded; subsequent calls are fast.
+    """
+    hf_token = os.environ.get("HF_TOKEN", "").strip()
+    if not hf_token:
+        raise RuntimeError("HF_TOKEN not set — NLLB translation unavailable")
+
+    # NLLB language codes
+    lang_map = {"ro": "ron_Latn", "sk": "slk_Latn", "en": "eng_Latn"}
+    src_code = lang_map.get(source_lang, "ron_Latn")
+    tgt_code = lang_map.get(target_lang, "slk_Latn")
+
+    print(f"[TRANSLATE] NLLB HF: {source_lang}({src_code}) -> {target_lang}({tgt_code}), {len(text)} chars", file=sys.stderr)
+
+    # Truncate to NLLB max input (512 tokens ~ 400 words)
+    # For longer texts the caller should split into paragraphs
+    payload = json.dumps({
+        "inputs": text[:1800],
+        "parameters": {
+            "src_lang": src_code,
+            "tgt_lang": tgt_code,
+            "max_length": 512,
+        },
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api-inference.huggingface.co/models/facebook/nllb-200-distilled-1.3B",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {hf_token}",
+            "Content-Type": "application/json",
+        },
+    )
+
+    def _call():
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    try:
+        data = retry_with_backoff(_call, max_retries=2, base_delay=3.0)
+        if isinstance(data, list) and data:
+            return data[0].get("translation_text", "")
+        raise RuntimeError(f"NLLB unexpected response format: {str(data)[:200]}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        # 503 = model loading (cold start) — surface as retriable
+        if e.code == 503:
+            raise RuntimeError(f"NLLB model loading (cold start), retry in 30s: {error_body[:100]}")
+        print(f"[NLLB ERROR] Status {e.code}: {error_body[:300]}", file=sys.stderr)
+        raise RuntimeError(f"NLLB API error {e.code}: {error_body[:200]}")
+
+
+def translate_with_openrouter(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
+    """G4 — Translate via OpenRouter with automatic free model fallback.
+
+    Uses openrouter/auto which selects the best available free model.
+    Fallback chain: Llama 3.3 70B -> DeepSeek V3 -> Gemma 3 27B.
+    50 req/day free (no balance), 1000 req/day with $10 balance.
+    """
+    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY not set — OpenRouter translation unavailable")
+
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    src = lang_names.get(source_lang, source_lang)
+    tgt = lang_names.get(target_lang, target_lang)
+
+    glossary = _format_dict_terms(dict_terms or [])
+    print(f"[TRANSLATE] OpenRouter auto: {source_lang} -> {target_lang}, {len(text)} chars", file=sys.stderr)
+
+    system_prompt = (
+        f"You are a math textbook translator from {src} to {tgt}.\n"
+        "RULES:\n"
+        "- Preserve ALL LaTeX ($...$, $$...$$), HTML/SVG blocks, Markdown formatting EXACTLY\n"
+        "- Preserve placeholders like __MATH_N__ without modification\n"
+        "- Translate ONLY natural language text\n"
+        f"- Use correct {tgt} mathematical terminology with proper diacritics\n"
+        "- Keep paragraph structure and line breaks identical\n"
+        "- Output ONLY the translated text, no explanations"
+        f"{glossary}"
+    )
+
+    payload = json.dumps({
+        "model": "openrouter/auto",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": text},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 4096,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://openrouter.ai/api/v1/chat/completions",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "X-OR-Fallback": "meta-llama/llama-3.3-70b:free,deepseek/deepseek-v3:free,google/gemma-3-27b:free",
+            "HTTP-Referer": "https://traduceri-matematica-7sh7.onrender.com",
+        },
+    )
+
+    def _call():
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    try:
+        data = retry_with_backoff(_call, max_retries=2, base_delay=2.0)
+        return data["choices"][0]["message"]["content"]
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        print(f"[OPENROUTER ERROR] Status {e.code}: {error_body[:300]}", file=sys.stderr)
+        raise RuntimeError(f"OpenRouter API error {e.code}: {error_body[:200]}")
 
 
 def claude_ocr_and_translate(image_bytes: bytes, mime_type: str, source_lang: str, target_lang: str) -> str:

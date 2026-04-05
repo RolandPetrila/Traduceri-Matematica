@@ -26,6 +26,12 @@ try:
 except ImportError:
     _HAS_DEEPL = False
 
+try:
+    from lib.translation_router import translate_with_nllb, translate_with_openrouter, translate_with_groq
+    _HAS_EXTRA_PROVIDERS = True
+except ImportError:
+    _HAS_EXTRA_PROVIDERS = False
+
 
 def _collect_texts_recursive(sections: list) -> list:
     """Recursively collect translatable texts from sections (including two_column sub-sections)."""
@@ -132,7 +138,8 @@ class handler(BaseHTTPRequestHandler):
             texts = _collect_texts_recursive(sections)
             batch = SEP.join(texts)
 
-            # Translate
+            # Translate — chain: DeepL → NLLB → OpenRouter → Gemini → Groq
+            prov = "unknown"
             try:
                 if engine == "deepl" and _HAS_DEEPL and os.environ.get("DEEPL_API_KEY", "").strip():
                     try:
@@ -140,12 +147,49 @@ class handler(BaseHTTPRequestHandler):
                         translated = _deepl_translate(protected, target_lang, source_lang)
                         translated = restore_from_deepl(translated)
                         prov = "DeepL"
-                    except Exception:
-                        translated = _gemini_translate(batch, source_lang, target_lang)
-                        prov = "Gemini (fallback)"
+                    except Exception as deepl_err:
+                        print(f"[TRANSLATE-TEXT] DeepL failed: {deepl_err}, trying NLLB", file=sys.stderr)
+                        if _HAS_EXTRA_PROVIDERS and os.environ.get("HF_TOKEN", "").strip():
+                            try:
+                                translated = translate_with_nllb(batch, source_lang, target_lang)
+                                prov = "NLLB"
+                            except Exception as nllb_err:
+                                print(f"[TRANSLATE-TEXT] NLLB failed: {nllb_err}, trying OpenRouter", file=sys.stderr)
+                                if os.environ.get("OPENROUTER_API_KEY", "").strip():
+                                    try:
+                                        translated = translate_with_openrouter(batch, source_lang, target_lang)
+                                        prov = "OpenRouter"
+                                    except Exception as or_err:
+                                        print(f"[TRANSLATE-TEXT] OpenRouter failed: {or_err}, using Gemini", file=sys.stderr)
+                                        translated = _gemini_translate(batch, source_lang, target_lang)
+                                        prov = "Gemini (fallback)"
+                                else:
+                                    translated = _gemini_translate(batch, source_lang, target_lang)
+                                    prov = "Gemini (fallback)"
+                        else:
+                            translated = _gemini_translate(batch, source_lang, target_lang)
+                            prov = "Gemini (fallback)"
                 else:
-                    translated = _gemini_translate(batch, source_lang, target_lang)
-                    prov = "Gemini"
+                    try:
+                        translated = _gemini_translate(batch, source_lang, target_lang)
+                        prov = "Gemini"
+                    except Exception as gem_err:
+                        print(f"[TRANSLATE-TEXT] Gemini failed: {gem_err}, trying NLLB", file=sys.stderr)
+                        if _HAS_EXTRA_PROVIDERS and os.environ.get("HF_TOKEN", "").strip():
+                            try:
+                                translated = translate_with_nllb(batch, source_lang, target_lang)
+                                prov = "NLLB"
+                            except Exception:
+                                if _HAS_EXTRA_PROVIDERS:
+                                    translated = translate_with_groq(batch, source_lang, target_lang)
+                                    prov = "Groq (fallback)"
+                                else:
+                                    raise
+                        elif _HAS_EXTRA_PROVIDERS:
+                            translated = translate_with_groq(batch, source_lang, target_lang)
+                            prov = "Groq (fallback)"
+                        else:
+                            raise
             except Exception as e:
                 self._send_json(500, {"error": f"Translation failed: {e}"}, origin)
                 return
