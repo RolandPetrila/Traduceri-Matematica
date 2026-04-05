@@ -394,12 +394,12 @@ function RenderSection({ section }: { section: StructuredSection }) {
   if (type === "two_column") {
     return (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", margin: "10px 0" }}>
-        <div>
+        <div style={{ minWidth: 0 }}>
           {(left || []).map((s, i) => (
             <RenderSection key={`l${i}`} section={s} />
           ))}
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           {(right || []).map((s, i) => (
             <RenderSection key={`r${i}`} section={s} />
           ))}
@@ -581,9 +581,9 @@ function buildSectionHtml(sec: StructuredSection): string {
 
   if (sec.type === "two_column") {
     let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;">';
-    html += "<div>";
+    html += '<div style="min-width:0;">';
     for (const s of sec.left || []) html += buildSectionHtml(s);
-    html += "</div><div>";
+    html += '</div><div style="min-width:0;">';
     for (const s of sec.right || []) html += buildSectionHtml(s);
     html += "</div></div>\n";
     return html;

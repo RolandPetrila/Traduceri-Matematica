@@ -44,7 +44,7 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         '  {{"type":"heading","content":"text","level":1}},\n'
         '  {{"type":"paragraph","content":"text with $LaTeX$ formulas"}},\n'
         '  {{"type":"step","content":"$P_1$: construction step text"}},\n'
-        '  {{"type":"figure","svg":"<svg viewBox=\\"0 0 W H\\" ...>...</svg>","caption":"optional"}},\n'
+        '  {{"type":"figure","bbox":{{"x":0.1,"y":0.3,"w":0.4,"h":0.2}},"caption":"optional"}},\n'
         '  {{"type":"observation","content":"observation text"}},\n'
         '  {{"type":"list","content":"1. item one\\n2. item two"}},\n'
         '  {{"type":"two_column","left":[...sections...],"right":[...sections...]}}\n'
@@ -61,13 +61,16 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         "8. 'Observatie.' / 'Exemplu.' / 'Definitie.' etc. MUST be bold: **Observatie.**\n\n"
 
         "FIGURE RULES — CRITICAL:\n"
-        "7. For EVERY geometric figure/diagram in the image, return a 'figure' section with:\n"
-        "   - 'bbox': tight bounding box as image fractions 0.0–1.0\n"
-        "     {\"x\": left/img_width, \"y\": top/img_height, \"w\": width/img_width, \"h\": height/img_height}\n"
-        "   - Include all vertex labels and measurement text within the bbox\n"
-        "   - 'caption': optional short description (e.g. 'Triunghi ABC')\n"
-        "   Do NOT generate SVG code — return ONLY the bounding box coordinates.\n"
-        "8. Bbox must tightly contain the ENTIRE figure including vertex labels and measurements.\n"
+        "7. For EVERY geometric figure/diagram, return a 'figure' section with:\n"
+        "   - 'bbox': bounding box as fractions of the FULL IMAGE dimensions (0.0 to 1.0):\n"
+        "     x = left_pixel / image_width,  y = top_pixel / image_height\n"
+        "     w = figure_width / image_width, h = figure_height / image_height\n"
+        "   - The bbox must cover ONLY that specific figure, NOT adjacent figures\n"
+        "   - For figures in two_column: left-column figures have x < 0.5, right-column figures have x > 0.35\n"
+        "   - Include vertex labels and measurement text inside the bbox\n"
+        "   - 'caption': short description (e.g. 'Triunghi ABC')\n"
+        "   Do NOT generate SVG. Return ONLY the bounding box.\n"
+        "8. Each figure gets its OWN separate bbox — never share a bbox between two figures.\n"
         "9. If there is no figure, do not return a 'figure' section.\n\n"
 
         "LAYOUT RULES — CRITICAL:\n"

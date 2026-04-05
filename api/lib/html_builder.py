@@ -180,10 +180,10 @@ def _render_section(section: dict, figs: dict | None = None) -> str:
 
     elif sec_type == "two_column":
         html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;">'
-        html += '<div>'
+        html += '<div style="min-width:0;">'
         for s in section.get("left", []):
             html += _render_section(s, figs)
-        html += '</div><div>'
+        html += '</div><div style="min-width:0;">'
         for s in section.get("right", []):
             html += _render_section(s, figs)
         html += '</div></div>'
