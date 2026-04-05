@@ -9,6 +9,7 @@ interface StructuredSection {
   type: string;
   content?: string;
   svg?: string | string[];
+  img_b64?: string;
   level?: number;
   caption?: string;
   left?: StructuredSection[];
@@ -360,7 +361,19 @@ export default function DocumentViewer({
 
 /** Render a single structured section — recursive for two_column */
 function RenderSection({ section }: { section: StructuredSection }) {
-  const { type, content, svg, level, caption, left, right } = section;
+  const { type, content, svg, img_b64, level, caption, left, right } = section;
+
+  if (type === "figure" && img_b64) {
+    return (
+      <div style={{ display: "flex", gap: "16px", justifyContent: "center", margin: "6px 0" }}>
+        <img
+          src={`data:image/png;base64,${img_b64}`}
+          alt={caption || "figura"}
+          style={{ maxWidth: "100%", height: "auto", background: "#fff" }}
+        />
+      </div>
+    );
+  }
 
   if (type === "figure" && svg) {
     const svgs = Array.isArray(svg) ? svg : [svg];
@@ -504,7 +517,7 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
   <title>Traducere Matematica</title>
   <style>
     :root { --text-color:#1b1b1b; --paper-bg:#ffffff; --font-size:12pt; --line-height:1.45;
-      --page-width:210mm; --page-height:297mm; --page-padding-x:12mm; --page-padding-y:12mm; }
+      --page-width:210mm; --page-padding-x:12mm; --page-padding-y:12mm; }
     @page { size:A4; margin:0; }
     * { box-sizing:border-box; }
     body { margin:0; padding:0; color:var(--text-color); background:#f2f2f2;
@@ -515,9 +528,9 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
     .toolbar button { border:0; border-radius:6px; padding:8px 12px; background:#dce8ff;
       color:#121212; cursor:pointer; font-weight:600; }
     main { max-width:calc(var(--page-width) + 24px); margin:18px auto; padding:0 12px 24px; }
-    .paper { --fit-scale:1; width:var(--page-width); min-height:var(--page-height); margin:0 auto 16px;
+    .paper { width:var(--page-width); min-height:297mm; margin:0 auto 16px;
       padding:var(--page-padding-y) var(--page-padding-x); background:var(--paper-bg);
-      box-shadow:0 2px 14px rgba(0,0,0,.12); overflow:hidden; }
+      box-shadow:0 2px 14px rgba(0,0,0,.12); }
     .paper-content { overflow-wrap:break-word; }
     h1,h2,h3,h4 { margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }
     p,li { page-break-inside:avoid; }
@@ -551,9 +564,19 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
 
 /** Build HTML for a single section — recursive for two_column */
 function buildSectionHtml(sec: StructuredSection): string {
+  if (sec.type === "figure" && sec.img_b64) {
+    const cap = sec.caption ? `<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>${sec.caption}</em></p>` : "";
+    return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0"><img src="data:image/png;base64,${sec.img_b64}" style="max-width:100%;height:auto;background:#fff;" alt="${sec.caption || "figura"}"></div>\n${cap}`;
+  }
+
   if (sec.type === "figure" && sec.svg) {
     const svgs = Array.isArray(sec.svg) ? sec.svg : [sec.svg];
     return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n${svgs.join("\n")}\n</div>\n`;
+  }
+
+  if (sec.type === "figure") {
+    const desc = sec.caption || "";
+    return `<p><em>[Figura: ${desc || "indisponibila"}]</em></p>\n`;
   }
 
   if (sec.type === "two_column") {
