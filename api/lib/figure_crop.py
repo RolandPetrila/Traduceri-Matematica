@@ -119,6 +119,43 @@ def crop_figure(
     return b64
 
 
+def embed_crops_in_sections(image_bytes: bytes, sections: list[dict]) -> list[dict]:
+    """Recursively embed cropped figure images into sections.
+
+    For every 'figure' section with a 'bbox' field, crops the region from
+    image_bytes and stores base64 PNG in 'img_b64'. Handles two_column nesting.
+
+    Args:
+        image_bytes: Original page image bytes
+        sections: List of OCR structured sections
+
+    Returns:
+        New list of sections with 'img_b64' added to figure sections.
+    """
+    result = []
+    for section in sections:
+        s = dict(section)
+        if s.get("type") == "figure":
+            bbox = s.get("bbox")
+            if bbox and isinstance(bbox, dict):
+                b64 = crop_figure(image_bytes, bbox)
+                s["img_b64"] = b64
+                s.pop("bbox", None)
+            else:
+                # No bbox — use placeholder
+                global PLACEHOLDER_B64
+                if PLACEHOLDER_B64 is None:
+                    PLACEHOLDER_B64 = _generate_placeholder()
+                s["img_b64"] = PLACEHOLDER_B64
+                s.pop("bbox", None)
+                print("[CROP] Figure has no bbox, using placeholder", file=sys.stderr)
+        elif s.get("type") == "two_column":
+            s["left"] = embed_crops_in_sections(image_bytes, s.get("left", []))
+            s["right"] = embed_crops_in_sections(image_bytes, s.get("right", []))
+        result.append(s)
+    return result
+
+
 def crop_all_figures(image_bytes: bytes, sections: list[dict]) -> dict[int, str]:
     """Crop all figures from sections list.
 

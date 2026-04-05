@@ -25,6 +25,7 @@ if _api_dir not in sys.path:
 
 from lib.html_builder import build_html_structured
 from lib.ocr_structured import ocr_structured
+from lib.figure_crop import embed_crops_in_sections
 from lib.multipart import parse_boundary, log_to_file
 
 
@@ -119,6 +120,8 @@ class handler(BaseHTTPRequestHandler):
                 print(f"[OCR] Processing page {idx+1}/{len(expanded_files)}", file=sys.stderr)
                 try:
                     page_data = ocr_structured(file_info["data"], file_info.get("mime_type", "image/jpeg"), source_lang)
+                    # Embed cropped figures from original image (Option C)
+                    page_data["sections"] = embed_crops_in_sections(file_info["data"], page_data.get("sections", []))
                     all_structured_pages.append(page_data)
                 except Exception as e:
                     print(f"[OCR] Page {idx+1} failed: {e}", file=sys.stderr)
@@ -127,8 +130,7 @@ class handler(BaseHTTPRequestHandler):
                     ]})
 
             # Build HTML (no translation — source language)
-            empty_figs = [{} for _ in all_structured_pages]
-            html = build_html_structured(all_structured_pages, empty_figs, source_lang)
+            html = build_html_structured(all_structured_pages, [{} for _ in all_structured_pages], source_lang)
 
             duration_ms = int((time.time() - t0) * 1000)
             print(f"[OCR] Success: {len(all_structured_pages)} pages in {duration_ms}ms", file=sys.stderr)

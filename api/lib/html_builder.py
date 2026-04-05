@@ -152,10 +152,20 @@ def _render_section(section: dict, figs: dict | None = None) -> str:
         return ""
 
     elif sec_type == "figure":
-        svg_code = section.get("svg", "")
+        img_b64 = section.get("img_b64", "")
+        svg_code = section.get("svg", "")  # legacy fallback
         caption = section.get("caption", "")
-        if svg_code:
-            # SVG inline — direct from Gemini (D3/D26/D27)
+        if img_b64:
+            # Cropped PNG from original image (Option C)
+            html = '<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">'
+            html += f'<img src="data:image/png;base64,{img_b64}" style="max-width:100%;height:auto;background:#fff;" alt="{caption}">'
+            html += '</div>'
+            if caption:
+                safe_cap = caption.replace('<', '&lt;').replace('>', '&gt;')
+                html += f'<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>{safe_cap}</em></p>'
+            return html
+        elif svg_code:
+            # Legacy: SVG inline from Gemini
             html = '<div class="figure-container" style="text-align:center;margin:12px 0;">'
             html += svg_code
             if caption:
@@ -164,7 +174,7 @@ def _render_section(section: dict, figs: dict | None = None) -> str:
             html += '</div>'
             return html
         else:
-            # Fallback: no SVG available
+            # Fallback: no figure data available
             desc = caption or section.get("description", "")
             return f'<p><em>[Figura: {desc or "indisponibila"}]</em></p>'
 

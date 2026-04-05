@@ -61,23 +61,14 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         "8. 'Observatie.' / 'Exemplu.' / 'Definitie.' etc. MUST be bold: **Observatie.**\n\n"
 
         "FIGURE RULES — CRITICAL:\n"
-        "7. For EVERY geometric figure/diagram, generate INLINE SVG code in the 'svg' field\n"
-        "8. Do NOT return bbox coordinates. Generate actual <svg> elements.\n"
-        "9. SVG conventions (MANDATORY):\n"
-        "   a) Construction/auxiliary lines: stroke-dasharray='5,3' (dashed)\n"
-        "   b) Result/final lines: solid, stroke-width='1.8'\n"
-        "   c) Every vertex: <circle cx='X' cy='Y' r='2.5' fill='#333'/> + italic label\n"
-        "   d) Measurements ALWAYS with unit: '4 cm' not '4'\n"
-        "   e) Step labels: Unicode subscript P₁ P₂ P₃ P₄\n"
-        "   f) Labels: text-anchor='middle', font-family='Cambria, serif'\n"
-        "   g) Different angles: different colors (red #c44, green #1a7, blue #47c)\n"
-        "   h) Right angles: small square marker (polyline), NOT arc\n"
-        "   i) Final triangle/polygon: fill='#e8f0fe' + solid outline stroke-width='1.8'\n"
-        "   j) Compass arcs: dashed (stroke-dasharray='4,3')\n"
-        "   k) Angle arcs: thin (stroke-width='1.1'), radius ~25px\n"
-        "   l) viewBox adapted per figure (NOT fixed size)\n"
-        "   m) Calculate coordinates using TRIGONOMETRY for accurate geometry\n"
-        "      (e.g. a 3-4-5 triangle is RIGHT-angled, draw it with a right angle)\n\n"
+        "7. For EVERY geometric figure/diagram in the image, return a 'figure' section with:\n"
+        "   - 'bbox': tight bounding box as image fractions 0.0–1.0\n"
+        "     {\"x\": left/img_width, \"y\": top/img_height, \"w\": width/img_width, \"h\": height/img_height}\n"
+        "   - Include all vertex labels and measurement text within the bbox\n"
+        "   - 'caption': optional short description (e.g. 'Triunghi ABC')\n"
+        "   Do NOT generate SVG code — return ONLY the bounding box coordinates.\n"
+        "8. Bbox must tightly contain the ENTIRE figure including vertex labels and measurements.\n"
+        "9. If there is no figure, do not return a 'figure' section.\n\n"
 
         "LAYOUT RULES — CRITICAL:\n"
         "10. ALWAYS use type 'two_column' when ANY of these appear side-by-side on the page:\n"
@@ -156,23 +147,29 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         if "sections" not in result:
             result["sections"] = []
 
-        # Validate SVG figures — ensure they have actual SVG content
-        for section in result.get("sections", []):
-            if section.get("type") == "figure":
-                svg = section.get("svg", "")
-                if svg and "<svg" not in svg.lower():
-                    print(f"[OCR-STRUCT] Invalid SVG removed (no <svg> tag)", file=sys.stderr)
+        # Validate figure sections — ensure bbox is a valid dict with x/y/w/h
+        def _validate_figures(sections: list) -> None:
+            for section in sections:
+                if section.get("type") == "figure":
+                    bbox = section.get("bbox")
+                    if bbox and isinstance(bbox, dict):
+                        # Clamp all values to 0.0–1.0
+                        for k in ("x", "y", "w", "h"):
+                            v = float(bbox.get(k, 0))
+                            bbox[k] = max(0.0, min(1.0, v))
+                        if bbox.get("w", 0) < 0.01 or bbox.get("h", 0) < 0.01:
+                            print(f"[OCR-STRUCT] Bbox too small, removed: {bbox}", file=sys.stderr)
+                            section.pop("bbox", None)
+                    elif bbox is not None:
+                        print(f"[OCR-STRUCT] Invalid bbox type ({type(bbox).__name__}), removed", file=sys.stderr)
+                        section.pop("bbox", None)
+                    # Remove any legacy SVG field
                     section.pop("svg", None)
-                # Legacy: remove any bbox fields (deprecated D24)
-                section.pop("bbox", None)
-            # Recurse into two_column sections
-            if section.get("type") == "two_column":
-                for sub in section.get("left", []) + section.get("right", []):
-                    if sub.get("type") == "figure":
-                        svg = sub.get("svg", "")
-                        if svg and "<svg" not in svg.lower():
-                            sub.pop("svg", None)
-                        sub.pop("bbox", None)
+                elif section.get("type") == "two_column":
+                    _validate_figures(section.get("left", []))
+                    _validate_figures(section.get("right", []))
+
+        _validate_figures(result.get("sections", []))
 
         figure_count = _count_figures(result.get("sections", []))
         svg_count = _count_figures_with_svg(result.get("sections", []))
