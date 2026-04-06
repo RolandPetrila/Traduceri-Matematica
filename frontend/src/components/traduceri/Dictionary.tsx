@@ -42,6 +42,7 @@ export default function Dictionary({ sourceLang, targetLang }: DictionaryProps) 
   const [search, setSearch] = useState("");
   const [filterDomain, setFilterDomain] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [reversed, setReversed] = useState(false);
 
   const storageKey = `dict_${sourceLang}_${targetLang}`;
   const dictFileKey = `${sourceLang}_${targetLang}`;
@@ -104,7 +105,11 @@ export default function Dictionary({ sourceLang, targetLang }: DictionaryProps) 
   // Get unique domains for filtering
   const domains = Array.from(new Set(entries.map((e) => e.domain))).sort();
 
-  const filtered = entries.filter((e) => {
+  const displayEntries = reversed
+    ? entries.map((e) => ({ ...e, source: e.target, target: e.source }))
+    : entries;
+
+  const filtered = displayEntries.filter((e) => {
     const matchesSearch =
       !search ||
       e.source.toLowerCase().includes(search.toLowerCase()) ||
@@ -179,14 +184,29 @@ export default function Dictionary({ sourceLang, targetLang }: DictionaryProps) 
               {filtered.length} din {entries.length} termeni
               {filterDomain && ` (${DOMAIN_LABELS[filterDomain] || filterDomain})`}
             </span>
-            {DICT_FILES[dictFileKey] && (
+            <div className="flex gap-3 items-center">
               <button
-                onClick={resetToDefaults}
-                className="text-xs text-chalk-blue hover:opacity-80"
+                onClick={() => {
+                  setReversed((r) => !r);
+                  logAction("Dictionar: directie schimbata", { reversed: !reversed });
+                }}
+                className="text-xs text-chalk-yellow hover:opacity-80"
+                title="Inverseaza directia cautarii"
               >
-                Reseteaza la default
+                {reversed
+                  ? `${targetLang.toUpperCase()} \u2192 ${sourceLang.toUpperCase()}`
+                  : `${sourceLang.toUpperCase()} \u2192 ${targetLang.toUpperCase()}`}
+                &nbsp;&#x21C4;
               </button>
-            )}
+              {DICT_FILES[dictFileKey] && (
+                <button
+                  onClick={resetToDefaults}
+                  className="text-xs text-chalk-blue hover:opacity-80"
+                >
+                  Reseteaza la default
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Entries list */}

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   async headers() {
     return [
       {
@@ -52,6 +53,7 @@ const nextConfig = {
         { source: '/api/convert', destination: `${apiUrl}/api/convert` },
         { source: '/api/health', destination: `${apiUrl}/api/health` },
         { source: '/api/deepl-usage', destination: `${apiUrl}/api/deepl-usage` },
+        { source: '/api/gemini-usage', destination: `${apiUrl}/api/gemini-usage` },
       ],
     };
   },

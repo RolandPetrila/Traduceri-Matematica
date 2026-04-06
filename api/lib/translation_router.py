@@ -11,8 +11,10 @@ import urllib.error
 
 try:
     from .retry import retry_with_backoff
+    from .gemini_counter import increment_gemini_counter
 except ImportError:
     from lib.retry import retry_with_backoff
+    from lib.gemini_counter import increment_gemini_counter
 
 
 __all__ = [
@@ -43,9 +45,12 @@ def _sanitize_error(msg: str) -> str:
 
 def gemini_request(contents: list, api_key: str) -> str:
     """Call Google Gemini REST API directly."""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     payload = json.dumps({"contents": contents}).encode("utf-8")
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=payload, headers={
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    })
 
     def _call():
         with urllib.request.urlopen(req, timeout=55) as resp:
@@ -53,6 +58,7 @@ def gemini_request(contents: list, api_key: str) -> str:
 
     try:
         data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
+        increment_gemini_counter()
         return data["candidates"][0]["content"]["parts"][0]["text"]
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")

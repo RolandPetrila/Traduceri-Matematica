@@ -247,7 +247,7 @@ def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str
       svg: {{ fontCache: 'global' }}
     }};
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js"></script>
 </head>
 <body>
   <div class="toolbar">

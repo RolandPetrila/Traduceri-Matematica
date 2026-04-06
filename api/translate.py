@@ -197,7 +197,8 @@ class handler(BaseHTTPRequestHandler):
                 expanded_files.append(file_info)
 
             # Limit total pages to prevent memory exhaustion on 512MB Render
-            MAX_PAGES = 30
+            # D4: raised from 30 to 50 — pages are processed sequentially so memory is bounded
+            MAX_PAGES = 50
             truncated_from = 0
             if len(expanded_files) > MAX_PAGES:
                 truncated_from = len(expanded_files)
@@ -335,7 +336,7 @@ class handler(BaseHTTPRequestHandler):
                 "source_lang": source_lang,
                 "target_lang": target_lang,
                 "structured_pages": all_structured_pages if all_structured_pages else None,
-                "warning": f"Documentul a fost trunchiat de la {truncated_from} la {MAX_PAGES} pagini (limita server)" if truncated_from > MAX_PAGES else None,
+                "warning": f"Documentul a fost trunchiat de la {truncated_from} la {MAX_PAGES} pagini (limita server)" if truncated_from > 0 else None,
             })
 
         except Exception as e:

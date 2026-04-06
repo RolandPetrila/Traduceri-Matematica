@@ -16,8 +16,10 @@ import urllib.request
 
 try:
     from .retry import retry_with_backoff
+    from .gemini_counter import increment_gemini_counter
 except ImportError:
     from lib.retry import retry_with_backoff
+    from lib.gemini_counter import increment_gemini_counter
 
 
 def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
@@ -104,14 +106,18 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
     data = None
 
     for model_name in MODELS:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        req = urllib.request.Request(url, data=payload, headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        })
         try:
             def _call(r=req):
                 with urllib.request.urlopen(r, timeout=180) as resp:
                     return json.loads(resp.read().decode("utf-8"))
 
             data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
+            increment_gemini_counter(model_name)
             print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
             break
         except urllib.error.HTTPError as e:

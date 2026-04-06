@@ -13,8 +13,31 @@ import EngineSelector, { type TranslateEngine } from "@/components/traduceri/Eng
 import BatchPanel from "@/components/traduceri/BatchPanel";
 import DocumentViewer from "@/components/traduceri/DocumentViewer";
 import DeeplUsage from "@/components/traduceri/DeeplUsage";
+import GeminiUsage from "@/components/traduceri/GeminiUsage";
 
 import { API_URL } from "@/lib/api-url";
+
+/** Retry a fetch with exponential backoff (only on 5xx or network errors, not 4xx). */
+async function fetchWithRetry(
+  input: RequestInfo,
+  init: RequestInit,
+  maxRetries = 2
+): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      await new Promise((res) => setTimeout(res, 1000 * 2 ** (attempt - 1)));
+    }
+    try {
+      const res = await fetch(input, init);
+      if (res.status < 500) return res; // success or client error — do not retry
+      lastErr = new Error(`Server error ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
 
 const STEPS = [
   { at: 5, label: "Se incarca fisierele..." },
@@ -82,7 +105,7 @@ export default function TraduceriPage() {
     formData.append("source_lang", sourceLang);
 
     try {
-      const res = await fetch(`${API_URL}/api/ocr`, {
+      const res = await fetchWithRetry(`${API_URL}/api/ocr`, {
         method: "POST",
         body: formData,
       });
@@ -115,12 +138,25 @@ export default function TraduceriPage() {
       setProgress(100);
       setStepLabel("Complet!");
 
+      const pageCount = data.pages || files.length;
+      const durationSec = Math.round((data.duration_ms || 0) / 1000);
       logInfo("OCR reusit", {
-        pages: data.pages || files.length,
+        pages: pageCount,
         duration_ms: data.duration_ms || 0,
         sourceLang,
         fileNames: files.map(f => f.name),
       });
+
+      // Browser notification (only when tab is in background)
+      if ("Notification" in window && document.hidden) {
+        if (Notification.permission === "default") Notification.requestPermission();
+        if (Notification.permission === "granted") {
+          new Notification("OCR complet!", {
+            body: `${pageCount} ${pageCount === 1 ? "pagina procesata" : "pagini procesate"} in ${durationSec}s`,
+            icon: "/icons/icon-192.png",
+          });
+        }
+      }
 
       // Save to history
       addToHistory({
@@ -226,8 +262,9 @@ export default function TraduceriPage() {
       {/* Dictionary panel */}
       <Dictionary sourceLang={sourceLang} targetLang={targetLang} />
 
-      {/* DeepL usage counter */}
+      {/* API usage counters */}
       <DeeplUsage />
+      <GeminiUsage />
     </div>
   );
 }

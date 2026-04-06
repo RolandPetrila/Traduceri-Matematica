@@ -67,11 +67,22 @@ export default function DocumentViewer({
   const [activeLang, setActiveLang] = useState(sourceLang);
   const [showOriginal, setShowOriginal] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [currentPageIdx, setCurrentPageIdx] = useState(0);
 
   // Cache: source language pages are pre-loaded
   const cacheRef = useRef<TranslationCache>({
     [sourceLang]: structuredPages,
   });
+
+  // AbortController for in-flight translate-text requests
+  const translateAbortRef = useRef<AbortController | null>(null);
+
+  // Cancel any pending translation on unmount
+  useEffect(() => {
+    return () => {
+      translateAbortRef.current?.abort();
+    };
+  }, []);
 
   // Object URLs for original image display
   const originalUrls = useMemo(() => {
@@ -102,7 +113,7 @@ export default function DocumentViewer({
     if (!document.getElementById("mathjax-script")) {
       const script = document.createElement("script");
       script.id = "mathjax-script";
-      script.src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js";
+      script.src = "https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js";
       script.async = true;
       document.head.appendChild(script);
     }
@@ -121,6 +132,7 @@ export default function DocumentViewer({
 
   const handleOriginal = useCallback(() => {
     setShowOriginal(true);
+    setCurrentPageIdx(0);
     logAction("Vizualizare original", {});
   }, []);
 
@@ -132,11 +144,17 @@ export default function DocumentViewer({
     // Check cache first
     if (cacheRef.current[targetLang]) {
       setActiveLang(targetLang);
+      setCurrentPageIdx(0);
       logAction("Limba schimbata (cache)", { from: activeLang, to: targetLang });
       return;
     }
 
     // Need to translate on-demand
+    // Cancel any previous in-flight request
+    translateAbortRef.current?.abort();
+    translateAbortRef.current = new AbortController();
+    const { signal } = translateAbortRef.current;
+
     setIsTranslating(true);
     logAction("Traducere on-demand pornita", { from: sourceLang, to: targetLang });
 
@@ -159,7 +177,7 @@ export default function DocumentViewer({
           target_lang: targetLang,
           translate_engine: translateEngine,
         }),
-        signal: AbortSignal.timeout(60000),
+        signal,
       });
 
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -189,8 +207,10 @@ export default function DocumentViewer({
 
       cacheRef.current[targetLang] = newPages;
       setActiveLang(targetLang);
+      setCurrentPageIdx(0);
       logAction("Traducere on-demand reusita", { to: targetLang, duration: data.duration_ms });
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return; // ignore cancelled requests
       const msg = err instanceof Error ? err.message : "Eroare traducere";
       logError(msg, { context: { from: sourceLang, to: targetLang } });
     } finally {
@@ -302,57 +322,86 @@ export default function DocumentViewer({
         </div>
       </div>
 
+      {/* Page navigation */}
+      {(() => {
+        const totalPages = showOriginal
+          ? (originalUrls.length || 1)
+          : (currentPages.length || 1);
+        return totalPages > 1 ? (
+          <div className="flex items-center justify-center gap-3 py-2 text-sm text-white/70">
+            <button
+              onClick={() => setCurrentPageIdx((i) => Math.max(0, i - 1))}
+              disabled={currentPageIdx === 0}
+              className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-30"
+            >
+              &#8592;
+            </button>
+            <span>Pagina {currentPageIdx + 1} / {totalPages}</span>
+            <button
+              onClick={() => setCurrentPageIdx((i) => Math.min(totalPages - 1, i + 1))}
+              disabled={currentPageIdx === totalPages - 1}
+              className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-30"
+            >
+              &#8594;
+            </button>
+          </div>
+        ) : null;
+      })()}
+
       {/* Content area */}
       <div className="bg-gray-200 p-6 rounded-lg">
         {showOriginal ? (
           /* STEP 1: Original — uploaded images in A4 frame */
-          originalUrls.map((url, idx) => (
-            <div
-              key={idx}
-              className="bg-white mx-auto mb-4 shadow-lg flex items-center justify-center"
-              style={{
-                width: "210mm",
-                minHeight: "297mm",
-                padding: "12mm",
-              }}
-            >
-              <img
-                src={url}
-                alt={`Original pagina ${idx + 1}`}
-                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-              />
-            </div>
-          ))
+          (() => {
+            const url = originalUrls[currentPageIdx];
+            if (!url) return null;
+            return (
+              <div
+                className="bg-white mx-auto mb-4 shadow-lg flex items-center justify-center"
+                style={{ width: "210mm", minHeight: "297mm", padding: "12mm" }}
+              >
+                <img
+                  src={url}
+                  alt={`Original pagina ${currentPageIdx + 1}`}
+                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                />
+              </div>
+            );
+          })()
         ) : (
           /* STEP 2/3: HTML document (RO or translated) — editable */
-          currentPages.map((page, pageIdx) => (
-            <div
-              key={`${activeLang}-${pageIdx}`}
-              className="bg-white mx-auto mb-4 shadow-lg overflow-hidden"
-              style={{
-                width: "210mm",
-                minHeight: "297mm",
-                padding: "12mm",
-                fontFamily: '"Cambria", "Times New Roman", serif',
-                fontSize: "12pt",
-                lineHeight: 1.45,
-                color: "#1b1b1b",
-              }}
-            >
-              {page.title && (
-                <h1
-                  contentEditable
-                  suppressContentEditableWarning
-                  style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22, outline: "none" }}
-                >
-                  {page.title}
-                </h1>
-              )}
-              {page.sections.map((sec, secIdx) => (
-                <RenderSection key={secIdx} section={sec} />
-              ))}
-            </div>
-          ))
+          (() => {
+            const page = currentPages[currentPageIdx];
+            if (!page) return null;
+            return (
+              <div
+                key={`${activeLang}-${currentPageIdx}`}
+                className="bg-white mx-auto mb-4 shadow-lg overflow-hidden"
+                style={{
+                  width: "210mm",
+                  minHeight: "297mm",
+                  padding: "12mm",
+                  fontFamily: '"Cambria", "Times New Roman", serif',
+                  fontSize: "12pt",
+                  lineHeight: 1.45,
+                  color: "#1b1b1b",
+                }}
+              >
+                {page.title && (
+                  <h1
+                    contentEditable
+                    suppressContentEditableWarning
+                    style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22, outline: "none" }}
+                  >
+                    {page.title}
+                  </h1>
+                )}
+                {page.sections.map((sec, secIdx) => (
+                  <RenderSection key={secIdx} section={sec} />
+                ))}
+              </div>
+            );
+          })()
         )}
       </div>
     </div>
@@ -550,7 +599,7 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
   <script>
     window.MathJax = { tex: { inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] }, svg: { fontCache:'global' } };
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js"></script>
 </head>
 <body>
   <div class="toolbar">

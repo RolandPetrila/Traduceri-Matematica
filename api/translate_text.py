@@ -85,12 +85,15 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
         f"{text}"
     )
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     payload = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
     }).encode("utf-8")
 
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=payload, headers={
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    })
     try:
         with urllib.request.urlopen(req, timeout=55) as resp:
             data = json.loads(resp.read().decode("utf-8"))

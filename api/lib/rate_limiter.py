@@ -20,6 +20,7 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/api/translate-text": (10, 100),
     "/api/convert": (20, 200),
     "/api/deepl-usage": (30, 500),
+    "/api/gemini-usage": (30, 500),
     "/api/chat": (30, 300),      # future
     "/api/health": (60, 10000),  # permissive
 }
