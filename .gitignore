@@ -66,3 +66,6 @@ dev_server_log.txt
 
 # Development screenshots
 *_screenshot.png
+
+# Generated pdf.js worker (copied from node_modules at build)
+frontend/public/pdf.worker.min.mjs

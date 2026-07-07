@@ -8,6 +8,7 @@ export function validateTranslationOutput(data: {
   results?: Array<{ markdown?: string }>;
   pages?: number;
   duration_ms?: number;
+  structured_pages?: unknown[];
 }): void {
   if (!data.html) {
     logWarn("VALIDATE | Traducere output: HTML gol sau lipseste", { source: "validator" });

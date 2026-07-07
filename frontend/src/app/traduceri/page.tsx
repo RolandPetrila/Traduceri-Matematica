@@ -188,7 +188,7 @@ export default function TraduceriPage() {
           disabled={files.length === 0 || isProcessing}
           aria-label="Proceseaza fisierele selectate"
           aria-busy={isProcessing}
-          className="chalk-btn text-xl px-8 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="chalk-btn chalk-btn--primary text-xl px-8 py-3"
         >
           {isProcessing ? "Se proceseaza..." : "Proceseaza"}
         </button>

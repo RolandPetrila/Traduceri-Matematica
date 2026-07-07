@@ -43,18 +43,71 @@
   text-shadow: 0 0 3px rgba(240, 235, 227, 0.3);
 }
 
-/* Chalk button */
+/* ── Unified button system ─────────────────────────────────────────
+   One visible style on the dark-green board. Default buttons use a
+   lighter-green raised panel + solid chalk border + white text so they
+   stand out from the background (the old bg-white/10 dashed style was
+   nearly invisible). Variants: --primary (CTA), --active (selected),
+   --danger. All meet WCAG AA contrast against #2d5016. */
 .chalk-btn {
   @apply px-4 py-2 rounded-lg font-bold transition-all duration-200;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px dashed rgba(240, 235, 227, 0.4);
-  color: var(--chalk-yellow);
-  text-shadow: 0 0 2px rgba(245, 213, 101, 0.3);
+  background: var(--chalkboard-light);      /* #3d6b1e — raised vs board */
+  border: 2px solid rgba(240, 235, 227, 0.7);
+  color: var(--chalk-white);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
 }
 .chalk-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: #4a7d24;
   border-color: var(--chalk-yellow);
   transform: scale(1.02);
+}
+.chalk-btn:disabled,
+.chalk-btn[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary call-to-action — solid chalk-yellow, dark-green text (max contrast). */
+.chalk-btn--primary {
+  background: var(--chalk-yellow);
+  border-color: var(--chalk-yellow);
+  color: var(--chalkboard-dark);
+  text-shadow: none;
+}
+.chalk-btn--primary:hover {
+  background: #ffe07a;
+  border-color: #ffe07a;
+}
+
+/* Selected/active state — solid white chip, dark-green text. */
+.chalk-btn--active {
+  background: var(--chalk-white);
+  border-color: var(--chalk-white);
+  color: var(--chalkboard);
+  text-shadow: none;
+}
+.chalk-btn--active:hover {
+  background: #ffffff;
+  border-color: var(--chalk-yellow);
+}
+
+/* Destructive — dark red panel, chalk-red border/text. */
+.chalk-btn--danger {
+  background: #3d1410;
+  border-color: var(--chalk-red);
+  color: var(--chalk-red);
+}
+.chalk-btn--danger:hover {
+  background: #521a13;
+  border-color: var(--chalk-red);
+}
+
+/* Card/panel surface — visible on the board (was referenced but never styled). */
+.chalk-card {
+  @apply rounded-lg p-3;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(240, 235, 227, 0.18);
 }
 
 /* Server wakeup loading dots */

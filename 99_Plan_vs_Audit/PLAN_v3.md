@@ -15,12 +15,13 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
 
 - [x] Faza 0 — Curatenie documentatie redundanta (5 doc-uri sterse, docs aliniate) — 2026-07-07
 - [x] Faza 1 — Refac memoria + regulamentul (CLAUDE.md v4, memory/*, rules) — 2026-07-07
-- [ ] Faza A — Config Vercel + refactor backend serverless (vercel.json, OCR per-pagina pdf.js, CORS env)
-- [ ] Faza B — Supabase (schema.sql, supabase_client.py, contor atomic, rate limiter, error_codes.json)
-- [ ] Faza C — Diagnostic live cross-device (Supabase)
-- [ ] Faza D — Butoane unificate + contrast WCAG AA
-- [ ] Faza E — Editare persistenta + export PDF vectorial
-- [ ] Verificare + teste locale
+- [x] Faza A — Config Vercel + refactor backend serverless (vercel.json, OCR per-pagina pdf.js, CORS env) — 2026-07-07
+- [x] Faza B — Supabase (schema.sql, supabase_client.py, contor atomic, rate limiter, error_codes.json) — 2026-07-07
+- [x] Faza C — Diagnostic live cross-device (Supabase) — 2026-07-07
+- [x] Faza D — Butoane unificate + contrast WCAG AA — 2026-07-07
+- [x] Faza E — Editare persistenta + export PDF vectorial — 2026-07-07
+- [x] Verificare locala (build Next OK, dev_server OK, rate-limit 0/15 429, error codes, fail-open) — 2026-07-07
+- [ ] Deploy real Vercel+Supabase — necesita conturi/env (vezi docs/DEPLOY_VERCEL.md) — confirmare Roland
 - [ ] Faza G — Editor matematic + Asistent_Text_AI (BLOCAT pana la push branch cu fisierele)
 
 ---

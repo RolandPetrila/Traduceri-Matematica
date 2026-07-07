@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -235,13 +235,40 @@ export default function DocumentViewer({
   };
 
   const handlePrint = () => {
+    // Export PDF via the browser's Save-as-PDF: window.print() keeps MathJax
+    // math as VECTOR SVG (crisp), unlike jsPDF/html2canvas which would rasterize
+    // the formulas. We wait for MathJax to finish typesetting before printing.
     const html = buildHtmlFromPages(currentPages, activeLang);
     const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-      setTimeout(() => win.print(), 1500);
+    if (!win) {
+      logError("Fereastra de export a fost blocata (popup blocker)", {
+        source: "export",
+        errorCode: "E-CONV-001",
+        context: { lang: activeLang },
+      });
+      return;
     }
+    win.document.write(html);
+    win.document.close();
+    logAction("Export PDF (print)", { lang: activeLang, pages: currentPages.length });
+
+    const start = Date.now();
+    const tryPrint = () => {
+      const mj = (win as unknown as { MathJax?: { startup?: { promise?: Promise<void> }; typesetPromise?: () => Promise<void> } }).MathJax;
+      const ready = mj?.startup?.promise;
+      if (ready) {
+        ready
+          .then(() => mj?.typesetPromise?.())
+          .then(() => { win.focus(); win.print(); })
+          .catch(() => { win.focus(); win.print(); });
+      } else if (Date.now() - start < 8000) {
+        win.setTimeout(tryPrint, 200);
+      } else {
+        win.focus();
+        win.print(); // fallback: print even if MathJax never signalled ready
+      }
+    };
+    win.setTimeout(tryPrint, 300);
   };
 
   const handleDownloadDocx = async () => {
@@ -273,17 +300,13 @@ export default function DocumentViewer({
     <div className="space-y-4">
       {/* Toolbar: Original + language toggle + actions */}
       <div className="flex justify-between items-center flex-wrap gap-3 p-3 bg-[#192031] rounded-lg">
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap items-center">
           {/* Original button */}
           {originalFiles && originalFiles.length > 0 && (
             <button
               onClick={handleOriginal}
               disabled={isTranslating}
-              className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                showOriginal
-                  ? "bg-amber-400 text-[#192031]"
-                  : "bg-white/10 text-white hover:bg-white/20"
-              } disabled:opacity-50`}
+              className={`chalk-btn text-sm px-4 py-2 ${showOriginal ? "chalk-btn--active" : ""}`}
             >
               Original
             </button>
@@ -294,17 +317,15 @@ export default function DocumentViewer({
               key={lang.code}
               onClick={() => switchLanguage(lang.code)}
               disabled={isTranslating}
-              className={`px-4 py-2 rounded-lg font-bold text-sm transition-all ${
-                !showOriginal && activeLang === lang.code
-                  ? "bg-white text-[#192031]"
-                  : "bg-white/10 text-white hover:bg-white/20"
-              } disabled:opacity-50`}
+              className={`chalk-btn text-sm px-4 py-2 ${
+                !showOriginal && activeLang === lang.code ? "chalk-btn--active" : ""
+              }`}
             >
               {lang.flag} {lang.label}
             </button>
           ))}
           {isTranslating && (
-            <span className="text-white/60 text-sm flex items-center ml-2">
+            <span className="text-white/70 text-sm flex items-center ml-2">
               {translateMsg || "Se traduce..."}
             </span>
           )}
@@ -312,13 +333,13 @@ export default function DocumentViewer({
         <div className="flex gap-2">
           {!showOriginal && (
             <>
-              <button onClick={handleDownloadHtml} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
+              <button onClick={handleDownloadHtml} className="chalk-btn text-sm px-3 py-2">
                 HTML
               </button>
-              <button onClick={handlePrint} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
-                Print / PDF
+              <button onClick={handlePrint} className="chalk-btn chalk-btn--primary text-sm px-3 py-2">
+                Export PDF
               </button>
-              <button onClick={handleDownloadDocx} className="px-3 py-2 bg-[#dce8ff] text-[#121212] rounded-md text-sm font-semibold">
+              <button onClick={handleDownloadDocx} className="chalk-btn text-sm px-3 py-2">
                 DOCX
               </button>
             </>
@@ -336,7 +357,7 @@ export default function DocumentViewer({
             <button
               onClick={() => setCurrentPageIdx((i) => Math.max(0, i - 1))}
               disabled={currentPageIdx === 0}
-              className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-30"
+              className="chalk-btn text-sm px-3 py-1"
             >
               &#8592;
             </button>
@@ -344,7 +365,7 @@ export default function DocumentViewer({
             <button
               onClick={() => setCurrentPageIdx((i) => Math.min(totalPages - 1, i + 1))}
               disabled={currentPageIdx === totalPages - 1}
-              className="px-3 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-30"
+              className="chalk-btn text-sm px-3 py-1"
             >
               &#8594;
             </button>
@@ -392,13 +413,12 @@ export default function DocumentViewer({
                 }}
               >
                 {page.title && (
-                  <h1
-                    contentEditable
-                    suppressContentEditableWarning
-                    style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22, outline: "none" }}
-                  >
-                    {page.title}
-                  </h1>
+                  <EditableBlock
+                    as="h1"
+                    raw={page.title}
+                    onSave={(v) => { page.title = v; }}
+                    style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22 }}
+                  />
                 )}
                 {page.sections.map((sec, secIdx) => (
                   <RenderSection key={secIdx} section={sec} />
@@ -461,89 +481,109 @@ function RenderSection({ section }: { section: StructuredSection }) {
     );
   }
 
+  const save = (v: string) => { section.content = v; };
+
   if (type === "heading") {
     // Downgrade very long "headings" to paragraphs (Gemini OCR misclassification)
     if ((content || "").length > 200) {
-      return (
-        <p contentEditable suppressContentEditableWarning style={{ marginBottom: "0.3em", outline: "none" }}>
-          {renderMathText(content || "")}
-        </p>
-      );
+      return <EditableBlock as="p" raw={content || ""} onSave={save} style={{ marginBottom: "0.3em" }} />;
     }
-    const Tag = `h${Math.min(level || 2, 4)}` as keyof JSX.IntrinsicElements;
+    const tag = `h${Math.min(level || 2, 4)}` as keyof JSX.IntrinsicElements;
     return (
-      <Tag
-        contentEditable
-        suppressContentEditableWarning
-        style={{ marginTop: "1.1em", marginBottom: "0.42em", lineHeight: 1.22, outline: "none" }}
-      >
-        {renderMathText(content || "")}
-      </Tag>
+      <EditableBlock
+        as={tag}
+        raw={content || ""}
+        onSave={save}
+        style={{ marginTop: "1.1em", marginBottom: "0.42em", lineHeight: 1.22 }}
+      />
     );
   }
 
   if (type === "step") {
-    return (
-      <p
-        contentEditable
-        suppressContentEditableWarning
-        style={{ marginBottom: "0.3em", outline: "none" }}
-      >
-        {renderMathText(content || "")}
-      </p>
-    );
+    return <EditableBlock as="p" raw={content || ""} onSave={save} style={{ marginBottom: "0.3em" }} />;
   }
 
   if (type === "observation") {
-    return (
-      <p
-        contentEditable
-        suppressContentEditableWarning
-        style={{ marginBottom: "0.3em", outline: "none" }}
-      >
-        <strong>{renderMathText(content || "")}</strong>
-      </p>
-    );
+    return <EditableBlock as="p" raw={content || ""} onSave={save} wrapStrong style={{ marginBottom: "0.3em" }} />;
   }
 
   if (type === "list") {
-    const items = (content || "").split("\n").filter((l) => l.trim());
+    // Split into items; edits rebuild the single \n-delimited content string.
+    const items = (content || "").split("\n").filter((l) => l.trim()).map((l) => l.replace(/^\d+\.\s*/, ""));
     return (
       <ol style={{ marginTop: "0.45em", marginBottom: "0.6em" }}>
-        {items.map((item, i) => {
-          const clean = item.replace(/^\d+\.\s*/, "");
-          return (
-            <li
-              key={i}
-              contentEditable
-              suppressContentEditableWarning
-              style={{ marginBottom: "0.2em", outline: "none" }}
-            >
-              {renderMathText(clean)}
-            </li>
-          );
-        })}
+        {items.map((item, i) => (
+          <EditableBlock
+            key={i}
+            as="li"
+            raw={item}
+            onSave={(v) => {
+              items[i] = v;
+              section.content = items.map((t, k) => `${k + 1}. ${t}`).join("\n");
+            }}
+            style={{ marginBottom: "0.2em" }}
+          />
+        ))}
       </ol>
     );
   }
 
   // paragraph or unknown
-  return (
-    <p
-      contentEditable
-      suppressContentEditableWarning
-      style={{ marginBottom: "0.3em", outline: "none" }}
-    >
-      {renderMathText(content || "")}
-    </p>
-  );
+  return <EditableBlock as="p" raw={content || ""} onSave={save} style={{ marginBottom: "0.3em" }} />;
 }
 
-/** Render text with LaTeX — uses dangerouslySetInnerHTML for MathJax processing */
-function renderMathText(text: string): JSX.Element {
+/** Rendered HTML for a text run (sanitized + **bold**). MathJax typesets $...$ later. */
+function renderMathHtml(text: string): string {
   const safe = sanitizeHtml(text);
-  const processed = safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  return <span dangerouslySetInnerHTML={{ __html: processed }} />;
+  return safe.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+/** Re-typeset a single element after an edit restores its rendered view. */
+function typesetEl(el: HTMLElement): void {
+  const MJ = (window as unknown as { MathJax?: { typesetPromise?: (els: HTMLElement[]) => Promise<void> } }).MathJax;
+  MJ?.typesetPromise?.([el]).catch(() => {});
+}
+
+/**
+ * Editable text block — persists edits losslessly.
+ * View shows rendered math (SVG); on focus we swap to the RAW source ($...$ text)
+ * so the user edits the true source, and on blur we save the raw text and
+ * restore the rendered + typeset view. This keeps LaTeX/markdown intact across
+ * language switches AND all exports (which read from the same page objects).
+ */
+function EditableBlock({
+  as = "p",
+  raw,
+  onSave,
+  style,
+  wrapStrong = false,
+}: {
+  as?: keyof JSX.IntrinsicElements;
+  raw: string;
+  onSave: (value: string) => void;
+  style?: React.CSSProperties;
+  wrapStrong?: boolean;
+}) {
+  const render = (t: string) => (wrapStrong ? `<strong>${renderMathHtml(t)}</strong>` : renderMathHtml(t));
+  const Tag = as as React.ElementType;
+  return (
+    <Tag
+      contentEditable
+      suppressContentEditableWarning
+      style={{ outline: "none", ...style }}
+      onFocus={(e: React.FocusEvent<HTMLElement>) => {
+        // Show raw source (math as $...$) for lossless editing.
+        e.currentTarget.textContent = raw;
+      }}
+      onBlur={(e: React.FocusEvent<HTMLElement>) => {
+        const next = e.currentTarget.innerText.replace(/ /g, " ");
+        if (next !== raw) onSave(next);
+        e.currentTarget.innerHTML = render(next);
+        typesetEl(e.currentTarget);
+      }}
+      dangerouslySetInnerHTML={{ __html: render(raw) }}
+    />
+  );
 }
 
 /** Build full HTML document from structured pages (for download/print) */

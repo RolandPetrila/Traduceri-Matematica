@@ -12,11 +12,9 @@
 export async function rasterizePdf(file: File, scale = 2.0): Promise<Blob[]> {
   const pdfjs = await import("pdfjs-dist");
 
-  // Bundle the worker locally so it loads under our strict CSP (no CDN).
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
-  ).toString();
+  // Worker is copied to public/ at build time (scripts/copy-pdf-worker.mjs) and
+  // served same-origin, satisfying the CSP worker-src 'self' (no CDN).
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
   const data = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data }).promise;
