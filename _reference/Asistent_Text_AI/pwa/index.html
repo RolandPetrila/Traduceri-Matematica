@@ -1,0 +1,3697 @@
+<!doctype html>
+<html lang="ro" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Ecosistem Text AI - Free Tier Edition</title>
+
+    <!-- PWA: manifest + tema + icon -->
+    <link rel="manifest" href="/manifest.json" />
+    <!-- theme-color aliniat la brand (sky) — separat light/dark pt status bar mobil coerent -->
+    <meta
+      name="theme-color"
+      content="#0284c7"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#0f172a"
+      media="(prefers-color-scheme: dark)"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Asistent AI" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/icon-192.png" type="image/png" />
+    <!-- Cheile NU mai sunt in browser — sunt server-side in /api/proxy (Vercel) -->
+
+    <!-- Librarii CSS & JS -->
+    <!-- Tailwind Play CDN = build dinamic (mutabil) -> intentionat FARA SRI: un hash fix s-ar rupe la fiecare update al CDN-ului. Vezi docs/SECURITY.md -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                50: "#f0f9ff",
+                100: "#e0f2fe",
+                500: "#0ea5e9",
+                600: "#0284c7",
+                700: "#0369a1",
+                900: "#0c4a6e",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <!-- SRI (integrity + crossorigin) pe toate librariile CDN versionate (immutable) — defense supply-chain. Hash-uri generate din fisierele reale. -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0"
+      crossorigin="anonymous"
+    />
+
+    <!-- Librarii pentru parsare si procesare -->
+    <!-- `defer` pe scripturile versionate: nu blocheaza parse-ul HTML / primul paint (castig TTI mobil).
+         Toate sunt folosite DOAR in handlere/functii (import/export/diff), niciodata la parse-time. -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"
+      integrity="sha384-fWLn06AIo00H32MDcWUZTT+4Ru3OuoYn1DRH0o6JkhDl89YFSF4tJ4odze9bI+4r"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"
+      integrity="sha384-uLiAv4VcjM5H2Jsqzl8EajEaxPugj1CIzQaCjQ8c5//vC+elhxO5pZfXGxoLQi1W"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/diff@5.2.2/dist/diff.min.js"
+      integrity="sha384-6j7Q9TJB4vm12GtmUgqRCIMEWPWht9ntvatRve5IgkjH2G8wyrgKCSF0maDt+eBa"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <!-- html-docx-js: pachet abandonat -> pin @0.3.1 + SRI (anti supply-chain pe URL nepinned) -->
+    <script
+      src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js"
+      integrity="sha384-TtrQp5nveof/QP1+f/OLiEHL3GuOIRyl3IfsGxu5X45VO2vHeT4HRNmQuTR3Ea3w"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <!-- marked + DOMPurify (sanitizare XSS). DOMPurify 3.4.11 (jsdelivr) — inchide GHSA-cmwh-pvxp-8882 (setConfig pollution; vector neatins aici) + CVE-2025-15599/CVE-2026-0540 din 3.1.6 -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"
+      integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js"
+      integrity="sha384-EaWTV/aVUkLz3tfwg3+5ycX7Q/d9ET9ruOKUgUuFIRUCfzHO1eo2J62a844iWPmY"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js"
+      integrity="sha384-o44XUELLEnv/iSlA1NWxBweqbD4TSR0qgq2VzVsxtkHS989JJjGKSE9vkfo5MN4K"
+      crossorigin="anonymous"
+      defer
+    ></script>
+    <!-- Logica AI (rutare + fallback) extrasa in modul: testabila in Node (Vitest), folosita aici via window.LLM -->
+    <script src="/lib/llm.js" defer></script>
+    <script>
+      // pdf.js e `defer` -> seteaza workerSrc dupa incarcarea lui (scripturile defer ruleaza inainte de DOMContentLoaded).
+      window.addEventListener("DOMContentLoaded", () => {
+        if (window.pdfjsLib)
+          pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+      });
+    </script>
+
+    <style>
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+      }
+
+      /* === DESIGN TOKENS SEMANTICI (sursa unica de adevar pt culori) ===
+         Light in :root, dark in .dark — editate independent (best practice 2026). */
+      :root {
+        --surface: #ffffff;
+        --surface-2: #f1f5f9;
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --primary: #0284c7;
+        --primary-fg: #ffffff;
+        --accent: #f59e0b;
+        --success: #16a34a;
+        --warning: #f59e0b;
+        --danger: #dc2626;
+        --ring: #0ea5e9;
+        --radius-sm: 8px;
+        color-scheme: light;
+      }
+      .dark {
+        color-scheme: dark;
+        --surface: #1e293b;
+        --surface-2: #0f172a;
+        --text: #e2e8f0;
+        --text-muted: #94a3b8;
+        --border: #334155;
+        --primary: #38bdf8;
+        --primary-fg: #082f49;
+        --accent: #fbbf24;
+        --success: #22c55e;
+        --warning: #fbbf24;
+        --danger: #f87171;
+        --ring: #38bdf8;
+      }
+
+      /* === BUTOANE VARIANT (component classes — model Statistica ITP) === */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.7rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.1;
+        border: 1px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: var(--primary-fg);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      }
+      .btn-primary:hover {
+        filter: brightness(1.08);
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: #1a1a1a;
+      }
+      .btn-success {
+        background: var(--success);
+        color: #fff;
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--border);
+      }
+      .btn-secondary:hover {
+        background: var(--surface-2);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+      }
+
+      /* === FOCUS VIZIBIL global (WCAG 2.2 SC 2.4.11/2.4.13) === */
+      a:focus-visible,
+      button:focus-visible,
+      [tabindex]:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      [role="button"]:focus-visible {
+        outline: none;
+        box-shadow:
+          0 0 0 2px var(--surface),
+          0 0 0 4px var(--ring);
+        border-radius: 6px;
+      }
+
+      /* === FIX <select> dark (optiunile native respecta tema) === */
+      .dark select,
+      .dark select option {
+        background-color: #1e293b;
+        color: #e2e8f0;
+      }
+
+      /* === SKELETON SHIMMER (loading output — best practice 2026) === */
+      .skeleton-line {
+        height: 0.8rem;
+        border-radius: 6px;
+        margin: 0.55rem 0;
+        background: linear-gradient(
+          90deg,
+          var(--border) 25%,
+          color-mix(in srgb, var(--border) 45%, transparent) 50%,
+          var(--border) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.4s linear infinite;
+      }
+      @keyframes shimmer {
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      /* === DICTARE: bare equalizer + timer (feedback real-time) === */
+      .eq {
+        display: inline-flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 14px;
+      }
+      .eq span {
+        width: 3px;
+        background: var(--danger);
+        border-radius: 2px;
+        animation: eqBar 0.9s ease-in-out infinite;
+      }
+      .eq span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .eq span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      .eq span:nth-child(4) {
+        animation-delay: 0.45s;
+      }
+      @keyframes eqBar {
+        0%,
+        100% {
+          height: 4px;
+        }
+        50% {
+          height: 14px;
+        }
+      }
+
+      /* === COMMAND PALETTE (Ctrl/Cmd+K) === */
+      .cmdk-item.active {
+        background: color-mix(in srgb, var(--ring) 18%, transparent);
+      }
+
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .dark .glass-panel {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .recording {
+        animation: pulseMic 1.5s infinite;
+        color: #ef4444;
+      }
+      @keyframes pulseMic {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.6;
+          transform: scale(1.1);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(107, 114, 128, 0.8);
+      }
+      #magicTooltip {
+        position: absolute;
+        z-index: 100;
+        display: none;
+        transition: all 0.2s ease-out;
+      }
+      .autocorect-mark {
+        border-bottom: 2px dotted #ef4444;
+        cursor: pointer;
+        color: transparent;
+        pointer-events: auto;
+      }
+      .autocorect-mark:hover {
+        background-color: rgba(239, 68, 68, 0.2);
+      }
+      .diff-add {
+        background-color: rgba(34, 197, 94, 0.2);
+        color: #166534;
+        border-radius: 2px;
+      }
+      .dark .diff-add {
+        color: #86efac;
+      }
+      .diff-remove {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #991b1b;
+        text-decoration: line-through;
+        border-radius: 2px;
+      }
+      .dark .diff-remove {
+        color: #fca5a5;
+      }
+      /* === MOBIL (Android/telefon) — layout vertical, fara coloane inghesuite === */
+      @media (max-width: 767px) {
+        html {
+          height: auto;
+        }
+        body {
+          height: auto !important;
+          min-height: 100vh;
+          min-height: 100dvh;
+          overflow-x: hidden;
+          overflow-y: auto !important;
+        }
+        /* Header: se pliaza pe randuri + respecta notch-ul (safe-area) */
+        header {
+          height: auto !important;
+          flex-wrap: wrap;
+          padding: calc(env(safe-area-inset-top, 0px) + 0.6rem) 0.9rem 0.6rem;
+          gap: 0.5rem 0.75rem;
+        }
+        header h1 {
+          font-size: 1.05rem !important;
+        }
+        header p {
+          display: none;
+        } /* ascunde subtitlul lung pe mobil */
+        header > div:last-child {
+          flex-wrap: wrap;
+          gap: 0.5rem !important;
+        }
+        /* Wrapper principal: stivuit pe verticala in loc de 2 coloane */
+        #mainLayout {
+          flex-direction: column;
+          overflow: visible !important;
+          flex: 1 1 auto;
+        }
+        /* Drawer-ul e off-canvas pe ORICE ecran (vezi regula globală de mai jos) */
+        #sidebar > div {
+          overflow-y: auto !important;
+          flex: 1 1 auto !important;
+          padding-top: calc(env(safe-area-inset-top, 0px) + 1.25rem);
+        }
+        /* Editor: latime completa + inaltime utila pentru tastare/dictare */
+        main {
+          width: 100% !important;
+          min-height: 80vh;
+          min-height: 80dvh;
+          overflow: visible !important;
+          padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+        }
+        /* Editor intern: input si output stivuite vertical (nu alaturate) */
+        #editorZone {
+          flex-direction: column;
+          overflow: visible !important;
+        }
+        #editorZone > div {
+          min-height: 40vh;
+        }
+        /* Panou chat plutitor: nu depasi latimea ecranului */
+        [class*="bottom-24"] {
+          width: calc(100vw - 1.5rem) !important;
+          right: 0.75rem !important;
+          left: auto !important;
+          max-width: 380px;
+        }
+      }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #outputText,
+        #outputText * {
+          visibility: visible;
+        }
+        #outputText {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          border: none;
+        }
+      }
+      .provider-badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+      /* === DRAWER „Unelte & Setări" (hamburger ☰) — off-canvas pe ORICE ecran === */
+      #sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 20rem;
+        max-width: 86vw;
+        z-index: 60;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
+      }
+      body[data-sidebar="open"] #sidebar {
+        transform: translateX(0);
+      }
+      #sidebarBackdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        z-index: 55;
+      }
+      body[data-sidebar="open"] #sidebarBackdrop {
+        display: block;
+      }
+      /* === Meniuri dropdown (Export / Traducere) === */
+      .menu-pop {
+        min-width: 11rem;
+        background: #fff;
+        border: 1px solid rgb(226 232 240);
+        border-radius: 0.6rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        padding: 0.3rem;
+      }
+      .dark .menu-pop {
+        background: rgb(30 41 59);
+        border-color: rgb(51 65 85);
+      }
+      .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        text-align: left;
+        font-size: 0.8rem;
+        padding: 0.45rem 0.6rem;
+        border-radius: 0.4rem;
+        transition: background 0.15s;
+      }
+      .menu-item:hover {
+        background: rgb(241 245 249);
+      }
+      .dark .menu-item:hover {
+        background: rgb(51 65 85);
+      }
+      /* Butoane-unealtă compacte din antetele editoarelor */
+      .icon-tool {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.45rem;
+        border-radius: 0.4rem;
+        font-size: 0.75rem;
+        color: rgb(100 116 139);
+        transition:
+          color 0.15s,
+          background 0.15s;
+      }
+      .icon-tool:hover {
+        color: rgb(2 132 199);
+        background: rgb(241 245 249);
+      }
+      .dark .icon-tool:hover {
+        background: rgb(51 65 85);
+      }
+      /* Buton chat plutitor: respecta home-indicator-ul (safe-area) */
+      #btnOpenFloatingChat {
+        bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 h-screen w-screen overflow-hidden flex flex-col transition-colors duration-300"
+  >
+    <div
+      id="toastContainer"
+      class="fixed top-4 right-4 z-[200] flex flex-col items-end gap-2 pointer-events-none"
+    ></div>
+
+    <!-- Navbar -->
+    <header
+      class="h-16 flex items-center justify-between px-6 glass-panel border-b z-50"
+    >
+      <div class="flex items-center gap-3">
+        <button
+          id="btnSidebar"
+          class="w-10 h-10 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center transition-colors text-slate-600 dark:text-slate-300"
+          title="Meniu controale"
+          aria-label="Comută meniul de controale"
+          aria-expanded="false"
+          aria-controls="sidebar"
+        >
+          <i class="fa-solid fa-bars text-lg"></i>
+        </button>
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg"
+        >
+          <i class="fa-solid fa-network-wired text-xl"></i>
+        </div>
+        <div>
+          <h1
+            class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400"
+          >
+            Ecosistem Text AI
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Multi-Model Routing (Groq, Mistral, DeepL, Gemini)
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div
+          id="apiStatus"
+          class="text-xs font-bold px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center gap-2"
+          title="Status Conexiune API"
+        >
+          <i class="fa-solid fa-circle text-orange-500" id="apiStatusDot"></i>
+          Verificare API...
+        </div>
+
+        <span
+          id="offlinePill"
+          class="hidden text-xs font-bold px-3 py-1 rounded-full bg-amber-500 text-white items-center gap-2"
+          title="Ești offline — funcțiile AI necesită conexiune"
+        >
+          <i class="fa-solid fa-plug-circle-xmark"></i> Offline
+        </span>
+
+        <button
+          id="themeToggle"
+          class="w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center transition-colors text-slate-600 dark:text-slate-300"
+          title="Comută tema (luminos / întunecat)"
+        >
+          <i class="fa-solid fa-moon text-lg" id="themeIcon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Layout Principal -->
+    <div id="mainLayout" class="flex-1 flex overflow-hidden">
+      <div id="sidebarBackdrop" aria-hidden="true"></div>
+      <!-- Drawer „Unelte & Setări" (off-canvas, deschis cu hamburger ☰) -->
+      <aside
+        id="sidebar"
+        class="w-80 flex-shrink-0 glass-panel border-r border-slate-200 dark:border-slate-700 flex flex-col z-40 transition-transform"
+      >
+        <div class="p-5 flex flex-col gap-5 overflow-y-auto flex-1">
+          <!-- Antet drawer -->
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-brand-500"></i> Unelte & Setări
+            </h2>
+            <button
+              id="btnSidebarClose"
+              class="w-9 h-9 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors"
+              title="Închide"
+              aria-label="Închide meniul"
+            >
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+
+          <!-- Persona -->
+          <div>
+            <h3
+              class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2"
+            >
+              Persona AI
+            </h3>
+            <div
+              class="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg shadow-sm"
+            >
+              <i class="fa-solid fa-user-tie text-brand-500"></i>
+              <input
+                type="text"
+                id="customPersona"
+                placeholder="ex: Avocat, Jurnalist, Profesor…"
+                class="flex-1 bg-transparent border-none text-sm outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400"
+              />
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+              Rolul pe care AI-ul îl adoptă în răspunsuri.
+            </p>
+          </div>
+
+          <!-- Acțiuni rapide -->
+          <div class="flex flex-col gap-2">
+            <h3
+              class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1"
+            >
+              Acces rapid
+            </h3>
+            <button
+              id="btnCmdK"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors text-sm font-medium"
+              title="Paletă comenzi (Ctrl/Cmd+K)"
+            >
+              <i class="fa-solid fa-bolt text-amber-500 w-4 text-center"></i>
+              Paletă comenzi
+              <kbd
+                class="ml-auto text-[10px] opacity-70 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded"
+                >Ctrl K</kbd
+              >
+            </button>
+            <button
+              id="btnLegendOpen"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-500 transition-colors text-sm font-medium"
+              title="Ghid de Utilizare"
+            >
+              <i
+                class="fa-solid fa-circle-question text-brand-500 w-4 text-center"
+              ></i>
+              Ghid de utilizare
+            </button>
+            <button
+              id="btnInstall"
+              class="hidden w-full items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white transition-colors text-sm font-medium flex"
+              title="Instalează aplicația pe acest device"
+              aria-label="Instalează aplicația"
+            >
+              <i class="fa-solid fa-download w-4 text-center"></i>
+              Instalează aplicația
+            </button>
+          </div>
+
+          <div
+            class="mt-auto pt-4 border-t border-slate-200 dark:border-slate-700"
+          >
+            <p
+              class="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed"
+            >
+              Multi-Model Routing · Groq · Mistral · DeepL · Gemini · Tavily
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Editor -->
+      <main
+        class="flex-1 flex flex-col p-4 gap-4 relative overflow-hidden bg-slate-100/50 dark:bg-slate-900/50"
+      >
+        <!-- Toolbar Superior -->
+        <div class="flex flex-wrap gap-2 items-center justify-between no-print">
+          <div
+            class="flex flex-wrap gap-2"
+            role="toolbar"
+            aria-label="Acțiuni AI pe text"
+            data-roving
+          >
+            <!-- Folosim Groq pt rapiditate la corecturi -->
+            <button
+              id="btnImprove"
+              class="btn btn-primary"
+              aria-label="Îmbunătățește textul (Groq)"
+            >
+              <i class="fa-solid fa-pen-nib"></i> Îmbunătățește
+              <span class="provider-badge bg-orange-700 text-white">GROQ</span>
+            </button>
+            <button
+              id="btnCorrect"
+              class="btn btn-success"
+              aria-label="Corectură gramaticală (Groq)"
+            >
+              <i class="fa-solid fa-check-double"></i> Corectură
+              <span class="provider-badge bg-orange-700 text-white">GROQ</span>
+            </button>
+
+            <!-- Folosim Mistral pt complexitate la rezumate -->
+            <button
+              id="btnSummarize"
+              class="btn btn-accent"
+              aria-label="Rezumă textul (Mistral)"
+            >
+              <i class="fa-solid fa-compress"></i> Rezumă
+              <span class="provider-badge bg-blue-700 text-white">MISTRAL</span>
+            </button>
+
+            <div class="h-8 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+            <button
+              id="btnEmail"
+              class="btn btn-secondary"
+              aria-label="Transformă în email (Mistral)"
+            >
+              📧 Email
+            </button>
+            <button
+              id="btnReport"
+              class="btn btn-secondary"
+              aria-label="Transformă în raport (Mistral)"
+            >
+              📋 Raport
+            </button>
+            <button
+              id="btnSEO"
+              class="btn btn-secondary"
+              aria-label="Optimizare SEO (Mistral)"
+            >
+              🎯 SEO Opt
+            </button>
+
+            <div class="h-8 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+
+            <button
+              id="btnExtractData"
+              class="btn btn-secondary"
+              aria-label="Data Miner — extrage date (Mistral)"
+            >
+              <i class="fa-solid fa-table-list"></i> Data Miner
+              <span class="provider-badge bg-blue-700 text-white">MISTRAL</span>
+            </button>
+            <button
+              id="btnDeepResearch"
+              class="btn text-white bg-emerald-600 hover:bg-emerald-700 border-transparent"
+              aria-label="Deep Research web (Tavily + Mistral)"
+            >
+              <i class="fa-solid fa-globe"></i> Deep Research
+              <span class="provider-badge bg-emerald-800 text-white"
+                >TAVILY</span
+              >
+            </button>
+
+            <!-- Traducere (dropdown) -->
+            <div class="relative" id="translateWrap">
+              <button
+                id="btnTranslateMenu"
+                class="btn btn-secondary"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="Traducere (DeepL)"
+              >
+                <i class="fa-solid fa-language"></i> Traducere
+                <span
+                  class="provider-badge bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-300"
+                  >DEEPL</span
+                >
+                <i class="fa-solid fa-chevron-down text-[10px] opacity-70"></i>
+              </button>
+              <div
+                id="translateMenu"
+                class="hidden absolute left-0 top-full mt-1 z-50 menu-pop"
+                role="menu"
+              >
+                <button class="menu-item" data-lang="RO" role="menuitem">
+                  🇷🇴 Română
+                </button>
+                <button class="menu-item" data-lang="EN-US" role="menuitem">
+                  🇬🇧 Engleză
+                </button>
+                <button class="menu-item" data-lang="SK" role="menuitem">
+                  🇸🇰 Slovacă
+                </button>
+                <button class="menu-item" data-lang="FR" role="menuitem">
+                  🇫🇷 Franceză
+                </button>
+                <button class="menu-item" data-lang="DE" role="menuitem">
+                  🇩🇪 Germană
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 items-center">
+            <button
+              id="btnUndo"
+              class="text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1 transition-colors"
+              title="Undo (Alt+Z) - Stealth Autosave"
+            >
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Zona Dubla Editor -->
+        <div id="editorZone" class="flex-1 flex gap-4 overflow-hidden relative">
+          <!-- Ovelay Procesare -->
+          <div
+            id="loadingOverlay"
+            class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col justify-center items-center z-50 rounded-2xl"
+          >
+            <i
+              class="fa-solid fa-circle-notch fa-spin text-5xl text-indigo-600 mb-4 drop-shadow-lg"
+            ></i>
+            <p
+              class="text-slate-800 dark:text-slate-200 font-bold text-lg"
+              id="loadingText"
+            >
+              Routare către AI...
+            </p>
+            <p
+              class="text-slate-500 dark:text-slate-400 text-xs mt-1"
+              id="loadingProviderText"
+            >
+              Provider: Așteptare
+            </p>
+          </div>
+
+          <!-- Input Column -->
+          <div
+            class="flex-1 flex flex-col relative bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+          >
+            <div
+              class="min-h-10 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between gap-2 px-3 py-1 flex-wrap"
+            >
+              <span
+                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                >Editor Sursă</span
+              >
+              <div class="flex items-center gap-1">
+                <span id="recEq" class="eq hidden" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span>
+                </span>
+                <span
+                  id="recTimer"
+                  class="hidden text-[11px] font-mono font-semibold text-red-500"
+                  >0:00</span
+                >
+                <span
+                  id="interimText"
+                  class="text-xs italic text-brand-500 hidden"
+                  >Ascult...</span
+                >
+                <!-- Încarcă fișier -->
+                <button
+                  id="btnFileUpload"
+                  class="icon-tool"
+                  title="Încarcă fișier (.txt .md .docx .pdf .csv + imagini → OCR)"
+                  aria-label="Încarcă fișier"
+                >
+                  <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <input
+                  type="file"
+                  id="fileUpload"
+                  class="hidden"
+                  accept=".txt,.md,.docx,.pdf,.csv,.json,.png,.jpg,.jpeg,.webp,.gif,.bmp,image/*"
+                />
+                <!-- Dictare + limbă -->
+                <select
+                  id="micLang"
+                  class="bg-slate-100 dark:bg-slate-700 text-[11px] font-medium text-slate-600 dark:text-slate-300 rounded px-1 py-0.5 outline-none cursor-pointer"
+                  title="Limbă dictare"
+                >
+                  <option value="ro-RO">🇷🇴 RO</option>
+                  <option value="en-US">🇬🇧 EN</option>
+                </select>
+                <button
+                  id="micBtn"
+                  class="icon-tool"
+                  title="Dictare (Alt+Space)"
+                  aria-label="Pornește / oprește dictarea"
+                >
+                  <i class="fa-solid fa-microphone" id="micIcon"></i>
+                  <span id="micStatus">Dictare</span>
+                </button>
+                <!-- Golește sursa -->
+                <button
+                  id="clearInputBtn"
+                  class="icon-tool hover:!text-red-600 !text-red-500"
+                  title="Golește sursa"
+                  aria-label="Golește editorul sursă"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex-1 relative">
+              <textarea
+                id="inputText"
+                class="absolute inset-0 w-full h-full p-6 bg-transparent resize-none outline-none text-slate-800 dark:text-slate-100 leading-relaxed z-10"
+                placeholder="Scrie, dictează sau trage un fișier aici..."
+              ></textarea>
+              <div
+                id="autocorrectOverlay"
+                class="absolute inset-0 w-full h-full p-6 pointer-events-none text-transparent whitespace-pre-wrap break-words overflow-hidden z-20 leading-relaxed font-sans text-[length:inherit]"
+              ></div>
+            </div>
+
+            <div
+              class="h-8 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-between px-4 text-[11px] font-medium text-slate-500"
+            >
+              <span id="statsWords">0 cuvinte | 0 caractere</span>
+              <div class="flex gap-4 items-center">
+                <button
+                  id="btnTone"
+                  class="hover:text-brand-500 transition-colors flex items-center gap-1"
+                >
+                  <i class="fa-solid fa-bolt text-orange-500"></i> Analizează
+                  Ton (Groq)
+                </button>
+                <span
+                  id="statsTone"
+                  class="text-indigo-500 dark:text-indigo-400"
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Output Column -->
+          <div
+            class="flex-1 flex flex-col relative bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+          >
+            <div
+              class="min-h-10 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between gap-2 px-3 py-1 flex-wrap"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span
+                  class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                  >Rezultat Generat</span
+                >
+                <span
+                  id="resultProviderBadge"
+                  class="hidden provider-badge"
+                  title="Provider care a generat rezultatul"
+                ></span>
+              </div>
+              <div class="flex items-center gap-1 justify-end">
+                <button
+                  id="btnDiff"
+                  class="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded transition-colors"
+                  title="Compară cu sursa (Smart Diff)"
+                >
+                  <i class="fa-solid fa-code-compare"></i> Diff
+                </button>
+                <button
+                  id="btnPreview"
+                  class="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded transition-colors"
+                  title="Previzualizare Markdown"
+                >
+                  <i class="fa-brands fa-markdown"></i> Preview
+                </button>
+
+                <!-- Export (dropdown) -->
+                <div class="relative" id="exportWrap">
+                  <button
+                    id="btnExportMenu"
+                    class="text-xs px-2 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 rounded transition-colors"
+                    title="Exportă rezultatul"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    <i class="fa-solid fa-download"></i> Export
+                    <i
+                      class="fa-solid fa-chevron-down text-[10px] opacity-70"
+                    ></i>
+                  </button>
+                  <div
+                    id="exportMenu"
+                    class="hidden absolute right-0 top-full mt-1 z-50 menu-pop"
+                    role="menu"
+                  >
+                    <button id="exportTxtBtn" class="menu-item" role="menuitem">
+                      <i class="fa-solid fa-file-lines w-4 text-center"></i> TXT
+                    </button>
+                    <button id="exportMdBtn" class="menu-item" role="menuitem">
+                      <i class="fa-brands fa-markdown w-4 text-center"></i>
+                      Markdown
+                    </button>
+                    <button
+                      id="exportDocxBtn"
+                      class="menu-item text-brand-500"
+                      role="menuitem"
+                    >
+                      <i class="fa-solid fa-file-word w-4 text-center"></i> DOCX
+                    </button>
+                    <button
+                      id="exportPdfBtn"
+                      class="menu-item text-red-500"
+                      role="menuitem"
+                    >
+                      <i class="fa-solid fa-file-pdf w-4 text-center"></i> PDF
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  id="copyOutputBtn"
+                  class="text-brand-500 hover:text-brand-600 px-2 py-1 transition-colors"
+                  title="Copiază Tot"
+                  aria-label="Copiază rezultatul"
+                >
+                  <i class="fa-regular fa-copy"></i>
+                </button>
+                <button
+                  id="btnShare"
+                  class="text-slate-500 hover:text-green-600 px-2 py-1 transition-colors"
+                  title="Partajează rezultatul"
+                  aria-label="Partajează rezultatul"
+                >
+                  <i class="fa-solid fa-share-nodes"></i>
+                </button>
+                <button
+                  id="btnUseAsSource"
+                  class="text-slate-500 hover:text-indigo-600 px-2 py-1 transition-colors"
+                  title="Folosește rezultatul ca sursă"
+                  aria-label="Folosește rezultatul ca sursă"
+                >
+                  <i class="fa-solid fa-arrow-up"></i>
+                </button>
+                <button
+                  id="btnRegen"
+                  class="text-slate-500 hover:text-indigo-600 px-2 py-1 transition-colors"
+                  title="Regenerează"
+                  aria-label="Regenerează rezultatul"
+                >
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+                <button
+                  id="clearOutputBtn"
+                  class="text-red-500 hover:text-red-600 px-2 py-1 transition-colors"
+                  title="Golește rezultatul"
+                  aria-label="Golește rezultatul generat"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex-1 relative">
+              <textarea
+                id="outputText"
+                class="absolute inset-0 w-full h-full p-6 bg-transparent resize-none outline-none text-slate-800 dark:text-slate-100 leading-relaxed z-10"
+                placeholder="Rezultatul va apărea aici..."
+              ></textarea>
+              <div
+                id="diffOverlay"
+                class="hidden absolute inset-0 w-full h-full p-6 overflow-auto bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 leading-relaxed z-30 whitespace-pre-wrap break-words"
+              ></div>
+              <div
+                id="previewOverlay"
+                class="hidden absolute inset-0 w-full h-full p-6 overflow-auto bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 leading-relaxed z-30 markdown-body"
+              ></div>
+              <!-- Skeleton shimmer: feedback de generare (in loc de overlay-spinner) -->
+              <div
+                id="outputSkeleton"
+                class="hidden absolute inset-0 w-full h-full p-6 bg-white dark:bg-slate-800 z-40 flex flex-col"
+              >
+                <div
+                  class="flex items-center gap-2 text-xs font-semibold text-brand-500 mb-3"
+                >
+                  <i class="fa-solid fa-wand-magic-sparkles fa-fade"></i>
+                  <span id="skelCaption">Generez răspunsul…</span>
+                </div>
+                <div class="skeleton-line" style="width: 92%"></div>
+                <div class="skeleton-line" style="width: 78%"></div>
+                <div class="skeleton-line" style="width: 85%"></div>
+                <div class="skeleton-line" style="width: 60%"></div>
+                <div class="skeleton-line" style="width: 70%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Floating RAG Chat -->
+    <button
+      id="btnOpenFloatingChat"
+      class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-2xl flex items-center justify-center text-xl z-50 transition-transform hover:scale-110"
+      title="Chat cu Documentul Sursă (Mistral)"
+    >
+      <i class="fa-solid fa-comments"></i>
+    </button>
+    <div
+      id="floatingChatBox"
+      class="hidden fixed bottom-24 right-6 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 flex flex-col overflow-hidden"
+    >
+      <div
+        class="bg-blue-600 text-white px-4 py-3 font-bold flex justify-between items-center"
+      >
+        <span
+          ><i class="fa-solid fa-file-pdf mr-1"></i> RAG Chat
+          <span class="provider-badge bg-blue-800 text-white ml-1"
+            >MISTRAL</span
+          ></span
+        >
+        <button id="btnCloseFloatingChat" class="hover:text-slate-200">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-4 bg-slate-50 dark:bg-slate-900">
+        <input
+          type="text"
+          id="chatInput"
+          placeholder="Întreabă documentul sursă..."
+          class="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 mb-3 shadow-inner"
+        />
+        <button
+          id="btnChat"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+        >
+          Întreabă AI
+        </button>
+      </div>
+    </div>
+
+    <!-- Meniu Plutitor: Magic Inline Edit -->
+    <div
+      id="magicTooltip"
+      class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-lg overflow-hidden flex divide-x divide-slate-100 dark:divide-slate-700 text-sm font-medium"
+    >
+      <button
+        class="magic-btn px-3 py-2 hover:bg-brand-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+        data-action="extinde"
+        title="Procesat ultra-rapid de Groq"
+      >
+        <i class="fa-solid fa-maximize mr-1 text-brand-500"></i> Extinde
+      </button>
+      <button
+        class="magic-btn px-3 py-2 hover:bg-brand-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+        data-action="scurteaza"
+      >
+        <i class="fa-solid fa-minimize mr-1 text-green-500"></i> Scurtează
+      </button>
+      <button
+        class="magic-btn px-3 py-2 hover:bg-brand-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors"
+        data-action="reformula"
+      >
+        <i class="fa-solid fa-retweet mr-1 text-purple-500"></i> Reformulează
+      </button>
+    </div>
+
+    <!-- Modal Legenda -->
+    <div
+      id="legendModal"
+      class="hidden fixed inset-0 z-[100] flex items-center justify-center"
+    >
+      <div
+        id="legendBackdrop"
+        class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity"
+      ></div>
+      <div
+        class="relative w-full max-w-5xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden z-10 mx-4"
+      >
+        <div
+          class="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80"
+        >
+          <h2
+            class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2"
+          >
+            <i class="fa-solid fa-book-open text-indigo-500"></i> Ghid de
+            Utilizare & Module
+          </h2>
+          <button
+            id="btnLegendClose"
+            class="text-slate-500 dark:text-slate-400 hover:text-red-500 transition-colors"
+          >
+            <i class="fa-solid fa-xmark text-2xl"></i>
+          </button>
+        </div>
+        <div
+          class="p-6 overflow-y-auto flex-1 space-y-8 text-sm text-slate-700 dark:text-slate-300"
+        >
+          <!-- Secțiunea 1: Providers -->
+          <section>
+            <h3
+              class="text-lg font-bold text-slate-800 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-700 pb-2"
+            >
+              1. Motoare AI (Sistem de Rutare)
+            </h3>
+            <p class="mb-4">
+              Asistentul folosește un sistem inteligent de "Multi-Model
+              Routing". Alege automat cel mai bun motor AI pentru sarcina
+              cerută, pentru a garanta viteză maximă și zero costuri.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div
+                class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700"
+              >
+                <strong class="text-orange-500 flex items-center gap-2"
+                  ><i class="fa-solid fa-bolt"></i> Groq (Llama 3)</strong
+                >
+                <p class="mt-1 text-xs">
+                  Viteză extremă (răspunde în milisecunde). Folosit exclusiv
+                  pentru <b>Corectură</b>, <b>Îmbunătățire rapidă</b>,
+                  <b>Analiză Ton</b> și <b>Magic Inline Edit</b>.
+                </p>
+              </div>
+              <div
+                class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700"
+              >
+                <strong class="text-blue-500 flex items-center gap-2"
+                  ><i class="fa-solid fa-brain"></i> Mistral Large</strong
+                >
+                <p class="mt-1 text-xs">
+                  Capacitate mare de analiză. Folosit pentru sarcini complexe:
+                  <b>Rapoarte</b>, <b>Rezumate</b>, <b>Data Miner</b>,
+                  <b>Deep Research</b> și <b>RAG Chat</b>.
+                </p>
+              </div>
+              <div
+                class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700"
+              >
+                <strong class="text-teal-500 flex items-center gap-2"
+                  ><i class="fa-solid fa-language"></i> DeepL API</strong
+                >
+                <p class="mt-1 text-xs">
+                  Cel mai precis motor de traducere. Folosit de butonul
+                  <b>Traducere</b> din bara de sus (alegi limba din dropdown).
+                </p>
+              </div>
+              <div
+                class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700"
+              >
+                <strong class="text-emerald-500 flex items-center gap-2"
+                  ><i class="fa-solid fa-globe"></i> Tavily Search</strong
+                >
+                <p class="mt-1 text-xs">
+                  Motor de căutare web optimizat pentru AI. Folosit de butonul
+                  <b>Deep Research</b> pentru a citi pagini web live în 2026.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Secțiunea 2: Funcții Principale -->
+          <section>
+            <h3
+              class="text-lg font-bold text-slate-800 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-700 pb-2"
+            >
+              2. Funcții de Procesare Text (Top Bar)
+            </h3>
+            <ul class="space-y-4">
+              <li>
+                <span
+                  class="inline-flex items-center gap-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-1 rounded font-bold text-xs"
+                  ><i class="fa-solid fa-pen-nib"></i> Îmbunătățește</span
+                >
+                <span class="ml-2"
+                  >Rescrie textul din Editorul Sursă pentru a suna mai
+                  profesional, coerent și fluent, corectând totodată
+                  erorile.</span
+                >
+              </li>
+              <li>
+                <span
+                  class="inline-flex items-center gap-1 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 px-2 py-1 rounded font-bold text-xs"
+                  ><i class="fa-solid fa-check-double"></i> Corectură</span
+                >
+                <span class="ml-2"
+                  >Strict corectură gramaticală, punctuație și adăugare de
+                  diacritice, fără a schimba cuvintele sau stilul
+                  original.</span
+                >
+              </li>
+              <li>
+                <span
+                  class="inline-flex items-center gap-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 px-2 py-1 rounded font-bold text-xs"
+                  ><i class="fa-solid fa-compress"></i> Rezumă</span
+                >
+                <span class="ml-2"
+                  >Extrage esența textului. Perfect pentru documente foarte
+                  lungi importate anterior.</span
+                >
+              </li>
+              <li>
+                <span
+                  class="inline-flex items-center gap-1 bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 px-2 py-1 rounded font-bold text-xs"
+                  >📧 Email / 📋 Raport / 🎯 SEO Opt</span
+                >
+                <span class="ml-2"
+                  >Transformă textul sursă în formate specifice: un email gata
+                  de trimis, un raport structurat cu bullet-points, sau un text
+                  optimizat cu titluri atractive.</span
+                >
+              </li>
+            </ul>
+          </section>
+
+          <!-- Secțiunea 3: Unelte Speciale -->
+          <section>
+            <h3
+              class="text-lg font-bold text-slate-800 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-700 pb-2"
+            >
+              3. Unelte Avansate & Module
+            </h3>
+            <ul class="space-y-4">
+              <li>
+                <strong
+                  ><i class="fa-solid fa-user-tie text-brand-500"></i> Persona
+                  (meniul ☰ Unelte &amp; Setări):</strong
+                >
+                Scrie un rol (ex: "Avocat strict", "Copywriter creativ") înainte
+                de a apăsa un buton. AI-ul va prelua acea personalitate în
+                răspuns!
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-solid fa-table-list text-slate-500"></i> Data
+                  Miner:</strong
+                >
+                Analizează textul sursă și extrage date concrete (nume,
+                deadline-uri, acțiuni de făcut) generând un tabel Markdown.
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-solid fa-globe text-emerald-500"></i> Deep
+                  Research:</strong
+                >
+                Scrie o întrebare sau un subiect în Editorul Sursă (ex: "Ce
+                modele noi a lansat OpenAI in 2026?"). Asistentul va căuta pe
+                internet și va genera un raport citând sursele.
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-solid fa-comments text-blue-500"></i> RAG Chat
+                  (Butonul plutitor dreapta-jos):</strong
+                >
+                Ai încărcat un PDF de 50 de pagini? Deschide chat-ul plutitor și
+                pune întrebări specifice despre acel document. AI-ul va răspunde
+                doar din contextul fișierului.
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-solid fa-microphone text-slate-500"></i> Dictare
+                  & Comenzi Vocale:</strong
+                >
+                Apasă butonul de Dictare din antetul Editorului Sursă (sau
+                <kbd class="bg-slate-200 dark:bg-slate-700 px-1 rounded"
+                  >Alt+Space</kbd
+                >). Textul apare <b>live, direct în câmp</b>, editabil imediat.
+                Pe lângă dictare liberă, poți rosti cuvintele cheie
+                <em>"asistent rezumă"</em> sau <em>"asistent corectează"</em>,
+                iar asistentul va executa automat acțiunea pe textul tău.
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-solid fa-paperclip text-slate-500"></i> Încarcă
+                  fișier:</strong
+                >
+                Butonul 📎 din antetul Editorului Sursă (sau trage fișierul
+                direct peste câmp): .txt .md .docx .pdf .csv + imagini (OCR).
+              </li>
+            </ul>
+          </section>
+
+          <!-- Secțiunea 4: Magic Tools & Export -->
+          <section>
+            <h3
+              class="text-lg font-bold text-slate-800 dark:text-white mb-3 border-b border-slate-200 dark:border-slate-700 pb-2"
+            >
+              4. Editor, Export & "Magic Edit"
+            </h3>
+            <ul class="space-y-3">
+              <li>
+                <strong>Autocorectură "Stealth":</strong> Pe măsură ce scrii,
+                AI-ul subliniază cuvintele fără diacritice sau greșite cu roșu.
+                Dă click pe ele pentru a le corecta automat.
+              </li>
+              <li>
+                <strong>✨ Magic Inline Edit:</strong> Selectează cu mouse-ul
+                orice porțiune de text din editor (minim 5 caractere). Un
+                tooltip va apărea instantaneu oferindu-ți opțiunea să
+                <em>Extinzi</em>, <em>Scurtezi</em> sau <em>Reformulezi</em> fix
+                acel fragment!
+              </li>
+              <li>
+                <strong><i class="fa-solid fa-code-compare"></i> Diff:</strong>
+                După ce AI-ul a corectat/îmbunătățit textul, apasă pe "Diff"
+                pentru a vedea exact ce cuvinte a șters (roșu) sau a adăugat
+                (verde) față de sursă.
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-brands fa-markdown"></i> Preview &
+                  Export:</strong
+                >
+                Rezultatele pot fi previzualizate cu formatare bogată (titluri,
+                tabele). Apasă butonul <b>Export ▾</b> din antetul rezultatului
+                pentru a descărca documentul ca `.txt`, `.md`, `.docx` (Word)
+                sau `.pdf`!
+              </li>
+              <li>
+                <strong
+                  ><i class="fa-solid fa-rotate-left"></i> Undo (Alt+Z):</strong
+                >
+                Textul tău sursă se salvează automat la fiecare secundă. Apasă
+                săgeata de Undo (în bara de acțiuni de sus) pentru a anula
+                ultima modificare. Fiecare câmp are și un buton 🗑 propriu de
+                golire.
+              </li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Command Palette (Ctrl/Cmd+K) -->
+    <div
+      id="cmdkModal"
+      class="hidden fixed inset-0 z-[150] flex items-start justify-center pt-[14vh]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Paletă comenzi"
+    >
+      <div
+        id="cmdkBackdrop"
+        class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+      ></div>
+      <div
+        class="relative w-full max-w-lg mx-4 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden z-10"
+      >
+        <div
+          class="flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-700"
+        >
+          <i
+            class="fa-solid fa-magnifying-glass text-slate-500 dark:text-slate-400"
+          ></i>
+          <input
+            id="cmdkInput"
+            type="text"
+            placeholder="Caută o acțiune… (ex: rezumă, traduce, export)"
+            class="flex-1 bg-transparent py-3 outline-none text-sm text-slate-800 dark:text-slate-100"
+            autocomplete="off"
+          />
+          <kbd
+            class="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded"
+            >Esc</kbd
+          >
+        </div>
+        <ul
+          id="cmdkList"
+          class="max-h-80 overflow-y-auto py-2 text-sm"
+          role="listbox"
+        ></ul>
+      </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+      // Cheile sunt server-side (proxy Vercel) — nu mai exista in browser
+      const apiStatusDot = document.getElementById("apiStatusDot");
+      const apiStatus = document.getElementById("apiStatus");
+      // Referinte DOM declarate EXPLICIT (audit F-GLOBALS): nu ne mai bazam pe binding-ul
+      // implicit window.<id> (fragil la redenumire ID / strict mode). Elementele exista deja in HTML.
+      const inputText = document.getElementById("inputText");
+      const outputText = document.getElementById("outputText");
+      const loadingOverlay = document.getElementById("loadingOverlay");
+      const loadingText = document.getElementById("loadingText");
+      const loadingProviderText = document.getElementById(
+        "loadingProviderText",
+      );
+      const interimText = document.getElementById("interimText");
+      const autocorrectOverlay = document.getElementById("autocorrectOverlay");
+      const diffOverlay = document.getElementById("diffOverlay");
+      const btnDiff = document.getElementById("btnDiff");
+      // Status REAL (audit #7): nu mai e verde necondiționat. Reflectă online/offline + un
+      // ping ieftin la proxy (provider necunoscut -> 400 = funcția serverless trăiește, fără cotă AI).
+      function setApiStatus(state) {
+        const map = {
+          online: ["text-green-500", "Cloud (Vercel) Conectat"],
+          offline: ["text-red-500", "Offline"],
+          checking: ["text-orange-500", "Verific conexiunea…"],
+        };
+        const [color, label] = map[state] || map.checking;
+        ["text-green-500", "text-orange-500", "text-red-500"].forEach((c) =>
+          apiStatusDot.classList.remove(c),
+        );
+        apiStatusDot.classList.add(color);
+        apiStatus.innerHTML = `<i class="fa-solid fa-circle ${color}"></i> ${label}`;
+      }
+      async function checkApiStatus() {
+        if (!navigator.onLine) return setApiStatus("offline");
+        setApiStatus("checking");
+        try {
+          const r = await fetch("/api/proxy?provider=__health", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: "{}",
+          });
+          // 400 = provider necunoscut (functie vie), 429 = rate-limit, 403 = origin —
+          // toate inseamna ca serverul raspunde => online (audit F-STATUS).
+          setApiStatus(
+            r.ok || r.status === 400 || r.status === 429 || r.status === 403
+              ? "online"
+              : "offline",
+          );
+        } catch (e) {
+          setApiStatus("offline");
+        }
+      }
+      checkApiStatus();
+      window.addEventListener("online", checkApiStatus);
+      window.addEventListener("offline", () => setApiStatus("offline"));
+
+      // Inregistrare Service Worker (instalare PWA pe telefon)
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .catch((e) => console.warn("SW reg failed", e));
+        });
+      }
+
+      // Share Target + shortcut: text partajat din alte app-uri -> editor; ?action=dictate -> dictare
+      window.addEventListener("load", () => {
+        try {
+          const sp = new URLSearchParams(location.search);
+          const shared =
+            (sp.get("text") || "") +
+            (sp.get("url") ? "\n" + sp.get("url") : "");
+          const inp = document.getElementById("inputText");
+          if (shared.trim() && inp) {
+            const title = sp.get("title");
+            inp.value = (title ? title + "\n\n" : "") + shared.trim();
+            inp.dispatchEvent(new Event("input"));
+            inp.focus();
+          }
+          if (sp.get("action") === "dictate") {
+            const mic = document.getElementById("micBtn");
+            if (mic) setTimeout(() => mic.click(), 700);
+          }
+          if (location.search) {
+            history.replaceState(null, "", location.pathname);
+          }
+        } catch (e) {
+          console.warn("share handler", e);
+        }
+      });
+
+      let globalAudioCtx = null;
+      function playChime() {
+        try {
+          if (!globalAudioCtx) {
+            globalAudioCtx = new (
+              window.AudioContext || window.webkitAudioContext
+            )();
+          }
+          const osc = globalAudioCtx.createOscillator();
+          const gainNode = globalAudioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(523.25, globalAudioCtx.currentTime);
+          gainNode.gain.setValueAtTime(0.1, globalAudioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            globalAudioCtx.currentTime + 0.5,
+          );
+          osc.connect(gainNode);
+          gainNode.connect(globalAudioCtx.destination);
+          osc.start();
+          osc.stop(globalAudioCtx.currentTime + 0.5);
+        } catch (e) {}
+      }
+
+      // ===== HELPERS UI generare (skeleton / typewriter / badge provider) =====
+      function showOutputLoading(provider) {
+        const sk = document.getElementById("outputSkeleton");
+        const cap = document.getElementById("skelCaption");
+        if (cap)
+          cap.textContent = `Generez… · ${String(provider || "AI").toUpperCase()}`;
+        if (sk) sk.classList.remove("hidden");
+      }
+      function hideOutputLoading() {
+        const sk = document.getElementById("outputSkeleton");
+        if (sk) sk.classList.add("hidden");
+      }
+      function setLoadingProvider(label, isFallback) {
+        const cap = document.getElementById("skelCaption");
+        if (cap)
+          cap.textContent = isFallback
+            ? `Fallback → ${label}…`
+            : `Generez… · ${label}`;
+      }
+      function setResultBadge(info) {
+        const b = document.getElementById("resultProviderBadge");
+        if (!b) return;
+        if (!info || !info.provider) {
+          b.classList.add("hidden");
+          return;
+        }
+        b.textContent = info.fallback ? `${info.provider} ⤵` : info.provider;
+        b.title = info.fallback
+          ? `Generat de ${info.provider} (după fallback de la providerul preferat)`
+          : `Generat de ${info.provider}`;
+        b.className =
+          "provider-badge " +
+          (info.fallback
+            ? "bg-amber-500 text-white"
+            : "bg-brand-500 text-white");
+      }
+      function typeReveal(el, text) {
+        const reduce = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        // Prag perf (#20): typewriter-ul face un reflow per increment → pe texte
+        // foarte lungi (>8000 car.) randează instant ca să nu blocheze UI-ul.
+        if (reduce || !text || text.length < 40 || text.length > 8000) {
+          el.value = text || "";
+          return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+          const steps = 26;
+          const chunk = Math.ceil(text.length / steps);
+          let i = 0;
+          el.value = "";
+          const tick = () => {
+            i += chunk;
+            el.value = text.slice(0, i);
+            el.scrollTop = el.scrollHeight;
+            if (i < text.length) setTimeout(tick, 16);
+            else {
+              el.value = text;
+              resolve();
+            }
+          };
+          tick();
+        });
+      }
+
+      // --- SISTEM DE RUTARE API MULTI-PROVIDER CU FALLBACK ---
+
+      // Rutare AI + lant de fallback: logica EXTRASA in /lib/llm.js (window.LLM), testabila
+      // unitar cu Vitest (tests/llm.test.js). Aici doar un wrapper subtire care pastreaza
+      // efectele de UI (loadingProviderText / setLoadingProvider) + window.__llmResult si
+      // intoarce textul (string), exact ca varianta veche. parseLLMResponse din modul adauga
+      // guard pe raspunsuri goale/blocate (audit #6) — acelasi control flow (esec -> fallback).
+      async function chainLLM(promptText, order) {
+        const result = await LLM.chainLLM(promptText, order, {
+          fetchImpl: (url, opts) => fetch(url, opts),
+          onProvider: (label, isFallback) => {
+            if (isFallback)
+              loadingProviderText.textContent += ` -> Fallback ${label}`;
+            else loadingProviderText.textContent = `Provider: ${label}`;
+            if (typeof setLoadingProvider === "function")
+              setLoadingProvider(label, isFallback);
+          },
+          onError: (p, e) => console.warn(p + " failed", e),
+        });
+        window.__llmResult = {
+          provider: result.provider,
+          fallback: result.fallback,
+        };
+        return result.text;
+      }
+
+      // Lanturi de fallback imbogatite cu provideri gratuiti (Cerebras/OpenRouter) +
+      // chei secundare (gemini2/mistral2) ca failover automat la rate-limit/429.
+      async function callGeminiFallback(promptText) {
+        return chainLLM(promptText, [
+          "gemini",
+          "groq",
+          "cerebras",
+          "mistral",
+          "openrouter",
+          "gemini2",
+          "mistral2",
+        ]);
+      }
+
+      async function callGroqAPI(promptText) {
+        return chainLLM(promptText, [
+          "groq",
+          "cerebras",
+          "gemini",
+          "mistral",
+          "openrouter",
+          "gemini2",
+          "mistral2",
+        ]);
+      }
+
+      async function callMistralAPI(promptText) {
+        return chainLLM(promptText, [
+          "mistral",
+          "gemini",
+          "cerebras",
+          "groq",
+          "openrouter",
+          "mistral2",
+          "gemini2",
+        ]);
+      }
+
+      // Traducere: DeepL (cheie 1) -> DeepL_2 (failover cota) -> Gemini (ultimul resort).
+      async function callDeepLProvider(providerName, text, targetLang) {
+        const res = await fetch("/api/proxy?provider=" + providerName, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: [text], target_lang: targetLang }),
+        });
+        if (!res.ok) throw new Error("DeepL API Error: " + res.status);
+        const data = await res.json();
+        const t = data && data.translations && data.translations[0];
+        if (!t || typeof t.text !== "string")
+          throw new Error("DeepL: răspuns gol");
+        return t.text;
+      }
+
+      async function callDeepLAPI(text, targetLang) {
+        try {
+          window.__llmResult = { provider: "DEEPL", fallback: false };
+          return await callDeepLProvider("deepl", text, targetLang);
+        } catch (e1) {
+          console.warn("DeepL cheie 1 failed -> DeepL_2", e1);
+          try {
+            loadingProviderText.textContent += " -> Fallback DEEPL·2";
+            window.__llmResult = { provider: "DEEPL·2", fallback: true };
+            return await callDeepLProvider("deepl2", text, targetLang);
+          } catch (e2) {
+            console.warn("DeepL_2 failed -> Gemini", e2);
+            loadingProviderText.textContent += " -> Fallback GEMINI";
+            return await callGeminiFallback(
+              `Tradu urmatorul text in limba cu codul ${targetLang}. Pastreaza formatarea originala intacta. Intoarce DOAR traducerea:\n\n${text}`,
+            );
+          }
+        }
+      }
+
+      // Căutare web via Tavily (POST/body). Întoarce listă normalizată {url, content}.
+      async function searchTavily(safeQuery) {
+        const r = await fetch("/api/proxy?provider=tavily", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: safeQuery,
+            search_depth: "advanced",
+            max_results: 5,
+          }),
+        });
+        if (!r.ok) throw new Error("Tavily Error: " + r.status);
+        const d = await r.json();
+        const list = (d.results || []).map((x) => ({
+          url: x.url,
+          content: x.content,
+        }));
+        if (!list.length) throw new Error("Tavily: zero rezultate");
+        return list;
+      }
+
+      // Fallback căutare web via Brave (GET prin proxy). Shape: web.results[].
+      async function searchBrave(safeQuery) {
+        const r = await fetch("/api/proxy?provider=brave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q: safeQuery, count: 5 }),
+        });
+        if (!r.ok) throw new Error("Brave Error: " + r.status);
+        const d = await r.json();
+        const list = ((d.web && d.web.results) || []).map((x) => ({
+          url: x.url,
+          content: x.description || x.title || "",
+        }));
+        if (!list.length) throw new Error("Brave: zero rezultate");
+        return list;
+      }
+
+      async function callTavilyAndMistral(query) {
+        // Evitam eroarea 400 limitand lungimea query-ului
+        const safeQuery =
+          query.length > 400 ? query.substring(0, 400) + "..." : query;
+        let results = null;
+        try {
+          loadingProviderText.textContent = "Provider: TAVILY (Căutare Web)...";
+          results = await searchTavily(safeQuery);
+        } catch (e1) {
+          console.warn("Tavily failed -> Brave", e1);
+          try {
+            loadingProviderText.textContent =
+              "Provider: BRAVE (Căutare Web — fallback)...";
+            results = await searchBrave(safeQuery);
+          } catch (e2) {
+            console.warn("Brave failed -> fără web", e2);
+            loadingProviderText.textContent += " -> Fallback Fără Web";
+            return await callMistralAPI(
+              `Răspunde detaliat la următoarea cerere folosind cunoștințele tale (Căutarea web a picat):\n\n${query}`,
+            );
+          }
+        }
+
+        const contextText = results
+          .map((r) => `Sursa: ${r.url}\nConținut: ${r.content}`)
+          .join("\n\n");
+        const finalPrompt = `Realizează un raport de Deep Research pe baza următoarelor rezultate web. Citează sursele.\n\nÎntrebare originală: ${safeQuery}\n\nContext Web:\n${contextText}`;
+
+        loadingProviderText.textContent =
+          "Provider: MISTRAL (Sinteză Raport)...";
+        return await callMistralAPI(finalPrompt);
+      }
+
+      // Functia centrala de executie care ruteaza catre modelul potrivit
+      let lastAction = null;
+      // Lock anti-concurență (audit #5): 2 click-uri rapide -> 2 executeAction paralele care
+      // scriau peste window.__llmResult / output -> text amestecat, badge greșit. Cât timp
+      // rulează o generare, butoanele din toolbar sunt blocate vizual + a doua cerere e respinsă.
+      let __aiBusy = false;
+      function setAiButtonsDisabled(b) {
+        document.querySelectorAll('[role="toolbar"] button').forEach((el) => {
+          el.disabled = b;
+          el.classList.toggle("opacity-50", b);
+          el.classList.toggle("cursor-not-allowed", b);
+        });
+      }
+
+      async function executeAction(
+        promptTemplate,
+        provider,
+        requiresText = true,
+        targetOutput = outputText,
+      ) {
+        if (__aiBusy) return showToast("O generare e deja în curs…", "warn");
+        lastAction = { promptTemplate, provider, requiresText };
+        const text = inputText.value.trim();
+        if (requiresText && !text)
+          return showToast("Introduceți text în editorul sursă!", "warn");
+
+        __aiBusy = true;
+        setAiButtonsDisabled(true);
+        saveToHistory(text);
+        window.__llmResult = null;
+        const _rpb = document.getElementById("resultProviderBadge");
+        if (_rpb) _rpb.classList.add("hidden");
+        showOutputLoading(provider);
+        loadingProviderText.textContent = `Provider: ${provider.toUpperCase()}`;
+
+        const persona = document.getElementById("customPersona").value.trim();
+        let finalPrompt = persona
+          ? `Acționează strict ca un ${persona}. ` + promptTemplate
+          : promptTemplate;
+        if (requiresText && provider !== "deepl" && provider !== "tavily")
+          finalPrompt += "\n\nText:\n" + text;
+
+        try {
+          let res = "";
+          if (provider === "groq") res = await callGroqAPI(finalPrompt);
+          else if (provider === "mistral")
+            res = await callMistralAPI(finalPrompt);
+          else if (provider === "deepl")
+            res = await callDeepLAPI(text, promptTemplate); // Pentru deepl, promptTemplate e chiar limba (ex: 'EN-US')
+          else if (provider === "tavily")
+            res = await callTavilyAndMistral(
+              requiresText ? text : promptTemplate,
+            );
+
+          hideOutputLoading(); // ascunde skeleton ca typewriter-ul sa fie vizibil
+          if (targetOutput === outputText) {
+            await typeReveal(targetOutput, res);
+            setResultBadge(
+              window.__llmResult || { provider: provider.toUpperCase() },
+            );
+          } else {
+            targetOutput.value = res;
+          }
+          playChime();
+        } catch (err) {
+          showToast("Eroare AI: " + err.message, "error");
+        } finally {
+          __aiBusy = false;
+          setAiButtonsDisabled(false);
+          hideOutputLoading();
+          persistState();
+          if (!diffOverlay.classList.contains("hidden")) {
+            toggleDiff();
+          }
+        }
+      }
+
+      // --- EVENIMENTE UI & ACTIUNI ---
+
+      // Acțiuni AI standard (buton -> prompt + provider). Groq = rapid, Mistral = complex.
+      const AI_ACTIONS = [
+        {
+          id: "btnImprove",
+          provider: "groq",
+          prompt:
+            "Îmbunătățește profesional acest text, fă-l coerent și fluent în română. Corectează erorile. Fără intro.",
+        },
+        {
+          id: "btnCorrect",
+          provider: "groq",
+          prompt:
+            "Corectează gramatica, punctuația și adaugă diacritice în română. Păstrează structura. Fără intro.",
+        },
+        {
+          id: "btnSummarize",
+          provider: "mistral",
+          prompt: "Rezumă esența textului clar și concis.",
+        },
+        {
+          id: "btnEmail",
+          provider: "mistral",
+          prompt: "Rescrie textul ca un email profesional, structurat.",
+        },
+        {
+          id: "btnReport",
+          provider: "mistral",
+          prompt:
+            "Transformă textul într-un raport profesional, cu secțiuni/bullet-uri.",
+        },
+        {
+          id: "btnSEO",
+          provider: "mistral",
+          prompt:
+            "Optimizează textul pt SEO: extrage cuvinte cheie, sugerează 3 titluri atrăgătoare și îmbunătățește fluența.",
+        },
+        {
+          id: "btnExtractData",
+          provider: "mistral",
+          prompt:
+            "Extrage din text următoarele într-un format tabelar Markdown clar: Sarcini (To-Do), Persoane, Deadlines, Decizii. Fără intro.",
+        },
+      ];
+      AI_ACTIONS.forEach(({ id, provider, prompt }) =>
+        document
+          .getElementById(id)
+          ?.addEventListener("click", () => executeAction(prompt, provider)),
+      );
+
+      // Analiză Ton -> Groq (logică proprie: scrie în statsTone, nu în output)
+      document.getElementById("btnTone").addEventListener("click", async () => {
+        if (!inputText.value.trim()) return;
+        // Respecta lock-ul global (audit F-MAGICLOCK) — callGroqAPI atinge starea de loading partajata.
+        if (__aiBusy) return showToast("O generare AI e deja în curs…", "warn");
+        __aiBusy = true;
+        try {
+          document.getElementById("statsTone").textContent =
+            "Analizez (Groq)...";
+          const tone = await callGroqAPI(
+            "Analizează tonul și sentimentul următorului text într-o propoziție foarte scurtă. DOAR această propoziție.\n\n" +
+              inputText.value,
+          );
+          document.getElementById("statsTone").textContent = tone.replace(
+            /\n/g,
+            " ",
+          );
+        } catch (e) {
+          document.getElementById("statsTone").textContent = "Eroare analiză.";
+        } finally {
+          __aiBusy = false;
+        }
+      });
+
+      // Deep Research -> Tavily + Mistral
+      document
+        .getElementById("btnDeepResearch")
+        .addEventListener("click", () => {
+          if (!inputText.value.trim())
+            return showToast(
+              "Scrieți subiectul de cercetat în editorul sursă.",
+              "warn",
+            );
+          executeAction(inputText.value.trim(), "tavily", false);
+        });
+
+      // Traducere -> DeepL (dropdown din bara de sus)
+      document.querySelectorAll("#translateMenu [data-lang]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const menu = document.getElementById("translateMenu");
+          const btn = document.getElementById("btnTranslateMenu");
+          if (menu) menu.classList.add("hidden");
+          if (btn) btn.setAttribute("aria-expanded", "false");
+          executeAction(b.dataset.lang, "deepl", true);
+        });
+      });
+
+      // ===== Dropdown-uri (deschidere/închidere) + golire rezultat =====
+      function wireDropdown(btnId, menuId) {
+        const btn = document.getElementById(btnId),
+          menu = document.getElementById(menuId);
+        if (!btn || !menu) return () => {};
+        const close = () => {
+          menu.classList.add("hidden");
+          btn.setAttribute("aria-expanded", "false");
+        };
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const willOpen = menu.classList.contains("hidden");
+          // închide alte meniuri deschise
+          document
+            .querySelectorAll(".menu-pop:not(.hidden)")
+            .forEach((m) => m.classList.add("hidden"));
+          if (willOpen) {
+            menu.classList.remove("hidden");
+            btn.setAttribute("aria-expanded", "true");
+          } else {
+            close();
+          }
+        });
+        document.addEventListener("click", (e) => {
+          if (!menu.contains(e.target) && e.target !== btn) close();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") close();
+        });
+        return close;
+      }
+      const closeExportMenu = wireDropdown("btnExportMenu", "exportMenu");
+      wireDropdown("btnTranslateMenu", "translateMenu");
+      // după un export, închide meniul (handlerele de export sunt legate prin ID mai jos)
+      ["exportTxtBtn", "exportMdBtn", "exportDocxBtn", "exportPdfBtn"].forEach(
+        (id) => {
+          const el = document.getElementById(id);
+          if (el) el.addEventListener("click", () => closeExportMenu());
+        },
+      );
+      // Golește rezultatul generat (buton dedicat lângă câmp)
+      const clearOutputBtn = document.getElementById("clearOutputBtn");
+      if (clearOutputBtn)
+        clearOutputBtn.addEventListener("click", () => {
+          outputText.value = "";
+          const badge = document.getElementById("resultProviderBadge");
+          if (badge) badge.classList.add("hidden");
+          const dv = document.getElementById("diffOverlay"),
+            pv = document.getElementById("previewOverlay");
+          if (dv) dv.classList.add("hidden");
+          if (pv) pv.classList.add("hidden");
+          persistState();
+        });
+
+      // Floating RAG Chat -> Mistral
+      const floatingChatBox = document.getElementById("floatingChatBox");
+      document
+        .getElementById("btnOpenFloatingChat")
+        .addEventListener("click", () =>
+          floatingChatBox.classList.remove("hidden"),
+        );
+      document
+        .getElementById("btnCloseFloatingChat")
+        .addEventListener("click", () =>
+          floatingChatBox.classList.add("hidden"),
+        );
+
+      document.getElementById("btnChat").addEventListener("click", () => {
+        const q = document.getElementById("chatInput").value.trim();
+        if (!q) return;
+        executeAction(
+          `Pe baza textului de mai jos, răspunde scurt și la obiect la următoarea întrebare:\nÎNTREBARE: ${q}\n`,
+          "mistral",
+        );
+        document.getElementById("chatInput").value = "";
+        floatingChatBox.classList.add("hidden");
+      });
+      document.getElementById("chatInput").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") document.getElementById("btnChat").click();
+      });
+
+      // MAGIC INLINE EDIT -> Groq (Ultra-Fast)
+      const magicTooltip = document.getElementById("magicTooltip");
+      let currentSelection = { el: null, text: "", start: 0, end: 0 };
+
+      function handleSelectionChange(e) {
+        const el = e.target;
+        const text = el.value
+          .substring(el.selectionStart, el.selectionEnd)
+          .trim();
+        if (text.length > 5) {
+          magicTooltip.style.top = `${e.clientY + window.scrollY + 10}px`;
+          magicTooltip.style.left = `${Math.min(e.clientX + window.scrollX, window.innerWidth - 300)}px`;
+          magicTooltip.style.display = "flex";
+          currentSelection = {
+            el,
+            text,
+            start: el.selectionStart,
+            end: el.selectionEnd,
+          };
+        } else {
+          magicTooltip.style.display = "none";
+        }
+      }
+      inputText.addEventListener("mouseup", handleSelectionChange);
+      outputText.addEventListener("mouseup", handleSelectionChange);
+      document.addEventListener("mousedown", (e) => {
+        if (
+          !magicTooltip.contains(e.target) &&
+          e.target !== inputText &&
+          e.target !== outputText
+        )
+          magicTooltip.style.display = "none";
+      });
+
+      document.querySelectorAll(".magic-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          // Respecta lock-ul global de generare (audit F-MAGICLOCK) — evita race pe overlay/badge.
+          if (__aiBusy)
+            return showToast("O generare AI e deja în curs…", "warn");
+          magicTooltip.style.display = "none";
+          const action = btn.getAttribute("data-action");
+          let prompt = "";
+          if (action === "extinde")
+            prompt =
+              "Extinde și detaliază următorul paragraf, păstrând limba. Fără intro:\n\n";
+          if (action === "scurteaza")
+            prompt =
+              "Scurtează și fă mai concis acest paragraf. Fără intro:\n\n";
+          if (action === "reformula")
+            prompt =
+              "Reformulează acest paragraf pentru a suna mai profesionist și clar. Fără intro:\n\n";
+
+          // Snapshot selectie ÎNAINTE de await (audit F-MAGICOFFSET): textul se poate schimba
+          // in timpul cererii (dictare/autocorect/edit) -> offset-uri stale ar corupe textul.
+          const sel = {
+            el: currentSelection.el,
+            start: currentSelection.start,
+            end: currentSelection.end,
+            text: currentSelection.text,
+          };
+          __aiBusy = true;
+          loadingOverlay.classList.remove("hidden");
+          loadingText.textContent = "Magic Edit...";
+          loadingProviderText.textContent = "Provider: GROQ (Rapid)";
+          try {
+            const res = await callGroqAPI(prompt + sel.text);
+            const val = sel.el.value;
+            if (val.slice(sel.start, sel.end) === sel.text) {
+              sel.el.value =
+                val.substring(0, sel.start) + res + val.substring(sel.end);
+              if (sel.el === inputText) saveToHistory(sel.el.value);
+              playChime();
+            } else {
+              showToast(
+                "Textul s-a modificat în timpul editării — reîncearcă Magic Edit.",
+                "warn",
+              );
+            }
+          } catch (e) {
+            showToast("Magic Edit: " + e.message, "error");
+          } finally {
+            loadingOverlay.classList.add("hidden");
+            __aiBusy = false;
+          }
+        });
+      });
+
+      // --- SISTEME DE BAZA (Neschimbate, refactorizate usor) ---
+
+      // STEALTH AUTOSAVE / UNDO
+      let textHistory = [];
+      let typingTimer;
+
+      function saveToHistory(val) {
+        if (
+          val &&
+          (textHistory.length === 0 ||
+            textHistory[textHistory.length - 1] !== val)
+        ) {
+          textHistory.push(val);
+          if (textHistory.length > 50) textHistory.shift();
+        }
+        if (typeof persistState === "function") persistState();
+      }
+
+      function updateStats() {
+        const words = inputText.value.trim()
+          ? inputText.value.trim().split(/\s+/).length
+          : 0;
+        document.getElementById("statsWords").textContent =
+          `${words} cuvinte | ${inputText.value.length} caractere`;
+        document.getElementById("statsTone").textContent = "";
+      }
+
+      const dict = {
+        "intr-un": "într-un",
+        "intr-o": "într-o",
+        fara: "fără",
+        pana: "până",
+        si: "și",
+        cand: "când",
+        sa: "să",
+      };
+      function checkAutocorrect() {
+        if (!inputText.value) {
+          autocorrectOverlay.innerHTML = "";
+          return;
+        }
+        // Prag perf (#14): pe documente mari, reconstruirea overlay-ului la fiecare ~1s
+        // provoacă jank → dezactivează marcajele de autocorect peste 20k caractere.
+        if (inputText.value.length > 20000) {
+          autocorrectOverlay.innerHTML = "";
+          return;
+        }
+        let html = "",
+          pos = 0,
+          match;
+        const regex = /([a-zA-ZăâîșțĂÂÎȘȚ-]+)|([^a-zA-ZăâîșțĂÂÎȘȚ-]+)/g;
+        while ((match = regex.exec(inputText.value)) !== null) {
+          if (match[1]) {
+            const lower = match[0].toLowerCase();
+            if (dict[lower] && match[0] === lower) {
+              html += `<span class="autocorect-mark" tabindex="0" role="button" aria-label="Corectează în ${dict[lower]}" data-pos="${pos}" data-len="${match[0].length}" data-fix="${dict[lower]}" title="Corectură: ${dict[lower]}">${match[0]}</span>`;
+            } else html += escapeHtml(match[0]);
+          } else html += escapeHtml(match[0]);
+          pos += match[0].length;
+        }
+        autocorrectOverlay.innerHTML = html;
+      }
+
+      // File Upload
+      const fileUpload = document.getElementById("fileUpload");
+      document
+        .getElementById("btnFileUpload")
+        .addEventListener("click", () => fileUpload.click());
+      fileUpload.addEventListener("change", (e) =>
+        handleFileUpload(e.target.files[0]),
+      );
+      inputText.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        inputText.classList.add("ring-2", "ring-brand-500");
+      });
+      inputText.addEventListener("dragleave", () =>
+        inputText.classList.remove("ring-2", "ring-brand-500"),
+      );
+      inputText.addEventListener("drop", (e) => {
+        e.preventDefault();
+        inputText.classList.remove("ring-2", "ring-brand-500");
+        if (e.dataTransfer.files[0]) handleFileUpload(e.dataTransfer.files[0]);
+      });
+
+      // === OCR (Faza 2): imagine + PDF scanat -> text. Gemini Vision (calitate) + Tesseract (offline) ===
+      const OCR = (function () {
+        const PROMPT =
+          "Extrage TOT textul vizibil din imagine, exact, păstrând structura (paragrafe, liste, titluri). Răspunde DOAR cu textul extras, fără comentarii, fără ghilimele.";
+
+        // Citeste un File ca dataURL.
+        function readDataUrl(file) {
+          return new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = () => rej(new Error("Nu pot citi fișierul"));
+            r.readAsDataURL(file);
+          });
+        }
+        // Downscale imagine (canvas) -> {mimeType, base64} (limiteaza payload-ul spre proxy).
+        // Downscale imagine (File) -> canvas. Refolosit si la Tesseract (audit F-OCRTESS):
+        // o poza de telefon (12MP) procesata full-res ingheata/crapa tab-ul WASM pe mobil.
+        async function fileToCanvas(file, maxDim = 2200) {
+          const dataUrl = await readDataUrl(file);
+          const img = await new Promise((res, rej) => {
+            const im = new Image();
+            im.onload = () => res(im);
+            im.onerror = () => rej(new Error("Imagine invalidă"));
+            im.src = dataUrl;
+          });
+          let { width, height } = img;
+          const scale = Math.min(1, maxDim / Math.max(width, height));
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+          const c = document.createElement("canvas");
+          c.width = width;
+          c.height = height;
+          c.getContext("2d").drawImage(img, 0, 0, width, height);
+          return c;
+        }
+        async function fileToBase64(file, maxDim = 2200) {
+          const c = await fileToCanvas(file, maxDim);
+          return {
+            mimeType: "image/jpeg",
+            base64: c.toDataURL("image/jpeg", 0.9).split(",")[1],
+          };
+        }
+        // OCR de calitate via Gemini Vision (prin proxy). Cheie 1 -> cheie 2 (failover cotă),
+        // apoi (în ocrImage) Tesseract offline ca ultim resort.
+        async function geminiOCRWith(providerName, base64, mimeType) {
+          const body = {
+            contents: [
+              {
+                parts: [
+                  { inlineData: { mimeType, data: base64 } },
+                  { text: PROMPT },
+                ],
+              },
+            ],
+            generationConfig: { temperature: 0 },
+          };
+          const res = await fetch("/api/proxy?provider=" + providerName, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error("Gemini OCR HTTP " + res.status);
+          return LLM.parseLLMResponse("gemini", await res.json());
+        }
+        async function geminiOCR(base64, mimeType) {
+          try {
+            return await geminiOCRWith("gemini", base64, mimeType);
+          } catch (e) {
+            console.warn("Gemini OCR cheie 1 eșuat -> gemini2", e);
+            return await geminiOCRWith("gemini2", base64, mimeType);
+          }
+        }
+        // Tesseract.js (offline) — lazy load din CDN.
+        let tessLoad = null;
+        function ensureTesseract() {
+          if (window.Tesseract) return Promise.resolve();
+          if (!tessLoad)
+            tessLoad = new Promise((res, rej) => {
+              const s = document.createElement("script");
+              s.src =
+                "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+              // SRI pe scriptul injectat dinamic (lib versionata imutabila) — paritate cu tag-urile CDN statice.
+              s.integrity =
+                "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";
+              s.crossOrigin = "anonymous";
+              s.onload = res;
+              s.onerror = () =>
+                rej(new Error("Nu pot încărca Tesseract (offline?)"));
+              document.head.appendChild(s);
+            });
+          return tessLoad;
+        }
+        async function tesseractOCR(imgSource) {
+          await ensureTesseract();
+          const { data } = await window.Tesseract.recognize(
+            imgSource,
+            "ron+eng",
+          );
+          return (data.text || "").trim();
+        }
+        // OCR pe o imagine (File): Gemini primary, Tesseract fallback (offline/eroare).
+        async function ocrImage(file) {
+          if (navigator.onLine) {
+            try {
+              const { base64, mimeType } = await fileToBase64(file);
+              return await geminiOCR(base64, mimeType);
+            } catch (e) {
+              console.warn("Gemini OCR eșuat -> Tesseract", e);
+            }
+          }
+          // F-OCRTESS: downscale (canvas) inainte de Tesseract — evita OOM/freeze pe imagini mari.
+          try {
+            return await tesseractOCR(await fileToCanvas(file));
+          } catch (e) {
+            return await tesseractOCR(file); // ultim resort: sursa originala
+          }
+        }
+        // OCR pe un PDF scanat: render pagini -> OCR (cap la 15 pagini).
+        async function ocrPdf(pdf, onProgress) {
+          const max = Math.min(pdf.numPages, 15);
+          let out = "";
+          for (let i = 1; i <= max; i++) {
+            if (onProgress) onProgress(i, max);
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2 });
+            const c = document.createElement("canvas");
+            c.width = viewport.width;
+            c.height = viewport.height;
+            await page.render({
+              canvasContext: c.getContext("2d"),
+              viewport,
+            }).promise;
+            let t = "";
+            try {
+              t = navigator.onLine
+                ? await geminiOCR(
+                    c.toDataURL("image/jpeg", 0.85).split(",")[1],
+                    "image/jpeg",
+                  )
+                : await tesseractOCR(c);
+            } catch (e) {
+              t = await tesseractOCR(c);
+            }
+            out += t + "\n\n";
+          }
+          if (pdf.numPages > max)
+            out += `\n[OCR limitat la primele ${max} pagini din ${pdf.numPages}.]`;
+          return out.trim();
+        }
+        return { ocrImage, ocrPdf, geminiOCR, tesseractOCR };
+      })();
+
+      const IMAGE_EXT = ["png", "jpg", "jpeg", "webp", "gif", "bmp"];
+
+      async function handleFileUpload(file) {
+        if (!file) return;
+        const ext = file.name.split(".").pop().toLowerCase();
+        const isImage =
+          IMAGE_EXT.includes(ext) || (file.type || "").startsWith("image/");
+        loadingOverlay.classList.remove("hidden");
+        loadingText.textContent = isImage
+          ? "OCR imagine..."
+          : "Extragere fișier...";
+        loadingProviderText.textContent = "Procesare locală";
+        try {
+          let text = "";
+          if (isImage) {
+            loadingProviderText.textContent = navigator.onLine
+              ? "Provider: GEMINI Vision"
+              : "Local: Tesseract OCR";
+            text = await OCR.ocrImage(file);
+          } else if (["txt", "md", "csv", "json"].includes(ext)) {
+            text = await file.text();
+          } else if (ext === "docx") {
+            const result = await mammoth.extractRawText({
+              arrayBuffer: await file.arrayBuffer(),
+            });
+            text = result.value;
+          } else if (ext === "pdf") {
+            const pdf = await pdfjsLib.getDocument({
+              data: await file.arrayBuffer(),
+              isEvalSupported: false, // anti CVE-2024-4367 (exec JS dintr-un PDF malitios) pe pdf.js 2.16
+            }).promise;
+            let extracted = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const content = await (await pdf.getPage(i)).getTextContent();
+              extracted += content.items.map((it) => it.str).join(" ") + "\n";
+            }
+            // PDF scanat (text aproape gol) -> OCR pe pagini (calitate superioara)
+            if (extracted.replace(/\s/g, "").length < pdf.numPages * 10) {
+              loadingText.textContent = "PDF scanat — OCR în curs...";
+              text = await OCR.ocrPdf(pdf, (n, tot) => {
+                loadingProviderText.textContent = `OCR pagina ${n}/${tot}`;
+              });
+            } else {
+              text = extracted;
+            }
+          } else {
+            throw new Error("Format nesuportat.");
+          }
+
+          inputText.value = text;
+          saveToHistory(text);
+          updateStats();
+          checkAutocorrect();
+          persistState();
+        } catch (e) {
+          showToast("Eroare upload: " + e.message, "error");
+        } finally {
+          loadingOverlay.classList.add("hidden");
+          fileUpload.value = "";
+        }
+      }
+
+      // Export & Util
+      document
+        .getElementById("copyOutputBtn")
+        .addEventListener("click", function () {
+          navigator.clipboard.writeText(outputText.value);
+          this.innerHTML = '<i class="fa-solid fa-check text-green-500"></i>';
+          setTimeout(
+            () => (this.innerHTML = '<i class="fa-regular fa-copy"></i>'),
+            2000,
+          );
+        });
+      document.getElementById("clearInputBtn").addEventListener("click", () => {
+        inputText.value = "";
+        saveToHistory("");
+        updateStats();
+        checkAutocorrect();
+        // audit #9: persistă starea goală (ts nou) + șterge draftul IDB, ca să nu reapară „zombie"
+        persistState();
+        if (typeof window.__clearDraftBackup === "function")
+          window.__clearDraftBackup();
+      });
+
+      // Helper descarcare fisier text (TXT/MD). DOCX/PDF au logica proprie mai jos.
+      function downloadBlob(content, mime, ext) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+        a.download = `Doc_${Date.now()}.${ext}`;
+        a.click();
+      }
+      document
+        .getElementById("exportTxtBtn")
+        .addEventListener("click", () =>
+          downloadBlob(outputText.value, "text/plain;charset=utf-8", "txt"),
+        );
+      document
+        .getElementById("exportMdBtn")
+        .addEventListener("click", () =>
+          downloadBlob(outputText.value, "text/markdown;charset=utf-8", "md"),
+        );
+      // Stil comun pt export (Markdown randat -> titluri/tabele/bold reale in DOCX & PDF)
+      const MD_EXPORT_STYLE = `
+        .md-doc{font-family:'Segoe UI',Calibri,Arial,sans-serif;font-size:11.5pt;line-height:1.5;color:#1f2937;}
+        .md-doc h1{font-size:20pt;font-weight:700;color:#0f172a;margin:.4em 0 .3em;}
+        .md-doc h2{font-size:15pt;font-weight:700;color:#0f172a;margin:.5em 0 .3em;}
+        .md-doc h3{font-size:12.5pt;font-weight:600;margin:.4em 0 .2em;}
+        .md-doc p{margin:.4em 0;}
+        .md-doc ul,.md-doc ol{margin:.3em 0 .3em 1.3em;}
+        .md-doc li{margin:.15em 0;}
+        .md-doc table{border-collapse:collapse;width:100%;margin:.5em 0;}
+        .md-doc th,.md-doc td{border:1px solid #94a3b8;padding:4px 8px;text-align:left;}
+        .md-doc th{background:#e2e8f0;}
+        .md-doc code{font-family:Consolas,monospace;background:#f1f5f9;padding:1px 5px;border-radius:4px;}
+        .md-doc pre{background:#f1f5f9;padding:10px;border-radius:6px;overflow-x:auto;}
+        .md-doc blockquote{border-left:3px solid #94a3b8;margin:.5em 0;padding-left:12px;color:#475569;}
+      `;
+      // Export DOCX — randeaza Markdown (titluri/tabele/bold reale), nu mai e text brut
+      document.getElementById("exportDocxBtn").addEventListener("click", () => {
+        if (!outputText.value) return showToast("Nimic de exportat!", "info");
+        const body = DOMPurify.sanitize(marked.parse(outputText.value));
+        const content = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${MD_EXPORT_STYLE}</style></head><body class="md-doc">${body}</body></html>`;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(htmlDocx.asBlob(content));
+        a.download = `Doc_${Date.now()}.docx`;
+        a.click();
+        showToast("DOCX generat (Markdown formatat).", "success");
+      });
+      // Export PDF — Markdown randat + header brand, A4, page-break inteligent
+      document.getElementById("exportPdfBtn").addEventListener("click", () => {
+        if (!outputText.value) return showToast("Nimic de exportat!", "info");
+        // html2canvas randeaza tot intr-un singur canvas; browserele plafoneaza inaltimea (~32767px).
+        // La documente lungi reducem `scale` (dubleaza plafonul) + avertizam, ca sa nu mai trunchiem
+        // TACUT paginile (audit F-PDFEXPORT).
+        const longDoc = outputText.value.length > 30000;
+        showToast(
+          longDoc
+            ? "Document lung — PDF la rezoluție redusă; dacă lipsesc pagini, exportă în secțiuni."
+            : "Generare PDF în curs...",
+          longDoc ? "warn" : "info",
+        );
+        const element = document.createElement("div");
+        const dateStr = new Date().toLocaleString("ro-RO");
+        const brandedHeader = `<div style="border-bottom:2px solid #0284c7;padding-bottom:8px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;font-family:sans-serif;">
+            <div style="font-size:18px;font-weight:700;color:#0284c7;">Asistent Text AI</div>
+            <div style="font-size:10px;color:#64748b;">${dateStr}</div>
+          </div>`;
+        element.className = "md-doc";
+        element.innerHTML =
+          `<style>${MD_EXPORT_STYLE}</style>` +
+          brandedHeader +
+          DOMPurify.sanitize(marked.parse(outputText.value));
+        element.style.padding = "8px 4px";
+        const opt = {
+          margin: [0.6, 0.55, 0.6, 0.55],
+          filename: `Doc_${Date.now()}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: longDoc ? 1 : 2, useCORS: true },
+          jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        };
+        html2pdf()
+          .set(opt)
+          .from(element)
+          .save()
+          .then(() => showToast("PDF generat cu succes!", "success"));
+      });
+
+      // Stealth Undo, Autocorect Diacritice, Diff View
+
+      let statsTimer;
+      inputText.addEventListener("input", () => {
+        clearTimeout(typingTimer);
+        // F5: stats throttled (~120ms) — evita split(/\s+/) pe tot textul la FIECARE tasta
+        // (lag perceptibil pe documente 100k+); pe documente normale ramane practic live.
+        clearTimeout(statsTimer);
+        statsTimer = setTimeout(updateStats, 120);
+        autocorrectOverlay.innerHTML = "";
+        typingTimer = setTimeout(() => {
+          saveToHistory(inputText.value);
+          checkAutocorrect();
+        }, 1000);
+      });
+
+      function performUndo() {
+        if (textHistory.length > 1) {
+          textHistory.pop();
+          inputText.value = textHistory[textHistory.length - 1];
+          updateStats();
+          checkAutocorrect();
+        } else if (textHistory.length === 1) {
+          inputText.value = "";
+          textHistory = [];
+          updateStats();
+        }
+      }
+      document.getElementById("btnUndo").addEventListener("click", performUndo);
+      document.addEventListener("keydown", (e) => {
+        if (e.altKey && e.code === "KeyZ") {
+          e.preventDefault();
+          performUndo();
+        }
+      });
+
+      inputText.addEventListener("scroll", () => {
+        autocorrectOverlay.scrollTop = inputText.scrollTop;
+      });
+
+      window.applyFix = function (start, len, fix) {
+        inputText.value =
+          inputText.value.substring(0, start) +
+          fix +
+          inputText.value.substring(start + len);
+        saveToHistory(inputText.value);
+        checkAutocorrect();
+      };
+
+      // ============ ACCESIBILITATE (audit #8/#23/#24/#25, WCAG nivel A) ============
+      (function initA11y() {
+        // (A) Etichete pe campuri + butoane icon-only (WCAG 1.3.1 / 4.1.2 / 3.3.2)
+        const LABELS = {
+          inputText: "Editor text sursă",
+          outputText: "Rezultat AI",
+          customPersona: "Persona / rol AI (opțional)",
+          chatInput: "Mesaj către asistent",
+          cmdkInput: "Caută o acțiune",
+          micLang: "Limbă dictare",
+          btnTranslateMenu: "Traducere (alege limba)",
+          btnExportMenu: "Exportă rezultatul",
+          themeToggle: "Comută tema (luminos / întunecat)",
+          btnLegendOpen: "Deschide ghidul de utilizare",
+          btnUndo: "Anulează ultima modificare",
+          clearInputBtn: "Golește editorul sursă",
+          clearOutputBtn: "Golește rezultatul generat",
+          btnSidebarClose: "Închide meniul de unelte",
+          btnDiff: "Compară (diff) cu sursa",
+          btnPreview: "Previzualizare Markdown",
+          exportTxtBtn: "Exportă TXT",
+          exportMdBtn: "Exportă Markdown",
+          exportDocxBtn: "Exportă DOCX",
+          exportPdfBtn: "Exportă PDF",
+          btnCloseFloatingChat: "Închide chat-ul asistentului",
+          btnLegendClose: "Închide ghidul",
+        };
+        for (const [id, label] of Object.entries(LABELS)) {
+          const el = document.getElementById(id);
+          if (el && !el.getAttribute("aria-label"))
+            el.setAttribute("aria-label", label);
+        }
+
+        // (B) Iconite decorative -> ascunse pt screen-reader
+        document
+          .querySelectorAll("i.fa-solid, i.fa-regular, i.fa-brands")
+          .forEach((i) => i.setAttribute("aria-hidden", "true"));
+
+        // (C) aria-live pe toast (WCAG 4.1.3 — anunturi de status)
+        const toastC = document.getElementById("toastContainer");
+        if (toastC) {
+          toastC.setAttribute("role", "status");
+          toastC.setAttribute("aria-live", "polite");
+        }
+
+        // (D) Magic Edit: toolbar + acces din tastatura (WCAG 2.1.1): selectezi text + Alt+M
+        const mt = document.getElementById("magicTooltip");
+        if (mt) {
+          mt.setAttribute("role", "toolbar");
+          mt.setAttribute("aria-label", "Magic Edit pe selecție");
+          mt.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+              mt.style.display = "none";
+              if (currentSelection.el) currentSelection.el.focus();
+            }
+          });
+        }
+        function openMagicForKeyboard(el) {
+          const text = el.value
+            .substring(el.selectionStart, el.selectionEnd)
+            .trim();
+          if (!text)
+            return showToast(
+              "Selectează întâi un text pentru Magic Edit.",
+              "info",
+            );
+          const rect = el.getBoundingClientRect();
+          mt.style.top = `${rect.top + window.scrollY + 8}px`;
+          mt.style.left = `${rect.left + window.scrollX + 8}px`;
+          mt.style.display = "flex";
+          currentSelection = {
+            el,
+            text,
+            start: el.selectionStart,
+            end: el.selectionEnd,
+          };
+          const first = mt.querySelector(".magic-btn");
+          if (first) first.focus();
+        }
+        [inputText, outputText].forEach((el) =>
+          el.addEventListener("keydown", (e) => {
+            if (e.altKey && (e.key === "m" || e.key === "M")) {
+              e.preventDefault();
+              openMagicForKeyboard(el);
+            }
+          }),
+        );
+
+        // (E) Marcaje autocorect operabile la tastatura (delegare; template are data-* + tabindex)
+        const aco = document.getElementById("autocorrectOverlay");
+        if (aco) {
+          const applyFromEl = (m) =>
+            m &&
+            window.applyFix(
+              Number(m.dataset.pos),
+              Number(m.dataset.len),
+              m.dataset.fix,
+            );
+          aco.addEventListener("click", (e) => {
+            const m = e.target.closest(".autocorect-mark");
+            if (m) applyFromEl(m);
+          });
+          aco.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              const m = e.target.closest(".autocorect-mark");
+              if (m) {
+                e.preventDefault();
+                applyFromEl(m);
+              }
+            }
+          });
+        }
+
+        // (F) Modale: role=dialog + aria-modal + focus trap + focus return (WCAG 4.1.2 / 2.4.3)
+        function setupModal(id, name) {
+          const m = document.getElementById(id);
+          if (!m) return;
+          m.setAttribute("role", "dialog");
+          m.setAttribute("aria-modal", "true");
+          if (!m.getAttribute("aria-label")) m.setAttribute("aria-label", name);
+          const focusables = () =>
+            Array.from(
+              m.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
+              ),
+            ).filter((el) => el.offsetParent !== null);
+          let lastFocus = null;
+          new MutationObserver(() => {
+            const open = !m.classList.contains("hidden");
+            if (open && !m.__a11y) {
+              m.__a11y = true;
+              lastFocus = document.activeElement;
+              const f = focusables();
+              if (f.length) f[0].focus();
+            } else if (!open && m.__a11y) {
+              m.__a11y = false;
+              if (lastFocus && lastFocus.focus) lastFocus.focus();
+            }
+          }).observe(m, { attributes: true, attributeFilter: ["class"] });
+          m.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") m.classList.add("hidden");
+            else if (e.key === "Tab") {
+              const f = focusables();
+              if (!f.length) return;
+              const first = f[0],
+                last = f[f.length - 1];
+              if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+              } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+              }
+            }
+          });
+        }
+        setupModal("legendModal", "Ghid de utilizare");
+        setupModal("floatingChatBox", "Chat cu asistentul");
+      })();
+
+      // Delegheaza la modulul extras /lib/llm.js (acelasi comportament; testat in tests/llm.test.js)
+      function escapeHtml(unsafe) {
+        return LLM.escapeHtml(unsafe);
+      }
+      function toggleDiff() {
+        if (diffOverlay.classList.contains("hidden")) {
+          // Guard perf (#15): Diff sincron pe main-thread îngheață UI-ul pe documente
+          // foarte mari → refuză cu mesaj în loc să blochezi pagina.
+          if (inputText.value.length + outputText.value.length > 40000) {
+            showToast(
+              "Diff dezactivat pe documente foarte mari (ar îngheța pagina).",
+              "info",
+            );
+            return;
+          }
+          const diff = Diff.diffWordsWithSpace(
+            inputText.value,
+            outputText.value,
+          );
+          let html = "";
+          diff.forEach((p) => {
+            html += `<span class="${p.added ? "diff-add" : p.removed ? "diff-remove" : ""}">${escapeHtml(p.value)}</span>`;
+          });
+          diffOverlay.innerHTML = html;
+          diffOverlay.classList.remove("hidden");
+          outputText.classList.add("hidden");
+          btnDiff.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Ieși Diff';
+          btnDiff.classList.add("bg-slate-400", "text-white");
+        } else {
+          diffOverlay.classList.add("hidden");
+          outputText.classList.remove("hidden");
+          btnDiff.innerHTML = '<i class="fa-solid fa-code-compare"></i> Diff';
+          btnDiff.classList.remove("bg-slate-400", "text-white");
+        }
+      }
+      document.getElementById("btnDiff").addEventListener("click", toggleDiff);
+
+      // Dictare
+      // Fallback dictare pe device-uri FARA Web Speech API (ex: iPhone/Safari) — restul app-ului merge oriunde
+      if (
+        !("SpeechRecognition" in window) &&
+        !("webkitSpeechRecognition" in window)
+      ) {
+        const _mb = document.getElementById("micBtn");
+        const _ms = document.getElementById("micStatus");
+        if (_ms) _ms.textContent = "Dictare indisponibilă";
+        if (_mb) {
+          _mb.classList.add("opacity-60");
+          _mb.title =
+            "Dictarea vocala nu e suportata de acest browser. Foloseste microfonul din tastatura telefonului; restul functiilor AI merg normal.";
+          _mb.addEventListener("click", () => {
+            alert(
+              "Dictarea vocala nu e suportata in acest browser (ex: Safari pe iPhone).\n\nFoloseste microfonul din tastatura telefonului (🎤) ca sa dictezi in campul de text, apoi apasa butoanele AI (Imbunatateste / Corectura / etc.) — acelea functioneaza pe ORICE device.",
+            );
+          });
+        }
+      }
+
+      let recognition = null,
+        isRecording = false;
+      if (
+        "SpeechRecognition" in window ||
+        "webkitSpeechRecognition" in window
+      ) {
+        recognition = new (
+          window.SpeechRecognition || window.webkitSpeechRecognition
+        )();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        const micBtn = document.getElementById("micBtn"),
+          micIcon = document.getElementById("micIcon"),
+          micStatus = document.getElementById("micStatus"),
+          interimText = document.getElementById("interimText");
+
+        let recTimerInt = null,
+          recSeconds = 0;
+        const recEq = document.getElementById("recEq"),
+          recTimer = document.getElementById("recTimer");
+
+        // Dictare LIVE direct în câmp: textul apare cuvânt-cu-cuvânt în textarea,
+        // editabil imediat. dictHead/dictTail = textul din jurul punctului de start;
+        // dictCommitted = textul deja finalizat în sesiunea curentă de dictare.
+        let dictHead = "",
+          dictTail = "",
+          dictCommitted = "";
+        // adaugă spațiu între text existent și fragmentul nou, fără spațiu dublu / înainte de punctuație
+        function joinSpaced(left, chunk) {
+          if (
+            left.length &&
+            !/\s$/.test(left) &&
+            chunk &&
+            !/^[\s.,!?;:]/.test(chunk)
+          )
+            return " " + chunk;
+          return chunk;
+        }
+        function renderDictation(interim) {
+          const preview = joinSpaced(dictHead + dictCommitted, interim || "");
+          inputText.value = dictHead + dictCommitted + preview + dictTail;
+          const caret = (dictHead + dictCommitted + preview).length;
+          try {
+            inputText.selectionStart = inputText.selectionEnd = caret;
+          } catch (e) {}
+          updateStats();
+        }
+        function toggleMic() {
+          if (isRecording) {
+            recognition.stop();
+            isRecording = false;
+            micIcon.classList.remove("recording");
+            micStatus.textContent = "Dictare";
+            interimText.classList.add("hidden");
+            if (recEq) recEq.classList.add("hidden");
+            if (recTimer) recTimer.classList.add("hidden");
+            clearInterval(recTimerInt);
+            // finalizează: păstrează ce e deja în câmp și salvează în istoric
+            renderDictation("");
+            saveToHistory(inputText.value);
+            persistState();
+          } else {
+            recognition.lang = document.getElementById("micLang").value;
+            recognition.start();
+            isRecording = true;
+            micIcon.classList.add("recording");
+            micStatus.textContent = "Ascult...";
+            interimText.classList.remove("hidden");
+            // ancorează dictarea la poziția cursorului (sau la final dacă nu e focalizat)
+            let _s = inputText.selectionStart,
+              _e = inputText.selectionEnd;
+            if (document.activeElement !== inputText) {
+              _s = _e = inputText.value.length;
+            }
+            dictHead = inputText.value.substring(0, _s);
+            dictTail = inputText.value.substring(_e);
+            dictCommitted = "";
+            if (recEq) recEq.classList.remove("hidden");
+            if (recTimer) {
+              recSeconds = 0;
+              recTimer.textContent = "0:00";
+              recTimer.classList.remove("hidden");
+              recTimerInt = setInterval(() => {
+                recSeconds++;
+                const m = Math.floor(recSeconds / 60);
+                const s = String(recSeconds % 60).padStart(2, "0");
+                recTimer.textContent = `${m}:${s}`;
+              }, 1000);
+            }
+          }
+        }
+        micBtn.addEventListener("click", toggleMic);
+        document.addEventListener("keydown", (e) => {
+          if (e.altKey && e.code === "Space") {
+            e.preventDefault();
+            toggleMic();
+          }
+        });
+
+        recognition.onresult = (event) => {
+          let finalT = "",
+            interim = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal)
+              finalT += event.results[i][0].transcript;
+            else interim += event.results[i][0].transcript;
+          }
+          // indicator de stare (textul real apare acum direct în câmp)
+          interimText.textContent = "Ascult...";
+          if (finalT) {
+            const lowerT = finalT.toLowerCase();
+            // Web Speech ro-RO intoarce diacritice ("rezumă"/"corectează"), dar comenzile
+            // sunt scrise fara -> compar pe forma normalizata NFD (diacriticele scoase).
+            const normT = lowerT.normalize("NFD").replace(/[̀-ͯ]/g, "");
+            if (normT.includes("asistent rezuma")) {
+              toggleMic();
+              document.getElementById("btnSummarize").click();
+              return;
+            }
+            if (normT.includes("asistent corecteaza")) {
+              toggleMic();
+              document.getElementById("btnCorrect").click();
+              return;
+            }
+            // comit fragmentul finalizat în câmp (rămâne editabil)
+            dictCommitted += joinSpaced(dictHead + dictCommitted, finalT);
+            renderDictation("");
+            saveToHistory(inputText.value);
+          } else {
+            // afișează interimarul LIVE în câmp, fără să-l salveze încă în istoric
+            renderDictation(interim);
+          }
+        };
+        recognition.onerror = (e) => {
+          console.warn(e.error);
+          toggleMic();
+        };
+      }
+
+      // Legend Modal
+      const legendModal = document.getElementById("legendModal"),
+        btnLegendOpen = document.getElementById("btnLegendOpen"),
+        btnLegendClose = document.getElementById("btnLegendClose"),
+        legendBackdrop = document.getElementById("legendBackdrop");
+      function toggleLegend() {
+        legendModal.classList.toggle("hidden");
+      }
+      btnLegendOpen.addEventListener("click", toggleLegend);
+
+      // === Drawer „Unelte & Setări" (hamburger ☰): off-canvas pe ORICE ecran ===
+      (function sidebarDrawer() {
+        const btn = document.getElementById("btnSidebar");
+        const backdrop = document.getElementById("sidebarBackdrop");
+        const sidebar = document.getElementById("sidebar");
+        const closeBtn = document.getElementById("btnSidebarClose");
+        if (!btn || !sidebar) return;
+        const isOpen = () =>
+          document.body.getAttribute("data-sidebar") === "open";
+        function set(state) {
+          document.body.setAttribute("data-sidebar", state);
+          btn.setAttribute(
+            "aria-expanded",
+            state === "open" ? "true" : "false",
+          );
+        }
+        function toggle() {
+          const willOpen = !isOpen();
+          set(willOpen ? "open" : "closed");
+          if (willOpen) {
+            const f = sidebar.querySelector(
+              "button, a, input, select, textarea",
+            );
+            if (f) f.focus();
+          } else {
+            btn.focus();
+          }
+        }
+        // Drawer „Unelte & Setări": închis implicit pe ORICE ecran (editor full-width)
+        set("closed");
+        btn.addEventListener("click", toggle);
+        if (closeBtn) closeBtn.addEventListener("click", () => set("closed"));
+        if (backdrop) backdrop.addEventListener("click", () => set("closed"));
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && isOpen()) set("closed");
+        });
+      })();
+      btnLegendClose.addEventListener("click", toggleLegend);
+      legendBackdrop.addEventListener("click", toggleLegend);
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !legendModal.classList.contains("hidden"))
+          toggleLegend();
+      });
+
+      // ===== TOAST (lipsea — repara si export PDF) =====
+      function showToast(message, type = "info") {
+        const c = document.getElementById("toastContainer");
+        if (!c) return;
+        const bg =
+          {
+            success: "bg-green-600",
+            error: "bg-red-600",
+            warn: "bg-amber-500",
+            info: "bg-slate-800",
+          }[type] || "bg-slate-800";
+        const t = document.createElement("div");
+        t.className = `${bg} text-white text-sm px-4 py-2 rounded-lg shadow-lg pointer-events-auto transition-opacity duration-300 max-w-xs`;
+        t.textContent = message;
+        c.appendChild(t);
+        setTimeout(() => {
+          t.style.opacity = "0";
+          setTimeout(() => t.remove(), 300);
+        }, 3200);
+      }
+
+      // ===== PERSISTENTA (localStorage): input + output + persona + history =====
+      const LS_KEY = "asistent_text_ai_state_v1";
+      function persistState() {
+        const save = (hist) =>
+          localStorage.setItem(
+            LS_KEY,
+            JSON.stringify({
+              input: inputText.value,
+              output: outputText.value,
+              persona: document.getElementById("customPersona").value,
+              history: hist,
+              ts: Date.now(),
+            }),
+          );
+        // Handling QuotaExceeded (#16): pe documente mari salvarea poate depăși cota
+        // localStorage. Degradează grațios (istoric redus → fără istoric) și anunță
+        // doar dacă nici input-ul/output-ul curent nu mai încap.
+        try {
+          save(textHistory.slice(-50));
+        } catch (e) {
+          try {
+            save(textHistory.slice(-10));
+          } catch (e2) {
+            try {
+              save([]);
+            } catch (e3) {
+              showToast(
+                "Spațiu de salvare insuficient — starea nu a putut fi păstrată.",
+                "error",
+              );
+            }
+          }
+        }
+      }
+      function restoreState() {
+        try {
+          const s = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+          if (!s) {
+            // migrare din vechiul model pe-cheie
+            const legacy = localStorage.getItem("asistent_input_text");
+            if (legacy) {
+              inputText.value = legacy;
+              updateStats();
+              checkAutocorrect();
+            }
+            return;
+          }
+          inputText.value = s.input || "";
+          outputText.value = s.output || "";
+          if (s.persona)
+            document.getElementById("customPersona").value = s.persona;
+          if (Array.isArray(s.history)) textHistory = s.history;
+          updateStats();
+          checkAutocorrect();
+        } catch (e) {}
+      }
+      // Salveaza si la inchidere/background (capteaza editari output + persona)
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) persistState();
+      });
+      window.addEventListener("pagehide", persistState);
+      document
+        .getElementById("customPersona")
+        .addEventListener("input", persistState);
+
+      // ===== CHAINING: Regenereaza + Foloseste rezultatul ca sursa =====
+      function regenerate() {
+        if (!lastAction) return showToast("Nimic de regenerat", "info");
+        executeAction(
+          lastAction.promptTemplate,
+          lastAction.provider,
+          lastAction.requiresText,
+        );
+      }
+      function useOutputAsSource() {
+        if (!outputText.value.trim()) return showToast("Output gol", "info");
+        saveToHistory(inputText.value);
+        inputText.value = outputText.value;
+        outputText.value = "";
+        updateStats();
+        checkAutocorrect();
+        persistState();
+        showToast("Rezultat mutat în sursă", "success");
+      }
+
+      // ===== PARTAJARE rezultat (Web Share API) =====
+      async function shareOutput() {
+        const text = outputText.value.trim();
+        if (!text) return showToast("Nimic de partajat", "info");
+        if (navigator.share) {
+          try {
+            await navigator.share({ text, title: "Asistent AI" });
+          } catch (e) {}
+        } else {
+          try {
+            await navigator.clipboard.writeText(text);
+            showToast("Copiat (share indisponibil pe acest device)", "success");
+          } catch (e) {
+            showToast("Nu am putut partaja", "error");
+          }
+        }
+      }
+
+      // ===== PREVIEW Markdown (butonul era nelegat) — sanitizat DOMPurify =====
+      function togglePreview() {
+        const ov = document.getElementById("previewOverlay");
+        if (ov.classList.contains("hidden")) {
+          ov.innerHTML = DOMPurify.sanitize(
+            marked.parse(outputText.value || ""),
+          );
+          ov.classList.remove("hidden");
+          outputText.classList.add("hidden");
+        } else {
+          ov.classList.add("hidden");
+          outputText.classList.remove("hidden");
+        }
+      }
+
+      // Wiring butoane noi + Preview
+      document.getElementById("btnRegen").addEventListener("click", regenerate);
+      document
+        .getElementById("btnUseAsSource")
+        .addEventListener("click", useOutputAsSource);
+      document
+        .getElementById("btnShare")
+        .addEventListener("click", shareOutput);
+      document
+        .getElementById("btnPreview")
+        .addEventListener("click", togglePreview);
+
+      restoreState();
+    </script>
+
+    <!-- FEATURES ADITIONALE (theme toggle, PWA install/offline/update, command palette, a11y, IndexedDB) -->
+    <script>
+      (function () {
+        "use strict";
+
+        // ===== THEME TOGGLE (era nefuncțional) — persist + prefers-color-scheme =====
+        const root = document.documentElement;
+        const themeIcon = document.getElementById("themeIcon");
+        function applyTheme(mode) {
+          const dark = mode !== "light";
+          root.classList.toggle("dark", dark);
+          if (themeIcon)
+            themeIcon.className = dark
+              ? "fa-solid fa-sun text-lg"
+              : "fa-solid fa-moon text-lg";
+        }
+        (function initTheme() {
+          let saved = null;
+          try {
+            saved = localStorage.getItem("theme");
+          } catch (e) {}
+          applyTheme(saved === "light" ? "light" : "dark"); // default: dark (identitatea app-ului)
+        })();
+        const themeToggle = document.getElementById("themeToggle");
+        if (themeToggle)
+          themeToggle.addEventListener("click", () => {
+            const goDark = !root.classList.contains("dark");
+            applyTheme(goDark ? "dark" : "light");
+            try {
+              localStorage.setItem("theme", goDark ? "dark" : "light");
+            } catch (e) {}
+          });
+
+        // ===== PWA INSTALL (beforeinstallprompt + hint iOS) =====
+        let deferredPrompt = null;
+        const btnInstall = document.getElementById("btnInstall");
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          window.navigator.standalone === true;
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          if (btnInstall && !isStandalone)
+            btnInstall.classList.remove("hidden");
+        });
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (btnInstall)
+          btnInstall.addEventListener("click", async () => {
+            if (deferredPrompt) {
+              deferredPrompt.prompt();
+              try {
+                await deferredPrompt.userChoice;
+              } catch (e) {}
+              deferredPrompt = null;
+              btnInstall.classList.add("hidden");
+            } else if (isIOS && typeof showToast === "function") {
+              showToast(
+                'iPhone: apasă Share (□↑) apoi „Adaugă pe ecranul principal".',
+                "info",
+              );
+            }
+          });
+        window.addEventListener("appinstalled", () => {
+          if (btnInstall) btnInstall.classList.add("hidden");
+        });
+        if (isIOS && !isStandalone && btnInstall)
+          btnInstall.classList.remove("hidden");
+
+        // ===== OFFLINE INDICATOR =====
+        const offlinePill = document.getElementById("offlinePill");
+        function updateOnline() {
+          const off = !navigator.onLine;
+          if (offlinePill) {
+            offlinePill.classList.remove("hidden");
+            offlinePill.style.display = off ? "inline-flex" : "none";
+          }
+        }
+        window.addEventListener("online", () => {
+          updateOnline();
+          if (typeof showToast === "function")
+            showToast("Conexiune restabilită", "success");
+        });
+        window.addEventListener("offline", () => {
+          updateOnline();
+          if (typeof showToast === "function")
+            showToast("Ești offline — funcțiile AI necesită conexiune", "warn");
+        });
+        updateOnline();
+
+        // ===== SERVICE WORKER — UPDATE OPT-IN (toast „versiune nouă") =====
+        function showUpdateToast(worker) {
+          const c = document.getElementById("toastContainer");
+          if (!c || !worker) return;
+          const t = document.createElement("div");
+          t.className =
+            "bg-brand-600 text-white text-sm px-4 py-3 rounded-lg shadow-lg pointer-events-auto flex items-center gap-3 max-w-xs";
+          t.innerHTML =
+            '<span><i class="fa-solid fa-rotate"></i> Versiune nouă disponibilă</span>';
+          const b = document.createElement("button");
+          b.className = "underline font-bold whitespace-nowrap";
+          b.textContent = "Reîncarcă";
+          b.addEventListener("click", () =>
+            worker.postMessage({ type: "SKIP_WAITING" }),
+          );
+          t.appendChild(b);
+          c.appendChild(t);
+        }
+        if ("serviceWorker" in navigator) {
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+          navigator.serviceWorker.ready
+            .then((reg) => {
+              if (!reg) return;
+              const track = (worker) => {
+                if (!worker) return;
+                worker.addEventListener("statechange", () => {
+                  if (
+                    worker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  )
+                    showUpdateToast(worker);
+                });
+              };
+              if (reg.waiting && navigator.serviceWorker.controller)
+                showUpdateToast(reg.waiting);
+              reg.addEventListener("updatefound", () => track(reg.installing));
+            })
+            .catch(() => {});
+        }
+
+        // ===== ERROR BOUNDARY GLOBAL (recovery elegant, throttle) =====
+        let lastErrToast = 0;
+        function reportErr(msg) {
+          const now = Date.now();
+          if (now - lastErrToast < 4000) return;
+          lastErrToast = now;
+          if (typeof showToast === "function")
+            showToast("A apărut o eroare neașteptată. Reîncearcă.", "error");
+          console.error("[ErrorBoundary]", msg);
+        }
+        window.addEventListener("error", (e) =>
+          reportErr((e && e.message) || (e && e.error)),
+        );
+        window.addEventListener("unhandledrejection", (e) =>
+          reportErr((e && e.reason && e.reason.message) || (e && e.reason)),
+        );
+
+        // ===== INDEXEDDB DRAFT BACKUP (peste localStorage, pt documente mari) =====
+        const IDB = (function () {
+          let dbp = null;
+          function open() {
+            if (dbp) return dbp;
+            dbp = new Promise((resolve, reject) => {
+              try {
+                const r = indexedDB.open("asistent_text_ai", 1);
+                r.onupgradeneeded = () => r.result.createObjectStore("kv");
+                r.onsuccess = () => resolve(r.result);
+                r.onerror = () => reject(r.error);
+              } catch (e) {
+                reject(e);
+              }
+            });
+            return dbp;
+          }
+          return {
+            set(key, val) {
+              return open().then(
+                (db) =>
+                  new Promise((res, rej) => {
+                    const tx = db.transaction("kv", "readwrite");
+                    tx.objectStore("kv").put(val, key);
+                    tx.oncomplete = () => res();
+                    tx.onerror = () => rej(tx.error);
+                  }),
+              );
+            },
+            get(key) {
+              return open().then(
+                (db) =>
+                  new Promise((res, rej) => {
+                    const tx = db.transaction("kv", "readonly");
+                    const rq = tx.objectStore("kv").get(key);
+                    rq.onsuccess = () => res(rq.result);
+                    rq.onerror = () => rej(rq.error);
+                  }),
+              );
+            },
+            del(key) {
+              return open().then(
+                (db) =>
+                  new Promise((res, rej) => {
+                    const tx = db.transaction("kv", "readwrite");
+                    tx.objectStore("kv").delete(key);
+                    tx.oncomplete = () => res();
+                    tx.onerror = () => rej(tx.error);
+                  }),
+              );
+            },
+          };
+        })();
+        // expune ștergerea draftului pentru clearInputBtn (scop diferit) — audit #9
+        window.__clearDraftBackup = () => IDB.del("draft").catch(() => {});
+        let _lastDraft = "";
+        setInterval(() => {
+          try {
+            const inp = document.getElementById("inputText");
+            if (inp && inp.value !== _lastDraft) {
+              _lastDraft = inp.value;
+              IDB.set("draft", { input: inp.value, ts: Date.now() }).catch(
+                () => {},
+              );
+            }
+          } catch (e) {}
+        }, 5000);
+        setTimeout(() => {
+          const inp = document.getElementById("inputText");
+          if (inp && !inp.value) {
+            IDB.get("draft")
+              .then((d) => {
+                if (!d || !d.input || inp.value) return;
+                // audit #9: restaurează DOAR dacă draftul e mai nou decât starea localStorage
+                // (altfel un input șters recent ar reveni „zombie").
+                let lsTs = 0;
+                try {
+                  lsTs =
+                    (JSON.parse(localStorage.getItem(LS_KEY) || "null") || {})
+                      .ts || 0;
+                } catch (e) {}
+                if ((d.ts || 0) <= lsTs) return;
+                inp.value = d.input;
+                inp.dispatchEvent(new Event("input"));
+                if (typeof showToast === "function")
+                  showToast("Draft restaurat din backup local", "info");
+              })
+              .catch(() => {});
+          }
+        }, 800);
+
+        // ===== ROVING TABINDEX pe toolbar (WCAG 2.2 — un singur tab-stop) =====
+        document
+          .querySelectorAll('[data-roving][role="toolbar"]')
+          .forEach((tb) => {
+            const items = [...tb.querySelectorAll("button")];
+            if (!items.length) return;
+            items.forEach((b, i) =>
+              b.setAttribute("tabindex", i === 0 ? "0" : "-1"),
+            );
+            tb.addEventListener("keydown", (e) => {
+              const idx = items.indexOf(document.activeElement);
+              if (idx < 0) return;
+              let n = idx;
+              if (e.key === "ArrowRight" || e.key === "ArrowDown")
+                n = (idx + 1) % items.length;
+              else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+                n = (idx - 1 + items.length) % items.length;
+              else if (e.key === "Home") n = 0;
+              else if (e.key === "End") n = items.length - 1;
+              else return;
+              e.preventDefault();
+              items[idx].setAttribute("tabindex", "-1");
+              items[n].setAttribute("tabindex", "0");
+              items[n].focus();
+            });
+          });
+
+        // ===== COMMAND PALETTE (Ctrl/Cmd+K) =====
+        const cmdkModal = document.getElementById("cmdkModal");
+        const cmdkInput = document.getElementById("cmdkInput");
+        const cmdkList = document.getElementById("cmdkList");
+        const cmdkBackdrop = document.getElementById("cmdkBackdrop");
+        function clickId(id) {
+          const el = document.getElementById(id);
+          if (el) el.click();
+        }
+        const COMMANDS = [
+          {
+            l: "Îmbunătățește textul",
+            i: "fa-pen-nib",
+            r: () => clickId("btnImprove"),
+          },
+          {
+            l: "Corectură gramaticală",
+            i: "fa-check-double",
+            r: () => clickId("btnCorrect"),
+          },
+          {
+            l: "Rezumă textul",
+            i: "fa-compress",
+            r: () => clickId("btnSummarize"),
+          },
+          {
+            l: "Transformă în email",
+            i: "fa-envelope",
+            r: () => clickId("btnEmail"),
+          },
+          {
+            l: "Transformă în raport",
+            i: "fa-list",
+            r: () => clickId("btnReport"),
+          },
+          { l: "Optimizare SEO", i: "fa-bullseye", r: () => clickId("btnSEO") },
+          {
+            l: "Data Miner (extrage date)",
+            i: "fa-table-list",
+            r: () => clickId("btnExtractData"),
+          },
+          {
+            l: "Deep Research (web)",
+            i: "fa-globe",
+            r: () => clickId("btnDeepResearch"),
+          },
+          { l: "Analizează tonul", i: "fa-bolt", r: () => clickId("btnTone") },
+          {
+            l: "Dictare vocală (Alt+Space)",
+            i: "fa-microphone",
+            r: () => clickId("micBtn"),
+          },
+          {
+            l: "Pornește RAG Chat",
+            i: "fa-comments",
+            r: () => clickId("btnOpenFloatingChat"),
+          },
+          {
+            l: "Folosește rezultatul ca sursă",
+            i: "fa-arrow-up",
+            r: () => clickId("btnUseAsSource"),
+          },
+          {
+            l: "Regenerează rezultatul",
+            i: "fa-rotate",
+            r: () => clickId("btnRegen"),
+          },
+          {
+            l: "Preview Markdown",
+            i: "fa-eye",
+            r: () => clickId("btnPreview"),
+          },
+          {
+            l: "Compară (Diff)",
+            i: "fa-code-compare",
+            r: () => clickId("btnDiff"),
+          },
+          {
+            l: "Partajează rezultatul",
+            i: "fa-share-nodes",
+            r: () => clickId("btnShare"),
+          },
+          {
+            l: "Export TXT",
+            i: "fa-file-lines",
+            r: () => clickId("exportTxtBtn"),
+          },
+          {
+            l: "Export Markdown",
+            i: "fa-file-code",
+            r: () => clickId("exportMdBtn"),
+          },
+          {
+            l: "Export DOCX",
+            i: "fa-file-word",
+            r: () => clickId("exportDocxBtn"),
+          },
+          {
+            l: "Export PDF",
+            i: "fa-file-pdf",
+            r: () => clickId("exportPdfBtn"),
+          },
+          {
+            l: "Curăță editorul sursă",
+            i: "fa-trash-can",
+            r: () => clickId("clearInputBtn"),
+          },
+          {
+            l: "Undo (Alt+Z)",
+            i: "fa-rotate-left",
+            r: () => clickId("btnUndo"),
+          },
+          {
+            l: "Comută tema (dark/light)",
+            i: "fa-circle-half-stroke",
+            r: () => clickId("themeToggle"),
+          },
+          {
+            l: "Ghid de utilizare",
+            i: "fa-circle-question",
+            r: () => clickId("btnLegendOpen"),
+          },
+        ];
+        let cmdkActive = 0;
+        let cmdkFiltered = COMMANDS.slice();
+        function highlight() {
+          [...cmdkList.children].forEach((li, i) =>
+            li.classList.toggle("active", i === cmdkActive),
+          );
+        }
+        function ensureVisible() {
+          const el = cmdkList.children[cmdkActive];
+          if (el && el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
+        }
+        function renderCmdk() {
+          const q = (cmdkInput.value || "").toLowerCase().trim();
+          cmdkFiltered = COMMANDS.filter((c) => c.l.toLowerCase().includes(q));
+          if (cmdkActive >= cmdkFiltered.length) cmdkActive = 0;
+          cmdkList.innerHTML = "";
+          if (!cmdkFiltered.length) {
+            cmdkList.innerHTML =
+              '<li class="px-4 py-3 text-slate-500 dark:text-slate-400 text-sm">Nicio comandă găsită</li>';
+            return;
+          }
+          cmdkFiltered.forEach((c, i) => {
+            const li = document.createElement("li");
+            li.className =
+              "cmdk-item px-4 py-2 flex items-center gap-3 cursor-pointer text-slate-700 dark:text-slate-200" +
+              (i === cmdkActive ? " active" : "");
+            li.setAttribute("role", "option");
+            li.innerHTML =
+              '<i class="fa-solid ' +
+              c.i +
+              ' text-brand-500 w-4 text-center"></i><span>' +
+              c.l +
+              "</span>";
+            li.addEventListener("mouseenter", () => {
+              cmdkActive = i;
+              highlight();
+            });
+            li.addEventListener("click", () => runCmdk(i));
+            cmdkList.appendChild(li);
+          });
+        }
+        function runCmdk(i) {
+          const c = cmdkFiltered[i];
+          closeCmdk();
+          if (c && c.r) setTimeout(c.r, 60);
+        }
+        function openCmdk() {
+          if (!cmdkModal) return;
+          cmdkInput.value = "";
+          cmdkActive = 0;
+          renderCmdk();
+          cmdkModal.classList.remove("hidden");
+          setTimeout(() => cmdkInput.focus(), 30);
+        }
+        function closeCmdk() {
+          if (cmdkModal) cmdkModal.classList.add("hidden");
+        }
+        if (cmdkInput) {
+          cmdkInput.addEventListener("input", () => {
+            cmdkActive = 0;
+            renderCmdk();
+          });
+          cmdkInput.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              cmdkActive = Math.min(cmdkActive + 1, cmdkFiltered.length - 1);
+              highlight();
+              ensureVisible();
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              cmdkActive = Math.max(cmdkActive - 1, 0);
+              highlight();
+              ensureVisible();
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              runCmdk(cmdkActive);
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              closeCmdk();
+            }
+          });
+        }
+        if (cmdkBackdrop) cmdkBackdrop.addEventListener("click", closeCmdk);
+        const btnCmdK = document.getElementById("btnCmdK");
+        if (btnCmdK) btnCmdK.addEventListener("click", openCmdk);
+        document.addEventListener("keydown", (e) => {
+          if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+            e.preventDefault();
+            if (cmdkModal && cmdkModal.classList.contains("hidden")) openCmdk();
+            else closeCmdk();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

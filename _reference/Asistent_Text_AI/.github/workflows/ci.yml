@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm test
+
+  sri-guard:
+    # Sanity: tag-urile CDN versionate trebuie sa aiba SRI (integrity). Tailwind Play CDN e exceptat (mutabil).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifica prezenta SRI pe CDN versionat
+        run: |
+          missing=0
+          while IFS= read -r line; do
+            case "$line" in
+              *cdn.tailwindcss.com*) continue ;;  # exceptie deliberata (build mutabil)
+              *integrity=*) ;;
+              *) echo "::error::tag CDN fara SRI: $line"; missing=1 ;;
+            esac
+          done < <(grep -oE '(src|href)="https://(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com)[^"]*"' pwa/index.html | sed 's/.*="//;s/"$//' | while read -r u; do grep -nF "$u" pwa/index.html | head -1; done)
+          # Verificare simpla: numarul de tag-uri CDN versionate <= numarul de integrity=
+          cdn=$(grep -cE 'https://(cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com)' pwa/index.html)
+          integ=$(grep -c 'integrity=' pwa/index.html)
+          echo "CDN refs (versionate+worker): $cdn | integrity tags: $integ"
+          if [ "$integ" -lt 8 ]; then echo "::error::Sub 8 tag-uri SRI — verifica index.html"; exit 1; fi
+          echo "OK: $integ tag-uri SRI prezente."

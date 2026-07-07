@@ -1,0 +1,34 @@
+# === SECRETE — NU se comit NICIODATA (cheie API client-side a versiunii locale) ===
+env_keys.js
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.pfx
+
+# === Vercel link local (orgId/projectId) ===
+.vercel/
+pwa/.vercel/
+
+# === Node ===
+node_modules/
+
+# === Test coverage (vitest) ===
+coverage/
+
+# === Output diagnostic /doctor ===
+.claude-outputs/
+
+# === Loguri ===
+logs/
+*.log
+
+# === OS ===
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*
+
+# === Playwright MCP (snapshots/console temporare) ===
+.playwright-mcp/

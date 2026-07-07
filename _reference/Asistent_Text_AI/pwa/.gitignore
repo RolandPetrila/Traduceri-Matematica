@@ -1,0 +1,9 @@
+# Vercel link local (orgId/projectId — nu secrete, dar nu se versioneaza)
+.vercel/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

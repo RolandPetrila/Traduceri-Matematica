@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <title>Editor documente — DEMO Mösslein</title>
+    <style>
+      :root {
+        --blue: #1e5fa8;
+        --bg: #4b5563;
+        --tool: #1f2937;
+        --pagew: 794px;
+        --pageh: 1123px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "Segoe UI", system-ui, Arial, sans-serif;
+        background: var(--bg);
+        color: #111;
+      }
+
+      /* ---------- Bara de sus compacta ---------- */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--tool);
+        color: #e5e7eb;
+        padding: 6px 10px;
+        border-bottom: 1px solid #000;
+      }
+      .titlerow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+      }
+      .titlerow h1 {
+        font-size: 13px;
+        margin: 0;
+        font-weight: 600;
+        color: #fff;
+        white-space: nowrap;
+      }
+      .pgcount {
+        font-size: 12px;
+        color: #c7d2fe;
+        background: #312e81;
+        padding: 3px 8px;
+        border-radius: 20px;
+        white-space: nowrap;
+      }
+      .docname {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+      .docname input {
+        background: #111827;
+        color: #fff;
+        border: 1px solid #374151;
+        border-radius: 6px;
+        padding: 5px 8px;
+        font-size: 16px;
+        width: 180px;
+      }
+
+      .mic {
+        background: #7c3aed;
+        border: 1px solid #7c3aed;
+        color: #fff;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .mic:hover {
+        filter: brightness(1.12);
+      }
+      .mic.active {
+        background: #dc2626;
+        border-color: #dc2626;
+        animation: pulse 1.1s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+        }
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+      .toolbar button,
+      .toolbar select {
+        background: #374151;
+        color: #e5e7eb;
+        border: 1px solid #4b5563;
+        border-radius: 6px;
+        padding: 6px 9px;
+        font-size: 14px;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .toolbar button:hover,
+      .toolbar select:hover {
+        background: #4b5563;
+      }
+      .toolbar select.menu {
+        font-weight: 600;
+      }
+      .toolbar .sep {
+        width: 1px;
+        height: 18px;
+        background: #4b5563;
+        margin: 0 3px;
+      }
+      .toolbar .save {
+        background: #15803d;
+        border-color: #15803d;
+        color: #fff;
+      }
+      .toolbar .exp {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+        font-weight: 600;
+      }
+      .toolbar .np {
+        background: #0e7490;
+        border-color: #0e7490;
+        color: #fff;
+      }
+      .status {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-top: 2px;
+        min-height: 15px;
+      }
+
+      /* Paletar culori prestabilite */
+      .palette {
+        position: fixed;
+        z-index: 100;
+        background: #1f2937;
+        border: 1px solid #4b5563;
+        border-radius: 8px;
+        padding: 7px;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 5px;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+      }
+      .swatch {
+        width: 24px;
+        height: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 4px;
+        cursor: pointer;
+        padding: 0;
+      }
+      .swatch:hover {
+        transform: scale(1.12);
+      }
+      .palette .custom {
+        grid-column: 1 / -1;
+        width: 100%;
+        height: 26px;
+        border: 1px dashed #6b7280;
+        border-radius: 4px;
+        background: none;
+        cursor: pointer;
+      }
+
+      /* ---------- Foaie A4 + paginare ---------- */
+      .sheet-wrap {
+        padding: 16px 10px 80px;
+        display: flex;
+        justify-content: center;
+      }
+      .page-stack {
+        position: relative;
+        width: var(--pagew);
+      }
+      .page {
+        position: relative;
+        z-index: 1;
+        background: #fff;
+        width: var(--pagew);
+        min-height: var(--pageh);
+        padding: 76px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+        outline: none;
+        line-height: 1.5;
+        font-size: 12pt;
+        color: #111;
+      }
+      .page p {
+        margin: 0 0 10px;
+      }
+      .page h1 {
+        font-size: 20pt;
+        margin: 0 0 12px;
+      }
+      .page h2 {
+        font-size: 15pt;
+        margin: 14px 0 8px;
+      }
+      .page h3 {
+        font-size: 13pt;
+        margin: 12px 0 6px;
+      }
+      .page blockquote {
+        border-left: 3px solid #cbd5e1;
+        margin: 0 0 10px;
+        padding: 2px 0 2px 14px;
+        color: #475569;
+      }
+      .page table {
+        border-collapse: collapse;
+        margin: 8px 0;
+      }
+      .page td,
+      .page th {
+        border: 1px solid #999;
+        padding: 4px 8px;
+        min-width: 40px;
+      }
+      .page img {
+        max-width: 100%;
+      }
+      .placeholder {
+        color: #9ca3af;
+      }
+      .dict-interim {
+        color: #7c3aed;
+        background: #f3e8ff;
+        border-radius: 2px;
+      }
+
+      /* linia care marcheaza sfarsitul unei pagini A4 (peste foaie, nu blocheaza editarea) */
+      .pbreak {
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        border-top: 2px dashed #f59e0b;
+        pointer-events: none;
+      }
+      .pbreak span {
+        position: absolute;
+        right: 6px;
+        top: -9px;
+        background: #f59e0b;
+        color: #3b2a00;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 10px;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+
+      /* Antet fidel (constante reale din antet-config.ts) */
+      .antet {
+        margin-bottom: 20px;
+      }
+      .ah-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+      }
+      .ah-logo {
+        height: 58px;
+        width: auto;
+      }
+      .ah-co {
+        text-align: right;
+      }
+      .ah-name {
+        color: var(--blue);
+        font-weight: 800;
+        font-size: 13pt;
+        letter-spacing: 0.3px;
+      }
+      .ah-line {
+        color: #333;
+        font-size: 9pt;
+        line-height: 1.55;
+      }
+      .ah-iso {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .ah-iso img {
+        height: 30px;
+        width: auto;
+      }
+      .ah-iso span {
+        color: #444;
+        font-size: 8.5pt;
+      }
+      .ah-rule {
+        border-bottom: 2.5px solid var(--blue);
+        margin-top: 8px;
+      }
+
+      /* ---------- MOBIL (Android / iPhone): foaie fluida, fara ghidaje ---------- */
+      @media (max-width: 840px) {
+        .page-stack,
+        .page {
+          width: 100%;
+        }
+        .page {
+          padding: 24px 18px;
+          min-height: auto;
+          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+        }
+        .pbreak {
+          display: none;
+        }
+        .toolbar button,
+        .toolbar select {
+          padding: 8px 10px;
+          font-size: 15px;
+        }
+        .docname input {
+          width: 130px;
+        }
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+        .topbar {
+          display: none !important;
+        }
+        .sheet-wrap {
+          padding: 0;
+        }
+        .page-stack,
+        .page {
+          width: auto;
+        }
+        .page {
+          min-height: auto;
+          box-shadow: none;
+          padding: 1.6cm;
+        }
+        .pbreak {
+          display: none;
+        }
+        .dict-interim {
+          color: inherit;
+          background: none;
+        }
+        @page {
+          size: A4;
+          margin: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="titlerow">
+        <button
+          class="mic"
+          style="background: #6b7280; border-color: #6b7280"
+          onclick="goBack()"
+          title="Înapoi"
+        >
+          ← Înapoi
+        </button>
+        <h1>📝 Editor documente — DEMO</h1>
+        <span class="pgcount">📄 <b id="pageCount">1</b> pag. A4</span>
+        <button
+          id="micBtn"
+          class="mic"
+          onclick="toggleMic()"
+          title="Dictare vocală live (română)"
+        >
+          🎤 Dictare
+        </button>
+        <div class="docname">
+          Nume:
+          <input
+            id="docname"
+            type="text"
+            placeholder="ex: PV predare-primire"
+            oninput="scheduleSave()"
+          />
+        </div>
+      </div>
+
+      <!-- Rand 1: formatare text -->
+      <div class="toolbar">
+        <button onclick="cmd('undo')" title="Anulează">↶</button>
+        <button onclick="cmd('redo')" title="Refă">↷</button>
+        <span class="sep"></span>
+        <select onchange="cmd('fontName', this.value)" title="Font">
+          <option value="">Font</option>
+          <optgroup label="Oficiale / documente">
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Cambria">Cambria</option>
+            <option value="Garamond">Garamond</option>
+            <option value="Book Antiqua">Book Antiqua</option>
+            <option value="Calibri">Calibri</option>
+          </optgroup>
+          <optgroup label="Sans / moderne">
+            <option value="Arial">Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Segoe UI">Segoe UI</option>
+          </optgroup>
+          <optgroup label="Monospace">
+            <option value="Courier New">Courier New</option>
+            <option value="Consolas">Consolas</option>
+          </optgroup>
+        </select>
+        <select onchange="setFontSize(this.value)" title="Mărime (pt)">
+          <option value="">pt</option>
+          <option>8</option>
+          <option>9</option>
+          <option>10</option>
+          <option>11</option>
+          <option selected>12</option>
+          <option>14</option>
+          <option>16</option>
+          <option>18</option>
+          <option>20</option>
+          <option>24</option>
+          <option>28</option>
+          <option>36</option>
+          <option>48</option>
+          <option>72</option>
+        </select>
+        <span class="sep"></span>
+        <button onclick="cmd('bold')" title="Îngroșat"><b>B</b></button>
+        <button onclick="cmd('italic')" title="Înclinat"><i>I</i></button>
+        <button onclick="cmd('underline')" title="Subliniat"><u>U</u></button>
+        <button onclick="cmd('strikeThrough')" title="Tăiat">S̶</button>
+        <button onclick="cmd('subscript')" title="Indice">x₂</button>
+        <button onclick="cmd('superscript')" title="Exponent">x²</button>
+        <span class="sep"></span>
+        <button
+          onmousedown="event.preventDefault()"
+          onclick="openPalette('text', this)"
+          title="Culoare text"
+        >
+          <b style="color: #ef4444">A</b> ▾
+        </button>
+        <button
+          onmousedown="event.preventDefault()"
+          onclick="openPalette('hl', this)"
+          title="Evidențiere"
+        >
+          🖍 ▾
+        </button>
+        <button onclick="cmd('removeFormat')" title="Șterge formatarea">
+          ⌫
+        </button>
+      </div>
+
+      <!-- Rand 2: paragraf + meniuri grupate -->
+      <div class="toolbar">
+        <select onchange="block(this.value)" title="Stil paragraf">
+          <option value="P">Text normal</option>
+          <option value="H1">Titlu 1</option>
+          <option value="H2">Titlu 2</option>
+          <option value="H3">Titlu 3</option>
+          <option value="BLOCKQUOTE">Citat</option>
+        </select>
+        <button onclick="cmd('justifyLeft')" title="Stânga">⯇</button>
+        <button onclick="cmd('justifyCenter')" title="Centru">☰</button>
+        <button onclick="cmd('justifyRight')" title="Dreapta">⯈</button>
+        <button onclick="cmd('justifyFull')" title="Justify">▤</button>
+        <button onclick="cmd('insertUnorderedList')" title="Listă">•</button>
+        <button onclick="cmd('insertOrderedList')" title="Listă numerotată">
+          1.
+        </button>
+        <button onclick="cmd('outdent')" title="Indent −">⇤</button>
+        <button onclick="cmd('indent')" title="Indent +">⇥</button>
+        <span class="sep"></span>
+        <button
+          class="np"
+          onclick="newFile()"
+          title="Pagină curată — document nou (ca «New File»)"
+        >
+          🗎 Pagină nouă
+        </button>
+        <select class="menu" onchange="runMenu(this)" title="Inserează">
+          <option value="">➕ Inserează ▾</option>
+          <option value="link">🔗 Link</option>
+          <option value="image">🖼 Imagine</option>
+          <option value="hr">— Linie orizontală</option>
+          <option value="date">📅 Data de azi</option>
+          <option value="pagebreak">⤓ Întrerupere de pagină</option>
+        </select>
+        <select class="menu" onchange="runMenu(this)" title="Tabel">
+          <option value="">▦ Tabel ▾</option>
+          <option value="t-insert">▦ Inserează tabel</option>
+          <option value="t-row-below">+ Rând dedesubt</option>
+          <option value="t-row-above">+ Rând deasupra</option>
+          <option value="t-row-del">− Șterge rândul</option>
+          <option value="t-col-right">+ Coloană dreapta</option>
+          <option value="t-col-left">+ Coloană stânga</option>
+          <option value="t-col-del">− Șterge coloana</option>
+          <option value="t-head">⬒ Rând antet</option>
+        </select>
+        <select class="menu" onchange="runMenu(this)" title="Antet Mösslein">
+          <option value="">🏢 Antet ▾</option>
+          <option value="a-logo">Logo</option>
+          <option value="a-iso">Logo + ISO</option>
+          <option value="a-none">✕ Fără antet</option>
+        </select>
+        <span class="sep"></span>
+        <button class="save" onclick="salveaza()" title="Salvează">
+          💾 Salvează
+        </button>
+        <select class="menu exp" onchange="runMenu(this)" title="Export">
+          <option value="">⬇ Export ▾</option>
+          <option value="e-pdf">PDF</option>
+          <option value="e-word">Word (.doc)</option>
+          <option value="e-html">HTML</option>
+        </select>
+      </div>
+
+      <div class="status" id="status">
+        Foaie A4 · auto-save · dictare live. Scrie — când umpli pagina, apare
+        „Pagina 2".
+      </div>
+    </div>
+
+    <div class="sheet-wrap">
+      <div class="page-stack" id="stack">
+        <div class="page" id="page" contenteditable="true">
+          <p class="placeholder">
+            Scrie aici documentul (proces verbal, adresă, ofertă, orice)...<br /><br />
+            „🎤 Dictare" scrie live cât vorbești. „🏢 Antet" pune antetul
+            Mösslein. „🗎 Pagină nouă" golește tot și începe un document curat
+            (ca New File). Când textul umple foaia A4, apare automat linia
+            „Pagina 2". Funcționează pe laptop, Android și iPhone.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const page = document.getElementById("page");
+      const stack = document.getElementById("stack");
+      const statusEl = document.getElementById("status");
+      const docnameEl = document.getElementById("docname");
+      const micBtn = document.getElementById("micBtn");
+      const pageCountEl = document.getElementById("pageCount");
+      const PAGE_H = 1123; // inaltime A4 in px @96dpi
+      const KEY = "mosslein_editor_demo_v4";
+      let placeholderCleared = false;
+
+      function setStatus(t) {
+        statusEl.textContent = t;
+      }
+      function isInPage(node) {
+        let n = node;
+        while (n) {
+          if (n === page) return true;
+          n = n.parentNode;
+        }
+        return false;
+      }
+
+      /* placeholder */
+      function clearPlaceholder() {
+        if (!placeholderCleared && page.querySelector(".placeholder")) {
+          page.innerHTML = "<p><br></p>";
+          placeholderCleared = true;
+          caretStart();
+        }
+      }
+      function caretStart() {
+        page.focus();
+        const r = document.createRange();
+        r.selectNodeContents(page);
+        r.collapse(true);
+        const s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      }
+      page.addEventListener("mousedown", clearPlaceholder);
+      page.addEventListener("keydown", clearPlaceholder);
+
+      /* comenzi */
+      function cmd(command, value = null) {
+        clearPlaceholder();
+        page.focus();
+        document.execCommand(command, false, value);
+        scheduleSave();
+      }
+      function block(tag) {
+        clearPlaceholder();
+        page.focus();
+        document.execCommand("formatBlock", false, tag);
+        scheduleSave();
+      }
+      function setFontSize(pt) {
+        if (!pt) return;
+        clearPlaceholder();
+        page.focus();
+        document.execCommand("fontSize", false, "7");
+        for (const f of page.getElementsByTagName("font")) {
+          if (f.size === "7") {
+            f.removeAttribute("size");
+            f.style.fontSize = pt + "pt";
+          }
+        }
+        scheduleSave();
+      }
+
+      /* meniuri grupate */
+      function runMenu(sel) {
+        const v = sel.value;
+        sel.selectedIndex = 0;
+        if (!v) return;
+        (
+          ({
+            link: insertLink,
+            image: insertImage,
+            hr: () => cmd("insertHorizontalRule"),
+            date: insertDate,
+            pagebreak: pageBreak,
+            "t-insert": insertTable,
+            "t-row-below": () => addRow(true),
+            "t-row-above": () => addRow(false),
+            "t-row-del": delRow,
+            "t-col-right": () => addCol(true),
+            "t-col-left": () => addCol(false),
+            "t-col-del": delCol,
+            "t-head": toggleHeaderRow,
+            "a-logo": () => setAntet("logo"),
+            "a-iso": () => setAntet("logo_iso"),
+            "a-none": () => setAntet(null),
+            "e-pdf": exportPDF,
+            "e-word": exportWord,
+            "e-html": exportHTML,
+          })[v] || (() => {})
+        )();
+      }
+
+      /* paletar culori */
+      const TEXT_COLORS = [
+        "#000000",
+        "#434343",
+        "#666666",
+        "#999999",
+        "#b7b7b7",
+        "#ffffff",
+        "#980000",
+        "#ff0000",
+        "#ff9900",
+        "#ffbf00",
+        "#008000",
+        "#00a3a3",
+        "#1e5fa8",
+        "#0000ff",
+        "#6a1b9a",
+        "#c2185b",
+        "#795548",
+        "#e65100",
+      ];
+      const HL_COLORS = [
+        "#fff59d",
+        "#ffe082",
+        "#ffcc80",
+        "#c8e6c9",
+        "#b2dfdb",
+        "#b3e5fc",
+        "#bbdefb",
+        "#d1c4e9",
+        "#f8bbd0",
+        "#ffffff",
+        "#ffeb3b",
+        "#a5d6a7",
+      ];
+      let activePalette = null;
+      function closePalette() {
+        if (activePalette) {
+          activePalette.remove();
+          activePalette = null;
+          document.removeEventListener("mousedown", paletteOutside, true);
+        }
+      }
+      function paletteOutside(e) {
+        if (activePalette && !activePalette.contains(e.target)) closePalette();
+      }
+      function applyColor(kind, c) {
+        clearPlaceholder();
+        page.focus();
+        document.execCommand(
+          kind === "text" ? "foreColor" : "hiliteColor",
+          false,
+          c,
+        );
+        scheduleSave();
+      }
+      function openPalette(kind, btn) {
+        if (activePalette) {
+          closePalette();
+          return;
+        }
+        const pal = document.createElement("div");
+        pal.className = "palette";
+        (kind === "text" ? TEXT_COLORS : HL_COLORS).forEach((c) => {
+          const sw = document.createElement("button");
+          sw.className = "swatch";
+          sw.style.background = c;
+          sw.title = c;
+          sw.onmousedown = (e) => e.preventDefault();
+          sw.onclick = (e) => {
+            e.stopPropagation();
+            applyColor(kind, c);
+            closePalette();
+          };
+          pal.appendChild(sw);
+        });
+        const custom = document.createElement("input");
+        custom.type = "color";
+        custom.className = "custom";
+        custom.title = "Altă culoare...";
+        custom.onmousedown = (e) => e.preventDefault();
+        custom.oninput = () => applyColor(kind, custom.value);
+        pal.appendChild(custom);
+        document.body.appendChild(pal);
+        const r = btn.getBoundingClientRect();
+        pal.style.left = Math.min(r.left, window.innerWidth - 190) + "px";
+        pal.style.top = r.bottom + 4 + "px";
+        activePalette = pal;
+        setTimeout(
+          () => document.addEventListener("mousedown", paletteOutside, true),
+          0,
+        );
+      }
+
+      /* insert */
+      function insertLink() {
+        const url = prompt("Adresa link (URL):", "https://");
+        if (url) cmd("createLink", url);
+      }
+      function insertImage() {
+        const inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "image/*";
+        inp.onchange = () => {
+          const f = inp.files[0];
+          if (!f) return;
+          const r = new FileReader();
+          r.onload = () => {
+            clearPlaceholder();
+            page.focus();
+            document.execCommand(
+              "insertHTML",
+              false,
+              '<img src="' + r.result + '">',
+            );
+            scheduleSave();
+          };
+          r.readAsDataURL(f);
+        };
+        inp.click();
+      }
+      function insertDate() {
+        cmd(
+          "insertText",
+          new Date().toLocaleDateString("ro-RO", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          }),
+        );
+      }
+      function pageBreak() {
+        clearPlaceholder();
+        page.focus();
+        document.execCommand(
+          "insertHTML",
+          false,
+          '<div style="page-break-after:always"></div><p><br></p>',
+        );
+        setStatus("Întrerupere de pagină adăugată (pagină nouă la print/PDF).");
+        scheduleSave();
+      }
+      /* „Pagină nouă" = ca New File: pagină curată, fără text */
+      function newFile() {
+        const hasText =
+          placeholderCleared && page.textContent.trim().length > 0;
+        if (
+          hasText &&
+          !confirm(
+            "Începi un document nou (pagină curată, fără text)? Ce ai acum se pierde din editor — salvează/exportă întâi dacă vrei să păstrezi.",
+          )
+        )
+          return;
+        page.innerHTML = "<p><br></p>";
+        docnameEl.value = "";
+        placeholderCleared = true;
+        clearInterim();
+        page.focus();
+        caretStart();
+        doAutoSave();
+        updatePages();
+        setStatus("🗎 Pagină nouă — document curat, gata de scris.");
+      }
+
+      /* tabele */
+      function insertTable() {
+        clearPlaceholder();
+        page.focus();
+        let html = "<table><tbody>";
+        for (let r = 0; r < 3; r++) {
+          html += "<tr>";
+          for (let c = 0; c < 3; c++) html += "<td>&nbsp;</td>";
+          html += "</tr>";
+        }
+        html += "</tbody></table><p><br></p>";
+        document.execCommand("insertHTML", false, html);
+        scheduleSave();
+      }
+      function currentCell() {
+        const s = window.getSelection();
+        if (!s.rangeCount) return null;
+        let n = s.anchorNode;
+        while (n && n !== page) {
+          if (n.nodeType === 1 && (n.tagName === "TD" || n.tagName === "TH"))
+            return n;
+          n = n.parentNode;
+        }
+        return null;
+      }
+      function needCell() {
+        const c = currentCell();
+        if (!c) setStatus("⚠ Pune întâi cursorul într-o celulă de tabel.");
+        return c;
+      }
+      function addRow(below) {
+        const cell = needCell();
+        if (!cell) return;
+        const row = cell.parentNode;
+        const cols = row.children.length;
+        const tr = document.createElement("tr");
+        for (let i = 0; i < cols; i++) {
+          const td = document.createElement("td");
+          td.innerHTML = "&nbsp;";
+          tr.appendChild(td);
+        }
+        row.parentNode.insertBefore(tr, below ? row.nextSibling : row);
+        scheduleSave();
+      }
+      function delRow() {
+        const cell = needCell();
+        if (!cell) return;
+        const row = cell.parentNode;
+        if (row.parentNode.children.length > 1) {
+          row.remove();
+          scheduleSave();
+        }
+      }
+      function addCol(right) {
+        const cell = needCell();
+        if (!cell) return;
+        const table = cell.closest("table");
+        const idx = cell.cellIndex;
+        for (const tr of table.rows) {
+          const ref = tr.children[idx];
+          const td = document.createElement("td");
+          td.innerHTML = "&nbsp;";
+          tr.insertBefore(td, right ? (ref ? ref.nextSibling : null) : ref);
+        }
+        scheduleSave();
+      }
+      function delCol() {
+        const cell = needCell();
+        if (!cell) return;
+        const table = cell.closest("table");
+        const idx = cell.cellIndex;
+        if (table.rows[0].children.length <= 1) return;
+        for (const tr of table.rows) {
+          if (tr.children[idx]) tr.children[idx].remove();
+        }
+        scheduleSave();
+      }
+      function toggleHeaderRow() {
+        const cell = needCell();
+        if (!cell) return;
+        const row = cell.closest("tr");
+        const on = row.getAttribute("data-head") === "1";
+        for (const c of row.children) {
+          c.style.fontWeight = on ? "" : "bold";
+          c.style.background = on ? "" : "#eef2f7";
+        }
+        row.setAttribute("data-head", on ? "0" : "1");
+        scheduleSave();
+      }
+
+      /* antet fidel */
+      const LOGO = "../../public/branding/mosslein-logo.png",
+        ROCERT = "../../public/branding/rocert.png";
+      function antetHTML(v) {
+        const top =
+          '<div class="ah-top"><img class="ah-logo" src="' +
+          LOGO +
+          '" alt="Mösslein Romania"><div class="ah-co">' +
+          '<div class="ah-name">S.C. MÖSSLEIN S.R.L.</div>' +
+          '<div class="ah-line">Str. I. Slavici 110, 315500 Nadlac, jud. Arad</div>' +
+          '<div class="ah-line">Tel: +40 257 / +40 724 185 666 · office@mosslein.ro · mosslein.ro</div></div></div>';
+        const iso =
+          v === "logo_iso"
+            ? '<div class="ah-iso"><img src="' +
+              ROCERT +
+              '" alt="ROCERT"><span>Certificat SR EN ISO 9001:2015 (nr. 1029/1/1/1) · SR EN ISO 14001:2015 (nr. 1029/1/1/2) - ROCERT</span></div>'
+            : "";
+        return (
+          '<div class="antet" data-antet="' +
+          v +
+          '">' +
+          top +
+          iso +
+          '<div class="ah-rule"></div></div>'
+        );
+      }
+      function setAntet(v) {
+        clearPlaceholder();
+        const ex = page.querySelector("[data-antet]");
+        if (ex) ex.remove();
+        if (v) {
+          page.insertAdjacentHTML("afterbegin", antetHTML(v));
+          setStatus(
+            v === "logo"
+              ? "Antet (logo) adăugat."
+              : "Antet (logo + ISO ROCERT) adăugat.",
+          );
+        } else setStatus("Antet scos.");
+        scheduleSave();
+      }
+
+      /* DICTARE LIVE */
+      let recognition = null,
+        dictating = false,
+        interimEl = null;
+      function micSupported() {
+        return (
+          "webkitSpeechRecognition" in window || "SpeechRecognition" in window
+        );
+      }
+      function updateMicBtn() {
+        micBtn.classList.toggle("active", dictating);
+        micBtn.textContent = dictating ? "🔴 Oprește" : "🎤 Dictare";
+      }
+      function toggleMic() {
+        if (!micSupported()) {
+          setStatus(
+            "⚠ Dictarea merge în Chrome/Edge (Android inclus). Pe iPhone: folosește tastatura → microfon. Alternativ pe laptop: Win+H.",
+          );
+          return;
+        }
+        dictating ? stopMic() : startMic();
+      }
+      function placeCaretAfter(node) {
+        const s = window.getSelection();
+        const r = document.createRange();
+        r.setStartAfter(node);
+        r.collapse(true);
+        s.removeAllRanges();
+        s.addRange(r);
+      }
+      function insertNodeAtCaret(node) {
+        page.focus();
+        const sel = window.getSelection();
+        if (!sel.rangeCount || !isInPage(sel.anchorNode)) {
+          page.appendChild(node);
+        } else {
+          const r = sel.getRangeAt(0);
+          r.deleteContents();
+          r.insertNode(node);
+        }
+        placeCaretAfter(node);
+      }
+      function ensureInterim() {
+        if (interimEl && interimEl.isConnected) return;
+        interimEl = document.createElement("span");
+        interimEl.className = "dict-interim";
+        insertNodeAtCaret(interimEl);
+      }
+      function commitFinal(text) {
+        const t = text.trim();
+        if (!t) return;
+        ensureInterim();
+        const node = document.createTextNode(t + " ");
+        interimEl.parentNode.insertBefore(node, interimEl);
+        interimEl.textContent = "";
+        placeCaretAfter(node);
+        scheduleSave();
+      }
+      function showInterim(text) {
+        ensureInterim();
+        interimEl.textContent = text;
+      }
+      function clearInterim() {
+        if (interimEl) {
+          if (interimEl.parentNode) interimEl.parentNode.removeChild(interimEl);
+          interimEl = null;
+        }
+      }
+      function commitLeftover() {
+        if (interimEl && interimEl.textContent.trim()) {
+          const t = document.createTextNode(interimEl.textContent.trim() + " ");
+          interimEl.parentNode.insertBefore(t, interimEl);
+          placeCaretAfter(t);
+        }
+        clearInterim();
+      }
+      page.addEventListener("click", () => {
+        if (dictating && interimEl && !interimEl.textContent) {
+          clearInterim();
+          ensureInterim();
+        }
+      });
+      function startMic() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = "ro-RO";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (e) => {
+          clearPlaceholder();
+          let interim = "";
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            const r = e.results[i];
+            if (r.isFinal) commitFinal(r[0].transcript);
+            else interim += r[0].transcript;
+          }
+          showInterim(interim);
+        };
+        recognition.onend = () => {
+          if (dictating) {
+            try {
+              recognition.start();
+            } catch (_) {}
+          }
+        };
+        recognition.onerror = (e) => {
+          if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+            setStatus("⚠ Permite accesul la microfon în browser.");
+            dictating = false;
+            updateMicBtn();
+          }
+        };
+        dictating = true;
+        updateMicBtn();
+        page.focus();
+        ensureInterim();
+        try {
+          recognition.start();
+          setStatus(
+            "🎤 Dictare LIVE (ro-RO). Vezi textul instant. Editează cu mâna sau mută cursorul oricând.",
+          );
+        } catch (_) {}
+      }
+      function stopMic() {
+        dictating = false;
+        if (recognition) {
+          try {
+            recognition.stop();
+          } catch (_) {}
+        }
+        commitLeftover();
+        updateMicBtn();
+        setStatus("🎤 Dictare oprită.");
+      }
+
+      /* back */
+      function goBack() {
+        if (history.length > 1) history.back();
+        else
+          setStatus(
+            '(În aplicație, „Înapoi" te duce la pagina anterioară din meniu.)',
+          );
+      }
+
+      /* PAGINARE: ghidaje + numarator */
+      function updatePages() {
+        stack.querySelectorAll(".pbreak").forEach((el) => el.remove());
+        const isMobile = window.matchMedia("(max-width:840px)").matches;
+        const h = page.scrollHeight;
+        const pages = Math.max(1, Math.ceil(h / PAGE_H));
+        pageCountEl.textContent = pages;
+        if (isMobile) return; // pe telefon foaia e fluida, fara ghidaje
+        for (let k = 1; k < pages; k++) {
+          const g = document.createElement("div");
+          g.className = "pbreak";
+          g.style.top = k * PAGE_H + "px";
+          g.innerHTML = "<span>Pagina " + (k + 1) + "</span>";
+          stack.appendChild(g);
+        }
+      }
+
+      /* salvare + AUTO-SAVE */
+      let saveTimer;
+      function cleanHTML() {
+        const c = page.cloneNode(true);
+        c.querySelectorAll(".dict-interim").forEach((el) =>
+          el.replaceWith(document.createTextNode(el.textContent)),
+        );
+        c.querySelectorAll(".placeholder").forEach((el) => el.remove());
+        return c.innerHTML;
+      }
+      function scheduleSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+          doAutoSave();
+          updatePages();
+        }, 500);
+      }
+      function doAutoSave() {
+        localStorage.setItem(
+          KEY,
+          JSON.stringify({ name: docnameEl.value, html: cleanHTML() }),
+        );
+        setStatus(
+          "💾 Salvat automat la " + new Date().toLocaleTimeString("ro-RO"),
+        );
+      }
+      function salveaza() {
+        doAutoSave();
+        setStatus(
+          "✅ Salvat (ca șablon) la " + new Date().toLocaleTimeString("ro-RO"),
+        );
+      }
+      page.addEventListener("input", scheduleSave);
+      window.addEventListener("resize", updatePages);
+      (function restore() {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) {
+          updatePages();
+          return;
+        }
+        try {
+          const d = JSON.parse(raw);
+          if (d.html) {
+            page.innerHTML = d.html;
+            placeholderCleared = true;
+          }
+          if (d.name) docnameEl.value = d.name;
+          setStatus("Document restaurat din auto-save.");
+        } catch (e) {}
+        updatePages();
+      })();
+
+      /* export */
+      function baseName() {
+        return (docnameEl.value.trim() || "document-mosslein").replace(
+          /[^\w\-]+/g,
+          "-",
+        );
+      }
+      function download(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          a.remove();
+        }, 500);
+      }
+      function styles() {
+        return (
+          '<style>body{font-family:"Times New Roman",Georgia,serif;line-height:1.5;font-size:12pt;color:#111;padding:2cm}' +
+          "table{border-collapse:collapse;margin:8px 0}td,th{border:1px solid #999;padding:4px 8px}" +
+          "blockquote{border-left:3px solid #cbd5e1;margin:0 0 10px;padding:2px 0 2px 14px;color:#475569}" +
+          ".antet{margin-bottom:20px}.ah-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}" +
+          ".ah-logo{height:58px}.ah-co{text-align:right}.ah-name{color:#1e5fa8;font-weight:800;font-size:13pt}.ah-line{color:#333;font-size:9pt;line-height:1.55}" +
+          ".ah-iso{display:flex;align-items:center;gap:8px;margin-top:8px}.ah-iso img{height:30px}.ah-iso span{color:#444;font-size:8.5pt}" +
+          ".ah-rule{border-bottom:2.5px solid #1e5fa8;margin-top:8px}img{max-width:100%}</style>"
+        );
+      }
+      function exportPDF() {
+        setStatus(
+          'Se deschide printarea — alege „Salvează ca PDF" (format A4).',
+        );
+        window.print();
+      }
+      function exportHTML() {
+        const html =
+          '<!doctype html><html lang="ro"><head><meta charset="utf-8">' +
+          styles() +
+          "</head><body>" +
+          cleanHTML() +
+          "</body></html>";
+        download(new Blob([html], { type: "text/html" }), baseName() + ".html");
+        setStatus("✅ Exportat HTML.");
+      }
+      function exportWord() {
+        const pre =
+          "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>" +
+          styles() +
+          "</head><body>";
+        download(
+          new Blob(["﻿", pre + cleanHTML() + "</body></html>"], {
+            type: "application/msword",
+          }),
+          baseName() + ".doc",
+        );
+        setStatus("✅ Exportat Word (.doc).");
+      }
+    </script>
+  </body>
+</html>

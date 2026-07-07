@@ -1,0 +1,10 @@
+{
+  "name": "asistent-text-ai-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "PWA — dictare vocala + AI multi-provider, cu proxy serverless pentru chei",
+  "engines": {
+    "node": ">=18.x"
+  }
+}
