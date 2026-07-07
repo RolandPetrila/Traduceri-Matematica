@@ -9,13 +9,19 @@ import { DEFAULT_TAB, type TabId } from "@/lib/tab-config";
 
 const TraduceriPage = dynamic(() => import("./traduceri/page"), { ssr: false });
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
-const HistoryList = dynamic(() => import("@/components/history/HistoryList"), { ssr: false });
+const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
+const HistoryList = dynamic(() => import("@/components/history/HistoryList"), {
+  ssr: false,
+});
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("activeTab") as TabId;
-      if (saved && ["traduceri", "convertor", "istoric"].includes(saved)) {
+      if (
+        saved &&
+        ["traduceri", "convertor", "editor", "istoric"].includes(saved)
+      ) {
         return saved;
       }
     }
@@ -34,11 +40,18 @@ export default function Home() {
         <TabNav activeTab={activeTab} onTabChange={handleTabChange} />
 
         <div className="mt-6">
-          <div style={{ display: activeTab === "traduceri" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "traduceri" ? "block" : "none" }}
+          >
             <TraduceriPage />
           </div>
-          <div style={{ display: activeTab === "convertor" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "convertor" ? "block" : "none" }}
+          >
             <ConvertorPage />
+          </div>
+          <div style={{ display: activeTab === "editor" ? "block" : "none" }}>
+            <EditorPage />
           </div>
           <div style={{ display: activeTab === "istoric" ? "block" : "none" }}>
             <HistoryList />
