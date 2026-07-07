@@ -57,7 +57,7 @@ class handler(BaseHTTPRequestHandler):
     """OCR-only handler — no translation."""
 
     def do_OPTIONS(self):
-        origin = os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com")
+        origin = os.environ.get("ALLOWED_ORIGIN", "*")
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -147,7 +147,12 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"[OCR ERROR] {e}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
-            self._send_json(500, {"error": str(e), "status": "error"})
+            try:
+                from lib import supabase_client
+                supabase_client.log_error("E-OCR-001", str(e), source="ocr")
+            except Exception:
+                pass
+            self._send_json(500, {"error": str(e), "error_code": "E-OCR-001", "status": "error"})
 
     def _parse_multipart(self, body: bytes, boundary: str) -> dict:
         import re
@@ -181,6 +186,6 @@ class handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, data: dict):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
+        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())

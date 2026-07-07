@@ -121,7 +121,7 @@ def restore_math(text: str, placeholders: dict[str, str]) -> str:
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
+        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
@@ -343,7 +343,12 @@ class handler(BaseHTTPRequestHandler):
             error_msg = _sanitize_error(f"{type(e).__name__}: {str(e)}")
             print(f"[TRANSLATE ERROR] {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
-            self._send_json(500, {"error": error_msg, "status": "error"})
+            try:
+                from lib import supabase_client
+                supabase_client.log_error("E-TRANS-001", error_msg, source="translate")
+            except Exception:
+                pass
+            self._send_json(500, {"error": error_msg, "error_code": "E-TRANS-001", "status": "error"})
 
     def _parse_multipart(self, body: bytes, boundary: str) -> dict:
         parts_data = {"files": [], "source_lang": "ro", "target_lang": "sk"}
@@ -376,6 +381,6 @@ class handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, data: dict):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
+        self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
         self.end_headers()
         self.wfile.write(json.dumps(data).encode())

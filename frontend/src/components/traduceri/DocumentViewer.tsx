@@ -67,6 +67,7 @@ export default function DocumentViewer({
   const [activeLang, setActiveLang] = useState(sourceLang);
   const [showOriginal, setShowOriginal] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translateMsg, setTranslateMsg] = useState("");
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
 
   // Cache: source language pages are pre-loaded
@@ -156,51 +157,53 @@ export default function DocumentViewer({
     const { signal } = translateAbortRef.current;
 
     setIsTranslating(true);
+    setTranslateMsg("");
     logAction("Traducere on-demand pornita", { from: sourceLang, to: targetLang });
 
     try {
-      // Use source language pages for translation (not current — always translate from original)
+      // Always translate from the source-language pages (not the current view).
       const sourcePages = cacheRef.current[sourceLang] || structuredPages;
 
-      // Flatten all sections for translation
-      const allSections = sourcePages.flatMap((p) => [
-        ...(p.title ? [{ type: "heading", content: p.title, level: 1 }] : []),
-        ...p.sections,
-      ]);
-
-      const res = await fetch(`${API_URL}/api/translate-text`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text_sections: allSections,
-          source_lang: sourceLang,
-          target_lang: targetLang,
-          translate_engine: translateEngine,
-        }),
-        signal,
-      });
-
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-
-      // Rebuild pages from translated sections
-      const translated = data.translated_sections || [];
+      // Translate ONE page per request so each call stays under the 60s serverless
+      // limit (a whole document in one call would time out on large inputs).
       const newPages: StructuredPage[] = [];
-      let secIdx = 0;
+      const t0 = Date.now();
 
-      for (const page of sourcePages) {
+      for (let p = 0; p < sourcePages.length; p++) {
+        const page = sourcePages[p];
+        setTranslateMsg(`Traducere pagina ${p + 1}/${sourcePages.length}...`);
+
+        const sections = [
+          ...(page.title ? [{ type: "heading", content: page.title, level: 1 }] : []),
+          ...page.sections,
+        ];
+
+        const res = await fetch(`${API_URL}/api/translate-text`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text_sections: sections,
+            source_lang: sourceLang,
+            target_lang: targetLang,
+            translate_engine: translateEngine,
+          }),
+          signal,
+        });
+
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const data = await res.json();
+        const translated = data.translated_sections || [];
+
+        // translated mirrors `sections` 1:1 (figures kept in place, only text changed).
         const newPage: StructuredPage = { title: page.title, sections: [] };
-        if (page.title && secIdx < translated.length) {
-          newPage.title = translated[secIdx]?.content || page.title;
-          secIdx++;
+        let idx = 0;
+        if (page.title) {
+          newPage.title = translated[idx]?.content || page.title;
+          idx++;
         }
         for (const sec of page.sections) {
-          if (secIdx < translated.length) {
-            newPage.sections.push(translated[secIdx]);
-            secIdx++;
-          } else {
-            newPage.sections.push(sec);
-          }
+          newPage.sections.push(idx < translated.length ? translated[idx] : sec);
+          idx++;
         }
         newPages.push(newPage);
       }
@@ -208,13 +211,14 @@ export default function DocumentViewer({
       cacheRef.current[targetLang] = newPages;
       setActiveLang(targetLang);
       setCurrentPageIdx(0);
-      logAction("Traducere on-demand reusita", { to: targetLang, duration: data.duration_ms });
+      logAction("Traducere on-demand reusita", { to: targetLang, duration_ms: Date.now() - t0 });
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return; // ignore cancelled requests
       const msg = err instanceof Error ? err.message : "Eroare traducere";
-      logError(msg, { context: { from: sourceLang, to: targetLang } });
+      logError(msg, { source: "translate", errorCode: "E-TRANS-001", context: { from: sourceLang, to: targetLang } });
     } finally {
       setIsTranslating(false);
+      setTranslateMsg("");
     }
   }, [activeLang, sourceLang, structuredPages, translateEngine]);
 
@@ -301,7 +305,7 @@ export default function DocumentViewer({
           ))}
           {isTranslating && (
             <span className="text-white/60 text-sm flex items-center ml-2">
-              Se traduce...
+              {translateMsg || "Se traduce..."}
             </span>
           )}
         </div>

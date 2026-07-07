@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
+// Build connect-src from env so CSP follows the deployed API + Supabase domains.
+// On Vercel set NEXT_PUBLIC_API_URL (Python API project) and NEXT_PUBLIC_SUPABASE_URL.
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const connectSrc = ["'self'", apiUrl, supabaseUrl, 'https://*.supabase.co']
+  .filter(Boolean)
+  .join(' ');
+
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
   async headers() {
     return [
       {
@@ -24,7 +31,7 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://traduceri-api.onrender.com https://traduceri-matematica-7sh7.onrender.com; frame-src 'self' blob:; frame-ancestors 'none'"
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src ${connectSrc}; frame-src 'self' blob:; frame-ancestors 'none'`
           },
           {
             key: 'Strict-Transport-Security',
@@ -41,8 +48,10 @@ const nextConfig = {
       },
     ];
   },
-  // Proxy Python API routes to backend service (local dev only)
-  // On Render: frontend calls API directly via NEXT_PUBLIC_API_URL
+  // Proxy Python API routes to backend service (local dev only).
+  // On Vercel: frontend calls the API project directly via NEXT_PUBLIC_API_URL
+  // (absolute URL), so these rewrites are a local-dev fallback only.
+  // Note: /api/logs is a Next.js route (Supabase forwarder) — intentionally NOT rewritten.
   async rewrites() {
     const apiUrl = process.env.PYTHON_API_URL || 'http://localhost:8000';
     return {

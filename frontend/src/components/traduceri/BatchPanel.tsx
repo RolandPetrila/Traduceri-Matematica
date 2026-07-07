@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
+import { expandFilesToPages } from "@/lib/pdf-rasterize";
 
 interface BatchResult {
   filename: string;
@@ -33,28 +34,36 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
   };
 
   const translateFile = async (file: File): Promise<{ html: string; duration: number }> => {
-    const formData = new FormData();
-    formData.append("files", file);
-    formData.append("source_lang", sourceLang);
-    formData.append("target_lang", targetLang);
-    formData.append("translate_engine", translateEngine);
-
     const dictKey = `dict_${sourceLang}_${targetLang}`;
     const dictRaw = localStorage.getItem(dictKey);
-    if (dictRaw) formData.append("dictionary", dictRaw);
+
+    // One page per /api/translate call so each request stays under the 60s
+    // serverless limit (a multi-page PDF in one call would time out on Vercel).
+    const pages = await expandFilesToPages([file]);
+    if (pages.length === 0) throw new Error("Nu s-au putut extrage pagini");
 
     const t0 = Date.now();
-    const res = await fetch(`${API_URL}/api/translate`, { method: "POST", body: formData });
-    const duration = Date.now() - t0;
+    const htmlParts: string[] = [];
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`${res.status}: ${text.substring(0, 100)}`);
+    for (const page of pages) {
+      const formData = new FormData();
+      formData.append("files", page.blob, page.filename);
+      formData.append("source_lang", sourceLang);
+      formData.append("target_lang", targetLang);
+      formData.append("translate_engine", translateEngine);
+      if (dictRaw) formData.append("dictionary", dictRaw);
+
+      const res = await fetch(`${API_URL}/api/translate`, { method: "POST", body: formData });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text.substring(0, 100)}`);
+      }
+      const data = await res.json();
+      if (!data.html) throw new Error("Raspuns fara HTML");
+      htmlParts.push(data.html as string);
     }
 
-    const data = await res.json();
-    if (!data.html) throw new Error("Raspuns fara HTML");
-    return { html: data.html, duration };
+    return { html: htmlParts.join("\n"), duration: Date.now() - t0 };
   };
 
   const handleBatch = async () => {
@@ -78,7 +87,7 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
         ));
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Eroare";
-        logError(`Batch eroare: ${files[i].name}`, { context: { error: msg } });
+        logError(`Batch eroare: ${files[i].name}`, { source: "translate", errorCode: "E-TRANS-002", context: { error: msg } });
         setResults((prev) => prev.map((r, idx) =>
           idx === i ? { ...r, status: "error", error: msg } : r
         ));

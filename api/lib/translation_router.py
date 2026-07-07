@@ -374,7 +374,7 @@ def translate_with_openrouter(text: str, source_lang: str, target_lang: str, dic
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
             "X-OR-Fallback": "meta-llama/llama-3.3-70b:free,deepseek/deepseek-v3:free,google/gemma-3-27b:free",
-            "HTTP-Referer": "https://traduceri-matematica-7sh7.onrender.com",
+            "HTTP-Referer": os.environ.get("APP_PUBLIC_URL", "https://traduceri-matematica.vercel.app"),
         },
     )
 

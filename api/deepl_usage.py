@@ -21,7 +21,7 @@ from lib.deepl_client import get_usage
 
 class handler(BaseHTTPRequestHandler):
     def _cors_origin(self):
-        return os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com")
+        return os.environ.get("ALLOWED_ORIGIN", "*")
 
     def _send_json(self, status: int, data: dict):
         self.send_response(status)
@@ -79,7 +79,7 @@ class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin",
-                         os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com"))
+                         os.environ.get("ALLOWED_ORIGIN", "*"))
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()

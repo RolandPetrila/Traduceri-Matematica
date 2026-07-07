@@ -106,7 +106,7 @@ class handler(BaseHTTPRequestHandler):
     """Translate text sections only — no OCR, no file upload."""
 
     def do_OPTIONS(self):
-        origin = os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com")
+        origin = os.environ.get("ALLOWED_ORIGIN", "*")
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -115,7 +115,7 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        origin = os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com")
+        origin = os.environ.get("ALLOWED_ORIGIN", "*")
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length > 1_000_000:  # 1MB max for text-only
@@ -194,7 +194,12 @@ class handler(BaseHTTPRequestHandler):
                         else:
                             raise
             except Exception as e:
-                self._send_json(500, {"error": f"Translation failed: {e}"}, origin)
+                try:
+                    from lib import supabase_client
+                    supabase_client.log_error("E-TRANS-003", str(e), source="translate-text")
+                except Exception:
+                    pass
+                self._send_json(500, {"error": f"Translation failed: {e}", "error_code": "E-TRANS-003"}, origin)
                 return
 
             # Split back and rebuild sections (recursive — two_column sub-sections included)
@@ -216,7 +221,12 @@ class handler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "Invalid JSON"}, origin)
         except Exception as e:
             print(f"[TRANSLATE-TEXT] Error: {e}", file=sys.stderr)
-            self._send_json(500, {"error": str(e)}, origin)
+            try:
+                from lib import supabase_client
+                supabase_client.log_error("E-TRANS-001", str(e), source="translate-text")
+            except Exception:
+                pass
+            self._send_json(500, {"error": str(e), "error_code": "E-TRANS-001"}, origin)
 
     def _send_json(self, status: int, data: dict, origin: str = "*"):
         self.send_response(status)

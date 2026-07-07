@@ -1,7 +1,13 @@
 """In-memory rate limiter — sliding window per IP (no Redis needed).
 
 Protects API quotas (DeepL, Gemini) from abuse on public endpoints.
-State resets on Render spin-down (acceptable — rate limits simply reset).
+
+Serverless note: on Vercel each invocation is a fresh process, so this in-memory
+state is per-invocation (best-effort — it does not limit across invocations, and
+the handlers themselves do not call it; only dev_server.py does for LOCAL dev).
+Limits are calibrated for the page-at-a-time flow: a multi-page document issues
+one /api/ocr (and one /api/translate-text) call PER PAGE, so per-minute limits
+must comfortably exceed the largest document's page count to avoid false 429s.
 Thread-safe via threading.Lock.
 """
 
@@ -14,15 +20,17 @@ from collections import defaultdict
 
 # --- Configuration per endpoint ---
 # (requests_per_minute, requests_per_day)
+# Page-at-a-time: one call per page, so per-minute caps are high enough for a
+# large multi-page document processed in a burst (up to ~120 pages/min).
 RATE_LIMITS: dict[str, tuple[int, int]] = {
-    "/api/ocr": (10, 100),
-    "/api/translate": (10, 100),
-    "/api/translate-text": (10, 100),
-    "/api/convert": (20, 200),
-    "/api/deepl-usage": (30, 500),
-    "/api/gemini-usage": (30, 500),
+    "/api/ocr": (120, 2000),
+    "/api/translate": (120, 1000),
+    "/api/translate-text": (120, 3000),
+    "/api/convert": (30, 300),
+    "/api/deepl-usage": (60, 1000),
+    "/api/gemini-usage": (60, 1000),
     "/api/chat": (30, 300),      # future
-    "/api/health": (60, 10000),  # permissive
+    "/api/health": (120, 20000),  # permissive
 }
 
 # Default for unknown endpoints
@@ -44,9 +52,9 @@ def _make_key(ip: str, endpoint: str) -> str:
 
 
 def get_client_ip(handler) -> str:
-    """Extract real client IP behind Render's proxy.
+    """Extract real client IP behind the platform proxy (Vercel/Render/local).
 
-    Render adds X-Forwarded-For; take the leftmost entry (original client).
+    The proxy adds X-Forwarded-For; take the leftmost entry (original client).
     """
     xff = handler.headers.get("X-Forwarded-For", "") if hasattr(handler, 'headers') else ""
     if xff:

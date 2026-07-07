@@ -8,11 +8,21 @@ export interface ErrorLog {
   timestamp: string;
   level: LogLevel;
   message: string;
+  /** Structured error code, e.g. "E-OCR-001" (see config/error_codes.json). */
+  errorCode?: string;
   stack?: string;
   source?: string;
   device: DeviceInfo;
   page: string;
   userAgent: string;
+  context?: Record<string, unknown>;
+}
+
+/** Options accepted by the log helpers. */
+export interface LogOpts {
+  errorCode?: string;
+  stack?: string;
+  source?: string;
   context?: Record<string, unknown>;
 }
 
@@ -85,16 +95,13 @@ async function sendLogToServer(log: ErrorLog): Promise<void> {
   }
 }
 
-function createLog(level: LogLevel, message: string, opts?: {
-  stack?: string;
-  source?: string;
-  context?: Record<string, unknown>;
-}): ErrorLog {
+function createLog(level: LogLevel, message: string, opts?: LogOpts): ErrorLog {
   return {
     id: generateId(),
     timestamp: new Date().toISOString(),
     level,
     message,
+    errorCode: opts?.errorCode,
     stack: opts?.stack,
     source: opts?.source || "app",
     device: detectDevice(),
@@ -104,13 +111,15 @@ function createLog(level: LogLevel, message: string, opts?: {
   };
 }
 
-export function logError(
-  message: string,
-  opts?: { stack?: string; source?: string; context?: Record<string, unknown> }
-): void {
+export function logError(message: string, opts?: LogOpts): void {
   const log = createLog("error", message, opts);
   saveLogLocally(log);
   sendLogToServer(log);
+}
+
+/** Log an error with an explicit structured code (see config/error_codes.json). */
+export function logCoded(errorCode: string, message: string, opts?: Omit<LogOpts, "errorCode">): void {
+  logError(message, { ...opts, errorCode });
 }
 
 export function logWarn(message: string, context?: Record<string, unknown>): void {
@@ -212,7 +221,10 @@ export function initGlobalErrorHandlers(): void {
     } catch (error) {
       const duration = Date.now() - t0;
       const msg = error instanceof Error ? error.message : String(error);
-      logError(`API | ${method} ${url} | NETWORK | ${duration}ms | ${msg}`, { source: "api-interceptor" });
+      logError(`API | ${method} ${url} | NETWORK | ${duration}ms | ${msg}`, {
+        source: "api-interceptor",
+        errorCode: "E-NET-001",
+      });
       throw error;
     }
   };

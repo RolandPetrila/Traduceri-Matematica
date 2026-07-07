@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import FileUpload from "@/components/traduceri/FileUpload";
 import LanguageSelector from "@/components/traduceri/LanguageSelector";
 import PreviewPanel from "@/components/traduceri/PreviewPanel";
@@ -16,6 +16,7 @@ import DeeplUsage from "@/components/traduceri/DeeplUsage";
 import GeminiUsage from "@/components/traduceri/GeminiUsage";
 
 import { API_URL } from "@/lib/api-url";
+import { expandFilesToPages } from "@/lib/pdf-rasterize";
 
 /** Retry a fetch with exponential backoff (only on 5xx or network errors, not 4xx). */
 async function fetchWithRetry(
@@ -39,15 +40,6 @@ async function fetchWithRetry(
   throw lastErr;
 }
 
-const STEPS = [
-  { at: 5, label: "Se incarca fisierele..." },
-  { at: 15, label: "Se trimite catre server..." },
-  { at: 30, label: "OCR — se extrage textul din imagine..." },
-  { at: 60, label: "Se genereaza figurile SVG..." },
-  { at: 80, label: "Se construieste documentul..." },
-  { at: 90, label: "Se finalizeaza..." },
-];
-
 export default function TraduceriPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [sourceLang, setSourceLang] = useState("ro");
@@ -60,91 +52,83 @@ export default function TraduceriPage() {
   const [originalFiles, setOriginalFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [translateEngine, setTranslateEngine] = useState<TranslateEngine>("deepl");
-  const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (progressTimer.current) clearInterval(progressTimer.current);
-    };
-  }, []);
 
   const handleProcess = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
     setProgress(0);
-    setStepLabel(STEPS[0].label);
+    setStepLabel("Se pregatesc paginile...");
     setError(null);
     setResult(null);
     setStructuredPages(null);
     setOriginalFiles([...files]);
 
-    // Simulated progress with step labels
-    let currentStep = 0;
-    progressTimer.current = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + Math.random() * 3 + 0.5;
-        if (next > 92) return prev;
-        const step = STEPS.findIndex((s) => s.at > next);
-        if (step > 0 && step - 1 !== currentStep) {
-          currentStep = step - 1;
-          setStepLabel(STEPS[currentStep].label);
-        }
-        return next;
-      });
-    }, 800);
-
     logAction("OCR pornit", {
       fileCount: files.length,
-      fileNames: files.map(f => f.name),
-      fileSizes: files.map(f => f.size),
+      fileNames: files.map((f) => f.name),
+      fileSizes: files.map((f) => f.size),
       sourceLang,
     });
 
-    const formData = new FormData();
-    files.forEach((f) => formData.append("files", f));
-    formData.append("source_lang", sourceLang);
-
+    const t0 = Date.now();
     try {
-      const res = await fetchWithRetry(`${API_URL}/api/ocr`, {
-        method: "POST",
-        body: formData,
-      });
+      // Rasterize PDFs in the browser → one image per page (Vercel 60s limit).
+      const pages = await expandFilesToPages(files);
+      if (pages.length === 0) throw new Error("Nu s-au putut extrage pagini din fisiere");
 
-      let data;
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        if (!res.ok) {
-          throw new Error(`Server error ${res.status}: ${text.substring(0, 200)}`);
+      const allPages: unknown[] = [];
+      const htmlParts: string[] = [];
+
+      // OCR one page per request — real progress, each call stays under 60s.
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        setStepLabel(`OCR pagina ${i + 1}/${pages.length}...`);
+
+        const formData = new FormData();
+        formData.append("files", page.blob, page.filename);
+        formData.append("source_lang", sourceLang);
+
+        const res = await fetchWithRetry(`${API_URL}/api/ocr`, {
+          method: "POST",
+          body: formData,
+        });
+
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          const text = await res.text();
+          throw new Error(
+            !res.ok
+              ? `Server error ${res.status}: ${text.substring(0, 200)}`
+              : "Raspuns neasteptat de la server (nu JSON)"
+          );
         }
-        throw new Error("Raspuns neasteptat de la server (nu JSON)");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || `Eroare server: ${res.status}`);
+
+        if (Array.isArray(data.structured_pages)) allPages.push(...data.structured_pages);
+        if (data.html) htmlParts.push(data.html as string);
+
+        setProgress(Math.round(((i + 1) / pages.length) * 100));
       }
 
-      if (!res.ok) {
-        throw new Error(data?.error || `Eroare server: ${res.status}`);
-      }
+      if (allPages.length === 0) throw new Error("OCR nu a returnat continut");
 
-      const htmlResult = data.html || null;
-      if (!htmlResult) {
-        throw new Error("Raspunsul nu contine HTML");
-      }
+      const combinedHtml = htmlParts.join("\n");
+      const durationMs = Date.now() - t0;
+      validateTranslationOutput({ html: combinedHtml, structured_pages: allPages });
 
-      validateTranslationOutput(data);
-
-      setResult(htmlResult);
-      setStructuredPages(data.structured_pages || null);
+      setResult(combinedHtml || "ok");
+      setStructuredPages(allPages);
       setProgress(100);
       setStepLabel("Complet!");
 
-      const pageCount = data.pages || files.length;
-      const durationSec = Math.round((data.duration_ms || 0) / 1000);
+      const pageCount = allPages.length;
+      const durationSec = Math.round(durationMs / 1000);
       logInfo("OCR reusit", {
         pages: pageCount,
-        duration_ms: data.duration_ms || 0,
+        duration_ms: durationMs,
         sourceLang,
-        fileNames: files.map(f => f.name),
+        fileNames: files.map((f) => f.name),
       });
 
       // Browser notification (only when tab is in background)
@@ -165,17 +149,20 @@ export default function TraduceriPage() {
         files: files.map((f) => f.name),
         source_lang: sourceLang,
         target_lang: sourceLang,
-        status: data.status || "success",
-        duration_ms: data.duration_ms || 0,
-        pages: data.pages || files.length,
-        html: htmlResult,
+        status: "success",
+        duration_ms: durationMs,
+        pages: pageCount,
+        html: combinedHtml,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setError(message);
-      logError(message, { source: "ocr", context: { sourceLang, fileCount: files.length } });
+      logError(message, {
+        source: "ocr",
+        errorCode: "E-OCR-001",
+        context: { sourceLang, fileCount: files.length },
+      });
     } finally {
-      if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);
     }
   };

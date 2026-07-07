@@ -18,11 +18,9 @@ from pathlib import Path
 # Ensure api/ is importable
 sys.path.insert(0, str(Path(__file__).parent))
 
-# CORS — restrict to allowed origins (env var or default)
-ALLOWED_ORIGIN = os.environ.get(
-    "ALLOWED_ORIGIN",
-    "https://traduceri-matematica-7sh7.onrender.com"
-)
+# CORS — restrict to allowed origins (env var or default "*" for authless API)
+# In production (Vercel) set ALLOWED_ORIGIN to the frontend domain.
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "*")
 
 def _cors_origin(handler) -> str:
     """Return CORS origin: use ALLOWED_ORIGIN, or * for localhost dev."""

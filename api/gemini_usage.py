@@ -20,7 +20,7 @@ from lib.gemini_counter import get_gemini_usage
 
 class handler(BaseHTTPRequestHandler):
     def _cors_origin(self):
-        return os.environ.get("ALLOWED_ORIGIN", "https://traduceri-matematica-7sh7.onrender.com")
+        return os.environ.get("ALLOWED_ORIGIN", "*")
 
     def _send_json(self, status: int, data: dict):
         self.send_response(status)
