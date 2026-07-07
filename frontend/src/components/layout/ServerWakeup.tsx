@@ -129,15 +129,25 @@ export default function ServerWakeup({
         </>
       )}
 
-      {/* Escape hatch: editorul de documente NU are nevoie de backend, deci ramane
-          accesibil chiar si cat timp serverul se trezeste sau nu raspunde. */}
-      <a
-        href="/editor"
-        className="mt-10 text-sm underline opacity-70 hover:opacity-100 transition-opacity"
-        style={{ color: "var(--chalk-white)" }}
-      >
-        &#x270F; Deschide Editorul de documente (nu necesita server)
-      </a>
+      {/* Escape hatch: editorul si asistentul NU au nevoie de backend-ul Python
+          (asistentul foloseste ruta Next /api/proxy), deci raman accesibile chiar
+          si cat timp serverul se trezeste sau nu raspunde. */}
+      <div className="mt-10 flex flex-col items-center gap-3">
+        <a
+          href="/editor"
+          className="text-sm underline opacity-70 hover:opacity-100 transition-opacity"
+          style={{ color: "var(--chalk-white)" }}
+        >
+          &#x270F; Deschide Editorul de documente (nu necesita server)
+        </a>
+        <a
+          href="/asistent"
+          className="text-sm underline opacity-70 hover:opacity-100 transition-opacity"
+          style={{ color: "var(--chalk-white)" }}
+        >
+          &#x1F916; Deschide Asistentul Text AI (nu necesita server)
+        </a>
+      </div>
     </div>
   );
 }
