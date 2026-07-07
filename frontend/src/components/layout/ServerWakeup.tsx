@@ -61,13 +61,16 @@ export default function ServerWakeup({
     if (status !== "ready") return;
 
     // Keep backend alive every 4 minutes to prevent Render sleep
-    const keepAlive = setInterval(async () => {
-      try {
-        await fetch(HEALTH_ENDPOINT, { signal: AbortSignal.timeout(5000) });
-      } catch {
-        // Ignore errors — this is just a keep-alive ping
-      }
-    }, 4 * 60 * 1000);
+    const keepAlive = setInterval(
+      async () => {
+        try {
+          await fetch(HEALTH_ENDPOINT, { signal: AbortSignal.timeout(5000) });
+        } catch {
+          // Ignore errors — this is just a keep-alive ping
+        }
+      },
+      4 * 60 * 1000,
+    );
 
     return () => clearInterval(keepAlive);
   }, [status]);
@@ -96,7 +99,10 @@ export default function ServerWakeup({
           >
             Se pregateste aplicatia...
           </p>
-          <p className="text-sm mt-3 opacity-60" style={{ color: "var(--chalk-white)" }}>
+          <p
+            className="text-sm mt-3 opacity-60"
+            style={{ color: "var(--chalk-white)" }}
+          >
             Serverul se trezeste dupa pauza. Dureaza maxim 1-2 minute.
           </p>
         </>
@@ -108,7 +114,10 @@ export default function ServerWakeup({
           >
             Serverul nu raspunde momentan
           </p>
-          <p className="text-sm mt-3 opacity-60" style={{ color: "var(--chalk-white)" }}>
+          <p
+            className="text-sm mt-3 opacity-60"
+            style={{ color: "var(--chalk-white)" }}
+          >
             Verifica conexiunea la internet sau incearca din nou mai tarziu.
           </p>
           <button
@@ -119,6 +128,16 @@ export default function ServerWakeup({
           </button>
         </>
       )}
+
+      {/* Escape hatch: editorul de documente NU are nevoie de backend, deci ramane
+          accesibil chiar si cat timp serverul se trezeste sau nu raspunde. */}
+      <a
+        href="/editor"
+        className="mt-10 text-sm underline opacity-70 hover:opacity-100 transition-opacity"
+        style={{ color: "var(--chalk-white)" }}
+      >
+        &#x270F; Deschide Editorul de documente (nu necesita server)
+      </a>
     </div>
   );
 }
