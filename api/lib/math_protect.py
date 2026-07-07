@@ -9,44 +9,58 @@ from __future__ import annotations
 
 import re
 
-# LaTeX patterns to protect (order matters — most specific first)
-LATEX_PATTERNS = [
-    r"\$\$[\s\S]+?\$\$",           # Display math $$...$$
-    r"\$[^\$\n]+?\$",              # Inline math $...$
-    r"\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}",  # LaTeX environments
-    r"\\[a-zA-Z]+\{[^}]*\}",      # Commands like \text{cm}
-    r"\\[a-zA-Z]+",               # Simple commands like \triangle
+# LaTeX / math / HTML spans to protect (order = priority; most specific first).
+# SVG before generic HTML so a <div><svg>…</svg></div> figure matches as one span.
+_PROTECT_PATTERNS = [
+    r"\$\$[\s\S]+?\$\$",                                      # Display math $$...$$
+    r"\$[^\$\n]+?\$",                                         # Inline math $...$
+    r"\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}",               # LaTeX environments
+    r"\\[a-zA-Z]+\{[^}]*\}",                                  # Commands like \text{cm}
+    r"\\[a-zA-Z]+",                                           # Simple commands like \triangle
+    r"<div[^>]*>[\s\S]*?<svg[\s\S]*?</svg>[\s\S]*?</div>",    # SVG figure wrappers
+    r"<(?:div|svg|table)[^>]*>[\s\S]*?</(?:div|svg|table)>",  # Generic HTML blocks
 ]
+_PROTECT_RE = re.compile("|".join("(?:" + p + ")" for p in _PROTECT_PATTERNS))
 
-SVG_PATTERN = r"<div[^>]*>[\s\S]*?<svg[\s\S]*?</svg>[\s\S]*?</div>"
-HTML_BLOCK_PATTERN = r"<(?:div|svg|table)[^>]*>[\s\S]*?</(?:div|svg|table)>"
+# Backwards-compatible names for any external importers.
+LATEX_PATTERNS = _PROTECT_PATTERNS[:5]
+SVG_PATTERN = _PROTECT_PATTERNS[5]
+HTML_BLOCK_PATTERN = _PROTECT_PATTERNS[6]
+
+
+def _xml_escape(s: str) -> str:
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _xml_unescape(s: str) -> str:
+    # &amp; last so an escaped entity like &amp;lt; is not double-decoded.
+    return s.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
 def protect_for_deepl(text: str) -> str:
-    """Wrap LaTeX and HTML blocks in <keep> tags for DeepL XML mode.
+    """Wrap LaTeX/HTML spans in <keep> tags for DeepL XML mode (single pass).
 
-    DeepL with tag_handling='xml' and ignore_tags='keep' will not translate
-    content inside <keep>...</keep> tags.
+    DeepL with tag_handling='xml' + ignore_tags='keep' leaves <keep>...</keep>
+    content untranslated. This runs in ONE pass so a protected span is never
+    re-scanned by a later pattern (the old sequential re.sub produced nested,
+    mismatched <keep> tags → DeepL "Tag handling parsing failed"). All text is
+    XML-escaped too, so math containing <, >, & (e.g. an inequality $a < b$)
+    can't break DeepL's XML parser. restore_from_deepl() reverses both steps.
     """
-    # Protect SVG/HTML blocks first (largest patterns)
-    text = re.sub(SVG_PATTERN, lambda m: f"<keep>{m.group(0)}</keep>", text)
-    text = re.sub(HTML_BLOCK_PATTERN, lambda m: f"<keep>{m.group(0)}</keep>", text)
-
-    # Protect LaTeX patterns
-    for pattern in LATEX_PATTERNS:
-        text = re.sub(pattern, lambda m: f"<keep>{m.group(0)}</keep>", text)
-
-    # Collapse nested <keep><keep>...</keep></keep>
-    while "<keep><keep>" in text:
-        text = text.replace("<keep><keep>", "<keep>").replace("</keep></keep>", "</keep>")
-
-    return text
+    out = []
+    last = 0
+    for m in _PROTECT_RE.finditer(text):
+        out.append(_xml_escape(text[last:m.start()]))
+        out.append("<keep>" + _xml_escape(m.group(0)) + "</keep>")
+        last = m.end()
+    out.append(_xml_escape(text[last:]))
+    return "".join(out)
 
 
 def restore_from_deepl(text: str) -> str:
-    """Remove <keep> wrapper tags after DeepL translation."""
+    """Strip <keep> wrappers and undo XML escaping after DeepL translation."""
     text = text.replace("<keep>", "").replace("</keep>", "")
-    return text
+    return _xml_unescape(text)
 
 
 def protect_with_placeholders(text: str) -> tuple[str, dict[str, str]]:
