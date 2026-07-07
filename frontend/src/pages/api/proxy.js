@@ -132,10 +132,11 @@ const MAX_TOKENS_CAP = 8192;
 const MAX_RESULTS_CAP = 10;
 
 // Next.js Pages API route config: allow large OCR image payloads through the
-// body parser and give Deep Research (search + LLM chain) up to 60s on Vercel.
+// body parser, relay large upstream responses (OCR JSON / search results can
+// exceed the 4MB default), and give Deep Research up to 60s on Vercel.
 export const config = {
   maxDuration: 60,
-  api: { bodyParser: { sizeLimit: "10mb" } },
+  api: { bodyParser: { sizeLimit: "10mb" }, responseLimit: "10mb" },
 };
 
 export default async function handler(req, res) {
@@ -144,7 +145,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Origin allowlist — doar cereri de pe aplicatia proprie (anti-abuz cota AI)
+  // Origin allowlist — blocheaza cererile browser cross-origin (nivel CSRF).
+  // NU e o protectie completa anti-script: un client non-browser poate trimite
+  // Host+Origin potrivite. Aparatul real contra epuizarii cotei = cost-cap
+  // (model allowlist, mai jos) + rate-limit per-IP + limitele free-tier ale
+  // providerilor. Vezi si get_client_ip mai jos.
   const host = String(req.headers.host || "").toLowerCase();
   const allowed = new Set([host, ...ALLOWED_HOSTS]);
   const oh = hostOf(req.headers.origin);
@@ -155,11 +160,16 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Rate-limit best-effort (per IP)
+  // Rate-limit best-effort (per IP). Foloseste `x-real-ip` (setat de platforma
+  // Vercel/Render la IP-ul real al clientului) inainte de `x-forwarded-for`, al
+  // carui prim element e controlabil de client (spoof -> bucket nou/cerere).
   const ip =
+    String(req.headers["x-real-ip"] || "").trim() ||
     String(req.headers["x-forwarded-for"] || "")
-      .split(",")[0]
-      .trim() || "unknown";
+      .split(",")
+      .pop()
+      .trim() ||
+    "unknown";
   if (await rateLimited(ip)) {
     res
       .status(429)

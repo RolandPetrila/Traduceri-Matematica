@@ -56,12 +56,20 @@ def _make_key(ip: str, endpoint: str) -> str:
 def get_client_ip(handler) -> str:
     """Extract real client IP behind the platform proxy (Vercel/Render/local).
 
-    The proxy adds X-Forwarded-For; take the leftmost entry (original client).
+    Prefer X-Real-IP (set by the platform to the true client IP). Fall back to
+    the RIGHTMOST X-Forwarded-For entry (added by the closest trusted proxy) —
+    NOT the leftmost, which is client-supplied and spoofable (a spoofed value
+    would get its own rate-limit bucket, defeating the per-IP cap).
     """
-    xff = handler.headers.get("X-Forwarded-For", "") if hasattr(handler, 'headers') else ""
-    if xff:
-        return xff.split(",")[0].strip()
-    if hasattr(handler, 'client_address'):
+    headers = getattr(handler, "headers", None)
+    if headers is not None:
+        real_ip = (headers.get("X-Real-IP", "") or "").strip()
+        if real_ip:
+            return real_ip
+        xff = (headers.get("X-Forwarded-For", "") or "").strip()
+        if xff:
+            return xff.split(",")[-1].strip()
+    if hasattr(handler, "client_address"):
         return handler.client_address[0]
     return "unknown"
 

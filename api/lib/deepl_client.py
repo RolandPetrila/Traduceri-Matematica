@@ -79,7 +79,13 @@ def translate_text(
         return text
 
     key1 = os.environ.get("DEEPL_API_KEY", "").strip()
-    key2 = os.environ.get("DEEPL_API_KEY2", "").strip()
+    # Accept both naming conventions for the failover key — env vars use
+    # DEEPL_API_KEY_2 (with underscore, like the other _2 keys + proxy.js) while
+    # older .env/code used DEEPL_API_KEY2. Check both so failover isn't silently lost.
+    key2 = (
+        os.environ.get("DEEPL_API_KEY_2", "").strip()
+        or os.environ.get("DEEPL_API_KEY2", "").strip()
+    )
 
     if not key1 and not key2:
         raise RuntimeError("No DEEPL_API_KEY set")
