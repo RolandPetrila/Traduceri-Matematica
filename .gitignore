@@ -50,6 +50,9 @@ data/logs/*.jsonl
 
 # Build artifacts
 frontend/tsconfig.tsbuildinfo
+# NOTE: frontend/public/pdf.worker.min.mjs is committed on purpose (belt-and-suspenders)
+# so PDF rasterization works even if Vercel invokes `next build` directly and skips
+# the prebuild copy hook. The build script also re-copies it to stay version-matched.
 
 # Claude local settings
 .claude/settings.local.json
@@ -66,6 +69,3 @@ dev_server_log.txt
 
 # Development screenshots
 *_screenshot.png
-
-# Generated pdf.js worker (copied from node_modules at build)
-frontend/public/pdf.worker.min.mjs

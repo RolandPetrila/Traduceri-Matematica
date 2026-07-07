@@ -550,6 +550,11 @@ function typesetEl(el: HTMLElement): void {
  * so the user edits the true source, and on blur we save the raw text and
  * restore the rendered + typeset view. This keeps LaTeX/markdown intact across
  * language switches AND all exports (which read from the same page objects).
+ *
+ * Latent edge: save is on blur only. If a parent re-render fired WHILE a block is
+ * focused, React would revert its DOM to the pre-edit `raw` prop and lose the
+ * in-progress edit. No mid-edit re-render source exists in DocumentViewer today
+ * (edits mutate cached objects, not React state), so this is currently inert.
  */
 function EditableBlock({
   as = "p",

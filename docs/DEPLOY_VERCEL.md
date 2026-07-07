@@ -52,6 +52,9 @@ Motiv: ruta Next `frontend/src/app/api/logs` s-ar ciocni cu functiile Python `ap
 - Provoaca o eroare (ex. fisier invalid) → apare cu cod (`E-OCR-001` etc.) in diagnostics.
 
 ## Note free-tier
+- **Marime functii Python**: dependentele native ocupa ~**78 MB** dezarhivat
+  (PyMuPDF ~62MB + Pillow ~7MB + fpdf ~3MB + pypdf ~3MB + python-docx ~3MB) — sub
+  limita Vercel de **250 MB**/functie. PyMuPDF nu poate fi scos (folosit de `figure_crop.py`).
 - Vercel Hobby: functii max **60s** (setat in `vercel.json`). De aceea OCR ruleaza **o pagina/apel**
   (rasterizare pdf.js in browser). Nu procesa zeci de pagini intr-un singur apel.
 - Supabase free se **suspenda dupa ~1 saptamana** de inactivitate. Codul e **fail-open**: daca

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/copy-pdf-worker.mjs && next dev",
     "prebuild": "node scripts/copy-pdf-worker.mjs",
-    "build": "next build",
+    "build": "node scripts/copy-pdf-worker.mjs && next build",
     "start": "next start",
     "lint": "next lint"
   },
