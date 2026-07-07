@@ -10,6 +10,7 @@ import { DEFAULT_TAB, type TabId } from "@/lib/tab-config";
 const TraduceriPage = dynamic(() => import("./traduceri/page"), { ssr: false });
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
+const AsistentPage = dynamic(() => import("./asistent/page"), { ssr: false });
 const HistoryList = dynamic(() => import("@/components/history/HistoryList"), {
   ssr: false,
 });
@@ -20,7 +21,9 @@ export default function Home() {
       const saved = localStorage.getItem("activeTab") as TabId;
       if (
         saved &&
-        ["traduceri", "convertor", "editor", "istoric"].includes(saved)
+        ["traduceri", "convertor", "editor", "asistent", "istoric"].includes(
+          saved,
+        )
       ) {
         return saved;
       }
@@ -52,6 +55,9 @@ export default function Home() {
           </div>
           <div style={{ display: activeTab === "editor" ? "block" : "none" }}>
             <EditorPage />
+          </div>
+          <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
+            <AsistentPage />
           </div>
           <div style={{ display: activeTab === "istoric" ? "block" : "none" }}>
             <HistoryList />

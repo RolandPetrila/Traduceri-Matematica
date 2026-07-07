@@ -3,6 +3,7 @@
     { "id": "traduceri", "label": "Traduceri", "icon": "📐", "default": true },
     { "id": "convertor", "label": "Convertor", "icon": "🔄" },
     { "id": "editor", "label": "Editor", "icon": "✏️" },
+    { "id": "asistent", "label": "Asistent AI", "icon": "🤖" },
     { "id": "istoric", "label": "Istoric", "icon": "📋" }
   ]
 }

@@ -32,7 +32,13 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
 - [ ] Deploy real Vercel+Supabase — necesita conturi/env (vezi docs/DEPLOY_VERCEL.md) — confirmare Roland
 - [x] Faza G (editor) — Editor matematic integrat ca modul izolat (iframe same-origin /editor, servit static din frontend/public/editor/) — 2026-07-07, branch faza-g-editor (commit fa219e9 + fix b09e30f)
 - [ ] Faza G (tema) — Adaptare tema editor albastru→verde (tabla+creta, R-THEME) + enhancements HANDOFF (quickbar/search)
-- [ ] Faza G (Asistent) — Extragere logica Asistent_Text_AI ca modul Chat AI (proxy server-side Python in api/, chei env, R-SEC; se suprapune cu Faza 4). Referinta: branch faza-g-assets `_reference/Asistent_Text_AI/`
+- [x] Faza G (Asistent) — **Asistent_Text_AI integrat ca modul iframe** (decizie Roland: drop-in complet, nu port) — 2026-07-07:
+  - PWA copiat in `frontend/public/asistent/` (index.html + lib/llm.js + iconite + manifest); SW dezactivat (gazda detine shell-ul PWA); cai root-relative → relative pt subpath.
+  - Proxy AI Node ca **rută Next Pages** `frontend/src/pages/api/proxy.js` (same-origin cu iframe-ul — NU la root api/ Python; topologie 2-proiecte Vercel). Chei server-side, cost-cap + origin allowlist + rate-limit propriu (R-COST/R-SEC).
+  - Rută `/asistent` + tab "Asistent AI" (config/tabs.json + page.tsx), iframe cu `allow="microphone"` (dictare).
+  - CSP per-path in next.config.js: global exclude `/asistent/`, bloc dedicat relaxat (CDN-uri Tailwind/marked/Tesseract).
+  - **Verificat**: tsc+build verde (10 rute) · CSP curl (strict `/`, relaxat `/asistent`, 1 header fiecare) · proxy POST→200 real Groq + cost-cap activ · 403 fara Origin · 405 GET · randare browser OK · console curat (fix guard Tailwind).
+  - RAMAS pt Roland la deploy: setare chei AI in env-ul proiectului **frontend** (nu doar Python); test manual microfon (dictare); optional Upstash pt rate-limit persistent.
 
 ---
 

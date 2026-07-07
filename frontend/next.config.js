@@ -20,7 +20,10 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
       },
       {
-        source: "/(.*)",
+        // Global CSP — exclude the /asistent/ static subtree (the embedded PWA
+        // needs a relaxed CSP for its CDNs; see the dedicated block below).
+        // The wrapper route /asistent (bare, no slash) stays under this strict CSP.
+        source: "/((?!asistent/).*)",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
@@ -28,6 +31,38 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src ${connectSrc}; frame-src 'self' blob:; frame-ancestors 'self'`,
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+        ],
+      },
+      {
+        // Asistent Text AI — embedded PWA (iframe module, Faza G). Relaxed CSP
+        // for its CDNs (Tailwind/FontAwesome/marked/DOMPurify/Tesseract) + its
+        // own /api/proxy (same-origin). frame-ancestors 'self' so the host app
+        // can iframe it; SAMEORIGIN so the framing is allowed. Microphone is
+        // enabled for voice dictation (iframe also needs allow="microphone").
+        source: "/asistent/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "microphone=(self), camera=(), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; " +
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; " +
+              "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
+              "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
+              "img-src 'self' data: blob:; " +
+              "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com; " +
+              "worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'",
           },
           {
             key: "Strict-Transport-Security",
