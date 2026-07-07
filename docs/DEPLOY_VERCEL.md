@@ -45,6 +45,30 @@ Motiv: ruta Next `frontend/src/app/api/logs` s-ar ciocni cu functiile Python `ap
 3. Deploy. Dupa deploy, intoarce-te la proiectul API si seteaza `ALLOWED_ORIGIN`/`APP_PUBLIC_URL`
    la domeniul real al frontend-ului, apoi redeploy API.
 
+## Pas 3b — Chei AI pentru Asistent Text AI (ruta `/api/proxy`)
+Modulul **Asistent** (tab `/asistent`) foloseste o **ruta Next Pages** `frontend/src/pages/api/proxy.js`
+care traieste in **proiectul frontend** (same-origin cu iframe-ul). Deci cheile AI ale proxy-ului se
+seteaza pe proiectul **frontend**, nu pe cel Python. Fara ele, `/api/proxy` intoarce `500 Server key missing`
+si Asistentul e nefunctional (restul aplicatiei merge normal).
+
+Chei asteptate de `api/proxy.js` (env vars pe proiectul frontend):
+```
+GROQ_API_KEY, GOOGLE_API_KEY, MISTRAL_API_KEY, DEEPL_API_KEY,
+TAVILY_API_KEY, CEREBRAS_API_KEY, OPENROUTER_API_KEY, BRAVE_SEARCH_API_KEY   (primari)
+GOOGLE_API_KEY_2, MISTRAL_API_KEY_2, DEEPL_API_KEY_2                         (failover, optional)
+UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN                            (rate-limit persistent, optional)
+```
+Codul tolereaza cheile lipsa (un provider fara cheia lui → 500 → lantul de fallback continua).
+Cost-cap + origin allowlist + rate-limit sunt in proxy (nu depind de cheile de mai sus).
+
+**Automatizare** — din `frontend/`, dupa `vercel login` + link:
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\set-vercel-env.ps1
+```
+Scriptul citeste cheile din **Windows User env vars** (sistemul central `.api-keys`) si le impinge in
+proiectul linkat pe `production` + `preview`. Valorile trec doar local env→Vercel (nu apar nicaieri).
+Apoi `vercel --prod` pentru redeploy. Alternativ: adauga-le manual in dashboard-ul Vercel.
+
 ## Pas 4 — Verificare live
 - Deschide frontend-ul → upload o poza/PDF → vezi progresul real per-pagina.
 - Switch RO → SK → editeaza un text → re-export PDF/DOCX → editarea e prezenta.
