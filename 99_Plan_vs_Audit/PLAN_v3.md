@@ -1,6 +1,9 @@
 # PLAN v3/v4 — Traduceri Matematica
+
 # Status: IN EXECUTIE
+
 # Data start: 2026-03-26 | Ultima actualizare: 2026-07-07 (v4)
+
 # Completare: ~45% baza + restructurare v4 in curs
 
 ---
@@ -11,6 +14,7 @@
 ---
 
 ## Restructurare v4 (2026-07-07) — Vercel + Supabase + UX
+
 Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi commit-urile branch `restructurare-vercel-supabase-v4`.
 
 - [x] Faza 0 — Curatenie documentatie redundanta (5 doc-uri sterse, docs aliniate) — 2026-07-07
@@ -21,8 +25,14 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
 - [x] Faza D — Butoane unificate + contrast WCAG AA — 2026-07-07
 - [x] Faza E — Editare persistenta + export PDF vectorial — 2026-07-07
 - [x] Verificare locala (build Next OK, dev_server OK, rate-limit 0/15 429, error codes, fail-open) — 2026-07-07
+- [x] Re-verificare baseline local (branch faza-g-editor): `tsc --noEmit` 0 erori + `next build` OK (7 rute, inclusiv /editor) — 2026-07-07
+- [ ] **Review v4 — flux interactiv NEVERIFICAT**: upload→OCR→traducere→editare→export PDF nerulat live (fara chei API). RISC D7: OCR per-pagina pe Vercel (limita 60s/pagina) + PyMuPDF <250MB de confirmat pe deploy real
+- [ ] **FIX pre-deploy #1 — `api/ocr.py` bucla multi-pagina**: liniile 96-133 fac OCR server-side pe pana la 30 pagini/invocare (MAX_PAGES=30) → depaseste 60s Vercel. Plafon 1 pagina server-side (rasterizare PDF ramane in browser pdf.js). Confirmat in cod 2026-07-07
+- [ ] **FIX pre-deploy #2 — rate-limiting inactiv**: `api/lib/rate_limiter.py` nu e apelat de niciun handler → API public poate epuiza cota gratuita (contra R-COST). Cap per-IP in handlere. Confirmat in cod 2026-07-07
 - [ ] Deploy real Vercel+Supabase — necesita conturi/env (vezi docs/DEPLOY_VERCEL.md) — confirmare Roland
-- [ ] Faza G — Editor matematic + Asistent_Text_AI (BLOCAT pana la push branch cu fisierele)
+- [x] Faza G (editor) — Editor matematic integrat ca modul izolat (iframe same-origin /editor, servit static din frontend/public/editor/) — 2026-07-07, branch faza-g-editor (commit fa219e9 + fix b09e30f)
+- [ ] Faza G (tema) — Adaptare tema editor albastru→verde (tabla+creta, R-THEME) + enhancements HANDOFF (quickbar/search)
+- [ ] Faza G (Asistent) — Extragere logica Asistent_Text_AI ca modul Chat AI (proxy server-side Python in api/, chei env, R-SEC; se suprapune cu Faza 4). Referinta: branch faza-g-assets `_reference/Asistent_Text_AI/`
 
 ---
 
@@ -31,6 +41,7 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
 Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 
 **Flow UNIC traducere — Metoda unificata 3 pasi (definitiva):**
+
 1. Upload document matematic (poza/PDF/Word)
 2. **Pas 1 — ORIGINAL**: fisierul afisat ca atare (imagine/PDF), 100% fidel, read-only
 3. **Pas 2 — HTML RO**: reconstructie OCR (Gemini: text + SVG + LaTeX), EDITABIL — Cristina corecteaza erori
@@ -45,67 +56,70 @@ Plus: convertor fisiere, chat AI, calculator, corectare si generare teste.
 
 ## Decizii tehnice
 
-| # | Decizie | Varianta aleasa | Alternativa | Motiv |
-|---|---------|-----------------|-------------|-------|
-| D1 | Abordare v2->v3 | Refactorizare + Extindere | Rebuild complet | Codul existent functioneaza, doar trebuie reorganizat |
-| D2 | Scope plan | Modular progressiv | Tot sau nimic | Focus pe urgent (Modul 1+2), restul schitat |
-| D3 | Figuri document | **SVG generat de Gemini** la OCR (ca Exemplu_BUN.html) | ~~Crop cu Pillow~~ (abandonat — bbox imprecis) | SVG consistent, dovedit functional. Figurile raman INTACTE la switch limba. |
-| D4 | Ordine module noi | Chat AI -> Calculator -> Teste | Calculator primul | Chat AI e cel mai versatil |
-| D5 | Traducere primara | DeepL Free (2 chei) | Gemini traducere | DeepL e mai precis pt limbi europene |
-| D6 | OCR | Gemini 2.5 Flash (JSON mode) | Mistral Pixtral | Gemini e mai precis si gratuit |
-| D7 | Server | Render free tier | Vercel | Render suporta Python nativ, timeout 100 min |
-| D8 | Contor DeepL | Vizibil in interfata | Doar in /diagnostics | Cristina trebuie sa vada cat a consumat |
-| D9 | Cold start Render | Ecran "Se incarca..." frumos | Nimic (ecran gol) | Prima impresie conteaza |
-| D10 | Securitate | Verificare + Next.js update | Ignorare | Probleme mici dar importante |
-| D11 | PDF crop figuri | PyMuPDF (se confirma dupa cercetare MCP) | pdf2image + Poppler | PyMuPDF nu are dependente externe (audit S1) |
-| D12 | Rate limiting | In-memory dict (10 req/min, 100/zi per IP) | Redis / nimic | Protectie cota DeepL/Gemini fara costuri (audit S2) |
-| D13 | Cache traduceri | localStorage persistent (~5 MB, curatare auto) | Doar in sesiune | Nu pierde munca la inchidere browser (audit S3) |
-| D14 | Timeout ecran incarcare | 120 secunde, apoi mesaj + buton retry | Fara timeout | Feedback clar daca serverul nu raspunde (audit S6) |
-| D15 | Chat AI — cota Gemini | Groq prioritar pt text, Gemini doar pt poze | Gemini pt tot | Pastreaza cota Gemini pt OCR (audit S7) |
-| D16 | PDF mare (>20 pag) | Procesare in loturi de 5 pagini | Tot odata | Previne epuizare memorie server (audit SC3) |
-| D17 | Contor DeepL cu 2 chei | Numar combinat simplu ("23% din 1M") | Per cheie separat | Cristina nu trebuie sa stie de 2 chei (audit S10, Roland I4) |
-| D18 | Cache versioning | Versiune cache (v1, v2...) cu invalidare automata | Fara versiune | Dupa update pipeline, cache vechi se ignora (audit S11) |
-| D19 | Rate limiting scope | Global pe TOATE endpoint-urile (limite diferite) | Doar pe traduceri | Protejeaza si convertorul si viitorul chat (audit S12) |
-| D20 | PyMuPDF DPI | 150 (economie memorie) | 300 (default) | DPI 300 = 4x memorie, crash pe 512MB (audit S13) |
-| D21 | Multi-JPEG upload | 1 document combinat (5 poze = 5 pagini) | 5 documente separate | Cristina vrea 1 document tradus, nu 5 (Roland I5) |
-| D23 | **Flow traducere — Metoda unificata 3 pasi** | Pas 1: Original (imagine, read-only) → Pas 2: HTML RO editabil (OCR) → Pas 3: HTML tradus editabil (DeepL on-demand). Figuri SVG + LaTeX = INTACTE. Butoane: Original/RO/SK | ~~Traducere imediata la upload~~ | **METODA DEFINITIVA 2026-04-03**: 3 pasi cu editare in pasii 2-3 |
-| D24 | Figuri lipsa bug | Prompt OCR interzicea SVG (linia 54: "Do NOT generate SVG") | - | Cauza root gasita — prompt-ul blocheaza SVG-urile |
-| D25 | DeepL rol | DOAR traducere text, DOAR la switch buton limba. Nu ruleaza la upload, nu traduce formule/figuri | ~~Traducere la upload~~ | Parte din flow-ul unic D23 |
-| D26 | Gemini rol | OCR + generare SVG figuri inline (la upload). NU traducere | ~~OCR + bbox~~ | Gemini genereaza si figurile SVG inline (dovedit de Exemplu_BUN.html) |
-| D27 | Prompt OCR | Cere SVG inline + text structurat (ca in Exemplu_BUN.html) | ~~Bbox coordonate~~ | SVG generat e consistent, bbox e imprecis |
+| #   | Decizie                                      | Varianta aleasa                                                                                                                                                             | Alternativa                                    | Motiv                                                                       |
+| --- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------- |
+| D1  | Abordare v2->v3                              | Refactorizare + Extindere                                                                                                                                                   | Rebuild complet                                | Codul existent functioneaza, doar trebuie reorganizat                       |
+| D2  | Scope plan                                   | Modular progressiv                                                                                                                                                          | Tot sau nimic                                  | Focus pe urgent (Modul 1+2), restul schitat                                 |
+| D3  | Figuri document                              | **SVG generat de Gemini** la OCR (ca Exemplu_BUN.html)                                                                                                                      | ~~Crop cu Pillow~~ (abandonat — bbox imprecis) | SVG consistent, dovedit functional. Figurile raman INTACTE la switch limba. |
+| D4  | Ordine module noi                            | Chat AI -> Calculator -> Teste                                                                                                                                              | Calculator primul                              | Chat AI e cel mai versatil                                                  |
+| D5  | Traducere primara                            | DeepL Free (2 chei)                                                                                                                                                         | Gemini traducere                               | DeepL e mai precis pt limbi europene                                        |
+| D6  | OCR                                          | Gemini 2.5 Flash (JSON mode)                                                                                                                                                | Mistral Pixtral                                | Gemini e mai precis si gratuit                                              |
+| D7  | Server                                       | Render free tier                                                                                                                                                            | Vercel                                         | Render suporta Python nativ, timeout 100 min                                |
+| D8  | Contor DeepL                                 | Vizibil in interfata                                                                                                                                                        | Doar in /diagnostics                           | Cristina trebuie sa vada cat a consumat                                     |
+| D9  | Cold start Render                            | Ecran "Se incarca..." frumos                                                                                                                                                | Nimic (ecran gol)                              | Prima impresie conteaza                                                     |
+| D10 | Securitate                                   | Verificare + Next.js update                                                                                                                                                 | Ignorare                                       | Probleme mici dar importante                                                |
+| D11 | PDF crop figuri                              | PyMuPDF (se confirma dupa cercetare MCP)                                                                                                                                    | pdf2image + Poppler                            | PyMuPDF nu are dependente externe (audit S1)                                |
+| D12 | Rate limiting                                | In-memory dict (10 req/min, 100/zi per IP)                                                                                                                                  | Redis / nimic                                  | Protectie cota DeepL/Gemini fara costuri (audit S2)                         |
+| D13 | Cache traduceri                              | localStorage persistent (~5 MB, curatare auto)                                                                                                                              | Doar in sesiune                                | Nu pierde munca la inchidere browser (audit S3)                             |
+| D14 | Timeout ecran incarcare                      | 120 secunde, apoi mesaj + buton retry                                                                                                                                       | Fara timeout                                   | Feedback clar daca serverul nu raspunde (audit S6)                          |
+| D15 | Chat AI — cota Gemini                        | Groq prioritar pt text, Gemini doar pt poze                                                                                                                                 | Gemini pt tot                                  | Pastreaza cota Gemini pt OCR (audit S7)                                     |
+| D16 | PDF mare (>20 pag)                           | Procesare in loturi de 5 pagini                                                                                                                                             | Tot odata                                      | Previne epuizare memorie server (audit SC3)                                 |
+| D17 | Contor DeepL cu 2 chei                       | Numar combinat simplu ("23% din 1M")                                                                                                                                        | Per cheie separat                              | Cristina nu trebuie sa stie de 2 chei (audit S10, Roland I4)                |
+| D18 | Cache versioning                             | Versiune cache (v1, v2...) cu invalidare automata                                                                                                                           | Fara versiune                                  | Dupa update pipeline, cache vechi se ignora (audit S11)                     |
+| D19 | Rate limiting scope                          | Global pe TOATE endpoint-urile (limite diferite)                                                                                                                            | Doar pe traduceri                              | Protejeaza si convertorul si viitorul chat (audit S12)                      |
+| D20 | PyMuPDF DPI                                  | 150 (economie memorie)                                                                                                                                                      | 300 (default)                                  | DPI 300 = 4x memorie, crash pe 512MB (audit S13)                            |
+| D21 | Multi-JPEG upload                            | 1 document combinat (5 poze = 5 pagini)                                                                                                                                     | 5 documente separate                           | Cristina vrea 1 document tradus, nu 5 (Roland I5)                           |
+| D23 | **Flow traducere — Metoda unificata 3 pasi** | Pas 1: Original (imagine, read-only) → Pas 2: HTML RO editabil (OCR) → Pas 3: HTML tradus editabil (DeepL on-demand). Figuri SVG + LaTeX = INTACTE. Butoane: Original/RO/SK | ~~Traducere imediata la upload~~               | **METODA DEFINITIVA 2026-04-03**: 3 pasi cu editare in pasii 2-3            |
+| D24 | Figuri lipsa bug                             | Prompt OCR interzicea SVG (linia 54: "Do NOT generate SVG")                                                                                                                 | -                                              | Cauza root gasita — prompt-ul blocheaza SVG-urile                           |
+| D25 | DeepL rol                                    | DOAR traducere text, DOAR la switch buton limba. Nu ruleaza la upload, nu traduce formule/figuri                                                                            | ~~Traducere la upload~~                        | Parte din flow-ul unic D23                                                  |
+| D26 | Gemini rol                                   | OCR + generare SVG figuri inline (la upload). NU traducere                                                                                                                  | ~~OCR + bbox~~                                 | Gemini genereaza si figurile SVG inline (dovedit de Exemplu_BUN.html)       |
+| D27 | Prompt OCR                                   | Cere SVG inline + text structurat (ca in Exemplu_BUN.html)                                                                                                                  | ~~Bbox coordonate~~                            | SVG generat e consistent, bbox e imprecis                                   |
 
 ---
 
 ## Limite servicii gratuite (R14)
 
-| Serviciu | Limita | Ce inseamna in practica | Solutie la epuizare |
-|----------|--------|-------------------------|---------------------|
-| **DeepL** | 500K car/luna/cheie (2 chei = 1M) | ~350-500 pagini traduse/luna | Fallback pe Gemini traducere (calitate mai mica) + mesaj clar utilizator |
-| **Gemini OCR** | 250 cereri/zi, 10/min | ~250 pagini OCR/zi | Procesare pe rand cu asteptare, fallback Mistral |
-| **Gemini Chat** | Impartit cu OCR (250 total/zi) | ~100 mesaje chat/zi (daca se face si OCR) | Chat foloseste Groq prioritar, Gemini doar pt poze |
-| **Groq** | ~14.400 cereri/zi | Suficient ca backup traducere + chat | Fara alt fallback (nu e nevoie) |
-| **Render RAM** | 512 MB per serviciu | Max ~10-15 pagini procesate simultan | PDF >20 pag: procesare in loturi de 5 |
-| **Render ore** | 750 ore/luna (2 servicii) | OK la utilizare intermitenta (3-4 ore/zi) | Spin-down automat economiseste ore |
-| **Render cold start** | 30-60 sec (poate ajunge la 90+) | Prima accesare dupa pauza e lenta | Ecran "Se incarca..." + timeout 120s + retry |
-| **Browser storage** | ~5 MB localStorage pt cache traduceri | ~30-50 documente cached persistent | Curatare automata cele mai vechi |
+| Serviciu              | Limita                                | Ce inseamna in practica                   | Solutie la epuizare                                                      |
+| --------------------- | ------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
+| **DeepL**             | 500K car/luna/cheie (2 chei = 1M)     | ~350-500 pagini traduse/luna              | Fallback pe Gemini traducere (calitate mai mica) + mesaj clar utilizator |
+| **Gemini OCR**        | 250 cereri/zi, 10/min                 | ~250 pagini OCR/zi                        | Procesare pe rand cu asteptare, fallback Mistral                         |
+| **Gemini Chat**       | Impartit cu OCR (250 total/zi)        | ~100 mesaje chat/zi (daca se face si OCR) | Chat foloseste Groq prioritar, Gemini doar pt poze                       |
+| **Groq**              | ~14.400 cereri/zi                     | Suficient ca backup traducere + chat      | Fara alt fallback (nu e nevoie)                                          |
+| **Render RAM**        | 512 MB per serviciu                   | Max ~10-15 pagini procesate simultan      | PDF >20 pag: procesare in loturi de 5                                    |
+| **Render ore**        | 750 ore/luna (2 servicii)             | OK la utilizare intermitenta (3-4 ore/zi) | Spin-down automat economiseste ore                                       |
+| **Render cold start** | 30-60 sec (poate ajunge la 90+)       | Prima accesare dupa pauza e lenta         | Ecran "Se incarca..." + timeout 120s + retry                             |
+| **Browser storage**   | ~5 MB localStorage pt cache traduceri | ~30-50 documente cached persistent        | Curatare automata cele mai vechi                                         |
 
 ---
 
 ## Scenarii si flow-uri clarificati
 
 ### Multi-JPEG upload (Roland I5)
+
 - Cand Cristina selecteaza 5 poze JPEG dintr-o data, se combina automat intr-un **singur document cu 5 pagini**
 - Ordinea paginilor: dupa numele fisierului sau ordinea in care le-a selectat
 - Traducerea si cache-ul se aplica pe documentul combinat (nu pe fiecare poza separat)
 - Cristina vede un singur document tradus, cu toate paginile in ordine
 
 ### SC4: Flow DOCX (Word cu imagini)
+
 - DOCX-urile se traduc **text-only** (fara OCR pe imagini)
 - Pipeline: extrage textul din Word -> traducere DeepL -> reconstruieste Word tradus
 - Imaginile din Word se pastreaza ca atare (nu se proceseaza prin OCR)
 - Daca Cristina vrea OCR pe un Word cu figuri: il converteste in PDF sau face poze -> apoi foloseste flow-ul OCR normal
 
 ### SC3: PDF mare (>20 pagini)
+
 - Procesare in loturi de 5 pagini (nu toate odata)
 - Mesaj vizibil: "Document mare, se proceseaza in etape... (lot 1/4)"
 - Fiecare lot: OCR + crop figuri + traducere
@@ -114,12 +128,15 @@ Plus: convertor fisiere, chat AI, calculator, corectare si generare teste.
 ---
 
 ## Faza 1: Reparatii urgente + Prima impresie
+
 ### Completare: 100%
 
 ### Scop
+
 Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesare (ecran de incarcare cand serverul se trezeste).
 
 ### Componente afectate
+
 - `api/convert.py` — fix bug import os
 - `frontend/src/app/page.tsx` sau `layout.tsx` — ecran incarcare
 - `.gitignore` — adauga 99_Plan_vs_Audit/ si 99_Blueprints/ (scoase din ignore)
@@ -128,12 +145,14 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 ### Task-uri
 
 **Sprint 1.1: Fix convertor** — COMPLETAT 2026-03-26
+
 - [x] 2026-03-26 — Fix `api/convert.py` — adaugat `import os` la inceputul fisierului. Commit af0b40b + push.
 - [x] 2026-03-26 — Test MINIM: MD->HTML pe Render — OK, HTTP 200, output HTML corect cu headings+bold+liste
 - [x] 2026-03-26 — Test TIPIC: 3 tipuri — MD->HTML (OK, diacritice ăîșțâ corecte), JPEG->PDF (OK, 270KB), PDF->DOCX (OK, 36KB)
 - [x] 2026-03-26 — Test MAXIM: Split (OK), Compress (OK, 270946->270885), Rotate 90° (OK), Watermark "DRAFT" (OK)
 
 **Sprint 1.2: Ecran "Se incarca..."** — COMPLETAT 2026-03-26
+
 - [x] 2026-03-26 — Detectare cold start: ServerWakeup.tsx polleaza /api/health la fiecare 3 secunde pana raspunde
 - [x] 2026-03-26 — Design ecran: fundal verde (gradient chalkboard), mesaj "Se pregateste aplicatia..." + 3 puncte animate galben creta
 - [x] 2026-03-26 — Ecranul dispare automat cand serverul raspunde (fara refresh manual)
@@ -142,6 +161,7 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 - [x] 2026-03-26 — Test pe Render live: frontend deployed OK, CSS animatie prezenta, API health OK. Ecranul de incarcare apare cand API e indisponibil, dispare cand raspunde.
 
 **Sprint 1.3: Curatenie v2** — COMPLETAT 2026-03-26
+
 - [x] 2026-03-26 — 99_Plan_vs_Audit/ si 99_Blueprints/ adaugate in git (commit af0b40b)
 - [x] 2026-03-26 — Dezactivare Vercel: Git disconnected via CLI (`vercel git disconnect`). Nu mai face deploy automat la push. Site-ul vechi ramine online dar nu se actualizeaza.
 - [x] 2026-03-26 — CLAUDE.md actualizat la v3.0 (status, key files, stack, 6 module)
@@ -149,18 +169,21 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 - [x] 2026-03-26 — Commit ec04023 + Push -> Render deploy OK
 
 ### Limite (R14 checklist)
+
 - Timp executie convertor: 1 pagina = ~2-5 sec, 10 pagini = ~10-20 sec, 50+ pagini = poate depasi 512MB RAM [limita Render]
 - Dimensiune maxima fisier: ~4 MB (impus de upload frontend), suficient pt documente scolare
 - Concurenta: 1 persoana la un moment dat (OK — Cristina e singurul utilizator)
 - Offline: convertorul NU functioneaza offline (necesita server)
 
 ### Criterii de acceptare
+
 - Cristina poate converti un PDF in Word si invers pe site-ul live
 - La prima accesare dupa pauza, vede un ecran frumos (nu pagina goala sau eroare)
 - Dupa 30-60 secunde, aplicatia se incarca normal
 - Daca serverul nu raspunde dupa 2 minute, vede mesaj clar + buton retry
 
 ### Exemple de utilizare
+
 1. Cristina deschide site-ul dupa ce nu l-a folosit 2 ore
 2. Vede: ecran verde cu "Se pregateste aplicatia..." si o animatie
 3. Dupa 30-40 secunde, site-ul se incarca complet
@@ -168,6 +191,7 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 5. Primeste fisierul Word descarcabil
 
 **Scenariu alternativ (server indisponibil):**
+
 1. Cristina deschide site-ul in timpul unei mentenante Render
 2. Vede ecranul verde cu animatia
 3. Dupa 2 minute, vede: "Serverul nu raspunde momentan. Incearca din nou mai tarziu."
@@ -176,12 +200,15 @@ Repara ce e stricat (convertorul) si ofera o experienta placuta la prima accesar
 ---
 
 ## Faza 2: Calitate traduceri + Securitate + Refactorizare backend
+
 ### Completare: 90% (raman: test Android, PDF mare batching, fallback DeepL->Gemini test, cache test manual)
 
 ### Scop
+
 Documentele sa arate ca Exemplu_BUN.html: figuri SVG inline, formule LaTeX randate cu MathJax, text structurat — afisate in pagina web ca original (A4, paginat). Traducerea se face ON-DEMAND prin switch buton limba (doar textul, restul intact). Plus: reorganizare cod backend, fix-uri securitate, contor DeepL vizibil, cache traduceri persistent, si protectie impotriva abuzului.
 
 ### Componente afectate
+
 - `api/translate.py` — split in module mai mici in `api/lib/`
 - `api/lib/ocr_structured.py` — OCR structurat: text + SVG figuri inline + LaTeX
 - `api/lib/figure_crop.py` — [-] DEPRECIAT (D3: SVG generat de Gemini inlocuieste crop)
@@ -200,6 +227,7 @@ Documentele sa arate ca Exemplu_BUN.html: figuri SVG inline, formule LaTeX randa
 
 **Sprint 2.1: Refactorizare backend (reorganizare cod)** — COMPLETAT 2026-03-26
 Fisierul translate.py avea 1444 linii. L-am spart in module separate:
+
 - [x] 2026-03-26 — Commit snapshot pre-refactorizare: cbbe712 (copie de siguranta)
 - [x] 2026-03-26 — `api/lib/html_builder.py` (262 linii) — HTML A4 template + MathJax + build_html() refactorizat sa refoloseasca _build_html_shell()
 - [x] 2026-03-26 — `api/lib/translation_router.py` (482 linii) — Gemini/DeepL/Groq/Mistral/Claude + OCR + DOCX extraction
@@ -212,6 +240,7 @@ Fisierul translate.py avea 1444 linii. L-am spart in module separate:
 Metoda schimbata: ~~crop Pillow~~ → **SVG generat de Gemini** (D3 actualizat 2026-03-27).
 Figurile sunt generate de Gemini ca SVG inline (ca in Exemplu_BUN.html), nu decupate din original.
 La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
+
 - [x] 2026-03-27 — D3 schimbat: SVG generat de Gemini confirmat de Roland (test vizual OK)
 - [x] 2026-03-26 — Pozitionare in HTML: figurile apar in fluxul documentului exact unde Gemini le detecteaza
 - [x] 2026-03-26 — Figuri perechi: doua figuri consecutive se afiseaza automat side-by-side (P1+P2)
@@ -220,6 +249,7 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - [ ] Comparatie vizuala cu Exemplu_BUN.html — Roland verifica pe site-ul live
 
 **Sprint 2.3: Securitate + Protectie abuz** — COMPLETAT 2026-03-26
+
 - [x] 2026-03-26 — InlineEditor: sanitizeHtml() activ — OK
 - [x] 2026-03-26 — CORS: ALLOWED_ORIGIN pe toate endpoint-urile (default Render URL) — OK
 - [x] 2026-03-26 — Headere securitate: X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy — OK
@@ -231,6 +261,7 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - [x] 2026-03-26 — Test pe Render: 5 cereri rapide la convert -> toate 200 (sub limita), rate limiter activ, build dd1d4b0
 
 **Sprint 2.4: Contor DeepL + Cache traduceri + Fallback** — PARTIAL 2026-03-26 (2 task-uri ramase)
+
 - [x] 2026-03-26 — `/api/deepl-usage` endpoint: cota combinata 2 chei (1M total), warning levels, pagini estimate
 - [x] 2026-03-26 — `DeeplUsage.tsx`: bara vizuala verde/galben/rosu, refresh 60s, in pagina Traduceri
 - [x] 2026-03-26 — Test pe Render: 16.115 / 1.000.000 (1.6%), ~728 pagini disponibile, nivel OK
@@ -242,6 +273,7 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - [ ] Test cache: traduce, inchide browser, redeschide -> din cache (Roland verifica manual)
 
 **Sprint 2.5: Teste finale + Deploy** — PARTIAL 2026-03-26 (2 task-uri ramase)
+
 - [x] 2026-03-26 — Commit + Push Sprint 2.1-2.4 -> Render deploy OK (d391b9c)
 - [x] 2026-03-26 — Test JPEG live: 1 pag, 6 figuri crop, 70s, success
 - [x] 2026-03-26 — Test PDF live: 1 pag via PyMuPDF, 1 figura crop, 24.5s, success
@@ -251,6 +283,7 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - [x] 2026-03-26 — DeepL usage live: 16.115/1M (1.6%), ~728 pagini, contor OK
 
 ### Limite (R14 checklist)
+
 - Timp executie traducere: 1 pagina = ~10-20 sec (OCR + traducere), 5 pagini = ~1-2 min, 20 pagini = ~5-8 min
 - Dimensiune fisier: max 4 MB per upload (suficient pt poze de manual)
 - Limita DeepL: ~350-500 pagini/luna cu 2 chei. La ~25 pag/zi = suficient pt o luna normala. La epuizare: fallback Gemini cu mesaj clar.
@@ -261,6 +294,7 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - PDF mare: >20 pagini se proceseaza in loturi de 5 (previne epuizare memorie server 512 MB)
 
 ### Criterii de acceptare
+
 - Output arata ca Exemplu_BUN.html (SVG figuri inline, formule LaTeX, text structurat, A4 paginat)
 - Documentul se afiseaza in pagina web ca original, traducerea se face ON-DEMAND prin switch buton limba
 - La switch: DOAR textul se traduce, figuri SVG + formule LaTeX = INTACTE
@@ -273,6 +307,7 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 - Test pe telefon Android OK
 
 ### Exemple de utilizare (metoda unificata 3 pasi)
+
 1. Cristina fotografiaza 5 pagini de manual cu telefonul
 2. Le incarca pe site (drag & drop sau selectie fisiere)
 3. **Pas 1 — Original**: vede imaginile originale din manual (100% fidele), paginat 1/5, 2/5...
@@ -287,18 +322,22 @@ La switch limba: figurile SVG raman INTACTE, doar textul se traduce.
 ---
 
 ## Faza 3: Convertor polish
+
 ### Completare: 0%
 
 ### Scop
+
 Convertorul de fisiere sa functioneze complet si corect pe Render: toate tipurile de conversie, diacritice corecte, PDF-uri de calitate.
 
 ### Componente afectate
+
 - `api/convert.py` — fix-uri si imbunatatiri
 - `frontend/src/app/convertor/page.tsx` — verificare UI
 
 ### Task-uri
 
 **Sprint 3.1: Verificare matrice conversie**
+
 - [ ] Test PDF -> Word: text corect, structura pastrata
 - [ ] Test Word -> PDF: diacritice RO/SK corecte (s cu haček, t cu haček, a cu breve)
 - [ ] Test Word -> HTML: headings, paragrafe, formatare
@@ -312,12 +351,14 @@ Convertorul de fisiere sa functioneze complet si corect pe Render: toate tipuril
 
 **Sprint 3.2: Fix diacritice PDF**
 Problema: cand convertesti Word in PDF, literele cu accente slovace/romanesti apar gresit (ca "?" sau patratele).
+
 - [ ] Investigare: actualul generator PDF (fpdf2) nu suporta bine Unicode complet
 - [ ] Solutie: adaugare font cu suport Unicode (ex: DejaVu Sans) sau schimbare librarie
 - [ ] Test: document cu diacritice RO (a, i, s, t) + SK (c, s, z, d, t, l, n) -> PDF corect
 - [ ] Test MAXIM: document 20 pagini cu mix RO+SK -> PDF corect
 
 **Sprint 3.3: Operatii PDF avansate**
+
 - [ ] Test merge: 3 PDF-uri -> 1 PDF corect
 - [ ] Test split: PDF 10 pagini -> paginile 3-5 extrase
 - [ ] Test compress: PDF 5 MB -> dimensiune redusa
@@ -327,12 +368,14 @@ Problema: cand convertesti Word in PDF, literele cu accente slovace/romanesti ap
 - [ ] Commit + Push -> Render deploy
 
 ### Limite (R14 checklist)
+
 - Timp: 1 fisier mic = ~2 sec, 1 PDF 50 pagini = ~10-15 sec, merge 10 PDF-uri = ~20-30 sec
 - Dimensiune: max 4 MB upload. PDF-uri mai mari de 50 pagini pot depasi 512 MB RAM pe Render
 - Offline: NU functioneaza offline
 - Diacritice: limitate de fontul PDF inclus (de rezolvat in Sprint 3.2)
 
 ### Criterii de acceptare
+
 - Toate cele 10 tipuri de conversie functioneaza pe Render
 - Diacritice romanesti si slovace corecte in PDF-uri generate
 - Operatii PDF avansate (merge, split, compress, rotate, watermark) functionale
@@ -340,12 +383,15 @@ Problema: cand convertesti Word in PDF, literele cu accente slovace/romanesti ap
 ---
 
 ## Faza 4: Chat AI (SCHITAT — se detaliaza cand ajungem aici)
+
 ### Completare: 0%
 
 ### Scop
+
 Asistent AI integrat in aplicatie. Cristina poate pune intrebari, trimite poze, cere explicatii matematice.
 
 ### Componente estimate
+
 - `frontend/src/app/chat/page.tsx` — pagina chat (tab nou)
 - `frontend/src/components/chat/ChatPanel.tsx` — interfata conversatie
 - `frontend/src/components/chat/MessageList.tsx` — lista mesaje
@@ -354,6 +400,7 @@ Asistent AI integrat in aplicatie. Cristina poate pune intrebari, trimite poze, 
 - `api/lib/chat_providers.py` — rutare Gemini/Groq
 
 ### Functionalitati principale
+
 - Chat conversational cu AI (intrebari si raspunsuri)
 - Upload imagine in chat: "Ce contine aceasta pagina?"
 - Selectare AI: Gemini 2.5 Flash (inteligent, vede poze) sau Groq Llama 3.3 (rapid, doar text)
@@ -362,9 +409,11 @@ Asistent AI integrat in aplicatie. Cristina poate pune intrebari, trimite poze, 
 - Istoric chat salvat local (se pastreaza si dupa inchidere browser)
 
 ### Nota importanta — Cota Gemini (audit S7)
+
 Chat AI foloseste **Groq prioritar** pentru intrebari text (14.400 cereri/zi — practic nelimitat). **Gemini se foloseste DOAR** cand Cristina trimite o poza in chat (analiza imagine). Astfel cota Gemini (250/zi) ramane disponibila pentru OCR-ul de traduceri.
 
 ### Limite estimate (R14)
+
 - Gemini: partajeaza limita de 250 cereri/zi cu OCR-ul. Chat-ul foloseste Groq pt text -> impact minim pe cota OCR
 - Groq: 14.400 cereri/zi — practic nelimitat pentru chat text
 - Stocare: istoric chat in localStorage, ~1-2 MB per conversatie lunga
@@ -373,18 +422,22 @@ Chat AI foloseste **Groq prioritar** pentru intrebari text (14.400 cereri/zi —
 ---
 
 ## Faza 5: Calculator matematic (SCHITAT — se detaliaza cand ajungem aici)
+
 ### Completare: 0%
 
 ### Scop
+
 Calculator stiintific in browser. Cristina scrie o formula sau ecuatie, vede rezultatul calculat si graficul functiei. Totul local, fara internet necesar.
 
 ### Componente estimate
+
 - `frontend/src/app/calculator/page.tsx` — pagina calculator (tab nou)
 - `frontend/src/components/calculator/CalculatorPanel.tsx` — interfata principala
 - `frontend/src/components/calculator/GraphPlot.tsx` — grafic functii 2D
 - `frontend/src/components/calculator/UnitConverter.tsx` — convertor unitati
 
 ### Functionalitati principale
+
 - Calcule: ecuatii, sisteme, simplificari, factorizari
 - Geometrie: arii, perimetre, volume, Pitagora, trigonometrie
 - Grafice: plot 2D (sinus, cosinus, polinoame)
@@ -393,6 +446,7 @@ Calculator stiintific in browser. Cristina scrie o formula sau ecuatie, vede rez
 - Istoric calcule salvat local
 
 ### Limite estimate (R14)
+
 - 100% client-side (math.js) — ZERO cereri server, ZERO costuri API
 - Offline: DA, functioneaza complet fara internet
 - Stocare: ~500 KB pentru istoric calcule
@@ -401,14 +455,18 @@ Calculator stiintific in browser. Cristina scrie o formula sau ecuatie, vede rez
 ---
 
 ## Faza 6: Teste — corectare + generare (MENTIONAT — se planifica ulterior)
+
 ### Completare: 0%
 
 ### Scop
+
 Doua sub-functionalitati:
+
 1. **Corectare teste din foto**: Cristina fotografiaza testul unui elev, AI-ul il corecteaza automat si da nota
 2. **Generare teste noi**: Cristina incarca pagini de manual, specifica parametri (numar intrebari, dificultate, limba), AI-ul genereaza testul + baremul
 
 ### Note
+
 - Depinde de Modul 4 (Chat AI) pentru integrare
 - Cel mai complex modul (prompt engineering avansat)
 - Se va planifica detaliat dupa finalizarea Fazelor 1-5
@@ -417,13 +475,13 @@ Doua sub-functionalitati:
 
 ## Checklist R14 — Sumar limite per modul
 
-| Modul | MINIM (1 pag) | TIPIC (5 pag) | MAXIM (20 pag) | Limita lunara |
-|-------|--------------|---------------|----------------|---------------|
-| **Traduceri OCR** | ~10-15 sec | ~1-2 min | ~5-8 min (loturi) | 250 pag/zi (Gemini) |
-| **Traduceri DeepL** | ~3-5 sec | ~10-20 sec | ~30-60 sec | ~350-500 pag/luna (2 chei) |
-| **Convertor** | ~2 sec | ~5-10 sec | ~20-30 sec | Nelimitat (local pe server) |
-| **Chat AI** | instant | n/a | n/a | ~14K mesaje/zi (Groq) + ~50 poze/zi (Gemini) |
-| **Calculator** | instant | n/a | n/a | Nelimitat (local in browser) |
+| Modul               | MINIM (1 pag) | TIPIC (5 pag) | MAXIM (20 pag)    | Limita lunara                                |
+| ------------------- | ------------- | ------------- | ----------------- | -------------------------------------------- |
+| **Traduceri OCR**   | ~10-15 sec    | ~1-2 min      | ~5-8 min (loturi) | 250 pag/zi (Gemini)                          |
+| **Traduceri DeepL** | ~3-5 sec      | ~10-20 sec    | ~30-60 sec        | ~350-500 pag/luna (2 chei)                   |
+| **Convertor**       | ~2 sec        | ~5-10 sec     | ~20-30 sec        | Nelimitat (local pe server)                  |
+| **Chat AI**         | instant       | n/a           | n/a               | ~14K mesaje/zi (Groq) + ~50 poze/zi (Gemini) |
+| **Calculator**      | instant       | n/a           | n/a               | Nelimitat (local in browser)                 |
 
 ---
 
