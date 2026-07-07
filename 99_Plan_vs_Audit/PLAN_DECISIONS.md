@@ -294,3 +294,32 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
 - V2: Gemini 2.5 Pro — PRO: calitate mult mai buna, trigonometrie corecta, layout 2 coloane / CONTRA: 100 RPD (nu 250), 5 RPM
 - Aleasa: V2 (Pro) — Motiv: volumul lui Cristina (cateva pagini/zi) incape in 100 RPD. Calitatea SVG e critica.
 - Surse: Google AI docs, RUNDA_CURENTA.md analiza T3
+
+---
+
+## Runda v4 — 2026-07-07 (Restructurare masiva: Vercel + Supabase)
+
+### Intrebari puse lui Roland (AskUserQuestion)
+- Q-v4-1: Fisierele locale (editor, HANDOFF, Asistent_Text_AI) nu sunt in repo. Cum le aduci?
+  -> Raspuns: **Push pe branch git** (le fetch-uiesc). Faza G blocata pana atunci.
+- Q-v4-2: Migrare Vercel — doar frontend sau full?
+  -> Raspuns: **Full** (frontend + backend Python serverless).
+- Q-v4-3: La ce folosim Supabase?
+  -> Raspuns: **Doar log-uri + coduri eroare centralizate** (cross-device). Fara auth, fara stocare documente.
+
+### Decizii luate
+- D33: Migrare FULL Render → Vercel. Backend `api/*.py` (deja in forma handler Vercel) devine functii serverless; `dev_server.py` ramane DOAR harness local. Se retrag `render.yaml` + `keepalive.py`.
+- D34: Doua proiecte Vercel separate (frontend `frontend/` + API `api/`) — evita coliziunea cu ruta Next `frontend/src/app/api/logs`.
+- D35: OCR per-pagina — rasterizare PDF in browser cu pdf.js (o pagina/invocare) ca sa respecte limita 60s serverless Hobby. Fix si progresul fals → progres real.
+- D36: Supabase free — tabele `logs` (diagnostic + coduri eroare, cross-device) + `gemini_counter` (contor atomic, inlocuieste starea in-memory care se sparge pe serverless). Fail-open (nu blocheaza fluxul). Fara auth, RLS strict, service-role key doar server-side.
+- D37: Rate limiter recalibrat — per-pagina inseamna multe apeluri/document; se numara documente (job-id) sau se ridica limitele, ca sa nu dea 429 la un doc multi-pagina.
+- D38: Sistem coduri eroare `E-<ARIE>-<NNN>` in `config/error_codes.json`, citit de frontend (monitoring.ts) si backend.
+- D39: Editare contentEditable PERSISTENTA (onBlur → cacheRef) — supravietuieste switch limba + toate export-urile.
+- D40: Export PDF prin print vectorial (window.print + MathJax typeset), NU jsPDF/html2canvas (ar rasteriza formulele → blur). DOCX ramane backend, HTML idem — toate din continut editat.
+- D41: Un singur sistem de butoane (chalk-btn + variante), contrast WCAG AA pe #2d5016.
+- D42: Figuri = crop bbox din original (Pillow) — confirmat metoda curenta (D28-D30 SVG-inline au fost pivotate inapoi la crop in cod).
+
+### Cerinte confirmate
+- C-v4-1: Executie automata (rulez/testez local, remediez singur); deploy real = confirmare.
+- C-v4-2: Proiectele sursa originale raman NEMODIFICATE.
+- C-v4-3: Mentiunile utilizatorului salvate in memorie + regulament (facut).

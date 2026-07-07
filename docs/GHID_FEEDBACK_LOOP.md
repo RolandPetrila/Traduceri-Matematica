@@ -2,9 +2,12 @@
 
 ## Ce este si de ce exista
 
-Cand tu testezi aplicatia (local sau pe Vercel), tot ce faci se logheaza automat.
+Cand tu testezi aplicatia (local sau pe Vercel LIVE), tot ce faci se logheaza automat.
+In productie, log-urile merg in **Supabase** (centralizat, vizibile cross-device pe
+`/diagnostics`) — plus localStorage ca fallback offline. Local, se scriu si in fisier.
 La sesiunea urmatoare, eu (Claude) citesc logul si stiu EXACT ce a mers, ce a picat,
-si ce trebuie reparat — fara sa imi explici nimic.
+si ce trebuie reparat — fara sa imi explici nimic. Fiecare eroare are un **cod** (ex.
+`E-OCR-001`) definit in `config/error_codes.json`.
 
 ---
 
@@ -58,7 +61,7 @@ PAS 5: Tu retestezi → totul OK → "Push"
 ### SCENARIU 2: Testare pe VERCEL LIVE (telefon/tablet)
 
 ```
-PAS 1: Deschizi https://traduceri-matematica.vercel.app pe telefon
+PAS 1: Deschizi domeniul Vercel al aplicatiei pe telefon
 PAS 2: Testezi traduceri, conversii
 PAS 3: Daca ceva nu merge:
        → Deschizi /diagnostics pe telefon

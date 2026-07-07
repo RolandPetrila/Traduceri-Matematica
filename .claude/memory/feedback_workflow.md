@@ -12,7 +12,8 @@ Pune 3 intrebari per runda (AskUserQuestion), nu mai multe. Ofera variante A/B/C
 Nu omite niciodata figuri geometrice: La prima traducere figurile au fost placeholder text.
 Roland a cerut explicit: "lipsesc desenele, figurile geometrice, vreau layout complet".
 **Why:** Figurile sunt esentiale — manual de matematica fara figuri = inutilizabil.
-**How to apply:** Orice pipeline de traducere genereaza SVG inline precis, cu coordonate calculate.
+**How to apply:** Figurile se extrag prin bbox de la OCR + crop din imaginea originala (Pillow),
+pastrate intacte la traducere. (Metoda pivotata de la SVG inline generat de Gemini → crop bbox.)
 
 Layout fidel: Roland a observat ca nu am mentionat pastrarea layout-ului.
 **Why:** Figurile trebuie sa apara exact unde sunt in original, nu grupate la sfarsit.

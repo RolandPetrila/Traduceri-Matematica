@@ -1,13 +1,27 @@
-# PLAN v3 — Traduceri Matematica
+# PLAN v3/v4 — Traduceri Matematica
 # Status: IN EXECUTIE
-# Data start: 2026-03-26 | Ultima actualizare: 2026-04-03
-# Completare: ~45% (Faza 1: 100%, Faza 2: 90%, Faza 3-6: 0%)
+# Data start: 2026-03-26 | Ultima actualizare: 2026-07-07 (v4)
+# Completare: ~45% baza + restructurare v4 in curs
 
 ---
 
 > Acest fisier este SURSA UNICA DE ADEVAR pentru progresul proiectului.
-> Scris si actualizat EXCLUSIV de T1 (terminal plan/executie).
 > Checkbox: [ ] = neefectuat | [x] = efectuat | [~] = partial | [-] = anulat cu motiv
+
+---
+
+## Restructurare v4 (2026-07-07) — Vercel + Supabase + UX
+Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi commit-urile branch `restructurare-vercel-supabase-v4`.
+
+- [x] Faza 0 — Curatenie documentatie redundanta (5 doc-uri sterse, docs aliniate) — 2026-07-07
+- [x] Faza 1 — Refac memoria + regulamentul (CLAUDE.md v4, memory/*, rules) — 2026-07-07
+- [ ] Faza A — Config Vercel + refactor backend serverless (vercel.json, OCR per-pagina pdf.js, CORS env)
+- [ ] Faza B — Supabase (schema.sql, supabase_client.py, contor atomic, rate limiter, error_codes.json)
+- [ ] Faza C — Diagnostic live cross-device (Supabase)
+- [ ] Faza D — Butoane unificate + contrast WCAG AA
+- [ ] Faza E — Editare persistenta + export PDF vectorial
+- [ ] Verificare + teste locale
+- [ ] Faza G — Editor matematic + Asistent_Text_AI (BLOCAT pana la push branch cu fisierele)
 
 ---
 

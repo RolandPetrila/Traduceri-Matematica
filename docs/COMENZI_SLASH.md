@@ -9,7 +9,7 @@
 | `/review` | Review cod inainte de push important | La fiecare commit major |
 | `/test` | Dupa modificari cod — genereaza si ruleaza teste | Dupa fiecare feature/fix |
 | `/health` | Check rapid daca totul functioneaza corect | Cand ceva pare ciudat |
-| `/deploy` | Checklist complet inainte de deploy Vercel | La fiecare deploy |
+| `/deploy` | Checklist complet inainte de deploy (Vercel + Supabase) | La fiecare deploy |
 | `/plan` | Planificare feature noua complexa | Cand ai cerinte noi |
 | `/checkpoint` | Salvare progres sesiune pentru continuitate | La sfarsit de sesiune |
 | `/deep-research` | Cercetare aprofundata + recomandari imbunatatire | Cand vrei sa upgradezi proiectul |

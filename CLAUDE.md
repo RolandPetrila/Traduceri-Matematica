@@ -1,109 +1,105 @@
 # Sistem Traduceri Matematica — CLAUDE.md
-# Versiune: 3.2 | Data: 2026-04-05
+# Versiune: 4.0 | Data: 2026-07-07
 
 ## Overview
-Aplicatie web (PWA) cu 6 module, centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
-Flow unic: Upload fisier → Gemini OCR (text + SVG figuri + LaTeX) → Afisare in pagina web ca original (A4, paginat) → Traducere ON-DEMAND prin switch limba (doar textul, elementele matematice raman intacte).
+Aplicatie web (PWA) centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
+Flow unic: Upload fisier → (rasterizare pdf.js in browser) → Gemini OCR per-pagina (text + bbox figuri + LaTeX)
+→ Afisare in pagina web ca original (A4, paginat) → Traducere ON-DEMAND prin switch limba (doar textul;
+elementele matematice raman intacte) → Editare live persistenta → Export PDF/DOCX/HTML.
 
 ## Status
-- **Faza curenta**: v3.2 — Fix Layout + NLLB HF Spaces
+- **Faza curenta**: v4.0 — Migrare Render → Vercel + Supabase, restructurare masiva
 - **Progres**: Vezi `99_Plan_vs_Audit/PLAN_v3.md` — SURSA UNICA de adevar
-- **Deploy**: LIVE pe Render (auto-deploy din GitHub)
-  - Frontend: https://traduceri-matematica-7sh7.onrender.com
-  - API: https://traduceri-api.onrender.com
-- **Ultima sesiune**: 2026-04-05
-- **Problema activa**: Layout deformat la upload imagine (fitPaperSections + overflow:hidden)
+- **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
+  - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
+  - Deploy real = confirmare explicita de la Roland (linkare conturi + env vars).
+- **Ultima sesiune**: 2026-07-07
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 1. Citeste `99_Plan_vs_Audit/PLAN_v3.md` — sursa UNICA de adevar pt progres
 2. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
-3. Citeste `99_Plan_vs_Audit/RUNDA_CURENTA.md` — ce se discuta acum
+3. Citeste `.claude/memory/*` si `.claude/rules/project_rules.md`
 4. Continua cu primul task [ ] nemarcat din PLAN_v3.md
-5. Dupa ORICE implementare: marcheaza [x] cu data in plan + commit + push
+5. Dupa ORICE implementare: marcheaza [x] cu data in plan; commit/push doar cu confirmare (deploy = outward-facing)
 
-## Stack v3.2
-- Frontend: Next.js 14 + Tailwind CSS
-- Backend: Python serverless (api/) + shared lib (api/lib/)
-- AI OCR: Gemini 2.5 Pro → Flash fallback (JSON mode, gratuit) — extrage text + SVG figuri inline
-- AI Traducere: DeepL Free (principal) → Gemini → NLLB HF Spaces (planificat) → Groq Llama 3.3
-- Figure: SVG inline generat de Gemini la OCR (ca in Exemplu_BUN.html)
-- Deploy: Render (auto-deploy din GitHub, free tier, Frankfurt)
-- Monitoring: Feedback loop complet (10 componente)
+## Stack v4.0
+- Frontend: Next.js 14 + Tailwind CSS + TypeScript (deploy Vercel)
+- Backend: Python serverless stdlib (`api/*.py`, handlere Vercel) + shared lib (`api/lib/`) — apeluri urllib, fara framework
+- AI OCR: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode) → fallback Mistral OCR — text + bbox figuri
+- AI Traducere: DeepL Free (principal) → NLLB / OpenRouter / Gemini / Groq (lanturi fallback)
+- Figuri: crop bbox din imaginea originala (Pillow)
+- Rasterizare PDF: in browser cu pdf.js (o pagina/invocare → respecta 60s serverless)
+- Log-uri + coduri eroare: Supabase (tabele `logs`, `gemini_counter`), cross-device
+- Deploy: Vercel (auto-deploy din GitHub, free) + Supabase (free)
+- Dezvoltare locala: `dev_server.py` + `DEV_LOCAL.bat` (emuleaza rutarea Vercel — DOAR local)
 
 ## Key Files
 - `99_Plan_vs_Audit/PLAN_v3.md` — **SURSA UNICA** de adevar (tracking [ ]/[x])
 - `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice
-- `99_Plan_vs_Audit/RUNDA_CURENTA.md` — discutia curenta
 - `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md` — imbunatatiri planificate
-- `99_Roland_Work/Exemplu_BUN.html` — **REFERINTA CALITATE** (standard minim output)
+- `vercel.json` — config functii Python (maxDuration 60s)
+- `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
 - `config/languages.json` — limbi suportate (RO/SK/EN + extensibil)
-- `config/math_terms_ro_sk.json` — dictionar RO-SK (100 termeni)
-- `api/lib/ocr_structured.py` — OCR Gemini JSON mode (Pro→Flash fallback)
+- `config/error_codes.json` — coduri de eroare (`E-<ARIE>-<NNN>`)
+- `config/math_terms_ro_sk.json` — dictionar RO-SK
+- `api/ocr.py` — OCR o pagina (Gemini JSON, Pro→Flash fallback)
+- `api/translate_text.py` — traducere text on-demand (switch limba)
+- `api/lib/ocr_structured.py` — OCR Gemini JSON mode
 - `api/lib/html_builder.py` — constructor HTML A4 din JSON structurat
 - `api/lib/math_protect.py` — protectie formule la traducere
-- `api/lib/translation_router.py` — routare DeepL/Gemini/Groq
-- `dev_server.py` + `DEV_LOCAL.bat` — dezvoltare locala
+- `api/lib/translation_router.py` — provideri traducere (DeepL/Gemini/Groq/NLLB/OpenRouter)
+- `api/lib/supabase_client.py` — wrapper Supabase (log-uri + contor Gemini)
+- `frontend/src/components/traduceri/DocumentViewer.tsx` — viewer 3 pasi + editare + export
+- `frontend/src/lib/monitoring.ts` — logging + coduri eroare (client)
 
 ## Conventions
 - Limba interfata/documentatie: ROMANA
 - Limba cod/comentarii: ENGLEZA
-- API keys: doar in .env, niciodata in cod
-- Tema UI: tabla verde (#2d5016) + text creta (alb/galben)
-- Servicii: GRATUITE prioritar (DeepL free, Gemini free)
-- LaTeX: protejat cu placeholders la traducere, randat cu MathJax
-- Figuri: SVG inline generat de Gemini (ca Exemplu_BUN.html)
-- Dupa ORICE modificare: commit + push automat (Render deploy)
+- API keys: doar in .env / env Vercel, niciodata in cod
+- Tema UI: tabla verde (#2d5016) + text creta (alb/galben); butoane vizibile (contrast WCAG AA)
+- Servicii: GRATUITE prioritar (DeepL free, Gemini free, Vercel Hobby, Supabase free)
+- LaTeX: protejat cu placeholders la traducere, randat cu MathJax (SVG vectorial)
+- Figuri: crop bbox din original (Pillow)
+- Editare: contentEditable persistat in cacheRef (supravietuieste switch limba + export)
+- Serverless: procesare grea per-pagina (limita 60s); fara stare in memorie intre invocari (contoare in Supabase)
+- Commit/push: dupa modificari; deploy real doar cu confirmare (outward-facing)
 
 ## Flow UNIC traducere — Metoda unificata 3 pasi (definitiva)
 ```
 [UPLOAD] Cristina incarca fisier (JPEG/PDF/DOCX)
-  |
+  |  (PDF → rasterizat in browser cu pdf.js, o pagina/PNG)
   v
 [PAS 1] ORIGINAL — Imaginea/fisierul incarcat, afisat ca atare (100% fidel, read-only)
-  |       Referinta vizuala — asa arata manualul original
   v
-[PAS 2] HTML RO — Reconstructie OCR (Gemini: text + SVG figuri + LaTeX), EDITABIL
-  |       Cristina poate corecta erori OCR (text gresit, diacritice, formule)
-  |       ~85% fidel fata de original, dar editarea ridica la ~95%+
+[PAS 2] HTML RO — Reconstructie OCR per-pagina (Gemini: text + bbox figuri + LaTeX), EDITABIL + persistent
   v
-[PAS 3] HTML TRADUS — Traducere on-demand (DeepL), EDITABIL
-          Acelasi HTML ca pasul 2, doar textul tradus in limba dorita (SK/EN)
-          Figuri SVG + formule LaTeX + layout = INTACTE
-          Cristina poate corecta erori de traducere
+[PAS 3] HTML TRADUS — Traducere on-demand (DeepL), EDITABIL + persistent
+          Doar textul tradus (SK/EN). Figuri + formule LaTeX + layout = INTACTE.
+          Export: PDF (print vectorial) / DOCX (backend) / HTML — din continut EDITAT.
 ```
 
-### Butoane in toolbar: `Original` | `RO` | `SK` + navigare pagina 1/N
-### Editare: pasii 2 si 3 sunt editabili (contentEditable) — pasul 1 e read-only
+### Butoane in toolbar: `Original` | `RO` | `SK` | `EN` + navigare pagina 1/N
+### Editare: pasii 2 si 3 sunt editabili (contentEditable, persistat) — pasul 1 e read-only
 
 ### Ce se traduce vs ce ramane intact (la switch RO → SK)
 | Element | Pas 2 (RO) | Pas 3 (SK) |
 |---------|------------|------------|
-| Text paragraf | Original, editabil | TRADUS, editabil |
-| Titluri/headings | Original, editabil | TRADUS, editabil |
+| Text paragraf/titluri | Original, editabil | TRADUS, editabil |
 | Formule LaTeX | INTACT | INTACT |
-| Figuri SVG | INTACT | INTACT |
-| Structura (ol/ul) | INTACT | INTACT |
-| Layout A4 | INTACT | INTACT |
+| Figuri (crop bbox) | INTACT | INTACT |
+| Structura (ol/ul) + Layout A4 | INTACT | INTACT |
 
-### Fidelitate per format input
-| Format input | Pas 1 (original) | Pas 2-3 (HTML) | Cu editare manuala |
-|-------------|-------------------|----------------|-------------------|
-| JPEG (poze manual) | 100% | ~80-85% | ~95%+ |
-| PDF (scanat) | 100% | ~80-85% | ~95%+ |
-| PDF (text nativ) | 100% | ~85-90% | ~97%+ |
-| DOCX (Word) | 100% | ~55-65% | ~80%+ |
-
-## Module planificate (6 total)
-1. **Traduceri** — prioritar, in executie (Faza 1-2)
-2. **Convertor fisiere** — functional, de polish (Faza 3)
-3. **Chat AI** — schitat (Faza 4)
-4. **Calculator matematic** — schitat (Faza 5)
-5. **Corectare teste** — mentionat (Faza 6)
-6. **Generare teste** — mentionat (Faza 6)
+## Module planificate (6+ total)
+1. **Traduceri** — prioritar, in executie
+2. **Convertor fisiere** — functional, de polish
+3. **Editor matematic** (gimnaziu+liceu) — de integrat din C:\Proiecte (branch git)
+4. **Asistent Text AI** — logica de extras/adaptat din C:\Proiecte\Asistent_Text_AI (originalul nemodificat)
+5. **Chat AI / Calculator / Corectare-Generare teste** — schitate
 
 ## Important
-- Fara autentificare — acces direct
+- Fara autentificare — acces direct (inclusiv Supabase: fara auth, RLS strict)
 - PWA instalabil pe Windows, Android, iPhone
-- Utilizator principal: Cristina (profesoara matematica)
+- Utilizator principal: Cristina; owner proiect: Roland (petrilarolly@gmail.com)
 - Limbi: RO -> SK (principal), RO -> EN (secundar), extensibil
 - Toate serviciile: GRATUIT, fara exceptie
+- Editor matematic + Asistent_Text_AI: NU sunt inca in repo — se aduc pe branch git de catre Roland
