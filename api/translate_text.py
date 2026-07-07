@@ -117,6 +117,10 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         origin = os.environ.get("ALLOWED_ORIGIN", "*")
         try:
+            from lib.rate_limiter import reject_if_limited
+            if reject_if_limited(self, "/api/translate-text"):
+                return
+
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length > 1_000_000:  # 1MB max for text-only
                 self._send_json(413, {"error": "Request too large"}, origin)

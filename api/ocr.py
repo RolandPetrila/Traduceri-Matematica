@@ -29,8 +29,15 @@ from lib.figure_crop import embed_crops_in_sections
 from lib.multipart import parse_boundary, log_to_file
 
 
-def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
-    """Convert PDF pages to PNG images using PyMuPDF (DPI 150)."""
+def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150, max_pages: int = 1) -> list[tuple[bytes, str]]:
+    """Convert PDF pages to PNG images using PyMuPDF (DPI 150).
+
+    Renders at most `max_pages` pages. On Vercel each /api/ocr invocation must
+    stay under 60s, so server-side we only ever process ONE page per call; the
+    browser (pdf-rasterize.ts) is responsible for splitting multi-page PDFs and
+    POSTing one page image per request. This server-side path is a safety
+    fallback only — capping the render also keeps PyMuPDF memory well under limit.
+    """
     try:
         import pymupdf
     except ImportError:
@@ -40,12 +47,19 @@ def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
     pages = []
     try:
         doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-        for page_num in range(len(doc)):
+        total = len(doc)
+        if total > max_pages:
+            print(
+                f"[OCR] WARNING: PDF has {total} pages but server processes only {max_pages} "
+                f"(multi-page PDFs must be rasterized client-side, one page/request)",
+                file=sys.stderr,
+            )
+        for page_num in range(min(total, max_pages)):
             page = doc[page_num]
             pix = page.get_pixmap(dpi=dpi)
             img_bytes = pix.tobytes("png")
             pages.append((img_bytes, "image/png"))
-            print(f"[OCR] PDF page {page_num+1}/{len(doc)}: {pix.width}x{pix.height}px", file=sys.stderr)
+            print(f"[OCR] PDF page {page_num+1}/{total}: {pix.width}x{pix.height}px", file=sys.stderr)
         doc.close()
     except Exception as e:
         print(f"[OCR] PDF conversion error: {e}", file=sys.stderr)
@@ -66,6 +80,10 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            from lib.rate_limiter import reject_if_limited
+            if reject_if_limited(self, "/api/ocr"):
+                return
+
             MAX_BODY_SIZE = 4 * 1024 * 1024 + 4096
 
             content_length = int(self.headers.get("Content-Length", 0))
@@ -109,9 +127,17 @@ class handler(BaseHTTPRequestHandler):
                         continue
                 expanded_files.append(file_info)
 
-            # Limit pages
-            MAX_PAGES = 30
+            # Enforce ONE page per invocation (Vercel 60s limit — see D7 / v4 design).
+            # The browser rasterizes multi-page PDFs and POSTs one page image per
+            # request; if more than one page reaches the server, process only the
+            # first and warn (indicates the client contract was bypassed).
+            MAX_PAGES = 1
             if len(expanded_files) > MAX_PAGES:
+                print(
+                    f"[OCR] WARNING: received {len(expanded_files)} pages in one request; "
+                    f"processing only {MAX_PAGES} (expected one page/request on Vercel)",
+                    file=sys.stderr,
+                )
                 expanded_files = expanded_files[:MAX_PAGES]
 
             # OCR each page

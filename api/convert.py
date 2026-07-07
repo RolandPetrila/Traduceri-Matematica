@@ -530,6 +530,10 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            from lib.rate_limiter import reject_if_limited
+            if reject_if_limited(self, "/api/convert"):
+                return
+
             MAX_BODY_SIZE = 4 * 1024 * 1024 + 4096  # 4MB + overhead
 
             content_length = int(self.headers.get("Content-Length", 0))

@@ -95,6 +95,9 @@ class DevRouter(BaseHTTPRequestHandler):
                 import json
                 self.wfile.write(json.dumps({"error": msg, "status": "rate_limited"}).encode())
                 return
+            # Mark as already checked so the delegated handler's own
+            # reject_if_limited() guard (used on Vercel) does not double-count here.
+            self._rate_checked = True
 
         # Borrow handler's custom methods (_parse_multipart, _send_json, etc.)
         borrowed = []

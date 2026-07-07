@@ -13,6 +13,8 @@ Thread-safe via threading.Lock.
 
 from __future__ import annotations
 
+import json
+import os
 import sys
 import time
 import threading
@@ -62,6 +64,42 @@ def get_client_ip(handler) -> str:
     if hasattr(handler, 'client_address'):
         return handler.client_address[0]
     return "unknown"
+
+
+def reject_if_limited(handler, endpoint: str) -> bool:
+    """Enforce the per-IP limit inside a Vercel serverless handler.
+
+    Writes a 429 JSON response and returns True when the request is over limit,
+    so the handler can simply do ``if reject_if_limited(self, "/api/ocr"): return``.
+
+    Skips the check when an upstream router already performed it (dev_server sets
+    ``handler._rate_checked = True`` before dispatch), so local dev counts each
+    request exactly once. On Vercel there is no upstream, so the handler is the
+    only guard. Best-effort on serverless (state is per warm instance), but it
+    still throttles the sustained bursts that abuse implies and fully protects
+    the persistent local dev server.
+    """
+    if getattr(handler, "_rate_checked", False):
+        return False
+
+    limited, msg = is_rate_limited(handler, endpoint)
+    if not limited:
+        return False
+
+    origin = os.environ.get("ALLOWED_ORIGIN", "*")
+    body = json.dumps(
+        {"error": msg, "error_code": "E-RATE-001", "status": "error"}
+    ).encode()
+    try:
+        handler.send_response(429)
+        handler.send_header("Content-Type", "application/json")
+        handler.send_header("Access-Control-Allow-Origin", origin)
+        handler.send_header("Retry-After", "60")
+        handler.end_headers()
+        handler.wfile.write(body)
+    except Exception as e:  # never let limiter bookkeeping crash a request
+        print(f"[RATE-LIMIT] failed to send 429: {e}", file=sys.stderr)
+    return True
 
 
 def is_rate_limited(handler, endpoint: str) -> tuple[bool, str]:

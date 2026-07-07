@@ -22,7 +22,6 @@ if _api_dir not in sys.path:
 # --- Lib imports ---
 from lib.html_builder import build_html, build_html_structured
 from lib.translation_router import (
-    gemini_request,
     ocr_with_gemini,
     translate_with_gemini,
     translate_with_groq,
@@ -31,7 +30,6 @@ from lib.translation_router import (
     extract_text_from_docx,
     format_and_translate_docx,
     claude_ocr_and_translate,
-    claude_translate_text,
     _sanitize_error,
 )
 from lib.math_protect import protect_for_deepl, restore_from_deepl
@@ -49,11 +47,14 @@ from lib.ocr_structured import ocr_structured
 
 # --- PDF to images (PyMuPDF, DPI 150) ---
 
-def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
-    """Convert each PDF page to a PNG image using PyMuPDF.
+def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150, max_pages: int = 1) -> list[tuple[bytes, str]]:
+    """Convert PDF pages to PNG images using PyMuPDF.
 
-    Returns list of (image_bytes, mime_type) per page.
-    DPI 150 = good quality with low memory (~100MB for 10 pages on 512MB Render).
+    Returns list of (image_bytes, mime_type) per page. Renders at most
+    `max_pages` pages: on Vercel each invocation must stay under 60s, so the
+    browser (pdf-rasterize.ts) splits multi-page PDFs and POSTs one page per
+    request. This server-side path is a bounded safety fallback only.
+    DPI 150 = good quality with low memory.
     """
     try:
         import pymupdf
@@ -65,8 +66,13 @@ def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[tuple[bytes, str]]:
     try:
         doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
         total = len(doc)
-        print(f"[PDF] Converting {total} pages at DPI {dpi}", file=sys.stderr)
-        for page_num in range(total):
+        if total > max_pages:
+            print(
+                f"[PDF] WARNING: {total} pages but processing only {max_pages} "
+                f"(multi-page PDFs must be rasterized client-side, one page/request)",
+                file=sys.stderr,
+            )
+        for page_num in range(min(total, max_pages)):
             page = doc[page_num]
             pix = page.get_pixmap(dpi=dpi)
             img_bytes = pix.tobytes("png")
@@ -128,6 +134,10 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            from lib.rate_limiter import reject_if_limited
+            if reject_if_limited(self, "/api/translate"):
+                return
+
             MAX_BODY_SIZE = 4 * 1024 * 1024 + 4096  # 4MB + overhead for form fields
 
             content_length = int(self.headers.get("Content-Length", 0))
@@ -196,13 +206,16 @@ class handler(BaseHTTPRequestHandler):
                     # Fallback: treat as regular image (might fail, but try)
                 expanded_files.append(file_info)
 
-            # Limit total pages to prevent memory exhaustion on 512MB Render
-            # D4: raised from 30 to 50 — pages are processed sequentially so memory is bounded
-            MAX_PAGES = 50
+            # Enforce ONE page per invocation (Vercel 60s limit — see D7 / v4 design).
+            # The browser rasterizes multi-page PDFs and POSTs one page image per
+            # request (BatchPanel.tsx / pdf-rasterize.ts). More than one page here
+            # means the client contract was bypassed → process the first and warn.
+            MAX_PAGES = 1
             truncated_from = 0
             if len(expanded_files) > MAX_PAGES:
                 truncated_from = len(expanded_files)
-                print(f"[TRANSLATE] WARNING: {truncated_from} pages exceeds limit of {MAX_PAGES}, truncating", file=sys.stderr)
+                print(f"[TRANSLATE] WARNING: received {truncated_from} pages in one request, "
+                      f"processing only {MAX_PAGES} (expected one page/request on Vercel)", file=sys.stderr)
                 expanded_files = expanded_files[:MAX_PAGES]
 
             # PHASE 2: Process all files (images + expanded PDF pages + DOCX)
