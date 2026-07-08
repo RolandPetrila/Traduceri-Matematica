@@ -71,7 +71,7 @@ function Set-EnvFallback([string]$target, [string[]]$sources) {
 
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
-Info "(script REV5: install --break-system-packages + GOOGLE_AI_API_KEY testat | trebuie sa vezi 'REV5')"
+Info "(script REV6: buildCommand='' skip npm build + install --break-system-packages | trebuie sa vezi 'REV6')"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel
