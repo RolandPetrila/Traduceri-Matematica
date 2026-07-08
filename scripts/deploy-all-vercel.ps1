@@ -57,7 +57,7 @@ function Set-EnvFromWin([string]$name) {
 
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
-Info "(script rev: fix-native-stderr / EAP=Continue -- daca NU vezi randul asta, rulezi o copie veche)"
+Info "(script REV2: link --project --yes + verificare nume | daca vezi 'REV2', e versiunea corecta)"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel
@@ -83,14 +83,12 @@ Section "Proiect API ($ApiName) - radacina"
 Set-Location $RepoRoot
 # Re-link curat (radacina e deja linkata la proiectul vechi 'traduceri-matematica').
 if (Test-Path ".vercel") { Remove-Item ".vercel" -Recurse -Force; Info "Am scos link-ul vechi (.vercel)." }
-Write-Host "La prompturile 'vercel link' raspunde:" -ForegroundColor Magenta
-Write-Host "  - Set up and deploy? -> nu conteaza (folosim link)" -ForegroundColor Magenta
-Write-Host "  - Which scope?       -> echipa ta" -ForegroundColor Magenta
-Write-Host "  - Link to existing?  -> N (creezi nou)" -ForegroundColor Magenta
-Write-Host "  - Project name?      -> $ApiName" -ForegroundColor Magenta
-Write-Host "  - Directory?         -> ./  (radacina)" -ForegroundColor Magenta
-& vercel link
+Info "Creez/linkez proiectul '$ApiName' (automat, --project --yes, fara auto-detectia git)..."
+& vercel link --project $ApiName --yes
 if (-not (Test-Path ".vercel/project.json")) { throw "Link API esuat (fara .vercel/project.json)." }
+$linkedApi = (Get-Content ".vercel/project.json" | ConvertFrom-Json).projectName
+if ($linkedApi -ne $ApiName) { throw "Linkat GRESIT la '$linkedApi' (asteptam '$ApiName'). Opresc ca sa NU deployez in proiectul gresit -- trimite-i output-ul lui Claude." }
+Ok "Linkat corect: $linkedApi"
 
 Info "Setez env pe $ApiName (chei din Windows env + URL-uri):"
 foreach ($k in @("GOOGLE_AI_API_KEY","DEEPL_API_KEY","DEEPL_API_KEY2","DEEPL_API_KEY_2",
@@ -111,9 +109,12 @@ Ok "API deployat -> $ApiUrl"
 Section "Proiect Frontend ($FeName) - frontend/"
 Set-Location $FrontDir
 if (Test-Path ".vercel") { Remove-Item ".vercel" -Recurse -Force }
-Write-Host "La 'vercel link': Link existing -> N | name -> $FeName | Directory -> ./" -ForegroundColor Magenta
-& vercel link
+Info "Creez/linkez proiectul '$FeName' (automat, --project --yes)..."
+& vercel link --project $FeName --yes
 if (-not (Test-Path ".vercel/project.json")) { throw "Link frontend esuat." }
+$linkedFe = (Get-Content ".vercel/project.json" | ConvertFrom-Json).projectName
+if ($linkedFe -ne $FeName) { throw "Linkat GRESIT la '$linkedFe' (asteptam '$FeName'). Opresc -- trimite-i output-ul lui Claude." }
+Ok "Linkat corect: $linkedFe"
 
 Info "Setez env pe $FeName (URL API + chei proxy /api/proxy):"
 # NEXT_PUBLIC_API_URL e inlinuit la BUILD -> trebuie setat inainte de deploy.
