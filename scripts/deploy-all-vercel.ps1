@@ -71,7 +71,7 @@ function Set-EnvFallback([string]$target, [string[]]$sources) {
 
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
-Info "(script REV3: fix vercel.json PEP668 + fallback Gemini GOOGLE_API_KEY_2 | trebuie sa vezi 'REV3')"
+Info "(script REV4: vercel.json override install --break-system-packages | trebuie sa vezi 'REV4')"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel
