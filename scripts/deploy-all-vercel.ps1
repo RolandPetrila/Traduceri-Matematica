@@ -16,11 +16,11 @@
 # RULARE: dublu-click pe DEPLOY_VERCEL.bat (din radacina repo-ului).
 # =============================================================================
 
-$ErrorActionPreference = "Stop"
-# PS 7.x: NU transforma stderr / exit-code non-zero al comenzilor native
-# (vercel / npm) in exceptii terminatoare -- le verificam manual prin $LASTEXITCODE.
-# Fara asta, `vercel whoami` (scrie banner pe stderr cand nu esti logat) opreste
-# tot scriptul inainte sa ajunga la `vercel login`.
+# Continue (NU Stop): wrapper-ul vercel.ps1 ruleaza node, care scrie banner-ul
+# "Vercel CLI ..." pe stderr; cu Stop, acel stderr devine eroare TERMINATOARE si
+# opreste scriptul inainte de `vercel login`. Verificam reusita prin $LASTEXITCODE;
+# opririle intentionate le facem explicit cu `throw`.
+$ErrorActionPreference = "Continue"
 $PSNativeCommandUseErrorActionPreference = $false
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot           # radacina repo-ului
@@ -57,6 +57,7 @@ function Set-EnvFromWin([string]$name) {
 
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
+Info "(script rev: fix-native-stderr / EAP=Continue -- daca NU vezi randul asta, rulezi o copie veche)"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel
@@ -66,13 +67,14 @@ Info ("Vercel CLI: " + (& vercel --version))
 
 # --- Login (interactiv, o singura data) --------------------------------------
 Section "Autentificare Vercel"
-& vercel whoami *> $null
-if ($LASTEXITCODE -ne 0) {
+$loggedIn = $false
+try { & vercel whoami *> $null; $loggedIn = ($LASTEXITCODE -eq 0) } catch { $loggedIn = $false }
+if (-not $loggedIn) {
   Info "Nu esti autentificat. Se deschide 'vercel login' (alege GitHub / email in browser)."
   & vercel login
-  if ($LASTEXITCODE -ne 0) { throw "vercel login a esuat." }
+  if ($LASTEXITCODE -ne 0) { throw "vercel login a esuat (sau a fost anulat)." }
 }
-Ok ("Autentificat ca: " + (& vercel whoami))
+Ok "Autentificat pe Vercel."
 
 # =============================================================================
 # PROIECT 1 - API Python (radacina)
