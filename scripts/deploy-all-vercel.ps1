@@ -55,9 +55,23 @@ function Set-EnvFromWin([string]$name) {
   Set-Env $name $v
 }
 
+# Seteaza variabila Vercel $target din PRIMA sursa Windows-env care exista.
+# (ex. GOOGLE_AI_API_KEY <- GOOGLE_API_KEY_2 daca principala lipseste/e blocata)
+function Set-EnvFallback([string]$target, [string[]]$sources) {
+  foreach ($s in $sources) {
+    $v = [Environment]::GetEnvironmentVariable($s, "User")
+    if (-not [string]::IsNullOrWhiteSpace($v)) {
+      Info ("  (folosesc {0} pentru {1})" -f $s, $target)
+      Set-Env $target $v
+      return
+    }
+  }
+  Warn ("  SKIP  {0,-24} (niciuna gasita din: {1}) -- vezi NOTA Gemini la final" -f $target, ($sources -join ', '))
+}
+
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
-Info "(script REV2: link --project --yes + verificare nume | daca vezi 'REV2', e versiunea corecta)"
+Info "(script REV3: fix vercel.json PEP668 + fallback Gemini GOOGLE_API_KEY_2 | trebuie sa vezi 'REV3')"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel
@@ -91,7 +105,9 @@ if ($linkedApi -ne $ApiName) { throw "Linkat GRESIT la '$linkedApi' (asteptam '$
 Ok "Linkat corect: $linkedApi"
 
 Info "Setez env pe $ApiName (chei din Windows env + URL-uri):"
-foreach ($k in @("GOOGLE_AI_API_KEY","DEEPL_API_KEY","DEEPL_API_KEY2","DEEPL_API_KEY_2",
+# Gemini pt OCR/traducere: incearca intai GOOGLE_API_KEY_2 (cea care merge), apoi variantele.
+Set-EnvFallback "GOOGLE_AI_API_KEY" @("GOOGLE_API_KEY_2","GOOGLE_AI_API_KEY","GOOGLE_API_KEY")
+foreach ($k in @("DEEPL_API_KEY","DEEPL_API_KEY2","DEEPL_API_KEY_2",
                  "GROQ_API_KEY","MISTRAL_API_KEY","HF_TOKEN","OPENROUTER_API_KEY")) {
   Set-EnvFromWin $k
 }
