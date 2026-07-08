@@ -180,7 +180,6 @@ class handler(BaseHTTPRequestHandler):
             t0 = time.time()
 
             # PHASE 1: Expand PDFs to images (safe — no mutation during iteration)
-            BATCH_SIZE = 5  # Process PDF in batches to limit memory (D16)
             expanded_files = []
             for file_info in files:
                 mime_type = file_info.get("mime_type", "image/jpeg")
@@ -191,9 +190,6 @@ class handler(BaseHTTPRequestHandler):
                 if is_pdf and not is_docx:
                     pdf_pages = _pdf_to_images(file_info["data"])
                     if pdf_pages:
-                        total_pages = len(pdf_pages)
-                        if total_pages > BATCH_SIZE:
-                            print(f"[PDF] Large document ({total_pages} pages), processing in batches of {BATCH_SIZE}", file=sys.stderr)
                         for pg_idx, (pg_bytes, pg_mime) in enumerate(pdf_pages):
                             expanded_files.append({
                                 "data": pg_bytes, "mime_type": pg_mime,

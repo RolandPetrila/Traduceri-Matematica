@@ -50,6 +50,7 @@ data/logs/*.jsonl
 
 # Build artifacts
 frontend/tsconfig.tsbuildinfo
+frontend/next-env.d.ts
 # NOTE: frontend/public/pdf.worker.min.mjs is committed on purpose (belt-and-suspenders)
 # so PDF rasterization works even if Vercel invokes `next build` directly and skips
 # the prebuild copy hook. The build script also re-copies it to stay version-matched.
@@ -62,6 +63,9 @@ frontend/tsconfig.tsbuildinfo
 
 # Deep research outputs
 deep_research_*/
+
+# Claude tool outputs (audits, reviews) — ephemeral, regenerated per run
+.claude-outputs/
 
 # Session notes
 info.md

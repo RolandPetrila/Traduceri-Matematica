@@ -1,0 +1,6 @@
+# Dev-only dependencies (tests). NOT installed on Vercel — the serverless
+# runtime uses requirements.txt only. Install locally with:
+#   pip install -r requirements-dev.txt
+# Run the suite with:
+#   python -m pytest api/tests/ -v
+pytest==8.3.3

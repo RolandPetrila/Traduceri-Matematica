@@ -2,9 +2,12 @@
 
 Protects API quotas (DeepL, Gemini) from abuse on public endpoints.
 
-Serverless note: on Vercel each invocation is a fresh process, so this in-memory
-state is per-invocation (best-effort — it does not limit across invocations, and
-the handlers themselves do not call it; only dev_server.py does for LOCAL dev).
+Serverless note: on Vercel each invocation runs in a fresh (warm-reused) process,
+so this in-memory state is per-instance — best-effort across invocations. All four
+public handlers (ocr / translate / translate-text / convert) DO call
+reject_if_limited(); the local dev_server sets handler._rate_checked so each
+request is counted exactly once. For a true cross-request cap, use an external
+store (e.g. Upstash Redis).
 Limits are calibrated for the page-at-a-time flow: a multi-page document issues
 one /api/ocr (and one /api/translate-text) call PER PAGE, so per-minute limits
 must comfortably exceed the largest document's page count to avoid false 429s.

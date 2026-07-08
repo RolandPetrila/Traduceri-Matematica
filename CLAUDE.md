@@ -1,13 +1,16 @@
 # Sistem Traduceri Matematica — CLAUDE.md
+
 # Versiune: 4.0 | Data: 2026-07-07
 
 ## Overview
+
 Aplicatie web (PWA) centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 Flow unic: Upload fisier → (rasterizare pdf.js in browser) → Gemini OCR per-pagina (text + bbox figuri + LaTeX)
 → Afisare in pagina web ca original (A4, paginat) → Traducere ON-DEMAND prin switch limba (doar textul;
 elementele matematice raman intacte) → Editare live persistenta → Export PDF/DOCX/HTML.
 
 ## Status
+
 - **Faza curenta**: v4.0 — Migrare Render → Vercel + Supabase, restructurare masiva
 - **Progres**: Vezi `99_Plan_vs_Audit/PLAN_v3.md` — SURSA UNICA de adevar
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
@@ -16,6 +19,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - **Ultima sesiune**: 2026-07-07
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
+
 1. Citeste `99_Plan_vs_Audit/PLAN_v3.md` — sursa UNICA de adevar pt progres
 2. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
 3. Citeste `.claude/memory/*` si `.claude/rules/project_rules.md`
@@ -23,6 +27,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 5. Dupa ORICE implementare: marcheaza [x] cu data in plan; commit/push doar cu confirmare (deploy = outward-facing)
 
 ## Stack v4.0
+
 - Frontend: Next.js 14 + Tailwind CSS + TypeScript (deploy Vercel)
 - Backend: Python serverless stdlib (`api/*.py`, handlere Vercel) + shared lib (`api/lib/`) — apeluri urllib, fara framework
 - AI OCR: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode) → fallback Mistral OCR — text + bbox figuri
@@ -34,6 +39,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - Dezvoltare locala: `dev_server.py` + `DEV_LOCAL.bat` (emuleaza rutarea Vercel — DOAR local)
 
 ## Key Files
+
 - `99_Plan_vs_Audit/PLAN_v3.md` — **SURSA UNICA** de adevar (tracking [ ]/[x])
 - `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice
 - `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md` — imbunatatiri planificate
@@ -53,6 +59,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - `frontend/src/lib/monitoring.ts` — logging + coduri eroare (client)
 
 ## Conventions
+
 - Limba interfata/documentatie: ROMANA
 - Limba cod/comentarii: ENGLEZA
 - API keys: doar in .env / env Vercel, niciodata in cod
@@ -65,6 +72,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - Commit/push: dupa modificari; deploy real doar cu confirmare (outward-facing)
 
 ## Flow UNIC traducere — Metoda unificata 3 pasi (definitiva)
+
 ```
 [UPLOAD] Cristina incarca fisier (JPEG/PDF/DOCX)
   |  (PDF → rasterizat in browser cu pdf.js, o pagina/PNG)
@@ -79,27 +87,31 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 ```
 
 ### Butoane in toolbar: `Original` | `RO` | `SK` | `EN` + navigare pagina 1/N
+
 ### Editare: pasii 2 si 3 sunt editabili (contentEditable, persistat) — pasul 1 e read-only
 
 ### Ce se traduce vs ce ramane intact (la switch RO → SK)
-| Element | Pas 2 (RO) | Pas 3 (SK) |
-|---------|------------|------------|
-| Text paragraf/titluri | Original, editabil | TRADUS, editabil |
-| Formule LaTeX | INTACT | INTACT |
-| Figuri (crop bbox) | INTACT | INTACT |
-| Structura (ol/ul) + Layout A4 | INTACT | INTACT |
+
+| Element                       | Pas 2 (RO)         | Pas 3 (SK)       |
+| ----------------------------- | ------------------ | ---------------- |
+| Text paragraf/titluri         | Original, editabil | TRADUS, editabil |
+| Formule LaTeX                 | INTACT             | INTACT           |
+| Figuri (crop bbox)            | INTACT             | INTACT           |
+| Structura (ol/ul) + Layout A4 | INTACT             | INTACT           |
 
 ## Module planificate (6+ total)
+
 1. **Traduceri** — prioritar, in executie
 2. **Convertor fisiere** — functional, de polish
-3. **Editor matematic** (gimnaziu+liceu) — de integrat din C:\Proiecte (branch git)
-4. **Asistent Text AI** — logica de extras/adaptat din C:\Proiecte\Asistent_Text_AI (originalul nemodificat)
+3. **Editor matematic** (gimnaziu+liceu) — INTEGRAT (Faza G): iframe `/editor`, tema verde, quickbar + search matematic
+4. **Asistent Text AI** — INTEGRAT (Faza G): iframe `/asistent` (drop-in), proxy AI same-origin (`/api/proxy`)
 5. **Chat AI / Calculator / Corectare-Generare teste** — schitate
 
 ## Important
+
 - Fara autentificare — acces direct (inclusiv Supabase: fara auth, RLS strict)
 - PWA instalabil pe Windows, Android, iPhone
 - Utilizator principal: Cristina; owner proiect: Roland (petrilarolly@gmail.com)
 - Limbi: RO -> SK (principal), RO -> EN (secundar), extensibil
 - Toate serviciile: GRATUIT, fara exceptie
-- Editor matematic + Asistent_Text_AI: NU sunt inca in repo — se aduc pe branch git de catre Roland
+- Editor matematic + Asistent_Text_AI: INTEGRATE ca module iframe (Faza G) — vezi 99_Plan_vs_Audit/PLAN_v3.md
