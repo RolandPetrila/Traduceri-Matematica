@@ -2,6 +2,8 @@
 
 > **Sesiune nouă: citește acest fișier + `99_Plan_vs_Audit/PLAN_v3.md`, apoi continuă de la „URMĂTORUL PAS".**
 > Branch: `faza-g-editor` (tot pushed pe origin). Ultim commit deploy: `942eae2` (REV8).
+>
+> 🔌 **NOU (2026-07-09): plugin-ul Vercel e instalat în Claude Code** (`vercel-plugin@vercel` v0.45.1, user scope; necesită sesiune nouă ca să se încarce). Sesiunea NOUĂ îl are activ → **folosește agentul `deployment-expert` sau comanda `/vercel-plugin:deploy prod`** (+ skill-urile `deployments-cicd` / `vercel-functions` / `env-vars`) ca să finalizezi deploy-ul cu **expertiză Vercel reală, nu ghicit**. Cel mai probabil acolo se rezolvă corect „Output Directory empty" (config proiect Python-only). Telemetrie off: `setx VERCEL_PLUGIN_TELEMETRY off`.
 
 ## STAREA EXACTĂ
 
