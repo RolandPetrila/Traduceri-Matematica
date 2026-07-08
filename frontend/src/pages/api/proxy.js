@@ -73,11 +73,20 @@ const RL_PREFIX = "asistent-text-ai:rl:"; // namespacing — DB Upstash poate fi
 
 // Fallback best-effort in-memory (per instanta serverless) — folosit cand Upstash lipseste/cade.
 const rlBuckets = new Map();
+const RL_MAX_IPS = 10000; // plafon de siguranta per instanta warm
 function rateLimitedMemory(ip) {
   const now = Date.now();
   const arr = (rlBuckets.get(ip) || []).filter((t) => now - t < RL_WINDOW_MS);
   arr.push(now);
   rlBuckets.set(ip, arr);
+  // Evictie oportunista: cand Map-ul creste, scoate IP-urile cu fereastra expirata
+  // (altfel Map-ul ar creste nemarginit pe o instanta warm cu multe IP-uri distincte).
+  if (rlBuckets.size > RL_MAX_IPS) {
+    for (const [k, ts] of rlBuckets) {
+      if (!ts.length || now - ts[ts.length - 1] >= RL_WINDOW_MS)
+        rlBuckets.delete(k);
+    }
+  }
   return arr.length > RL_MAX;
 }
 

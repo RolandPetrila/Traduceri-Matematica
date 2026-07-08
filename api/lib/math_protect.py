@@ -33,8 +33,13 @@ def _xml_escape(s: str) -> str:
 
 
 def _xml_unescape(s: str) -> str:
-    # &amp; last so an escaped entity like &amp;lt; is not double-decoded.
-    return s.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+    # Reverse of _xml_escape, plus the apostrophe/quote numeric entities DeepL's
+    # XML output can emit (&#39;/&apos;, &#34;/&quot;). &amp; is decoded LAST so an
+    # escaped literal like &amp;lt; is not double-decoded.
+    s = s.replace("&lt;", "<").replace("&gt;", ">")
+    s = re.sub(r"&(?:#0*39|apos);", "'", s)
+    s = re.sub(r"&(?:#0*34|quot);", '"', s)
+    return s.replace("&amp;", "&")
 
 
 def protect_for_deepl(text: str) -> str:
