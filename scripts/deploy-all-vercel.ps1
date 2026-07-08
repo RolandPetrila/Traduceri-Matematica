@@ -17,6 +17,11 @@
 # =============================================================================
 
 $ErrorActionPreference = "Stop"
+# PS 7.x: NU transforma stderr / exit-code non-zero al comenzilor native
+# (vercel / npm) in exceptii terminatoare -- le verificam manual prin $LASTEXITCODE.
+# Fara asta, `vercel whoami` (scrie banner pe stderr cand nu esti logat) opreste
+# tot scriptul inainte sa ajunga la `vercel login`.
+$PSNativeCommandUseErrorActionPreference = $false
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot           # radacina repo-ului
 $FrontDir = Join-Path $RepoRoot "frontend"
@@ -95,6 +100,7 @@ Set-Env "APP_PUBLIC_URL" $FeUrl
 
 Info "Deploy API in productie..."
 & vercel --prod
+if ($LASTEXITCODE -ne 0) { throw "Deploy API a esuat (vezi erorile de mai sus)." }
 Ok "API deployat -> $ApiUrl"
 
 # =============================================================================
@@ -119,6 +125,7 @@ foreach ($k in @("GROQ_API_KEY","GOOGLE_API_KEY","MISTRAL_API_KEY","DEEPL_API_KE
 
 Info "Deploy Frontend in productie (build cu NEXT_PUBLIC_API_URL setat)..."
 & vercel --prod
+if ($LASTEXITCODE -ne 0) { throw "Deploy Frontend a esuat (vezi erorile de mai sus)." }
 Ok "Frontend deployat -> $FeUrl"
 
 # =============================================================================
