@@ -71,7 +71,7 @@ function Set-EnvFallback([string]$target, [string[]]$sources) {
 
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
-Info "(script REV4: vercel.json override install --break-system-packages | trebuie sa vezi 'REV4')"
+Info "(script REV5: install --break-system-packages + GOOGLE_AI_API_KEY testat | trebuie sa vezi 'REV5')"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel
@@ -106,7 +106,7 @@ Ok "Linkat corect: $linkedApi"
 
 Info "Setez env pe $ApiName (chei din Windows env + URL-uri):"
 # Gemini pt OCR/traducere: incearca intai GOOGLE_API_KEY_2 (cea care merge), apoi variantele.
-Set-EnvFallback "GOOGLE_AI_API_KEY" @("GOOGLE_API_KEY_2","GOOGLE_AI_API_KEY","GOOGLE_API_KEY")
+Set-EnvFallback "GOOGLE_AI_API_KEY" @("GOOGLE_AI_API_KEY","GOOGLE_API_KEY_2","GOOGLE_API_KEY")
 foreach ($k in @("DEEPL_API_KEY","DEEPL_API_KEY2","DEEPL_API_KEY_2",
                  "GROQ_API_KEY","MISTRAL_API_KEY","HF_TOKEN","OPENROUTER_API_KEY")) {
   Set-EnvFromWin $k
