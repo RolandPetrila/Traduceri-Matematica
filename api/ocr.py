@@ -173,12 +173,14 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"[OCR ERROR] {e}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
+            from lib.exceptions import error_response
+            status, body = error_response(e, default_code="E-OCR-001")
             try:
                 from lib import supabase_client
-                supabase_client.log_error("E-OCR-001", str(e), source="ocr")
+                supabase_client.log_error(body["error_code"], str(e), source="ocr")
             except Exception:
                 pass
-            self._send_json(500, {"error": str(e), "error_code": "E-OCR-001", "status": "error"})
+            self._send_json(status, body)
 
     def _parse_multipart(self, body: bytes, boundary: str) -> dict:
         import re

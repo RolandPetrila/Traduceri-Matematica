@@ -225,12 +225,14 @@ class handler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "Invalid JSON"}, origin)
         except Exception as e:
             print(f"[TRANSLATE-TEXT] Error: {e}", file=sys.stderr)
+            from lib.exceptions import error_response
+            status, body = error_response(e, default_code="E-TRANS-001")
             try:
                 from lib import supabase_client
-                supabase_client.log_error("E-TRANS-001", str(e), source="translate-text")
+                supabase_client.log_error(body["error_code"], str(e), source="translate-text")
             except Exception:
                 pass
-            self._send_json(500, {"error": str(e), "error_code": "E-TRANS-001"}, origin)
+            self._send_json(status, body, origin)
 
     def _send_json(self, status: int, data: dict, origin: str = "*"):
         self.send_response(status)
