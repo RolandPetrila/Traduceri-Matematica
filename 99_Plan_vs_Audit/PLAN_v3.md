@@ -40,6 +40,8 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
   - CSP per-path in next.config.js: global exclude `/asistent/`, bloc dedicat relaxat (CDN-uri Tailwind/marked/Tesseract).
   - **Verificat**: tsc+build verde (10 rute) · CSP curl (strict `/`, relaxat `/asistent`, 1 header fiecare) · proxy POST→200 real Groq + cost-cap activ · 403 fara Origin · 405 GET · randare browser OK · console curat (fix guard Tailwind).
   - RAMAS pt Roland la deploy: setare chei AI in env-ul proiectului **frontend** (nu doar Python); test manual microfon (dictare); optional Upstash pt rate-limit persistent.
+- [x] **Audit complet + remediere igiena** (2026-07-08, commit fa2f6c2) — audit 18 domenii = **83/100**, 0 blockers de cod. Backlog RECOMANDARI ~85% DEJA livrat in v4 (verificat file:line). Aplicat: suita pytest (15 teste functii pure: math_protect / rate_limiter / html_builder), sters dead code (BATCH_SIZE + test e2e stale), scos keep-alive Render, git-hygiene (next-env.d.ts + .claude-outputs/ gitignored), docstring rate_limiter, doc-sync RECOMANDARI banner + CLAUDE.md module Faza G. Gate: pytest 15/15, tsc 0, py_compile OK. Raport: `.claude-outputs/audit/2026-07-08_032710/`.
+  - RAMAS (cod, cu decizia Roland): M5 retry translate-text, M6 cache SHA-256, M7 exceptions.py, E5 SplitView, F2 Jest. Next15 = skip (CVE ne-exploatabil: fara middleware/auth). BLOCAT pe Roland: deploy real, flux live e2e (cheie Google `GOOGLE_AI_API_KEY` billing-blocked), test Android.
 
 ---
 
