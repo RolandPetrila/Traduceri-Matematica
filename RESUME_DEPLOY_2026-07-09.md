@@ -15,6 +15,7 @@
 - ✅ DeepL (`DEEPL_API_KEY`) — **testată HTTP 200** (312/500.000 caractere, cotă intactă). `DEEPL_API_KEY_2` există și e setată.
 - ✅ Toate env vars setate pe proiectul Vercel `traduceri-api` (production+preview): GOOGLE_AI_API_KEY, DEEPL_API_KEY(+_2), GROQ_API_KEY, MISTRAL_API_KEY, HF_TOKEN, OPENROUTER_API_KEY, ALLOWED_ORIGIN, APP_PUBLIC_URL.
 - ✅ `vercel login` funcționează (keyring). Proiectul `traduceri-api` creat + linkat corect.
+- ✅ **Vercel CLI autentificat GLOBAL** (`vercel whoami` = `rolandpetrila`, din login-ul .bat). → AI-ul poate rula `vercel --prod` / `/vercel-plugin:deploy` **direct din Bash** (nu doar Roland prin .bat), și poate itera pe erorile reale rapid. **NB:** deploy-ul de PRODUCȚIE e gated de safety classifier → cere aprobarea lui Roland la momentul rulării (sau adaugă o regulă Bash-permission pt `vercel`). Root `.vercel/` e linkat la `traduceri-api`.
 - ✅ Script `DEPLOY_VERCEL.bat` → `scripts/deploy-all-vercel.ps1` (REV8) — sintaxă validă, curge până la deploy-ul API.
 
 **Ce e BLOCAT:** `vercel --prod` pe `traduceri-api` — ultima eroare: **`Error: The Output Directory "public" is empty.`**
