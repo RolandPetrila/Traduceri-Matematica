@@ -71,7 +71,7 @@ function Set-EnvFallback([string]$target, [string[]]$sources) {
 
 # --- Preflight: Vercel CLI ---------------------------------------------------
 Section "Preflight"
-Info "(script REV7: buildCommand=mkdir public (override npm build + output dir) | trebuie sa vezi 'REV7')"
+Info "(script REV8: buildCommand creeaza public/index.html (output dir NE-gol) | trebuie sa vezi 'REV8')"
 if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
   Warn "Vercel CLI negasit. Il instalez global (npm i -g vercel)..."
   & npm i -g vercel

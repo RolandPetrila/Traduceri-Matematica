@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "mkdir -p public",
+  "buildCommand": "mkdir -p public && echo '<!doctype html><meta charset=utf-8><title>Traduceri API</title><body>API OK - functiile Python sunt la /api/*</body>' > public/index.html",
   "installCommand": "pip install --break-system-packages -r requirements.txt",
   "functions": {
     "api/*.py": {
