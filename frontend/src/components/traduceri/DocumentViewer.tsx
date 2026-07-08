@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 interface StructuredSection {
   type: string;
@@ -137,90 +144,110 @@ export default function DocumentViewer({
     logAction("Vizualizare original", {});
   }, []);
 
-  const switchLanguage = useCallback(async (targetLang: string) => {
-    setShowOriginal(false);
+  const switchLanguage = useCallback(
+    async (targetLang: string) => {
+      setShowOriginal(false);
 
-    if (targetLang === activeLang) return;
+      if (targetLang === activeLang) return;
 
-    // Check cache first
-    if (cacheRef.current[targetLang]) {
-      setActiveLang(targetLang);
-      setCurrentPageIdx(0);
-      logAction("Limba schimbata (cache)", { from: activeLang, to: targetLang });
-      return;
-    }
-
-    // Need to translate on-demand
-    // Cancel any previous in-flight request
-    translateAbortRef.current?.abort();
-    translateAbortRef.current = new AbortController();
-    const { signal } = translateAbortRef.current;
-
-    setIsTranslating(true);
-    setTranslateMsg("");
-    logAction("Traducere on-demand pornita", { from: sourceLang, to: targetLang });
-
-    try {
-      // Always translate from the source-language pages (not the current view).
-      const sourcePages = cacheRef.current[sourceLang] || structuredPages;
-
-      // Translate ONE page per request so each call stays under the 60s serverless
-      // limit (a whole document in one call would time out on large inputs).
-      const newPages: StructuredPage[] = [];
-      const t0 = Date.now();
-
-      for (let p = 0; p < sourcePages.length; p++) {
-        const page = sourcePages[p];
-        setTranslateMsg(`Traducere pagina ${p + 1}/${sourcePages.length}...`);
-
-        const sections = [
-          ...(page.title ? [{ type: "heading", content: page.title, level: 1 }] : []),
-          ...page.sections,
-        ];
-
-        const res = await fetch(`${API_URL}/api/translate-text`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text_sections: sections,
-            source_lang: sourceLang,
-            target_lang: targetLang,
-            translate_engine: translateEngine,
-          }),
-          signal,
+      // Check cache first
+      if (cacheRef.current[targetLang]) {
+        setActiveLang(targetLang);
+        setCurrentPageIdx(0);
+        logAction("Limba schimbata (cache)", {
+          from: activeLang,
+          to: targetLang,
         });
-
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
-        const data = await res.json();
-        const translated = data.translated_sections || [];
-
-        // translated mirrors `sections` 1:1 (figures kept in place, only text changed).
-        const newPage: StructuredPage = { title: page.title, sections: [] };
-        let idx = 0;
-        if (page.title) {
-          newPage.title = translated[idx]?.content || page.title;
-          idx++;
-        }
-        for (const sec of page.sections) {
-          newPage.sections.push(idx < translated.length ? translated[idx] : sec);
-          idx++;
-        }
-        newPages.push(newPage);
+        return;
       }
 
-      cacheRef.current[targetLang] = newPages;
-      setActiveLang(targetLang);
-      setCurrentPageIdx(0);
-      logAction("Traducere on-demand reusita", { to: targetLang, duration_ms: Date.now() - t0 });
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return; // ignore cancelled requests
-      const msg = err instanceof Error ? err.message : "Eroare traducere";
-      logError(msg, { source: "translate", errorCode: "E-TRANS-001", context: { from: sourceLang, to: targetLang } });
-    } finally {
-      setIsTranslating(false);
+      // Need to translate on-demand
+      // Cancel any previous in-flight request
+      translateAbortRef.current?.abort();
+      translateAbortRef.current = new AbortController();
+      const { signal } = translateAbortRef.current;
+
+      setIsTranslating(true);
       setTranslateMsg("");
-    }
-  }, [activeLang, sourceLang, structuredPages, translateEngine]);
+      logAction("Traducere on-demand pornita", {
+        from: sourceLang,
+        to: targetLang,
+      });
+
+      try {
+        // Always translate from the source-language pages (not the current view).
+        const sourcePages = cacheRef.current[sourceLang] || structuredPages;
+
+        // Translate ONE page per request so each call stays under the 60s serverless
+        // limit (a whole document in one call would time out on large inputs).
+        const newPages: StructuredPage[] = [];
+        const t0 = Date.now();
+
+        for (let p = 0; p < sourcePages.length; p++) {
+          const page = sourcePages[p];
+          setTranslateMsg(`Traducere pagina ${p + 1}/${sourcePages.length}...`);
+
+          const sections = [
+            ...(page.title
+              ? [{ type: "heading", content: page.title, level: 1 }]
+              : []),
+            ...page.sections,
+          ];
+
+          const res = await fetchWithRetry(`${API_URL}/api/translate-text`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text_sections: sections,
+              source_lang: sourceLang,
+              target_lang: targetLang,
+              translate_engine: translateEngine,
+            }),
+            signal,
+          });
+
+          if (!res.ok) throw new Error(`Server error: ${res.status}`);
+          const data = await res.json();
+          const translated = data.translated_sections || [];
+
+          // translated mirrors `sections` 1:1 (figures kept in place, only text changed).
+          const newPage: StructuredPage = { title: page.title, sections: [] };
+          let idx = 0;
+          if (page.title) {
+            newPage.title = translated[idx]?.content || page.title;
+            idx++;
+          }
+          for (const sec of page.sections) {
+            newPage.sections.push(
+              idx < translated.length ? translated[idx] : sec,
+            );
+            idx++;
+          }
+          newPages.push(newPage);
+        }
+
+        cacheRef.current[targetLang] = newPages;
+        setActiveLang(targetLang);
+        setCurrentPageIdx(0);
+        logAction("Traducere on-demand reusita", {
+          to: targetLang,
+          duration_ms: Date.now() - t0,
+        });
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return; // ignore cancelled requests
+        const msg = err instanceof Error ? err.message : "Eroare traducere";
+        logError(msg, {
+          source: "translate",
+          errorCode: "E-TRANS-001",
+          context: { from: sourceLang, to: targetLang },
+        });
+      } finally {
+        setIsTranslating(false);
+        setTranslateMsg("");
+      }
+    },
+    [activeLang, sourceLang, structuredPages, translateEngine],
+  );
 
   const handleDownloadHtml = () => {
     const html = buildHtmlFromPages(currentPages, activeLang);
@@ -250,17 +277,33 @@ export default function DocumentViewer({
     }
     win.document.write(html);
     win.document.close();
-    logAction("Export PDF (print)", { lang: activeLang, pages: currentPages.length });
+    logAction("Export PDF (print)", {
+      lang: activeLang,
+      pages: currentPages.length,
+    });
 
     const start = Date.now();
     const tryPrint = () => {
-      const mj = (win as unknown as { MathJax?: { startup?: { promise?: Promise<void> }; typesetPromise?: () => Promise<void> } }).MathJax;
+      const mj = (
+        win as unknown as {
+          MathJax?: {
+            startup?: { promise?: Promise<void> };
+            typesetPromise?: () => Promise<void>;
+          };
+        }
+      ).MathJax;
       const ready = mj?.startup?.promise;
       if (ready) {
         ready
           .then(() => mj?.typesetPromise?.())
-          .then(() => { win.focus(); win.print(); })
-          .catch(() => { win.focus(); win.print(); });
+          .then(() => {
+            win.focus();
+            win.print();
+          })
+          .catch(() => {
+            win.focus();
+            win.print();
+          });
       } else if (Date.now() - start < 8000) {
         win.setTimeout(tryPrint, 200);
       } else {
@@ -280,7 +323,10 @@ export default function DocumentViewer({
     formData.append("target_format", "docx");
 
     try {
-      const res = await fetch(`${API_URL}/api/convert`, { method: "POST", body: formData });
+      const res = await fetch(`${API_URL}/api/convert`, {
+        method: "POST",
+        body: formData,
+      });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -291,7 +337,9 @@ export default function DocumentViewer({
       URL.revokeObjectURL(url);
       logAction("Download DOCX", { lang: activeLang });
     } catch (err) {
-      logError(err instanceof Error ? err.message : "DOCX download failed", { context: { lang: activeLang } });
+      logError(err instanceof Error ? err.message : "DOCX download failed", {
+        context: { lang: activeLang },
+      });
       handleDownloadHtml();
     }
   };
@@ -318,7 +366,9 @@ export default function DocumentViewer({
               onClick={() => switchLanguage(lang.code)}
               disabled={isTranslating}
               className={`chalk-btn text-sm px-4 py-2 ${
-                !showOriginal && activeLang === lang.code ? "chalk-btn--active" : ""
+                !showOriginal && activeLang === lang.code
+                  ? "chalk-btn--active"
+                  : ""
               }`}
             >
               {lang.flag} {lang.label}
@@ -333,13 +383,22 @@ export default function DocumentViewer({
         <div className="flex gap-2">
           {!showOriginal && (
             <>
-              <button onClick={handleDownloadHtml} className="chalk-btn text-sm px-3 py-2">
+              <button
+                onClick={handleDownloadHtml}
+                className="chalk-btn text-sm px-3 py-2"
+              >
                 HTML
               </button>
-              <button onClick={handlePrint} className="chalk-btn chalk-btn--primary text-sm px-3 py-2">
+              <button
+                onClick={handlePrint}
+                className="chalk-btn chalk-btn--primary text-sm px-3 py-2"
+              >
                 Export PDF
               </button>
-              <button onClick={handleDownloadDocx} className="chalk-btn text-sm px-3 py-2">
+              <button
+                onClick={handleDownloadDocx}
+                className="chalk-btn text-sm px-3 py-2"
+              >
                 DOCX
               </button>
             </>
@@ -350,8 +409,8 @@ export default function DocumentViewer({
       {/* Page navigation */}
       {(() => {
         const totalPages = showOriginal
-          ? (originalUrls.length || 1)
-          : (currentPages.length || 1);
+          ? originalUrls.length || 1
+          : currentPages.length || 1;
         return totalPages > 1 ? (
           <div className="flex items-center justify-center gap-3 py-2 text-sm text-white/70">
             <button
@@ -361,9 +420,13 @@ export default function DocumentViewer({
             >
               &#8592;
             </button>
-            <span>Pagina {currentPageIdx + 1} / {totalPages}</span>
+            <span>
+              Pagina {currentPageIdx + 1} / {totalPages}
+            </span>
             <button
-              onClick={() => setCurrentPageIdx((i) => Math.min(totalPages - 1, i + 1))}
+              onClick={() =>
+                setCurrentPageIdx((i) => Math.min(totalPages - 1, i + 1))
+              }
               disabled={currentPageIdx === totalPages - 1}
               className="chalk-btn text-sm px-3 py-1"
             >
@@ -375,58 +438,70 @@ export default function DocumentViewer({
 
       {/* Content area */}
       <div className="bg-gray-200 p-6 rounded-lg">
-        {showOriginal ? (
-          /* STEP 1: Original — uploaded images in A4 frame */
-          (() => {
-            const url = originalUrls[currentPageIdx];
-            if (!url) return null;
-            return (
-              <div
-                className="bg-white mx-auto mb-4 shadow-lg flex items-center justify-center"
-                style={{ width: "210mm", minHeight: "297mm", padding: "12mm" }}
-              >
-                <img
-                  src={url}
-                  alt={`Original pagina ${currentPageIdx + 1}`}
-                  style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-                />
-              </div>
-            );
-          })()
-        ) : (
-          /* STEP 2/3: HTML document (RO or translated) — editable */
-          (() => {
-            const page = currentPages[currentPageIdx];
-            if (!page) return null;
-            return (
-              <div
-                key={`${activeLang}-${currentPageIdx}`}
-                className="bg-white mx-auto mb-4 shadow-lg overflow-hidden"
-                style={{
-                  width: "210mm",
-                  minHeight: "297mm",
-                  padding: "12mm",
-                  fontFamily: '"Cambria", "Times New Roman", serif',
-                  fontSize: "12pt",
-                  lineHeight: 1.45,
-                  color: "#1b1b1b",
-                }}
-              >
-                {page.title && (
-                  <EditableBlock
-                    as="h1"
-                    raw={page.title}
-                    onSave={(v) => { page.title = v; }}
-                    style={{ fontSize: "16pt", marginBottom: "0.5em", lineHeight: 1.22 }}
+        {showOriginal
+          ? /* STEP 1: Original — uploaded images in A4 frame */
+            (() => {
+              const url = originalUrls[currentPageIdx];
+              if (!url) return null;
+              return (
+                <div
+                  className="bg-white mx-auto mb-4 shadow-lg flex items-center justify-center"
+                  style={{
+                    width: "210mm",
+                    minHeight: "297mm",
+                    padding: "12mm",
+                  }}
+                >
+                  <img
+                    src={url}
+                    alt={`Original pagina ${currentPageIdx + 1}`}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                    }}
                   />
-                )}
-                {page.sections.map((sec, secIdx) => (
-                  <RenderSection key={secIdx} section={sec} />
-                ))}
-              </div>
-            );
-          })()
-        )}
+                </div>
+              );
+            })()
+          : /* STEP 2/3: HTML document (RO or translated) — editable */
+            (() => {
+              const page = currentPages[currentPageIdx];
+              if (!page) return null;
+              return (
+                <div
+                  key={`${activeLang}-${currentPageIdx}`}
+                  className="bg-white mx-auto mb-4 shadow-lg overflow-hidden"
+                  style={{
+                    width: "210mm",
+                    minHeight: "297mm",
+                    padding: "12mm",
+                    fontFamily: '"Cambria", "Times New Roman", serif',
+                    fontSize: "12pt",
+                    lineHeight: 1.45,
+                    color: "#1b1b1b",
+                  }}
+                >
+                  {page.title && (
+                    <EditableBlock
+                      as="h1"
+                      raw={page.title}
+                      onSave={(v) => {
+                        page.title = v;
+                      }}
+                      style={{
+                        fontSize: "16pt",
+                        marginBottom: "0.5em",
+                        lineHeight: 1.22,
+                      }}
+                    />
+                  )}
+                  {page.sections.map((sec, secIdx) => (
+                    <RenderSection key={secIdx} section={sec} />
+                  ))}
+                </div>
+              );
+            })()}
       </div>
     </div>
   );
@@ -438,7 +513,14 @@ function RenderSection({ section }: { section: StructuredSection }) {
 
   if (type === "figure" && img_b64) {
     return (
-      <div style={{ display: "flex", gap: "16px", justifyContent: "center", margin: "6px 0" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          justifyContent: "center",
+          margin: "6px 0",
+        }}
+      >
         <img
           src={`data:image/png;base64,${img_b64}`}
           alt={caption || "figura"}
@@ -451,7 +533,14 @@ function RenderSection({ section }: { section: StructuredSection }) {
   if (type === "figure" && svg) {
     const svgs = Array.isArray(svg) ? svg : [svg];
     return (
-      <div style={{ display: "flex", gap: "16px", justifyContent: "center", margin: "6px 0" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "16px",
+          justifyContent: "center",
+          margin: "6px 0",
+        }}
+      >
         {svgs.map((s, i) => (
           <div key={i} dangerouslySetInnerHTML={{ __html: sanitizeHtml(s) }} />
         ))}
@@ -461,12 +550,23 @@ function RenderSection({ section }: { section: StructuredSection }) {
 
   if (type === "figure") {
     const desc = caption || "";
-    return <p><em>[Figura: {desc || "indisponibila"}]</em></p>;
+    return (
+      <p>
+        <em>[Figura: {desc || "indisponibila"}]</em>
+      </p>
+    );
   }
 
   if (type === "two_column") {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", margin: "10px 0" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+          margin: "10px 0",
+        }}
+      >
         <div style={{ minWidth: 0 }}>
           {(left || []).map((s, i) => (
             <RenderSection key={`l${i}`} section={s} />
@@ -481,12 +581,21 @@ function RenderSection({ section }: { section: StructuredSection }) {
     );
   }
 
-  const save = (v: string) => { section.content = v; };
+  const save = (v: string) => {
+    section.content = v;
+  };
 
   if (type === "heading") {
     // Downgrade very long "headings" to paragraphs (Gemini OCR misclassification)
     if ((content || "").length > 200) {
-      return <EditableBlock as="p" raw={content || ""} onSave={save} style={{ marginBottom: "0.3em" }} />;
+      return (
+        <EditableBlock
+          as="p"
+          raw={content || ""}
+          onSave={save}
+          style={{ marginBottom: "0.3em" }}
+        />
+      );
     }
     const tag = `h${Math.min(level || 2, 4)}` as keyof JSX.IntrinsicElements;
     return (
@@ -500,16 +609,34 @@ function RenderSection({ section }: { section: StructuredSection }) {
   }
 
   if (type === "step") {
-    return <EditableBlock as="p" raw={content || ""} onSave={save} style={{ marginBottom: "0.3em" }} />;
+    return (
+      <EditableBlock
+        as="p"
+        raw={content || ""}
+        onSave={save}
+        style={{ marginBottom: "0.3em" }}
+      />
+    );
   }
 
   if (type === "observation") {
-    return <EditableBlock as="p" raw={content || ""} onSave={save} wrapStrong style={{ marginBottom: "0.3em" }} />;
+    return (
+      <EditableBlock
+        as="p"
+        raw={content || ""}
+        onSave={save}
+        wrapStrong
+        style={{ marginBottom: "0.3em" }}
+      />
+    );
   }
 
   if (type === "list") {
     // Split into items; edits rebuild the single \n-delimited content string.
-    const items = (content || "").split("\n").filter((l) => l.trim()).map((l) => l.replace(/^\d+\.\s*/, ""));
+    const items = (content || "")
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((l) => l.replace(/^\d+\.\s*/, ""));
     return (
       <ol style={{ marginTop: "0.45em", marginBottom: "0.6em" }}>
         {items.map((item, i) => (
@@ -519,7 +646,9 @@ function RenderSection({ section }: { section: StructuredSection }) {
             raw={item}
             onSave={(v) => {
               items[i] = v;
-              section.content = items.map((t, k) => `${k + 1}. ${t}`).join("\n");
+              section.content = items
+                .map((t, k) => `${k + 1}. ${t}`)
+                .join("\n");
             }}
             style={{ marginBottom: "0.2em" }}
           />
@@ -529,7 +658,14 @@ function RenderSection({ section }: { section: StructuredSection }) {
   }
 
   // paragraph or unknown
-  return <EditableBlock as="p" raw={content || ""} onSave={save} style={{ marginBottom: "0.3em" }} />;
+  return (
+    <EditableBlock
+      as="p"
+      raw={content || ""}
+      onSave={save}
+      style={{ marginBottom: "0.3em" }}
+    />
+  );
 }
 
 /** Rendered HTML for a text run (sanitized + **bold**). MathJax typesets $...$ later. */
@@ -540,7 +676,11 @@ function renderMathHtml(text: string): string {
 
 /** Re-typeset a single element after an edit restores its rendered view. */
 function typesetEl(el: HTMLElement): void {
-  const MJ = (window as unknown as { MathJax?: { typesetPromise?: (els: HTMLElement[]) => Promise<void> } }).MathJax;
+  const MJ = (
+    window as unknown as {
+      MathJax?: { typesetPromise?: (els: HTMLElement[]) => Promise<void> };
+    }
+  ).MathJax;
   MJ?.typesetPromise?.([el]).catch(() => {});
 }
 
@@ -569,7 +709,8 @@ function EditableBlock({
   style?: React.CSSProperties;
   wrapStrong?: boolean;
 }) {
-  const render = (t: string) => (wrapStrong ? `<strong>${renderMathHtml(t)}</strong>` : renderMathHtml(t));
+  const render = (t: string) =>
+    wrapStrong ? `<strong>${renderMathHtml(t)}</strong>` : renderMathHtml(t);
   const Tag = as as React.ElementType;
   return (
     <Tag
@@ -663,7 +804,9 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
 /** Build HTML for a single section — recursive for two_column */
 function buildSectionHtml(sec: StructuredSection): string {
   if (sec.type === "figure" && sec.img_b64) {
-    const cap = sec.caption ? `<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>${sec.caption}</em></p>` : "";
+    const cap = sec.caption
+      ? `<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>${sec.caption}</em></p>`
+      : "";
     return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0"><img src="data:image/png;base64,${sec.img_b64}" style="max-width:100%;height:auto;background:#fff;" alt="${sec.caption || "figura"}"></div>\n${cap}`;
   }
 
@@ -678,7 +821,8 @@ function buildSectionHtml(sec: StructuredSection): string {
   }
 
   if (sec.type === "two_column") {
-    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;">';
+    let html =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;">';
     html += '<div style="min-width:0;">';
     for (const s of sec.left || []) html += buildSectionHtml(s);
     html += '</div><div style="min-width:0;">';
@@ -707,6 +851,9 @@ function buildSectionHtml(sec: StructuredSection): string {
     return html;
   }
 
-  const text = (sec.content || "").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  const text = (sec.content || "").replace(
+    /\*\*([^*]+)\*\*/g,
+    "<strong>$1</strong>",
+  );
   return `<p>${text}</p>\n`;
 }

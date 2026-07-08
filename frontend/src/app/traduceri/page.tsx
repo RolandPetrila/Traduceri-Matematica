@@ -9,7 +9,9 @@ import Dictionary from "@/components/traduceri/Dictionary";
 import { addToHistory } from "@/lib/storage";
 import { logError, logAction, logInfo } from "@/lib/monitoring";
 import { validateTranslationOutput } from "@/lib/validator";
-import EngineSelector, { type TranslateEngine } from "@/components/traduceri/EngineSelector";
+import EngineSelector, {
+  type TranslateEngine,
+} from "@/components/traduceri/EngineSelector";
 import BatchPanel from "@/components/traduceri/BatchPanel";
 import DocumentViewer from "@/components/traduceri/DocumentViewer";
 import DeeplUsage from "@/components/traduceri/DeeplUsage";
@@ -17,28 +19,7 @@ import GeminiUsage from "@/components/traduceri/GeminiUsage";
 
 import { API_URL } from "@/lib/api-url";
 import { expandFilesToPages } from "@/lib/pdf-rasterize";
-
-/** Retry a fetch with exponential backoff (only on 5xx or network errors, not 4xx). */
-async function fetchWithRetry(
-  input: RequestInfo,
-  init: RequestInit,
-  maxRetries = 2
-): Promise<Response> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    if (attempt > 0) {
-      await new Promise((res) => setTimeout(res, 1000 * 2 ** (attempt - 1)));
-    }
-    try {
-      const res = await fetch(input, init);
-      if (res.status < 500) return res; // success or client error — do not retry
-      lastErr = new Error(`Server error ${res.status}`);
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-  throw lastErr;
-}
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 export default function TraduceriPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -48,10 +29,13 @@ export default function TraduceriPage() {
   const [progress, setProgress] = useState(0);
   const [stepLabel, setStepLabel] = useState("");
   const [result, setResult] = useState<string | null>(null);
-  const [structuredPages, setStructuredPages] = useState<unknown[] | null>(null);
+  const [structuredPages, setStructuredPages] = useState<unknown[] | null>(
+    null,
+  );
   const [originalFiles, setOriginalFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [translateEngine, setTranslateEngine] = useState<TranslateEngine>("deepl");
+  const [translateEngine, setTranslateEngine] =
+    useState<TranslateEngine>("deepl");
 
   const handleProcess = async () => {
     if (files.length === 0) return;
@@ -74,7 +58,8 @@ export default function TraduceriPage() {
     try {
       // Rasterize PDFs in the browser → one image per page (Vercel 60s limit).
       const pages = await expandFilesToPages(files);
-      if (pages.length === 0) throw new Error("Nu s-au putut extrage pagini din fisiere");
+      if (pages.length === 0)
+        throw new Error("Nu s-au putut extrage pagini din fisiere");
 
       const allPages: unknown[] = [];
       const htmlParts: string[] = [];
@@ -99,13 +84,15 @@ export default function TraduceriPage() {
           throw new Error(
             !res.ok
               ? `Server error ${res.status}: ${text.substring(0, 200)}`
-              : "Raspuns neasteptat de la server (nu JSON)"
+              : "Raspuns neasteptat de la server (nu JSON)",
           );
         }
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || `Eroare server: ${res.status}`);
+        if (!res.ok)
+          throw new Error(data?.error || `Eroare server: ${res.status}`);
 
-        if (Array.isArray(data.structured_pages)) allPages.push(...data.structured_pages);
+        if (Array.isArray(data.structured_pages))
+          allPages.push(...data.structured_pages);
         if (data.html) htmlParts.push(data.html as string);
 
         setProgress(Math.round(((i + 1) / pages.length) * 100));
@@ -115,7 +102,10 @@ export default function TraduceriPage() {
 
       const combinedHtml = htmlParts.join("\n");
       const durationMs = Date.now() - t0;
-      validateTranslationOutput({ html: combinedHtml, structured_pages: allPages });
+      validateTranslationOutput({
+        html: combinedHtml,
+        structured_pages: allPages,
+      });
 
       setResult(combinedHtml || "ok");
       setStructuredPages(allPages);
@@ -133,7 +123,8 @@ export default function TraduceriPage() {
 
       // Browser notification (only when tab is in background)
       if ("Notification" in window && document.hidden) {
-        if (Notification.permission === "default") Notification.requestPermission();
+        if (Notification.permission === "default")
+          Notification.requestPermission();
         if (Notification.permission === "granted") {
           new Notification("OCR complet!", {
             body: `${pageCount} ${pageCount === 1 ? "pagina procesata" : "pagini procesate"} in ${durationSec}s`,
@@ -182,7 +173,10 @@ export default function TraduceriPage() {
 
       {/* Engine selector + Process button */}
       <div className="flex flex-col items-center gap-3">
-        <EngineSelector engine={translateEngine} onEngineChange={setTranslateEngine} />
+        <EngineSelector
+          engine={translateEngine}
+          onEngineChange={setTranslateEngine}
+        />
         <button
           onClick={handleProcess}
           disabled={files.length === 0 || isProcessing}
@@ -201,7 +195,13 @@ export default function TraduceriPage() {
 
       {/* Error message */}
       {error && (
-        <div className="rounded-lg p-4 text-center" style={{ background: "rgba(232, 131, 107, 0.15)", border: "1px solid var(--chalk-red)" }}>
+        <div
+          className="rounded-lg p-4 text-center"
+          style={{
+            background: "rgba(232, 131, 107, 0.15)",
+            border: "1px solid var(--chalk-red)",
+          }}
+        >
           <p className="text-chalk-red text-lg">Eroare: {error}</p>
           <button
             onClick={() => setError(null)}
@@ -214,12 +214,19 @@ export default function TraduceriPage() {
 
       {/* Success message */}
       {result && !isProcessing && !error && (
-        <div className="rounded-lg p-4 text-center" style={{ background: "rgba(74, 222, 128, 0.15)", border: "1px solid #4ade80" }}>
+        <div
+          className="rounded-lg p-4 text-center"
+          style={{
+            background: "rgba(74, 222, 128, 0.15)",
+            border: "1px solid #4ade80",
+          }}
+        >
           <p className="text-lg font-bold" style={{ color: "#4ade80" }}>
             Document procesat!
           </p>
           <p className="text-sm opacity-70 mt-1">
-            Foloseste butoanele Original / RO / SK pentru a naviga intre variante.
+            Foloseste butoanele Original / RO / SK pentru a naviga intre
+            variante.
           </p>
         </div>
       )}
@@ -244,7 +251,11 @@ export default function TraduceriPage() {
       ) : null}
 
       {/* Batch processing */}
-      <BatchPanel sourceLang={sourceLang} targetLang={targetLang} translateEngine={translateEngine} />
+      <BatchPanel
+        sourceLang={sourceLang}
+        targetLang={targetLang}
+        translateEngine={translateEngine}
+      />
 
       {/* Dictionary panel */}
       <Dictionary sourceLang={sourceLang} targetLang={targetLang} />

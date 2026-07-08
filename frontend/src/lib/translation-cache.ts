@@ -7,7 +7,7 @@
  */
 
 const CACHE_KEY = "translation_cache";
-const CACHE_VERSION = "v2"; // Increment on major pipeline changes
+const CACHE_VERSION = "v3"; // Increment on major pipeline changes (v3: SHA-256 content-hash keys)
 const MAX_ENTRIES = 50; // ~5 MB limit (100KB avg per entry)
 
 interface CacheEntry {
@@ -22,12 +22,32 @@ interface CacheStore {
   entries: Record<string, CacheEntry>;
 }
 
-function generateKey(files: File[], sourceLang: string, targetLang: string): string {
-  const fileSignature = files
-    .map(f => `${f.name}:${f.size}:${f.lastModified}`)
-    .sort()
-    .join("|");
-  return `${fileSignature}::${sourceLang}::${targetLang}`;
+async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Cache key = SHA-256 of each file's first 64KB (content-addressed) + name + size
+ * + language pair. Content hashing avoids collisions between two DIFFERENT files
+ * that happen to share name + size (the old key used name:size:lastModified,
+ * which could alias distinct documents).
+ */
+async function generateKey(
+  files: File[],
+  sourceLang: string,
+  targetLang: string,
+): Promise<string> {
+  const signatures = await Promise.all(
+    files.map(async (f) => {
+      const head = await f.slice(0, 65536).arrayBuffer();
+      const hash = await sha256Hex(head);
+      return `${f.name}:${f.size}:${hash}`;
+    }),
+  );
+  return `${signatures.sort().join("|")}::${sourceLang}::${targetLang}`;
 }
 
 function loadStore(): CacheStore {
@@ -72,13 +92,13 @@ function evictOldest(store: CacheStore, count: number): void {
 /**
  * Get cached translation HTML, or null if not cached.
  */
-export function getCachedTranslation(
+export async function getCachedTranslation(
   files: File[],
   sourceLang: string,
-  targetLang: string
-): string | null {
+  targetLang: string,
+): Promise<string | null> {
   const store = loadStore();
-  const key = generateKey(files, sourceLang, targetLang);
+  const key = await generateKey(files, sourceLang, targetLang);
   const entry = store.entries[key];
   if (entry && entry.version === CACHE_VERSION) {
     return entry.html;
@@ -89,12 +109,12 @@ export function getCachedTranslation(
 /**
  * Save a translation to cache.
  */
-export function cacheTranslation(
+export async function cacheTranslation(
   files: File[],
   sourceLang: string,
   targetLang: string,
-  html: string
-): void {
+  html: string,
+): Promise<void> {
   const store = loadStore();
 
   // Enforce max entries
@@ -103,7 +123,7 @@ export function cacheTranslation(
     evictOldest(store, entryCount - MAX_ENTRIES + 5);
   }
 
-  const key = generateKey(files, sourceLang, targetLang);
+  const key = await generateKey(files, sourceLang, targetLang);
   store.entries[key] = {
     html,
     targetLang,

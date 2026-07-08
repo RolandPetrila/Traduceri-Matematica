@@ -7,7 +7,8 @@
     "prebuild": "node scripts/copy-pdf-worker.mjs",
     "build": "node scripts/copy-pdf-worker.mjs && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.0",
@@ -28,9 +29,12 @@
     "tailwindcss": "^3.4.0"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "typescript": "^5.4.0"
   }
 }
