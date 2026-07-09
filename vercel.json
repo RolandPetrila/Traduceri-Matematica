@@ -7,5 +7,10 @@
     "api/*.py": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/translate-text", "destination": "/api/translate_text" },
+    { "source": "/api/deepl-usage", "destination": "/api/deepl_usage" },
+    { "source": "/api/gemini-usage", "destination": "/api/gemini_usage" }
+  ]
 }
