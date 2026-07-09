@@ -26,10 +26,10 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
 - [x] Faza E — Editare persistenta + export PDF vectorial — 2026-07-07
 - [x] Verificare locala (build Next OK, dev_server OK, rate-limit 0/15 429, error codes, fail-open) — 2026-07-07
 - [x] Re-verificare baseline local (branch faza-g-editor): `tsc --noEmit` 0 erori + `next build` OK (7 rute, inclusiv /editor) — 2026-07-07
-- [ ] **Review v4 — flux interactiv NEVERIFICAT**: upload→OCR→traducere→editare→export PDF nerulat live (fara chei API). RISC D7: OCR per-pagina pe Vercel (limita 60s/pagina) + PyMuPDF <250MB de confirmat pe deploy real
+- [~] **Review v4 — flux interactiv**: validat LIVE parțial (2026-07-09) — OCR + traducere RO→SK verificate prin curl pe API-ul deployat (200), UX browser upload→RO/SK→export testat. RĂMAS e2e real cu cotă (Cristina/Roland, browser complet): OCR pe imagine reală → editare → export PDF. RISC D7: OCR per-pagina pe Vercel (limita 60s/pagina) + PyMuPDF <250MB confirmat implicit (deploy reușit)
 - [x] **FIX pre-deploy #1 — plafon 1 pagina server-side** (2026-07-07): `_pdf_to_images(max_pages=1)` + `MAX_PAGES=1` in `api/ocr.py` SI `api/translate.py` (avea 50). Fluxul normal (browser trimite 1 pag/apel) neschimbat; doar fallback-ul e limitat. Verificat: PDF 3-pag → 1 pag
 - [x] **FIX pre-deploy #2 — rate-limiting activ in handlere** (2026-07-07): `reject_if_limited()` nou in rate_limiter.py, apelat de ocr/translate/translate-text/convert; flag `_rate_checked` in dev_server evita dublu-count local. Best-effort pe serverless (state per instanta warm), full pe dev local. Verificat: reject la al 31-lea apel, 429+E-RATE-001. NB: cap global zilnic Supabase = decizie ramasa pt Roland (vezi RECOMANDARI)
-- [ ] Deploy real Vercel+Supabase — necesita conturi/env (vezi docs/DEPLOY_VERCEL.md) — confirmare Roland
+- [x] **Deploy real Vercel — LIVE** (2026-07-09): 2 proiecte — `traduceri-frontend.vercel.app` (Next 15) + `traduceri-api.vercel.app` (Python serverless). CORS cablat, chei Gemini (nouă, 200) + DeepL (200) pe API, 22 chei proxy pe frontend (Asistent). Health 200. NB prod rulează cod DINAINTE de fix-urile audit/review (vezi „Redeploy necesar" mai jos). Supabase = amânat (log-uri fail-open). `docs/DEPLOY_VERCEL.md` + `RESUME_DEPLOY_2026-07-09.md`.
 - [x] Faza G (editor) — Editor matematic integrat ca modul izolat (iframe same-origin /editor, servit static din frontend/public/editor/) — 2026-07-07, branch faza-g-editor (commit fa219e9 + fix b09e30f)
 - [x] Faza G (tema) — Adaptare tema editor albastru→verde (tabla+creta, R-THEME) — 2026-07-07 (commit 5b8ea03)
 - [x] Faza G (enhancements editor) — Step B quickbar persistent (Nou/undo/redo/salvează/PDF·Word·HTML + indicator auto-save; Fișier scos) + Step C search matematic autocomplete (103 simboluri + 20 structuri + 214 formule, diacritic-insensitive, inserare via restoreEditableSelection) + Step D polish țintit — 2026-07-08 (commit 872c69b). Step A (fix selecție) verificat live (π inserat în căsuță). Verificat în browser, console curat.
@@ -44,6 +44,36 @@ Decizii: vezi PLAN_DECISIONS.md (D33–D42). Plan detaliat + verificare: vezi co
   - RAMAS (cod, cu decizia Roland): E5 SplitView, Faza 4 G5/G6. BLOCAT pe Roland: deploy real, flux live e2e (cheie Google `GOOGLE_AI_API_KEY` billing-blocked), test Android.
 - [x] **Upgrade Next.js 14->15 — MERGEUIT** via PR #1 (2026-07-08, merge commit 61f9b6c; branch `chore/next-upgrade` sters) — rezolva vuln npm audit **HIGH** (Next.js) FARA React 19: `next@15.5.20` + React 18.3.1 pastrat, suprafata breaking minima. faza-g-editor e acum pe next@15.5.20 (tsc verde post-merge + node_modules realiniat). Ramas doar 1 moderate postcss (bundle intern Next, build-time, neglijabil; s-ar curata la Next 16). Gate: tsc 0, jest 10/10, next build OK (10 rute). **RAMAS runtime**: verificare flux live (upload->OCR->traducere->export) la deploy/preview real.
 - [x] **Remediere M5/M6/M7 + suita Jest** (2026-07-08, commits eea4709 + 1793621) — M5 `fetchWithRetry` abort-aware pe translate-text; M6 cache key **SHA-256** (async, v3, modul inca ne-wired); M7 `api/lib/exceptions.py` (erori tipate + wiring aditiv ocr/translate-text); suita **Jest** (9 teste: translation-cache + sanitize). SECURITATE: `npm audit` live a gasit 3 vulns prod (ratate de auditul initial) → dompurify 3.3.3->3.4.11 (fix XSS, non-breaking). Gate: tsc 0, jest 9/9, next build OK, pytest 21/21. **RAMAS: Next.js 14->16** (1 high + 1 moderate npm audit — breaking major, majoritatea advisories DoS/self-hosted/middleware/i18n NU se aplica; **decizia Roland**) + E5 SplitView + Faza 4 G5/G6.
+- [x] **Validare LIVE e2e + audit 79→86 + fix rutare 404** (2026-07-09, commits 64e1277 · f51fd8c · 8384111 · 1fc3978 · e632788) — test live al app-ului deployat a găsit **BUG SEV1 rutare**: frontend cheamă `/api/translate-text` (cratimă) dar Vercel servește după numele fișierului Python (`translate_text`, underscore) → **404, traducerea RO→SK ruptă în prod**. Fix: `rewrites` în `vercel.json`. Plus remedieri pipeline: Gemini-LaTeX protejat (R-MATH, verificat 8/8 spans), DOCX figuri (add_picture, 6 img→6 poze), limită 413 1MB→4MB, CSP font temă, a11y focus/aria/simboluri, `deepl_usage` dual-key. Audit `.claude-outputs/audit/2026-07-09_041859/`.
+- [x] **Features A + B** (2026-07-09, commit f54611a) — A: guard `.docx` la upload (OCR nu citește Word → mesaj „salvează ca PDF"); B: export HTML **interactiv multi-limbă** (toggle RO/SK/EN embedded, `data-i`, MathJax re-typeset, figuri/formule intacte).
+- [x] **Code-review xhigh (workflow, 24 agenți) + 7 remedieri** (2026-07-09, commit d5632dd) — găsite bug-uri reale în codul de export: F0 `</script>` neescape rupea toggle-ul interactiv (CRITIC, escape `<`), F1 `re.split` grup capturant→paragrafe garbage în ORICE DOCX, F3 caption neescape în `alt`, F2 SVG pierdut silent în DOCX, F5 limită 413 6MB→4MB (Vercel respinge >4.5MB la edge), F4 comentariu inexact, F7 test base64 lenient. 2 findings refutate (aliniere `data-i` — corectă). Gate: pytest 25/25, tsc 0, next build, jest 10/10.
+
+---
+
+## Recomandări post-audit + post-review (2026-07-09) — DE IMPLEMENTAT
+
+> Adăugate la cererea Roland („ce a rămas punctual + ce recomand"). Sursă: audit 2026-07-09 (flagged) + code-review + verificare cod live. Legendă efort: MIC <30min / MEDIU 1-4h / MARE >4h.
+
+### A — Cod, autonom (se implementează în sesiunea curentă)
+
+- [x] **A1 — Strip `img_b64`/`svg` client înainte de POST `/translate-text` + restore după** (2026-07-09) — modul nou `frontend/src/lib/figure-payloads.ts` (`stripFigurePayloads`/`restoreFigurePayloads`, recursiv two_column), cablat în `DocumentViewer.tsx` (POST strip + reconstrucție restore). Previne **413 pe pagini cu figuri** + reduce payload/latență. R-MATH: figurile re-atașate din sursă în vederea tradusă. + 5 teste jest round-trip (A4). Gate: tsc 0, jest 15/15.
+- [x] **A3 — Guard anti-misaliniere `|||SEP|||`** (`translate_text.py`) (2026-07-09) — dacă `len(parts) != len(texts)`, log `E-TRANS-004` (Supabase fail-open) + `_translate_each()` (fallback per-secțiune aliniat, izolat); calea fericită neschimbată. + 6 teste pytest (invariant collect/apply + fallback). Gate: pytest 31/31, py_compile OK. **Limită cunoscută**: fallback-ul face N apeluri secvențiale; pe Gemini (engine default, `timeout=55`/apel) o pagină cu multe secțiuni poate depăși 60s → 500. Rar (doar la mismatch) + fail-loud; de revizuit (batch-retry / concurență mărginită) dacă apare în practică.
+- [x] **A2 — Configurare lint** (audit H3) (2026-07-09) — `eslint.config.mjs` flat (Next-16-ready) + `eslint-config-next`/`@eslint/eslintrc`; script `lint` → `eslint .` (non-interactiv); `next.config.js` `eslint.ignoreDuringBuilds:true` (lint separat, nu blochează deploy-build). Reparate 5 erori reale (2× `any` MathJax tipat, 3× `<a href="/">`→`<Link>`); rămân 9 warnings advisory. Gate: eslint 0 erori.
+
+### B — Deploy/Git, GATED (necesită confirmarea explicită Roland — R-DEPLOY)
+
+- [ ] **B1 — Redeploy `traduceri-api` + `traduceri-frontend`** — prod rulează cod DINAINTE de fix-urile audit (64e1277/f51fd8c/8384111) + code-review (d5632dd) + A1-A3. Fără redeploy, prod are încă bug-uri deja reparate în cod.
+- [ ] **B2 — Push commit-urile nepushed** pe `origin/faza-g-editor`.
+- [ ] **B3 — Merge `faza-g-editor` → `main`** (Task #5) — după validare + confirmare.
+
+### C — Decizie/mediu Roland sau test manual (flag, nu se implementează acum)
+
+- [ ] **C1 — Hard-cap cotă zilnică + Upstash + verificare Origin pe API Python** (audit H1) (MARE). App publică fără auth + rate-limiter in-memory per-instanță = ocolibil → risc abuz cotă gratuită DeepL/Gemini. Necesită env Upstash + plafon (decizie Roland).
+- [ ] **C2 — Test live e2e cu cotă reală** — upload imagine reală → OCR → SK → export PDF (consumă cotă; Cristina/Roland).
+- [ ] **C3 — `figure_crop.py:104` buclă per-pixel** (perf, R-MATH-adjacent) → vectorizare numpy. Atenție: posibil deprecat (D3). Verifică hot-path înainte.
+- [ ] **C4 — `ALLOWED_ORIGIN` fail-closed** (~14 locuri) — atenție: rupe CORS pe preview deployments (subdomeniu diferit). Decizie Roland.
+- [ ] **C5 — Next.js 15→16** (1 high + 1 moderate npm audit) — breaking major; majoritatea advisories nu se aplică. Decizie Roland.
+- [ ] **C6 — Test Android + PDF >20 pag batching + fallback DeepL→Gemini e2e** (Faza 2/3, test manual/cotă).
 
 ---
 

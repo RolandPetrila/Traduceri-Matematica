@@ -113,6 +113,50 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
     return restore_from_placeholders(translated, placeholders)
 
 
+def _translate_each(texts: list, source_lang: str, target_lang: str, engine: str) -> list:
+    """Translate texts ONE BY ONE — alignment-safe fallback for when the batch
+    separator gets mangled by the provider.
+
+    The normal path joins all texts with |||SEP||| and splits the result. If the
+    provider drops/alters a separator, ``len(parts) != len(texts)`` and the
+    batch can no longer be mapped 1:1 onto the source sections — text would land
+    on the WRONG section (R-MATH/correctness). This makes N calls (slower) but
+    guarantees each translation stays on its own section. Rare path only.
+
+    On a per-text failure, keeps the original text rather than dropping or
+    misaligning it. Preserves math protection (DeepL placeholders / Gemini
+    __MATH_N__) exactly like the batch path.
+
+    CAVEAT (serverless timeout): this makes N *sequential* calls. On the Gemini
+    path each call carries timeout=55, so a page with many sections could exceed
+    the 60s function limit → 500. DeepL is sub-second/call so it's safe there.
+    Acceptable because this path is rare (only on separator mangling) and failing
+    loud beats silent misalignment; revisit (batch-retry or bounded concurrency)
+    if it ever fires in practice.
+    """
+    use_deepl = bool(
+        engine == "deepl"
+        and _HAS_DEEPL
+        and os.environ.get("DEEPL_API_KEY", "").strip()
+    )
+    out = []
+    for t in texts:
+        if not t or not t.strip():
+            out.append(t)
+            continue
+        try:
+            if use_deepl:
+                protected = protect_for_deepl(t)
+                translated = _deepl_translate(protected, target_lang, source_lang)
+                out.append(restore_from_deepl(translated))
+            else:
+                out.append(_gemini_translate(t, source_lang, target_lang))
+        except Exception as each_err:
+            print(f"[TRANSLATE-TEXT] per-section translate failed: {each_err}", file=sys.stderr)
+            out.append(t)  # keep original — never misalign or drop
+    return out
+
+
 class handler(BaseHTTPRequestHandler):
     """Translate text sections only — no OCR, no file upload."""
 
@@ -226,6 +270,27 @@ class handler(BaseHTTPRequestHandler):
 
             # Split back and rebuild sections (recursive — two_column sub-sections included)
             parts = translated.split("|||SEP|||")
+            if len(parts) != len(texts):
+                # The provider altered the |||SEP||| separator → parts no longer
+                # map 1:1 onto the source sections. Applying them as-is would land
+                # text on the WRONG section (R-MATH/correctness). Recover by
+                # re-translating per-section (aligned), and log for diagnostics.
+                print(
+                    f"[TRANSLATE-TEXT] SEP mismatch: {len(parts)} parts vs {len(texts)} texts "
+                    f"— per-section fallback",
+                    file=sys.stderr,
+                )
+                try:
+                    from lib import supabase_client
+                    supabase_client.log_error(
+                        "E-TRANS-004",
+                        f"SEP mismatch {len(parts)}!={len(texts)} (prov={prov})",
+                        source="translate-text",
+                    )
+                except Exception:
+                    pass
+                parts = _translate_each(texts, source_lang, target_lang, engine)
+
             parts_iter = iter(parts)
             result_sections = _apply_translations_recursive(sections, parts_iter)
 

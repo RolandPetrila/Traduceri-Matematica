@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 /**
  * Editor matematic — modul izolat (Faza G).
  *
@@ -34,13 +36,13 @@ export default function EditorPage() {
         >
           &#x26F6; Deschide in fereastra noua
         </a>
-        <a
+        <Link
           href="/"
           className="chalk-btn text-sm whitespace-nowrap"
           title="Inapoi la aplicatie (Traduceri / Convertor)"
         >
           &#x2190; Inapoi la aplicatie
-        </a>
+        </Link>
       </div>
 
       <div

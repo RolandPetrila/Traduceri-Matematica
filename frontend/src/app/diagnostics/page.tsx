@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LogLevel } from "@/lib/monitoring";
 import { getLocalLogs } from "@/lib/monitoring";
@@ -16,7 +17,14 @@ interface DiagLog {
   message: string;
   source?: string;
   page?: string;
-  device?: { type?: string; os?: string; browser?: string; screenWidth?: number; screenHeight?: number; pwa?: boolean } | null;
+  device?: {
+    type?: string;
+    os?: string;
+    browser?: string;
+    screenWidth?: number;
+    screenHeight?: number;
+    pwa?: boolean;
+  } | null;
   context?: Record<string, unknown> | null;
   stack?: string | null;
 }
@@ -66,7 +74,9 @@ export default function DiagnosticsPage() {
     setLoading(true);
     setNote("");
     if (source === "local") {
-      setLogs((getLocalLogs() as unknown as Record<string, unknown>[]).map(fromLocal));
+      setLogs(
+        (getLocalLogs() as unknown as Record<string, unknown>[]).map(fromLocal),
+      );
       setLoading(false);
       return;
     }
@@ -78,12 +88,20 @@ export default function DiagnosticsPage() {
       if (rows.length > 0) {
         setLogs(rows.map(fromSupabaseRow));
       } else {
-        setNote(data.note || "Niciun log pe server — se afiseaza logurile locale.");
-        setLogs((getLocalLogs() as unknown as Record<string, unknown>[]).map(fromLocal));
+        setNote(
+          data.note || "Niciun log pe server — se afiseaza logurile locale.",
+        );
+        setLogs(
+          (getLocalLogs() as unknown as Record<string, unknown>[]).map(
+            fromLocal,
+          ),
+        );
       }
     } catch {
       setNote("Server indisponibil — se afiseaza logurile locale.");
-      setLogs((getLocalLogs() as unknown as Record<string, unknown>[]).map(fromLocal));
+      setLogs(
+        (getLocalLogs() as unknown as Record<string, unknown>[]).map(fromLocal),
+      );
     } finally {
       setLoading(false);
     }
@@ -104,9 +122,12 @@ export default function DiagnosticsPage() {
     };
   }, [autoRefresh, source, load]);
 
-  const byLevel = filter === "all" ? logs : logs.filter((l) => l.level === filter);
+  const byLevel =
+    filter === "all" ? logs : logs.filter((l) => l.level === filter);
   const filteredLogs = codeFilter
-    ? byLevel.filter((l) => (l.errorCode || "").toLowerCase().includes(codeFilter.toLowerCase()))
+    ? byLevel.filter((l) =>
+        (l.errorCode || "").toLowerCase().includes(codeFilter.toLowerCase()),
+      )
     : byLevel;
 
   const counts = {
@@ -118,7 +139,9 @@ export default function DiagnosticsPage() {
   };
 
   // Distinct error codes present (for quick filtering).
-  const codes = Array.from(new Set(logs.map((l) => l.errorCode).filter(Boolean))) as string[];
+  const codes = Array.from(
+    new Set(logs.map((l) => l.errorCode).filter(Boolean)),
+  ) as string[];
 
   const levelColor = (level: string) => {
     if (level === "error") return "text-red-400";
@@ -135,7 +158,11 @@ export default function DiagnosticsPage() {
   };
 
   const handleClearLogs = () => {
-    if (confirm("Stergi toate logurile LOCALE de pe acest dispozitiv? (Supabase nu e afectat)")) {
+    if (
+      confirm(
+        "Stergi toate logurile LOCALE de pe acest dispozitiv? (Supabase nu e afectat)",
+      )
+    ) {
       localStorage.removeItem("sistem_traduceri_logs");
       if (source === "local") setLogs([]);
     }
@@ -144,7 +171,9 @@ export default function DiagnosticsPage() {
   const copyLogs = () => {
     const text = filteredLogs
       .map((l) => {
-        const ts = new Date(l.timestamp).toLocaleTimeString("ro-RO", { hour12: false });
+        const ts = new Date(l.timestamp).toLocaleTimeString("ro-RO", {
+          hour12: false,
+        });
         const level = l.level.toUpperCase().padEnd(6);
         const code = l.errorCode ? `[${l.errorCode}] ` : "";
         const d = l.device;
@@ -153,14 +182,15 @@ export default function DiagnosticsPage() {
         if (l.context && Object.keys(l.context).length > 0) {
           line += `\n                   | Context: ${JSON.stringify(l.context)}`;
         }
-        if (l.stack) line += `\n                   | Stack: ${String(l.stack).split("\n")[0]}`;
+        if (l.stack)
+          line += `\n                   | Stack: ${String(l.stack).split("\n")[0]}`;
         return line;
       })
       .join("\n");
     const header = `=== LOGURI EXPORT | ${new Date().toLocaleString("ro-RO")} | sursa: ${source} | ${filteredLogs.length} intrari ===\n\n`;
     navigator.clipboard.writeText(header + text).then(
       () => alert(`${filteredLogs.length} loguri copiate in clipboard!`),
-      () => alert("Eroare la copiere. Incearca din nou.")
+      () => alert("Eroare la copiere. Incearca din nou."),
     );
   };
 
@@ -168,11 +198,18 @@ export default function DiagnosticsPage() {
     <div className="min-h-screen chalkboard-bg p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl md:text-3xl font-bold text-chalk-yellow">Diagnosticare Sistem</h1>
-          <a href="/" className="chalk-btn text-sm">Inapoi la aplicatie</a>
+          <h1 className="text-2xl md:text-3xl font-bold text-chalk-yellow">
+            Diagnosticare Sistem
+          </h1>
+          <Link href="/" className="chalk-btn text-sm">
+            Inapoi la aplicatie
+          </Link>
         </div>
         <p className="text-chalk-white/60 mb-4 text-sm">
-          Loguri live cu coduri de eroare — {source === "server" ? "toate dispozitivele (Supabase)" : "acest dispozitiv (local)"}
+          Loguri live cu coduri de eroare —{" "}
+          {source === "server"
+            ? "toate dispozitivele (Supabase)"
+            : "acest dispozitiv (local)"}
         </p>
 
         {/* Source + auto-refresh controls */}
@@ -191,7 +228,9 @@ export default function DiagnosticsPage() {
               Acest dispozitiv
             </button>
           </div>
-          <button onClick={load} className="chalk-btn text-sm">Reincarca</button>
+          <button onClick={load} className="chalk-btn text-sm">
+            Reincarca
+          </button>
           <label className="flex items-center gap-2 text-sm text-chalk-white/70">
             <input
               type="checkbox"
@@ -211,17 +250,29 @@ export default function DiagnosticsPage() {
           <>
             {/* Level filter cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-              {(["all", "action", "info", "warn", "error"] as FilterLevel[]).map((level) => (
+              {(
+                ["all", "action", "info", "warn", "error"] as FilterLevel[]
+              ).map((level) => (
                 <button
                   key={level}
                   onClick={() => setFilter(level)}
                   className={`chalk-card text-center py-2 cursor-pointer transition-all ${filter === level ? "!border-chalk-yellow" : ""}`}
                 >
-                  <p className={`text-xl font-bold ${level === "all" ? "text-chalk-white" : levelColor(level)}`}>
+                  <p
+                    className={`text-xl font-bold ${level === "all" ? "text-chalk-white" : levelColor(level)}`}
+                  >
                     {counts[level]}
                   </p>
                   <p className="text-chalk-white/60 text-xs capitalize">
-                    {level === "all" ? "Total" : level === "action" ? "Actiuni" : level === "info" ? "Info" : level === "warn" ? "Avertismente" : "Erori"}
+                    {level === "all"
+                      ? "Total"
+                      : level === "action"
+                        ? "Actiuni"
+                        : level === "info"
+                          ? "Info"
+                          : level === "warn"
+                            ? "Avertismente"
+                            : "Erori"}
                   </p>
                 </button>
               ))}
@@ -252,26 +303,46 @@ export default function DiagnosticsPage() {
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2 mb-4">
               {filteredLogs.length > 0 && (
-                <button onClick={copyLogs} className="chalk-btn text-sm !text-chalk-yellow">Copiaza loguri</button>
+                <button
+                  onClick={copyLogs}
+                  className="chalk-btn text-sm !text-chalk-yellow"
+                >
+                  Copiaza loguri
+                </button>
               )}
-              <button onClick={handleClearLogs} className="chalk-btn text-sm !text-chalk-red">Sterge loguri locale</button>
+              <button
+                onClick={handleClearLogs}
+                className="chalk-btn text-sm !text-chalk-red"
+              >
+                Sterge loguri locale
+              </button>
             </div>
 
             {/* Logs list */}
             {filteredLogs.length === 0 ? (
               <div className="chalk-card text-center py-8">
-                <p className="text-chalk-white text-lg">Niciun log {filter !== "all" ? `de tip "${filter}"` : ""}</p>
+                <p className="text-chalk-white text-lg">
+                  Niciun log {filter !== "all" ? `de tip "${filter}"` : ""}
+                </p>
                 <p className="text-chalk-white/60 mt-2 text-sm">
-                  Sistemul de monitorizare este activ. Logurile vor aparea aici automat.
+                  Sistemul de monitorizare este activ. Logurile vor aparea aici
+                  automat.
                 </p>
               </div>
             ) : (
               <div className="space-y-2">
                 {filteredLogs.map((log) => (
-                  <div key={log.id} className={`rounded-lg border p-3 ${levelBg(log.level)}`}>
+                  <div
+                    key={log.id}
+                    className={`rounded-lg border p-3 ${levelBg(log.level)}`}
+                  >
                     <div className="flex justify-between items-start mb-1">
                       <span className="flex items-center gap-2">
-                        <span className={`font-bold uppercase text-xs ${levelColor(log.level)}`}>{log.level}</span>
+                        <span
+                          className={`font-bold uppercase text-xs ${levelColor(log.level)}`}
+                        >
+                          {log.level}
+                        </span>
                         {log.errorCode && (
                           <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-red-500/30 text-red-200 border border-red-400/40">
                             {log.errorCode}
@@ -282,12 +353,19 @@ export default function DiagnosticsPage() {
                         {new Date(log.timestamp).toLocaleString("ro-RO")}
                       </span>
                     </div>
-                    <p className="text-chalk-white text-sm mb-1">{log.message}</p>
+                    <p className="text-chalk-white text-sm mb-1">
+                      {log.message}
+                    </p>
                     {log.context && Object.keys(log.context).length > 0 && (
                       <div className="text-xs text-chalk-white/50 mb-1">
                         {Object.entries(log.context).map(([k, v]) => (
                           <span key={k} className="mr-3">
-                            {k}: <strong>{typeof v === "object" ? JSON.stringify(v) : String(v)}</strong>
+                            {k}:{" "}
+                            <strong>
+                              {typeof v === "object"
+                                ? JSON.stringify(v)
+                                : String(v)}
+                            </strong>
                           </span>
                         ))}
                       </div>
@@ -295,11 +373,17 @@ export default function DiagnosticsPage() {
                     <div className="flex flex-wrap gap-2 text-xs text-chalk-white/40">
                       {log.device && (
                         <>
-                          <span>{log.device.type} / {log.device.os} / {log.device.browser}</span>
+                          <span>
+                            {log.device.type} / {log.device.os} /{" "}
+                            {log.device.browser}
+                          </span>
                           {log.device.screenWidth ? (
                             <>
                               <span>|</span>
-                              <span>{log.device.screenWidth}x{log.device.screenHeight}</span>
+                              <span>
+                                {log.device.screenWidth}x
+                                {log.device.screenHeight}
+                              </span>
                             </>
                           ) : null}
                           {log.device.pwa && (
@@ -310,12 +394,20 @@ export default function DiagnosticsPage() {
                           )}
                         </>
                       )}
-                      {log.source && <span className="text-chalk-white/30">· {log.source}</span>}
+                      {log.source && (
+                        <span className="text-chalk-white/30">
+                          · {log.source}
+                        </span>
+                      )}
                     </div>
                     {log.stack && (
                       <details className="mt-1">
-                        <summary className="text-chalk-white/40 text-xs cursor-pointer">Stack trace</summary>
-                        <pre className="text-xs text-chalk-white/30 mt-1 overflow-x-auto whitespace-pre-wrap">{log.stack}</pre>
+                        <summary className="text-chalk-white/40 text-xs cursor-pointer">
+                          Stack trace
+                        </summary>
+                        <pre className="text-xs text-chalk-white/30 mt-1 overflow-x-auto whitespace-pre-wrap">
+                          {log.stack}
+                        </pre>
                       </details>
                     )}
                   </div>

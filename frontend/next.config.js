@@ -9,6 +9,12 @@ const connectSrc = ["'self'", apiUrl, supabaseUrl, "https://*.supabase.co"]
 
 const nextConfig = {
   reactStrictMode: true,
+  // Lint runs as its own step (`npm run lint` → eslint CLI), NOT during
+  // `next build`. This keeps the production/deploy build green even if a lint
+  // rule trips, so a style nit can never block a deploy. CI/pre-push runs lint.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [
       {

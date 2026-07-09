@@ -11,17 +11,11 @@ import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { fetchWithRetry } from "@/lib/fetch-retry";
-
-interface StructuredSection {
-  type: string;
-  content?: string;
-  svg?: string | string[];
-  img_b64?: string;
-  level?: number;
-  caption?: string;
-  left?: StructuredSection[];
-  right?: StructuredSection[];
-}
+import {
+  type StructuredSection,
+  stripFigurePayloads,
+  restoreFigurePayloads,
+} from "@/lib/figure-payloads";
 
 interface StructuredPage {
   title?: string;
@@ -131,8 +125,13 @@ export default function DocumentViewer({
   useEffect(() => {
     if (showOriginal) return;
     const timer = setTimeout(() => {
-      if ((window as any).MathJax?.typesetPromise) {
-        (window as any).MathJax.typesetPromise().catch(() => {});
+      const mj = (
+        window as Window & {
+          MathJax?: { typesetPromise?: () => Promise<unknown> };
+        }
+      ).MathJax;
+      if (mj?.typesetPromise) {
+        mj.typesetPromise().catch(() => {});
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -198,7 +197,9 @@ export default function DocumentViewer({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              text_sections: sections,
+              // Send text only — figure crops (img_b64/svg) are re-attached from
+              // the source below, keeping the body under Vercel's ~4.5MB cap.
+              text_sections: stripFigurePayloads(sections),
               source_lang: sourceLang,
               target_lang: targetLang,
               translate_engine: translateEngine,
@@ -218,9 +219,11 @@ export default function DocumentViewer({
             idx++;
           }
           for (const sec of page.sections) {
-            newPage.sections.push(
-              idx < translated.length ? translated[idx] : sec,
-            );
+            const t = idx < translated.length ? translated[idx] : sec;
+            // Figures came back stripped — re-attach img_b64/svg from the source
+            // (R-MATH: figures must survive into the translated view). Recursive
+            // for two_column.
+            newPage.sections.push(restoreFigurePayloads([t], [sec])[0]);
             idx++;
           }
           newPages.push(newPage);

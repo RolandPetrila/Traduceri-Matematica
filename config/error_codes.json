@@ -1,16 +1,65 @@
 {
   "_comment": "Coduri de eroare structurate. Schema: E-<ARIE>-<NNN>. Citit de frontend (monitoring.ts / diagnostics) si backend (handlere). severity: error | warn | info.",
   "codes": {
-    "E-OCR-001": { "message": "OCR a esuat pentru o pagina", "severity": "error", "area": "ocr" },
-    "E-OCR-002": { "message": "Rasterizarea PDF in browser a esuat", "severity": "error", "area": "ocr" },
-    "E-OCR-003": { "message": "Toti providerii OCR au esuat (Gemini + Mistral)", "severity": "error", "area": "ocr" },
-    "E-TRANS-001": { "message": "Traducerea on-demand a esuat", "severity": "error", "area": "translate" },
-    "E-TRANS-002": { "message": "Traducerea batch a esuat pentru un fisier", "severity": "error", "area": "translate" },
-    "E-TRANS-003": { "message": "Lantul de provideri de traducere s-a epuizat", "severity": "error", "area": "translate" },
-    "E-CONV-001": { "message": "Conversia fisierului a esuat", "severity": "error", "area": "convert" },
-    "E-NET-001": { "message": "Eroare de retea la apelul API", "severity": "error", "area": "network" },
-    "E-RATE-001": { "message": "Prea multe cereri (rate limit)", "severity": "warn", "area": "network" },
-    "E-SUPA-001": { "message": "Scriere Supabase esuata (fail-open, fluxul continua)", "severity": "warn", "area": "infra" },
-    "E-APP-001": { "message": "Eroare aplicatie (ErrorBoundary)", "severity": "error", "area": "app" }
+    "E-OCR-001": {
+      "message": "OCR a esuat pentru o pagina",
+      "severity": "error",
+      "area": "ocr"
+    },
+    "E-OCR-002": {
+      "message": "Rasterizarea PDF in browser a esuat",
+      "severity": "error",
+      "area": "ocr"
+    },
+    "E-OCR-003": {
+      "message": "Toti providerii OCR au esuat (Gemini + Mistral)",
+      "severity": "error",
+      "area": "ocr"
+    },
+    "E-TRANS-001": {
+      "message": "Traducerea on-demand a esuat",
+      "severity": "error",
+      "area": "translate"
+    },
+    "E-TRANS-002": {
+      "message": "Traducerea batch a esuat pentru un fisier",
+      "severity": "error",
+      "area": "translate"
+    },
+    "E-TRANS-003": {
+      "message": "Lantul de provideri de traducere s-a epuizat",
+      "severity": "error",
+      "area": "translate"
+    },
+    "E-TRANS-004": {
+      "message": "Separatorul de batch a fost alterat de provider — reluare per-sectiune (aliniere)",
+      "severity": "warn",
+      "area": "translate"
+    },
+    "E-CONV-001": {
+      "message": "Conversia fisierului a esuat",
+      "severity": "error",
+      "area": "convert"
+    },
+    "E-NET-001": {
+      "message": "Eroare de retea la apelul API",
+      "severity": "error",
+      "area": "network"
+    },
+    "E-RATE-001": {
+      "message": "Prea multe cereri (rate limit)",
+      "severity": "warn",
+      "area": "network"
+    },
+    "E-SUPA-001": {
+      "message": "Scriere Supabase esuata (fail-open, fluxul continua)",
+      "severity": "warn",
+      "area": "infra"
+    },
+    "E-APP-001": {
+      "message": "Eroare aplicatie (ErrorBoundary)",
+      "severity": "error",
+      "area": "app"
+    }
   }
 }
