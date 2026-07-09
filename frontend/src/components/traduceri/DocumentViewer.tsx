@@ -250,15 +250,19 @@ export default function DocumentViewer({
   );
 
   const handleDownloadHtml = () => {
-    const html = buildHtmlFromPages(currentPages, activeLang);
+    // Interactive, self-contained export: all cached languages embedded + a
+    // RO/SK/EN toggle that swaps only text (layout/figures/formulas stay).
+    const html = buildInteractiveHtml(cacheRef.current, sourceLang);
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${filename}_${activeLang}.html`;
+    a.download = `${filename}_interactiv.html`;
     a.click();
     URL.revokeObjectURL(url);
-    logAction("Download HTML", { lang: activeLang });
+    logAction("Download HTML interactiv", {
+      langs: Object.keys(cacheRef.current),
+    });
   };
 
   const handlePrint = () => {
@@ -799,6 +803,183 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
     <button onclick="window.print()">Tipareste</button>
   </div>
   <main>${body}</main>
+</body>
+</html>`;
+}
+
+/**
+ * Build a SELF-CONTAINED interactive HTML export: the document is rendered once
+ * (figures + formulas + A4 layout) and a RO/SK/EN toggle swaps ONLY the text in
+ * place — layout, figures and formulas stay identical. Every language currently
+ * in the cache is embedded, so the file works offline with no API. (Print/DOCX
+ * stay single-language snapshots — a printout is one language.)
+ */
+function buildInteractiveHtml(
+  cache: TranslationCache,
+  sourceLang: string,
+): string {
+  const LANG_NAMES: Record<string, string> = { ro: "RO", sk: "SK", en: "EN" };
+  const langs = Object.keys(cache).filter((l) => (cache[l] || []).length > 0);
+  langs.sort((a, b) =>
+    a === sourceLang ? -1 : b === sourceLang ? 1 : a.localeCompare(b),
+  );
+  const sourcePages = cache[sourceLang] || [];
+
+  const renderInline = (s: string) =>
+    (s || "").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  const renderListInner = (s: string) =>
+    (s || "")
+      .split("\n")
+      .filter((l) => l.trim())
+      .map((it) => `<li>${renderInline(it.replace(/^\d+\.\s*/, ""))}</li>`)
+      .join("");
+
+  // Collect translatable node inner-HTML per language in a FIXED traversal order
+  // (title, then sections depth-first, two_column left-then-right, figures skipped)
+  // — the exact same order emitSec() assigns data-i below, so indices align 1:1.
+  const collect = (pages: StructuredPage[]): string[] => {
+    const out: string[] = [];
+    const walk = (secs: StructuredSection[]) => {
+      for (const sec of secs) {
+        if (sec.type === "figure") continue;
+        if (sec.type === "two_column") {
+          walk(sec.left || []);
+          walk(sec.right || []);
+          continue;
+        }
+        out.push(
+          sec.type === "list"
+            ? renderListInner(sec.content || "")
+            : renderInline(sec.content || ""),
+        );
+      }
+    };
+    for (const page of pages) {
+      if (page.title) out.push(renderInline(page.title));
+      walk(page.sections);
+    }
+    return out;
+  };
+
+  const TR: Record<string, string[]> = {};
+  for (const l of langs) TR[l] = collect(cache[l] || []);
+
+  // Build the visible structure from the source pages, tagging each translatable
+  // node with data-i (same increment order as collect()). Figures/captions are
+  // static (not translated — mirrors the backend, which skips figure text).
+  let i = 0;
+  const emitSec = (sec: StructuredSection): string => {
+    if (sec.type === "figure" && sec.img_b64) {
+      const cap = sec.caption
+        ? `<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>${sec.caption}</em></p>`
+        : "";
+      return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0"><img src="data:image/png;base64,${sec.img_b64}" style="max-width:100%;height:auto;background:#fff;" alt="${sec.caption || "figura"}"></div>\n${cap}`;
+    }
+    if (sec.type === "figure" && sec.svg) {
+      const svgs = Array.isArray(sec.svg) ? sec.svg : [sec.svg];
+      return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n${svgs.join("\n")}\n</div>\n`;
+    }
+    if (sec.type === "figure") {
+      return `<p><em>[Figura: ${sec.caption || "indisponibila"}]</em></p>\n`;
+    }
+    if (sec.type === "two_column") {
+      let h =
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:10px 0;"><div style="min-width:0;">';
+      for (const s of sec.left || []) h += emitSec(s);
+      h += '</div><div style="min-width:0;">';
+      for (const s of sec.right || []) h += emitSec(s);
+      h += "</div></div>\n";
+      return h;
+    }
+    if (sec.type === "list") {
+      return `<ol data-i="${i++}">${renderListInner(sec.content || "")}</ol>\n`;
+    }
+    if (sec.type === "heading") {
+      if ((sec.content || "").length > 200) {
+        return `<p data-i="${i++}">${renderInline(sec.content || "")}</p>\n`;
+      }
+      const tag = `h${Math.min(sec.level || 2, 4)}`;
+      return `<${tag} data-i="${i++}">${renderInline(sec.content || "")}</${tag}>\n`;
+    }
+    return `<p data-i="${i++}">${renderInline(sec.content || "")}</p>\n`;
+  };
+
+  let body = "";
+  for (const page of sourcePages) {
+    let content = "";
+    if (page.title) {
+      content += `<h1 data-i="${i++}">${renderInline(page.title)}</h1>\n`;
+    }
+    for (const sec of page.sections) content += emitSec(sec);
+    body += `<section class="paper"><div class="paper-content">\n${content}</div></section>\n`;
+  }
+
+  const langButtons = langs
+    .map(
+      (l, idx) =>
+        `<button class="langbtn${idx === 0 ? " active" : ""}" data-lang="${l}" onclick="setLang('${l}')">${LANG_NAMES[l] || l.toUpperCase()}</button>`,
+    )
+    .join("");
+
+  // Plain (no template-literal) JS so the toggle embeds cleanly. Swaps text by
+  // data-i and re-typesets MathJax so formulas re-render in the new language.
+  const toggleScript =
+    "var TR=" +
+    JSON.stringify(TR) +
+    ";function setLang(lang){var nodes=document.querySelectorAll('[data-i]');var arr=TR[lang]||[];for(var j=0;j<nodes.length;j++){var idx=+nodes[j].getAttribute('data-i');if(arr[idx]!=null)nodes[j].innerHTML=arr[idx];}var b=document.querySelectorAll('.langbtn');for(var k=0;k<b.length;k++){b[k].classList.toggle('active',b[k].getAttribute('data-lang')===lang);}document.documentElement.setAttribute('lang',lang);if(window.MathJax&&window.MathJax.typesetPromise){try{window.MathJax.typesetClear&&window.MathJax.typesetClear();}catch(e){}window.MathJax.typesetPromise();}}";
+
+  return `<!doctype html>
+<html lang="${sourceLang}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traducere Matematica</title>
+  <style>
+    :root { --text-color:#1b1b1b; --paper-bg:#ffffff; --font-size:12pt; --line-height:1.45;
+      --page-width:210mm; --page-padding-x:12mm; --page-padding-y:12mm; }
+    @page { size:A4; margin:0; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:0; color:var(--text-color); background:#f2f2f2;
+      font-family:"Cambria","Times New Roman",serif; font-size:var(--font-size); line-height:var(--line-height); }
+    .toolbar { position:sticky; top:0; z-index:100; display:flex; gap:12px; align-items:center;
+      justify-content:space-between; padding:10px 14px; background:#192031; color:#fff;
+      font-family:"Segoe UI",Arial,sans-serif; font-size:13px; flex-wrap:wrap; }
+    .toolbar .langs { display:flex; gap:6px; }
+    .toolbar button { border:0; border-radius:6px; padding:8px 12px; background:#dce8ff;
+      color:#121212; cursor:pointer; font-weight:600; }
+    .toolbar .langbtn.active { background:#f5d565; outline:2px solid #fff; }
+    main { max-width:calc(var(--page-width) + 24px); margin:18px auto; padding:0 12px 24px; }
+    .paper { width:var(--page-width); min-height:297mm; margin:0 auto 16px;
+      padding:var(--page-padding-y) var(--page-padding-x); background:var(--paper-bg);
+      box-shadow:0 2px 14px rgba(0,0,0,.12); }
+    .paper-content { overflow-wrap:break-word; }
+    h1,h2,h3,h4 { margin-top:1.1em; margin-bottom:.42em; line-height:1.22; page-break-after:avoid; }
+    p,li { page-break-inside:avoid; }
+    hr { border:none; border-top:1px solid #cfcfcf; margin:1em 0; }
+    ul,ol { margin-top:0.45em; margin-bottom:0.6em; }
+    li { margin-bottom:0.2em; }
+    img { max-width:100%; height:auto; }
+    svg { max-width:100%; height:auto; }
+    .MathJax { font-size:1em !important; }
+    @media print {
+      body { background:#fff; } .toolbar { display:none !important; }
+      main { max-width:none; margin:0; padding:0; }
+      .paper { margin:0; box-shadow:none; break-after:page; page-break-after:always; }
+      .paper:last-child { break-after:auto; page-break-after:auto; }
+    }
+  </style>
+  <script>
+    window.MathJax = { tex: { inlineMath: [['$','$'],['\\\\(','\\\\)']], displayMath: [['$$','$$'],['\\\\[','\\\\]']] }, svg: { fontCache:'global' } };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js"></script>
+</head>
+<body>
+  <div class="toolbar">
+    <div>Traducere matematica — ${sourcePages.length} pagina(e) · alege limba:</div>
+    <div class="langs">${langButtons}<button onclick="window.print()">Tipareste</button></div>
+  </div>
+  <main>${body}</main>
+  <script>${toggleScript}</script>
 </body>
 </html>`;
 }

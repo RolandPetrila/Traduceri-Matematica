@@ -9,14 +9,19 @@ interface FileUploadProps {
 }
 
 const MAX_FILES = 10;
-const MAX_SIZE = 4 * 1024 * 1024; // 4MB — safe limit for Render free tier (512MB RAM)
-const ACCEPTED_MIMES = [
-  "image/jpeg",
-  "image/png",
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
-const ACCEPTED_EXTS = [".jpg", ".jpeg", ".png", ".pdf", ".docx"];
+const MAX_SIZE = 4 * 1024 * 1024; // 4MB — safe limit for the serverless function body
+// OCR reads IMAGES (PDFs are rasterized in the browser). Word .docx cannot be
+// rasterized/OCR-ed, so it is NOT accepted here — a clear message tells the user
+// to save it as PDF (see isDocx below). File conversion for .docx lives in the
+// separate Convertor module.
+const ACCEPTED_MIMES = ["image/jpeg", "image/png", "application/pdf"];
+const ACCEPTED_EXTS = [".jpg", ".jpeg", ".png", ".pdf"];
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function isDocx(file: File): boolean {
+  return file.type === DOCX_MIME || file.name.toLowerCase().endsWith(".docx");
+}
 
 function isAccepted(file: File): boolean {
   if (ACCEPTED_MIMES.includes(file.type)) return true;
@@ -27,12 +32,20 @@ function isAccepted(file: File): boolean {
 function validateFiles(files: File[]): { valid: File[]; errors: string[] } {
   const errors: string[] = [];
   const valid = files.filter((f) => {
+    if (isDocx(f)) {
+      errors.push(
+        `${f.name}: documentele Word (.docx) nu pot fi citite de OCR. Salvează-l ca PDF (în Word: Fișier → Salvare ca → PDF, sau Tipărire → „Microsoft Print to PDF") și încarcă PDF-ul.`,
+      );
+      return false;
+    }
     if (!isAccepted(f)) {
-      errors.push(`${f.name}: format nesuportat`);
+      errors.push(`${f.name}: format nesuportat (acceptate: JPG, PNG, PDF)`);
       return false;
     }
     if (f.size > MAX_SIZE) {
-      errors.push(`${f.name}: depaseste limita de 4MB (${(f.size / 1024 / 1024).toFixed(1)}MB)`);
+      errors.push(
+        `${f.name}: depaseste limita de 4MB (${(f.size / 1024 / 1024).toFixed(1)}MB)`,
+      );
       return false;
     }
     return true;
@@ -64,7 +77,7 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
         onFilesChange(valid);
       }
     },
-    [onFilesChange]
+    [onFilesChange],
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -120,7 +133,7 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
           ref={inputRef}
           type="file"
           multiple
-          accept=".jpg,.jpeg,.png,.pdf,.docx"
+          accept=".jpg,.jpeg,.png,.pdf"
           className="hidden"
           onChange={handleSelect}
         />
@@ -129,14 +142,26 @@ export default function FileUpload({ files, onFilesChange }: FileUploadProps) {
           Trage fotografiile aici sau click pentru selectie
         </p>
         <p className="text-sm opacity-50 mt-1">
-          JPG, PNG, PDF sau DOCX &mdash; maxim {MAX_FILES} fisiere, 4MB/fisier
+          JPG, PNG sau PDF &mdash; maxim {MAX_FILES} fisiere, 4MB/fisier
+          <br />
+          <span className="opacity-70">
+            (Word .docx? Salvează-l întâi ca PDF)
+          </span>
         </p>
       </div>
 
       {fileErrors.length > 0 && (
-        <div className="mt-2 p-3 rounded-lg" style={{ background: "rgba(232, 131, 107, 0.15)", border: "1px solid var(--chalk-red)" }}>
+        <div
+          className="mt-2 p-3 rounded-lg"
+          style={{
+            background: "rgba(232, 131, 107, 0.15)",
+            border: "1px solid var(--chalk-red)",
+          }}
+        >
           {fileErrors.map((err, i) => (
-            <p key={i} className="text-sm text-chalk-red">{err}</p>
+            <p key={i} className="text-sm text-chalk-red">
+              {err}
+            </p>
           ))}
         </div>
       )}
