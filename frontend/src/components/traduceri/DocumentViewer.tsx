@@ -345,6 +345,8 @@ export default function DocumentViewer({
       logAction("Download DOCX", { lang: activeLang });
     } catch (err) {
       logError(err instanceof Error ? err.message : "DOCX download failed", {
+        source: "export",
+        errorCode: "E-CONV-002",
         context: { lang: activeLang },
       });
       handleDownloadHtml();

@@ -8,13 +8,13 @@ import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
 
 const CONVERSION_MAP: Record<string, string[]> = {
-  "pdf": ["docx", "html", "jpg", "png"],
-  "docx": ["pdf", "html"],
-  "jpg": ["pdf", "png"],
-  "jpeg": ["pdf", "png"],
-  "png": ["pdf", "jpg"],
-  "md": ["html", "pdf"],
-  "html": ["pdf", "md", "docx"],
+  pdf: ["docx", "html", "jpg", "png"],
+  docx: ["pdf", "html"],
+  jpg: ["pdf", "png"],
+  jpeg: ["pdf", "png"],
+  png: ["pdf", "jpg"],
+  md: ["html", "pdf"],
+  html: ["pdf", "md", "docx"],
 };
 
 const OPERATIONS = [
@@ -26,11 +26,36 @@ const OPERATIONS = [
 ];
 
 const PDF_EDIT_ACTIONS = [
-  { id: "rotate", label: "Rotire pagini", icon: "\u{1F504}", description: "Roteste paginile selectate (90/180/270 grade)" },
-  { id: "delete", label: "Stergere pagini", icon: "\u{1F5D1}", description: "Sterge paginile selectate din PDF" },
-  { id: "reorder", label: "Reordonare", icon: "\u{2195}", description: "Schimba ordinea paginilor" },
-  { id: "optimize", label: "Optimizare", icon: "\u{26A1}", description: "Reduce marimea fisierului" },
-  { id: "watermark", label: "Watermark", icon: "\u{1F4A7}", description: "Adauga text watermark pe fiecare pagina" },
+  {
+    id: "rotate",
+    label: "Rotire pagini",
+    icon: "\u{1F504}",
+    description: "Roteste paginile selectate (90/180/270 grade)",
+  },
+  {
+    id: "delete",
+    label: "Stergere pagini",
+    icon: "\u{1F5D1}",
+    description: "Sterge paginile selectate din PDF",
+  },
+  {
+    id: "reorder",
+    label: "Reordonare",
+    icon: "\u{2195}",
+    description: "Schimba ordinea paginilor",
+  },
+  {
+    id: "optimize",
+    label: "Optimizare",
+    icon: "\u{26A1}",
+    description: "Reduce marimea fisierului",
+  },
+  {
+    id: "watermark",
+    label: "Watermark",
+    icon: "\u{1F4A7}",
+    description: "Adauga text watermark pe fiecare pagina",
+  },
 ];
 
 export default function ConvertorPage() {
@@ -40,11 +65,16 @@ export default function ConvertorPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    return () => { if (progressTimer.current) clearInterval(progressTimer.current); };
+    return () => {
+      if (progressTimer.current) clearInterval(progressTimer.current);
+    };
   }, []);
 
   // PDF edit state
@@ -55,9 +85,8 @@ export default function ConvertorPage() {
   const [reorderSequence, setReorderSequence] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const detectedFormat = files.length > 0
-    ? files[0].name.split(".").pop()?.toLowerCase() || ""
-    : "";
+  const detectedFormat =
+    files.length > 0 ? files[0].name.split(".").pop()?.toLowerCase() || "" : "";
 
   const availableTargets = CONVERSION_MAP[detectedFormat] || [];
 
@@ -80,20 +109,28 @@ export default function ConvertorPage() {
       operation,
       targetFormat,
       fileCount: files.length,
-      fileNames: files.map(f => f.name),
-      fileSizes: files.map(f => f.size),
+      fileNames: files.map((f) => f.name),
+      fileSizes: files.map((f) => f.size),
       pdfAction: operation === "edit-pdf" ? pdfAction : undefined,
     });
 
     // Simulated progress
     let step = 0;
-    const labels = ["Se pregatesc fisierele...", "Se trimite catre server...", "Se proceseaza...", "Se finalizeaza..."];
+    const labels = [
+      "Se pregatesc fisierele...",
+      "Se trimite catre server...",
+      "Se proceseaza...",
+      "Se finalizeaza...",
+    ];
     progressTimer.current = setInterval(() => {
       setProgress((prev) => {
         const next = prev + Math.random() * 6 + 2;
         if (next > 90) return prev;
         const idx = Math.min(Math.floor(next / 25), labels.length - 1);
-        if (idx !== step) { step = idx; setProgressLabel(labels[idx]); }
+        if (idx !== step) {
+          step = idx;
+          setProgressLabel(labels[idx]);
+        }
         return next;
       });
     }, 400);
@@ -111,8 +148,10 @@ export default function ConvertorPage() {
       formData.append("pdf_action", pdfAction);
       if (pdfAction === "rotate") formData.append("rotate_angle", rotateAngle);
       if (pageRange) formData.append("page_range", pageRange);
-      if (pdfAction === "watermark") formData.append("watermark_text", watermarkText);
-      if (pdfAction === "reorder") formData.append("reorder_sequence", reorderSequence);
+      if (pdfAction === "watermark")
+        formData.append("watermark_text", watermarkText);
+      if (pdfAction === "reorder")
+        formData.append("reorder_sequence", reorderSequence);
     }
 
     const t0 = Date.now();
@@ -130,7 +169,9 @@ export default function ConvertorPage() {
           throw new Error(data.error || `Eroare server: ${res.status}`);
         }
         const text = await res.text();
-        throw new Error(`Eroare conversie: ${res.status} — ${text.substring(0, 200)}`);
+        throw new Error(
+          `Eroare conversie: ${res.status} — ${text.substring(0, 200)}`,
+        );
       }
 
       const blob = await res.blob();
@@ -146,11 +187,16 @@ export default function ConvertorPage() {
       const a = document.createElement("a");
       a.href = url;
       const baseName = files[0].name.replace(/\.[^.]+$/, "");
-      const ext = operation === "merge" ? "pdf"
-        : operation === "compress" ? detectedFormat
-        : operation === "split" ? "pdf"
-        : operation === "edit-pdf" ? "pdf"
-        : targetFormat || "bin";
+      const ext =
+        operation === "merge"
+          ? "pdf"
+          : operation === "compress"
+            ? detectedFormat
+            : operation === "split"
+              ? "pdf"
+              : operation === "edit-pdf"
+                ? "pdf"
+                : targetFormat || "bin";
       a.download = serverFilename || `${baseName}_${operation}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
@@ -158,34 +204,41 @@ export default function ConvertorPage() {
       const duration = Date.now() - t0;
       setProgress(100);
       setProgressLabel("Complet!");
-      setResult({ success: true, message: `Fisier procesat cu succes! (${(duration / 1000).toFixed(1)}s)` });
+      setResult({
+        success: true,
+        message: `Fisier procesat cu succes! (${(duration / 1000).toFixed(1)}s)`,
+      });
 
       logInfo("Conversie reusita", {
         operation,
         targetFormat,
         duration_ms: duration,
         outputFile: a.download,
-        fileNames: files.map(f => f.name),
+        fileNames: files.map((f) => f.name),
       });
 
       // Save to conversion history with output data for re-download
       let outputData: string | undefined;
       let outputMime: string | undefined;
       try {
-        if (blob.size < 2 * 1024 * 1024) { // Only save if < 2MB to avoid localStorage overflow
+        if (blob.size < 2 * 1024 * 1024) {
+          // Only save if < 2MB to avoid localStorage overflow
           const arrayBuf = await blob.arrayBuffer();
           const bytes = new Uint8Array(arrayBuf);
           let binary = "";
-          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          for (let i = 0; i < bytes.length; i++)
+            binary += String.fromCharCode(bytes[i]);
           outputData = btoa(binary);
           outputMime = blob.type;
         }
-      } catch { /* skip if encoding fails */ }
+      } catch {
+        /* skip if encoding fails */
+      }
 
       addConversionToHistory({
         id: Date.now().toString(),
         date: new Date().toISOString(),
-        files: files.map(f => f.name),
+        files: files.map((f) => f.name),
         operation,
         target_format: targetFormat,
         status: "success",
@@ -198,7 +251,11 @@ export default function ConvertorPage() {
       const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setProgress(0);
       setResult({ success: false, message });
-      logError(message, { source: "conversion", context: { operation, targetFormat, fileCount: files.length } });
+      logError(message, {
+        source: "conversion",
+        errorCode: "E-CONV-001",
+        context: { operation, targetFormat, fileCount: files.length },
+      });
     } finally {
       if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);
@@ -219,7 +276,11 @@ export default function ConvertorPage() {
         {OPERATIONS.map((op) => (
           <button
             key={op.id}
-            onClick={() => { logAction("Convertor: operatie schimbata", { operation: op.id }); setOperation(op.id); setPdfAction(""); }}
+            onClick={() => {
+              logAction("Convertor: operatie schimbata", { operation: op.id });
+              setOperation(op.id);
+              setPdfAction("");
+            }}
             className={`chalk-btn text-sm ${
               operation === op.id ? "!border-chalk-yellow !bg-white/10" : ""
             }`}
@@ -250,7 +311,9 @@ export default function ConvertorPage() {
         {files.length === 0 ? (
           <div>
             <p className="text-2xl mb-2 opacity-60">&#x1F4C1;</p>
-            <p className="text-lg">Trage fisierele aici sau click pentru selectie</p>
+            <p className="text-lg">
+              Trage fisierele aici sau click pentru selectie
+            </p>
             <p className="text-sm opacity-40 mt-1">
               Formate: PDF, DOCX, JPG, PNG, MD, HTML
             </p>
@@ -262,10 +325,13 @@ export default function ConvertorPage() {
             </p>
             <p className="text-sm opacity-60 mt-1">
               Format detectat: <strong>{detectedFormat.toUpperCase()}</strong>
-              {files.length > 1 && ` | ${files.map(f => f.name).join(", ")}`}
+              {files.length > 1 && ` | ${files.map((f) => f.name).join(", ")}`}
             </p>
             <button
-              onClick={(e) => { e.stopPropagation(); clearFiles(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                clearFiles();
+              }}
               className="mt-2 text-xs text-chalk-red hover:opacity-80"
             >
               &#x2715; Sterge selectia
@@ -282,9 +348,14 @@ export default function ConvertorPage() {
             {availableTargets.map((fmt) => (
               <button
                 key={fmt}
-                onClick={() => { logAction("Convertor: format selectat", { format: fmt }); setTargetFormat(fmt); }}
+                onClick={() => {
+                  logAction("Convertor: format selectat", { format: fmt });
+                  setTargetFormat(fmt);
+                }}
                 className={`chalk-btn ${
-                  targetFormat === fmt ? "!border-chalk-yellow !bg-white/10" : ""
+                  targetFormat === fmt
+                    ? "!border-chalk-yellow !bg-white/10"
+                    : ""
                 }`}
               >
                 {fmt.toUpperCase()}
@@ -304,11 +375,15 @@ export default function ConvertorPage() {
                 key={action.id}
                 onClick={() => setPdfAction(action.id)}
                 className={`chalk-btn text-sm text-left ${
-                  pdfAction === action.id ? "!border-chalk-yellow !bg-white/10" : ""
+                  pdfAction === action.id
+                    ? "!border-chalk-yellow !bg-white/10"
+                    : ""
                 }`}
               >
                 <span className="mr-1">{action.icon}</span> {action.label}
-                <span className="block text-xs opacity-50 mt-1">{action.description}</span>
+                <span className="block text-xs opacity-50 mt-1">
+                  {action.description}
+                </span>
               </button>
             ))}
           </div>
@@ -316,7 +391,9 @@ export default function ConvertorPage() {
           {/* Page range input */}
           {(pdfAction === "rotate" || pdfAction === "delete") && (
             <div>
-              <label className="text-sm opacity-70">Pagini (ex: 1,3,5-8 sau &quot;all&quot;):</label>
+              <label className="text-sm opacity-70">
+                Pagini (ex: 1,3,5-8 sau &quot;all&quot;):
+              </label>
               <input
                 type="text"
                 value={pageRange}
@@ -337,7 +414,9 @@ export default function ConvertorPage() {
                     key={angle}
                     onClick={() => setRotateAngle(angle)}
                     className={`chalk-btn text-sm ${
-                      rotateAngle === angle ? "!border-chalk-yellow !bg-white/10" : ""
+                      rotateAngle === angle
+                        ? "!border-chalk-yellow !bg-white/10"
+                        : ""
                     }`}
                   >
                     {angle}&deg;
@@ -364,7 +443,9 @@ export default function ConvertorPage() {
           {/* Reorder sequence */}
           {pdfAction === "reorder" && (
             <div>
-              <label className="text-sm opacity-70">Ordine noua (ex: 3,1,2,5,4):</label>
+              <label className="text-sm opacity-70">
+                Ordine noua (ex: 3,1,2,5,4):
+              </label>
               <input
                 type="text"
                 value={reorderSequence}
@@ -380,14 +461,17 @@ export default function ConvertorPage() {
       {/* Info for merge */}
       {operation === "merge" && (
         <p className="text-sm opacity-50 text-center">
-          Selecteaza mai multe fisiere PDF pentru a le uni intr-un singur document.
+          Selecteaza mai multe fisiere PDF pentru a le uni intr-un singur
+          document.
         </p>
       )}
 
       {/* Info for split */}
       {operation === "split" && (
         <div>
-          <label className="text-sm opacity-70">Pagini de extras (ex: 1-3,5,7-10):</label>
+          <label className="text-sm opacity-70">
+            Pagini de extras (ex: 1-3,5,7-10):
+          </label>
           <input
             type="text"
             value={pageRange}
@@ -399,15 +483,19 @@ export default function ConvertorPage() {
       )}
 
       {/* Progress bar */}
-      {isProcessing && <ProgressBar progress={progress} label={progressLabel} />}
+      {isProcessing && (
+        <ProgressBar progress={progress} label={progressLabel} />
+      )}
 
       {/* Result message */}
       {result && (
-        <div className={`rounded-lg p-4 text-center ${
-          result.success
-            ? "bg-green-900/20 border border-green-700/30"
-            : "bg-red-900/20 border border-red-700/30"
-        }`}>
+        <div
+          className={`rounded-lg p-4 text-center ${
+            result.success
+              ? "bg-green-900/20 border border-green-700/30"
+              : "bg-red-900/20 border border-red-700/30"
+          }`}
+        >
           <p className={result.success ? "text-chalk-green" : "text-chalk-red"}>
             {result.message}
           </p>
@@ -418,7 +506,11 @@ export default function ConvertorPage() {
       <div className="text-center">
         <button
           onClick={handleProcess}
-          disabled={files.length === 0 || isProcessing || (operation === "convert" && !targetFormat)}
+          disabled={
+            files.length === 0 ||
+            isProcessing ||
+            (operation === "convert" && !targetFormat)
+          }
           className="chalk-btn text-xl px-8 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {isProcessing ? "Se proceseaza..." : "Proceseaza"}

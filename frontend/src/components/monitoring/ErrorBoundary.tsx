@@ -26,6 +26,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     logError(error.message, {
       stack: error.stack,
       source: "react-error-boundary",
+      errorCode: "E-APP-001",
       context: { componentStack: info.componentStack || undefined },
     });
   }

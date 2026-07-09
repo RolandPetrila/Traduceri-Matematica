@@ -41,9 +41,34 @@
       "severity": "error",
       "area": "convert"
     },
+    "E-CONV-002": {
+      "message": "Export document esuat (DOCX/PDF/HTML)",
+      "severity": "error",
+      "area": "convert"
+    },
+    "E-VALID-001": {
+      "message": "Output gol/incomplet — executia nu a livrat rezultat (HTML/fisier gol)",
+      "severity": "error",
+      "area": "validate"
+    },
+    "E-VALID-002": {
+      "message": "Output suspect — text prea scurt sau structura posibil pierduta",
+      "severity": "warn",
+      "area": "validate"
+    },
+    "E-VALID-003": {
+      "message": "Posibil element matematic pierdut (nicio formula LaTeX detectata) — R-MATH",
+      "severity": "warn",
+      "area": "validate"
+    },
     "E-NET-001": {
       "message": "Eroare de retea la apelul API",
       "severity": "error",
+      "area": "network"
+    },
+    "E-NET-002": {
+      "message": "Raspuns HTTP cu eroare (4xx/5xx) de la API — executia nu a livrat",
+      "severity": "warn",
       "area": "network"
     },
     "E-RATE-001": {

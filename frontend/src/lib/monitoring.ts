@@ -45,7 +45,8 @@ function detectDevice(): DeviceInfo {
 
   let type: DeviceInfo["type"] = "desktop";
   if (/Mobi|Android/i.test(ua)) type = "mobile";
-  else if (/iPad|Tablet/i.test(ua) || (width >= 600 && width <= 1024)) type = "tablet";
+  else if (/iPad|Tablet/i.test(ua) || (width >= 600 && width <= 1024))
+    type = "tablet";
 
   let os = "Unknown";
   if (/Windows/i.test(ua)) os = "Windows";
@@ -63,7 +64,8 @@ function detectDevice(): DeviceInfo {
   const pwa =
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as Navigator & { standalone?: boolean }).standalone === true);
+      (window.navigator as Navigator & { standalone?: boolean }).standalone ===
+        true);
 
   return { type, os, browser, screenWidth: width, screenHeight: height, pwa };
 }
@@ -74,7 +76,9 @@ function generateId(): string {
 
 function saveLogLocally(log: ErrorLog): void {
   try {
-    const stored: ErrorLog[] = JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
+    const stored: ErrorLog[] = JSON.parse(
+      localStorage.getItem(LOGS_KEY) || "[]",
+    );
     stored.unshift(log);
     if (stored.length > MAX_LOGS) stored.length = MAX_LOGS;
     localStorage.setItem(LOGS_KEY, JSON.stringify(stored));
@@ -118,23 +122,42 @@ export function logError(message: string, opts?: LogOpts): void {
 }
 
 /** Log an error with an explicit structured code (see config/error_codes.json). */
-export function logCoded(errorCode: string, message: string, opts?: Omit<LogOpts, "errorCode">): void {
+export function logCoded(
+  errorCode: string,
+  message: string,
+  opts?: Omit<LogOpts, "errorCode">,
+): void {
   logError(message, { ...opts, errorCode });
 }
 
-export function logWarn(message: string, context?: Record<string, unknown>): void {
-  const log = createLog("warn", message, { source: "app", context });
+export function logWarn(message: string, opts?: LogOpts): void {
+  const log = createLog("warn", message, opts);
   saveLogLocally(log);
   sendLogToServer(log);
 }
 
-export function logInfo(message: string, context?: Record<string, unknown>): void {
+/** Log a warning with an explicit structured code (see config/error_codes.json). */
+export function logCodedWarn(
+  errorCode: string,
+  message: string,
+  opts?: Omit<LogOpts, "errorCode">,
+): void {
+  logWarn(message, { ...opts, errorCode });
+}
+
+export function logInfo(
+  message: string,
+  context?: Record<string, unknown>,
+): void {
   const log = createLog("info", message, { source: "app", context });
   saveLogLocally(log);
   sendLogToServer(log);
 }
 
-export function logAction(message: string, context?: Record<string, unknown>): void {
+export function logAction(
+  message: string,
+  context?: Record<string, unknown>,
+): void {
   const log = createLog("action", message, { source: "user-action", context });
   saveLogLocally(log);
   sendLogToServer(log);
@@ -176,9 +199,15 @@ export function initGlobalErrorHandlers(): void {
     _origWarn.apply(console, args);
     if (_intercepting) return;
     _intercepting = true;
-    const msg = args.map((a) => (typeof a === "string" ? a : String(a))).join(" ");
+    const msg = args
+      .map((a) => (typeof a === "string" ? a : String(a)))
+      .join(" ");
     // Skip dev noise: React DevTools, HMR, webpack
-    if (!msg.includes("Download the React DevTools") && !msg.includes("[HMR]") && !msg.includes("webpack")) {
+    if (
+      !msg.includes("Download the React DevTools") &&
+      !msg.includes("[HMR]") &&
+      !msg.includes("webpack")
+    ) {
       logWarn(msg, { source: "console" });
     }
     _intercepting = false;
@@ -188,8 +217,14 @@ export function initGlobalErrorHandlers(): void {
     _origError.apply(console, args);
     if (_intercepting) return;
     _intercepting = true;
-    const msg = args.map((a) => (typeof a === "string" ? a : String(a))).join(" ");
-    if (!msg.includes("[HMR]") && !msg.includes("webpack") && !msg.includes("Failed to process log")) {
+    const msg = args
+      .map((a) => (typeof a === "string" ? a : String(a)))
+      .join(" ");
+    if (
+      !msg.includes("[HMR]") &&
+      !msg.includes("webpack") &&
+      !msg.includes("Failed to process log")
+    ) {
       logError(msg, { source: "console" });
     }
     _intercepting = false;
@@ -198,7 +233,12 @@ export function initGlobalErrorHandlers(): void {
   // --- API Interceptor: log every /api/* call with status + duration ---
   const _origFetch = window.fetch;
   window.fetch = async function (input: RequestInfo | URL, init?: RequestInit) {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
 
     // Skip internal log calls (prevents infinite loop)
     if (!url.startsWith("/api/") || url.includes("/api/logs")) {
@@ -209,13 +249,27 @@ export function initGlobalErrorHandlers(): void {
     const t0 = Date.now();
 
     try {
-      const response = await _origFetch.apply(this, [input, init] as Parameters<typeof fetch>);
+      const response = await _origFetch.apply(this, [input, init] as Parameters<
+        typeof fetch
+      >);
       const duration = Date.now() - t0;
 
       if (response.ok) {
-        logInfo(`API | ${method} ${url} | ${response.status} | ${duration}ms | OK`, { source: "api-interceptor" });
+        logInfo(
+          `API | ${method} ${url} | ${response.status} | ${duration}ms | OK`,
+          { source: "api-interceptor" },
+        );
       } else {
-        logWarn(`API | ${method} ${url} | ${response.status} | ${duration}ms | FAIL`, { source: "api-interceptor" });
+        // Any non-ok API response is an execution that did not deliver → give it a
+        // structured code so /diagnostics surfaces it (413/500/404/…), not a bare warn.
+        logWarn(
+          `API | ${method} ${url} | ${response.status} | ${duration}ms | FAIL`,
+          {
+            source: "api-interceptor",
+            errorCode: "E-NET-002",
+            context: { status: response.status, url, method },
+          },
+        );
       }
       return response;
     } catch (error) {
