@@ -28,7 +28,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 
 ## Stack v4.0
 
-- Frontend: Next.js 14 + Tailwind CSS + TypeScript (deploy Vercel)
+- Frontend: Next.js 15 + Tailwind CSS + TypeScript (deploy Vercel)
 - Backend: Python serverless stdlib (`api/*.py`, handlere Vercel) + shared lib (`api/lib/`) — apeluri urllib, fara framework
 - AI OCR: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode) → fallback Mistral OCR — text + bbox figuri
 - AI Traducere: DeepL Free (principal) → NLLB / OpenRouter / Gemini / Groq (lanturi fallback)

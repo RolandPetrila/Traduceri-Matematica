@@ -14,7 +14,7 @@ Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 
 ## Stack
 
-- **Frontend**: Next.js 14 + Tailwind CSS + TypeScript (deploy Vercel)
+- **Frontend**: Next.js 15 + Tailwind CSS + TypeScript (deploy Vercel)
 - **Backend**: Python serverless (`api/*.py`, handlere Vercel) + shared lib (`api/lib/`)
 - **AI OCR**: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode), fallback Mistral OCR
 - **AI Traducere**: DeepL Free (principal) → NLLB / OpenRouter / Gemini / Groq (fallback)
@@ -53,7 +53,7 @@ Backend API: http://localhost:8000
 api/                  Handlere Python serverless (Vercel)
   lib/                Module partajate (OCR, traducere, HTML, crop, Supabase)
   fonts/              DejaVu Sans (pentru PDF diacritice)
-frontend/             Next.js 14 app (Vercel)
+frontend/             Next.js 15 app (Vercel)
   src/app/            Pagini (traduceri, convertor, diagnostics)
   src/components/     Componente React
   src/lib/            Utilitare (cache, monitoring, storage)
@@ -65,15 +65,15 @@ vercel.json           Config functii Python (maxDuration 60s)
 
 ## API Endpoints
 
-| Endpoint | Metoda | Descriere |
-|----------|--------|-----------|
-| `/api/health` | GET | Health check + versiune |
-| `/api/ocr` | POST | OCR o pagina (fara traducere) — pas 2 din flow |
-| `/api/translate-text` | POST | Traducere text on-demand (fara OCR) — pas 3 |
-| `/api/convert` | POST | Conversie fisiere (PDF/DOCX/HTML/MD/IMG) |
-| `/api/deepl-usage` | GET | Cota DeepL combinata (2 chei) |
-| `/api/gemini-usage` | GET | Cota Gemini (contor Supabase) |
-| `/api/logs` | GET/POST | Log-uri diagnostic (via Supabase) |
+| Endpoint              | Metoda   | Descriere                                      |
+| --------------------- | -------- | ---------------------------------------------- |
+| `/api/health`         | GET      | Health check + versiune                        |
+| `/api/ocr`            | POST     | OCR o pagina (fara traducere) — pas 2 din flow |
+| `/api/translate-text` | POST     | Traducere text on-demand (fara OCR) — pas 3    |
+| `/api/convert`        | POST     | Conversie fisiere (PDF/DOCX/HTML/MD/IMG)       |
+| `/api/deepl-usage`    | GET      | Cota DeepL combinata (2 chei)                  |
+| `/api/gemini-usage`   | GET      | Cota Gemini (contor Supabase)                  |
+| `/api/logs`           | GET/POST | Log-uri diagnostic (via Supabase)              |
 
 ## Licenta
 

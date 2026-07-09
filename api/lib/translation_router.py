@@ -72,7 +72,7 @@ def gemini_request(contents: list, api_key: str) -> str:
 def ocr_with_gemini(image_bytes: bytes, mime_type: str, source_lang: str) -> str:
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set — configureaza variabila in Render dashboard")
+        raise RuntimeError("GOOGLE_AI_API_KEY not set — configureaza variabila in Vercel (env vars proiect API)")
 
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     print(f"[OCR] Processing image: {len(image_bytes)} bytes, mime={mime_type}, lang={source_lang}", file=sys.stderr)

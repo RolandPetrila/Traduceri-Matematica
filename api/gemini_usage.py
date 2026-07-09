@@ -1,7 +1,9 @@
-"""Endpoint GET /api/gemini-usage — in-memory Gemini call counter.
+"""Endpoint GET /api/gemini-usage — daily Gemini call counter (Supabase-backed).
 
-Returns daily call count vs free tier limits (2600 RPD total).
-Note: resets on server restart (Render free tier cold starts).
+Returns daily call count vs free tier limits (2600 RPD total). The count is
+persisted in Supabase (`gemini_counter` table, atomic RPC) so it survives across
+serverless invocations on Vercel; a local in-memory fallback is used if Supabase
+is unavailable.
 """
 
 from __future__ import annotations
