@@ -1,62 +1,37 @@
-# RESUME — Deploy Vercel (checkpoint 2026-07-09)
+# RESUME — Deploy Vercel ✅ LIVE (2026-07-09)
 
-> **Sesiune nouă: citește acest fișier + `99_Plan_vs_Audit/PLAN_v3.md`, apoi continuă de la „URMĂTORUL PAS".**
-> Branch: `faza-g-editor` (tot pushed pe origin). Ultim commit deploy: `942eae2` (REV8).
->
-> 🔌 **NOU (2026-07-09): plugin-ul Vercel e instalat în Claude Code** (`vercel-plugin@vercel` v0.45.1, user scope; necesită sesiune nouă ca să se încarce). Sesiunea NOUĂ îl are activ → **folosește agentul `deployment-expert` sau comanda `/vercel-plugin:deploy prod`** (+ skill-urile `deployments-cicd` / `vercel-functions` / `env-vars`) ca să finalizezi deploy-ul cu **expertiză Vercel reală, nu ghicit**. Cel mai probabil acolo se rezolvă corect „Output Directory empty" (config proiect Python-only). Telemetrie off: `setx VERCEL_PLUGIN_TELEMETRY off`.
+> Branch `faza-g-editor` (tot pushed). Deploy v4 pe Vercel = **FĂCUT, aplicația e LIVE.**
 
-## STAREA EXACTĂ
+## 🎉 STARE — LIVE ȘI FUNCȚIONAL
 
-**Blocaj unic rămas:** deploy-ul proiectului Vercel **`traduceri-api`** (funcții Python, root `.`). Restul e gata.
+- 🔗 **Frontend: https://traduceri-frontend.vercel.app** (Next 15.5.20, toate rutele → 200: /traduceri /editor /asistent /convertor /diagnostics)
+- 🔗 **API: https://traduceri-api.vercel.app** (`/api/health` → 200; funcții Python + `api/lib/` merg la runtime)
+- ✅ **Cablat**: `NEXT_PUBLIC_API_URL` = API, `ALLOWED_ORIGIN` = frontend, **CORS verificat** (frontend→API OK). Chei pe `traduceri-api` toate setate: **GOOGLE_AI_API_KEY (cheie nouă AQ., testată live 200)**, DEEPL (+_2, testată 200), GROQ, MISTRAL, HF, OPENROUTER.
 
-**Ce MERGE (verificat live):**
+## Cum s-a deployat (pt referință / repetare)
 
-- ✅ Cheie Gemini nouă `GOOGLE_AI_API_KEY` (format `AQ.`, Google AI Studio) — **testată HTTP 200** pe `gemini-2.5-flash`. Procesată în sistemul central (`.api-keys`): master + Windows env vars (length 53) + catalog. INBOX arhivat.
-- ✅ DeepL (`DEEPL_API_KEY`) — **testată HTTP 200** (312/500.000 caractere, cotă intactă). `DEEPL_API_KEY_2` există și e setată.
-- ✅ Toate env vars setate pe proiectul Vercel `traduceri-api` (production+preview): GOOGLE_AI_API_KEY, DEEPL_API_KEY(+_2), GROQ_API_KEY, MISTRAL_API_KEY, HF_TOKEN, OPENROUTER_API_KEY, ALLOWED_ORIGIN, APP_PUBLIC_URL.
-- ✅ `vercel login` funcționează (keyring). Proiectul `traduceri-api` creat + linkat corect.
-- ✅ **Vercel CLI autentificat GLOBAL** (`vercel whoami` = `rolandpetrila`, din login-ul .bat). → AI-ul poate rula `vercel --prod` / `/vercel-plugin:deploy` **direct din Bash** (nu doar Roland prin .bat), și poate itera pe erorile reale rapid. **NB:** deploy-ul de PRODUCȚIE e gated de safety classifier → cere aprobarea lui Roland la momentul rulării (sau adaugă o regulă Bash-permission pt `vercel`). Root `.vercel/` e linkat la `traduceri-api`.
-- ✅ Script `DEPLOY_VERCEL.bat` → `scripts/deploy-all-vercel.ps1` (REV8) — sintaxă validă, curge până la deploy-ul API.
+**2 proiecte Vercel** (team `rolandpetrilas-projects` / `team_Mt1Ou3cwc6O8BXh73dRACE22`):
+- `traduceri-api` (`prj_Ayi48yZMJUe38jXHzCGscmEjDC3z`) — root `.`, funcții Python. Deploy: `cd <repo>; vercel --prod --yes` (root `.vercel/` linkat).
+- `traduceri-frontend` (`prj_oV2VAykJ9rK7alVdtHiCDRwL18Kg`) — root `frontend/`, Next 15. Deploy: `cd frontend; export VERCEL_ORG_ID=team_Mt1Ou3cwc6O8BXh73dRACE22 VERCEL_PROJECT_ID=prj_oV2VAykJ9rK7alVdtHiCDRwL18Kg; vercel --prod --yes`.
 
-**Ce e BLOCAT:** `vercel --prod` pe `traduceri-api` — ultima eroare: **`Error: The Output Directory "public" is empty.`**
+`vercel.json` final (root, pt API): `buildCommand` scrie `public/index.html` (evită „Output Directory empty"), `installCommand: pip install --break-system-packages ...` (PEP668), `functions.api/*.py.maxDuration=60`.
 
-## URMĂTORUL PAS (în ordine)
+## RĂMAS (polish, nu blocaje)
 
-1. **Re-rulează `DEPLOY_VERCEL.bat`** (confirmă `REV8` în Preflight). Fix-ul REV8 (`vercel.json` buildCommand creează un `public/index.html` ne-gol) ar trebui să treacă de eroarea „Output Directory empty". **NETESTAT de AI** (nu are auth Vercel local) — trebuie rulat de Roland.
-2. **Dacă tot pică pe build/output** → soluția „curată" (manuală, în dashboard Vercel, 1 minut):
-   - vercel.com → proiect **traduceri-api** → **Settings → Build and Deployment**
-   - **Framework Preset = Other**
-   - **Build Command:** Override → gol (toggle off / lasă gol)
-   - **Output Directory:** Override → gol
-   - **Install Command:** Override → `pip install --break-system-packages -r requirements.txt`
-   - Salvează, apoi re-rulează scriptul (sau `vercel --prod` din rădăcină).
-3. **Dacă build-ul trece dar `/api/health` dă 500** (runtime) → probabil `api/lib/` nu se împachetează. Adaugă în `vercel.json` la funcție: `"includeFiles": "api/lib/**"` (sau verifică `excludeFiles`). Citește build/runtime logs în dashboard.
-4. **După ce API-ul e verde** (`https://traduceri-api.vercel.app/api/health` → `{"status":"ok"}`), scriptul continuă automat: creează `traduceri-frontend`, îi setează env (NEXT_PUBLIC_API_URL etc. + chei proxy), deploy Next 15. Apoi verifică fluxul.
+1. **Chei proxy Asistent** (module `/asistent`): `frontend/scripts/set-vercel-env.ps1` push-uiește GROQ/GOOGLE_API_KEY/MISTRAL/etc. pe `traduceri-frontend`. Rulat 2026-07-09 (lent, 22 apeluri). **După ce sunt setate → REDEPLOY frontend** (`vercel --prod` din frontend/) ca să le preia. Fără ele, doar Asistentul e degradat; restul merge.
+2. **Test flux live** (Roland, browser): deschide frontend → upload poză → OCR → switch RO/SK → export. (Infra verificată; testul real consumă cotă.)
+3. **Supabase** = amânat (logare fail-open; `/diagnostics` n-are log-uri cross-device până la setup — vezi `docs/DEPLOY_VERCEL.md` Pas 1).
+4. **Merge `faza-g-editor` → `main`** după validare (opțional; deploy-urile sunt din `faza-g-editor` via CLI, nu git-auto).
 
-## LECȚII DEPLOY (ca să NU repeți cele 8 runde)
+## Capcane deploy rezolvate (NU repeta) — vezi și memoria [[deploy-vercel-python-gotchas]]
 
-| #   | Simptom                                                   | Cauză                                                                                                                                   | Fix                                                                                     |
-| --- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| 1   | Scriptul murea la `vercel whoami`                         | `.bat` rulează **PowerShell 5.1** (nu 7.6!); stderr-ul vercel sub `$ErrorActionPreference=Stop` = eroare terminatoare                   | `$ErrorActionPreference="Continue"` + `$PSNativeCommandUseErrorActionPreference=$false` |
-| 2   | `vercel link` lega proiectul VECHI `traduceri-matematica` | auto-detecție prin git remote                                                                                                           | `vercel link --project <nume> --yes` + verificare nume din `.vercel/project.json`       |
-| 3   | `pip install` → `externally-managed-environment`          | Vercel Python = uv-managed (PEP 668)                                                                                                    | `installCommand: "pip install --break-system-packages -r requirements.txt"`             |
-| 4   | `npm run build` exited 1                                  | rădăcina n-are `package.json`; Vercel folosea comanda default **salvată în setările proiectului** (vercel.json cu `null` NU suprascrie) | `buildCommand` setat EXPLICIT (non-null) în vercel.json                                 |
-| 5   | `Output Directory "public" is empty`                      | `mkdir -p public` crea folder gol; Vercel cere output ne-gol (tratează ca build static)                                                 | REV8: build scrie `public/index.html`. Alt: dashboard Framework=Other                   |
+1. `.bat` = PowerShell **5.1** (nu 7.6) → `$ErrorActionPreference="Continue"`.
+2. `vercel link --project X --yes` din Bash non-interactiv → **eroare `missing_scope`**. Workaround: `vercel project add X --scope rolandpetrilas-projects` + scrie manual `frontend/.vercel/project.json` (projectId+orgId din MCP `list_projects`) + `VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` env vars.
+3. PEP668 → `pip install --break-system-packages`.
+4. `npm run build` default (root fără package.json) + „Output Directory empty" → `buildCommand` scrie `public/index.html`.
+5. Frontend build: `src/lib/tab-config.ts` importa `../../../config/tabs.json` (rădăcina, în afara frontend/) → copiat în `frontend/config/tabs.json` + import `../../config/` (commit c226a5e).
+6. **vercel CLI e autentificat global** (`vercel whoami`=rolandpetrila) → AI-ul poate deploya direct din Bash (deploy productie gated de safety → cere aprobare Roland).
 
-**Regula de aur Vercel aici:** proiectul `traduceri-api` e tratat ca **build static** deși e doar funcții Python. `vercel.json` cu valori `null` NU suprascrie setările salvate ale proiectului — trebuie valori EXPLICITE, sau setezi în dashboard.
+## RESTUL SESIUNII (pushed pe faza-g-editor)
 
-**Alt fapt util:** scriptul citește cheile din registry (`GetEnvironmentVariable(...,"User")`) → NU necesită restart terminal după ce se adaugă env vars noi.
-
-## FIȘIERE CHEIE
-
-- `vercel.json` — config funcții Python (buildCommand/installCommand override, maxDuration 60)
-- `DEPLOY_VERCEL.bat` + `scripts/deploy-all-vercel.ps1` — orchestrator deploy 2 proiecte (REV8)
-- `docs/DEPLOY_VERCEL.md` — ghid manual complet (topologie 2 proiecte)
-- `frontend/scripts/set-vercel-env.ps1` — push env din Windows → Vercel (proiect frontend)
-
-## RESTUL SESIUNII (deja gata, pushed pe faza-g-editor)
-
-- Audit complet 83/100 + remediere igienă + suită teste (0→31 teste: 21 pytest + 10 jest)
-- M5 retry translate-text · M6 cache SHA-256 · M7 exceptions.py · fix XSS dompurify 3.4.11
-- **Next.js 14→15 mergeuit** (PR #1, `61f9b6c`) — vuln HIGH rezolvat, React 18 păstrat
-- Snapshot complet: `~/.claude/context-snapshots/Traduceri-Matematica-checkpoint-2026-07-09/snapshot.md`
+Audit 83/100 · M5/M6/M7 · **31 teste** (21 pytest + 10 jest) · **Next 15 mergeuit** (PR#1, vuln HIGH rezolvat) · cheie Gemini nouă procesată în `.api-keys`. Snapshot: `~/.claude/context-snapshots/Traduceri-Matematica-checkpoint-2026-07-09/`.
