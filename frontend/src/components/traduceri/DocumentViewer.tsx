@@ -807,12 +807,22 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
 </html>`;
 }
 
+/** Escape text for safe interpolation into HTML markup / attribute values. */
+function escapeHtml(s: string): string {
+  return (s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 /**
- * Build a SELF-CONTAINED interactive HTML export: the document is rendered once
+ * Build an interactive single-file HTML export: the document is rendered once
  * (figures + formulas + A4 layout) and a RO/SK/EN toggle swaps ONLY the text in
- * place — layout, figures and formulas stay identical. Every language currently
- * in the cache is embedded, so the file works offline with no API. (Print/DOCX
- * stay single-language snapshots — a printout is one language.)
+ * place — layout, figures and formulas stay identical. Every cached language is
+ * embedded, so switching languages needs NO API/server. NOTE: math is typeset by
+ * MathJax loaded from a CDN (same as the app), so formula rendering needs internet
+ * at open time. Print/DOCX stay single-language snapshots.
  */
 function buildInteractiveHtml(
   cache: TranslationCache,
@@ -871,16 +881,16 @@ function buildInteractiveHtml(
   const emitSec = (sec: StructuredSection): string => {
     if (sec.type === "figure" && sec.img_b64) {
       const cap = sec.caption
-        ? `<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>${sec.caption}</em></p>`
+        ? `<p style="font-size:0.9em;color:#555;margin-top:4px;text-align:center;"><em>${escapeHtml(sec.caption)}</em></p>`
         : "";
-      return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0"><img src="data:image/png;base64,${sec.img_b64}" style="max-width:100%;height:auto;background:#fff;" alt="${sec.caption || "figura"}"></div>\n${cap}`;
+      return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0"><img src="data:image/png;base64,${sec.img_b64}" style="max-width:100%;height:auto;background:#fff;" alt="${escapeHtml(sec.caption || "figura")}"></div>\n${cap}`;
     }
     if (sec.type === "figure" && sec.svg) {
       const svgs = Array.isArray(sec.svg) ? sec.svg : [sec.svg];
       return `<div style="display:flex;gap:16px;justify-content:center;margin:6px 0">\n${svgs.join("\n")}\n</div>\n`;
     }
     if (sec.type === "figure") {
-      return `<p><em>[Figura: ${sec.caption || "indisponibila"}]</em></p>\n`;
+      return `<p><em>[Figura: ${escapeHtml(sec.caption || "indisponibila")}]</em></p>\n`;
     }
     if (sec.type === "two_column") {
       let h =
@@ -925,7 +935,7 @@ function buildInteractiveHtml(
   // data-i and re-typesets MathJax so formulas re-render in the new language.
   const toggleScript =
     "var TR=" +
-    JSON.stringify(TR) +
+    JSON.stringify(TR).replace(/</g, "\\u003c") +
     ";function setLang(lang){var nodes=document.querySelectorAll('[data-i]');var arr=TR[lang]||[];for(var j=0;j<nodes.length;j++){var idx=+nodes[j].getAttribute('data-i');if(arr[idx]!=null)nodes[j].innerHTML=arr[idx];}var b=document.querySelectorAll('.langbtn');for(var k=0;k<b.length;k++){b[k].classList.toggle('active',b[k].getAttribute('data-lang')===lang);}document.documentElement.setAttribute('lang',lang);if(window.MathJax&&window.MathJax.typesetPromise){try{window.MathJax.typesetClear&&window.MathJax.typesetClear();}catch(e){}window.MathJax.typesetPromise();}}";
 
   return `<!doctype html>
@@ -999,7 +1009,7 @@ function buildSectionHtml(sec: StructuredSection): string {
   }
 
   if (sec.type === "figure") {
-    const desc = sec.caption || "";
+    const desc = escapeHtml(sec.caption || "");
     return `<p><em>[Figura: ${desc || "indisponibila"}]</em></p>\n`;
   }
 

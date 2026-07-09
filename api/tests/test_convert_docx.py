@@ -9,6 +9,8 @@ import base64
 import io
 import zipfile
 
+import pytest
+
 from convert import html_to_docx
 from docx import Document
 from PIL import Image
@@ -47,6 +49,10 @@ def test_figures_embedded_as_pictures():
     # Text must survive too.
     text = "\n".join(p.text for p in doc.paragraphs)
     assert "Titlu" in text and "Un paragraf." in text
+    # Regression: closing-tag names must NOT leak as literal paragraphs (the
+    # capturing-group re.split bug produced stray 'div'/'p'/'h2' body text).
+    para_texts = [p.text.strip() for p in doc.paragraphs]
+    assert not any(t in ("div", "p", "h1", "h2", "h3", "li", "tr") for t in para_texts)
 
 
 def test_text_only_still_works():
@@ -56,7 +62,23 @@ def test_text_only_still_works():
 
 
 def test_malformed_base64_is_skipped_not_fatal():
-    # A corrupt data-URI must not abort the whole conversion.
-    html = '<div><img src="data:image/png;base64,@@@not-valid@@@"></div><p>text ok</p>'
+    # 'A' is a single base64 char → base64.b64decode raises binascii.Error, so this
+    # actually exercises the b64decode try/except guard (unlike '@@@' which decodes
+    # leniently). The bad figure must be skipped and the rest of the doc survive.
+    import binascii
+
+    with pytest.raises(binascii.Error):
+        base64.b64decode("A")  # sanity: this input genuinely raises
+    html = '<div><img src="data:image/png;base64,A"></div><p>text ok</p>'
     doc, _ = _docx(html)
     assert any("text ok" in p.text for p in doc.paragraphs)
+    assert len(doc.inline_shapes) == 0  # the undecodable figure was skipped
+
+
+def test_svg_figure_gets_placeholder_not_silent_loss():
+    # Inline SVG can't be embedded in DOCX, but it must not vanish silently (R-EXPORT).
+    html = '<div><svg viewBox="0 0 10 10"><path d="M0 0 L10 10"/></svg></div><p>dupa</p>'
+    doc, _ = _docx(html)
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "Figur" in text  # placeholder present
+    assert "dupa" in text

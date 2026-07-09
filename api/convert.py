@@ -298,8 +298,11 @@ def html_to_docx(data: bytes, name: str) -> dict:
     clean = re.sub(r"<style[^>]*>[\s\S]*?</style>", "", clean)
 
     doc = Document()
-    # Extract headings and paragraphs
-    blocks = re.split(r"</(p|div|h[1-6]|li|tr)>", clean, flags=re.IGNORECASE)
+    # Split on closing block tags. NON-capturing group: a capturing group makes
+    # re.split KEEP the matched closing-tag names ("p","div","h2"...) as their own
+    # segments, which then leak as literal garbage paragraphs into EVERY export.
+    # Heading level is read from the opening <hN> in the segment, not the close tag.
+    blocks = re.split(r"</(?:p|div|h[1-6]|li|tr)>", clean, flags=re.IGNORECASE)
     for block in blocks:
         # Pull embedded figure crops (data-URI <img>) BEFORE the tag-strip erases
         # them, so figures survive into the DOCX (R-EXPORT/R-MATH). base64 has no
@@ -309,6 +312,11 @@ def html_to_docx(data: bytes, name: str) -> dict:
             block, flags=re.IGNORECASE,
         )
         block = re.sub(r"<img[^>]*>", "", block, flags=re.IGNORECASE)
+        # Inline <svg> figures can't be embedded via python-docx; drop the SVG
+        # markup (else its path data leaks as text) and leave a placeholder so the
+        # figure isn't lost silently (R-EXPORT). OCR figures are img_b64, not svg.
+        has_svg = bool(re.search(r"<svg[\s>]", block, flags=re.IGNORECASE))
+        block = re.sub(r"<svg[\s\S]*?</svg>", "", block, flags=re.IGNORECASE)
 
         # Check for heading
         h_match = re.search(r"<h([1-6])[^>]*>(.*)", block, re.IGNORECASE | re.DOTALL)
@@ -318,6 +326,8 @@ def html_to_docx(data: bytes, name: str) -> dict:
             if content:
                 doc.add_heading(content, level=min(level, 4))
             _docx_add_data_uri_images(doc, figures)
+            if has_svg:
+                doc.add_paragraph("[Figură geometrică — vezi versiunea HTML/PDF]")
             continue
         # Strip tags for regular text
         content = re.sub(r"<br\s*/?>", "\n", block, flags=re.IGNORECASE)
@@ -331,6 +341,8 @@ def html_to_docx(data: bytes, name: str) -> dict:
             p = doc.add_paragraph(content)
             p.style.font.size = Pt(11)
         _docx_add_data_uri_images(doc, figures)
+        if has_svg:
+            doc.add_paragraph("[Figură geometrică — vezi versiunea HTML/PDF]")
 
     buf = io.BytesIO()
     doc.save(buf)

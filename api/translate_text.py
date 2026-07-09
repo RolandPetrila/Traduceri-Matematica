@@ -133,11 +133,14 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             content_length = int(self.headers.get("Content-Length", 0))
-            # OCR sections carry figure crops (img_b64) that the client echoes back
-            # here unchanged. OCR accepts up to 4MB input, so a figure-heavy page can
-            # exceed a 1MB text limit → 413 on exactly the geometry pages that are the
-            # main use case. Allow 6MB so translation never fails on a page OCR accepted.
-            if content_length > 6_000_000:  # 6MB (figure crops are echoed through)
+            # Vercel rejects any request body over ~4.5MB at the platform edge
+            # (413 FUNCTION_PAYLOAD_TOO_LARGE) BEFORE this handler runs, so the app
+            # check must sit below that to return a clean JSON error instead of an
+            # opaque platform 413. The client currently echoes figure crops (img_b64)
+            # through this text endpoint, inflating the body; a page whose crops push
+            # it past ~4MB will 413. Proper fix (follow-up): strip img_b64 client-side
+            # before POST (translation needs no image data) and re-attach after.
+            if content_length > 4_000_000:  # 4MB — under Vercel's ~4.5MB body cap
                 self._send_json(413, {"error": "Request too large"}, origin)
                 return
 
