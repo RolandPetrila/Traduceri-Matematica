@@ -68,10 +68,19 @@ def _apply_translations_recursive(sections: list, parts_iter) -> list:
 
 
 def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
-    """Translate text using Gemini API."""
+    """Translate text using Gemini API.
+
+    LaTeX/SVG spans are swapped for __MATH_N__ placeholders before the call and
+    restored after (same approach as translate.py). An LLM may ignore a "preserve
+    LaTeX" instruction and mangle a formula; opaque placeholders make that
+    impossible on the primary text. R-MATH: losing a math element = critical bug.
+    """
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
+
+    from lib.math_protect import protect_with_placeholders, restore_from_placeholders
+    protected, placeholders = protect_with_placeholders(text)
 
     import urllib.request
     lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
@@ -80,9 +89,10 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
 
     prompt = (
         f"Translate the following {src} math text to {tgt}. "
-        "Preserve ALL LaTeX formulas exactly. Preserve ALL markdown formatting. "
+        "Keep every __MATH_N__ token EXACTLY as written (do not translate, space out, "
+        "renumber, or remove them). Preserve ALL markdown formatting. "
         "Translate ONLY the natural language text. Return ONLY the translation.\n\n"
-        f"{text}"
+        f"{protected}"
     )
 
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
@@ -99,7 +109,8 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
             data = json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         raise RuntimeError(f"Gemini translation timeout/error: {e}")
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+    translated = data["candidates"][0]["content"]["parts"][0]["text"]
+    return restore_from_placeholders(translated, placeholders)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -122,7 +133,11 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             content_length = int(self.headers.get("Content-Length", 0))
-            if content_length > 1_000_000:  # 1MB max for text-only
+            # OCR sections carry figure crops (img_b64) that the client echoes back
+            # here unchanged. OCR accepts up to 4MB input, so a figure-heavy page can
+            # exceed a 1MB text limit → 413 on exactly the geometry pages that are the
+            # main use case. Allow 6MB so translation never fails on a page OCR accepted.
+            if content_length > 6_000_000:  # 6MB (figure crops are echoed through)
                 self._send_json(413, {"error": "Request too large"}, origin)
                 return
 

@@ -7,6 +7,7 @@ Dependencies: pypdf, python-docx, Pillow, markdown (in requirements.txt).
 from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler
+import base64
 import io
 import json
 import os
@@ -260,8 +261,34 @@ def html_to_md(data: bytes, name: str) -> dict:
     return {"data": md.encode("utf-8"), "mime": "text/markdown", "filename": f"{_stem(name)}.md"}
 
 
+def _docx_add_data_uri_images(doc, b64_list: list) -> None:
+    """Decode base64 figure crops and embed them as real pictures in the DOCX.
+
+    Without this, the tag-strip below deletes every <img> (figures are void tags
+    with no closing tag) → exported DOCX silently loses ALL figures, violating
+    R-EXPORT/R-MATH. Width is capped so a crop fits the A4 text column. A single
+    malformed image is skipped, never aborting the whole conversion.
+    """
+    from docx.shared import Inches
+
+    for b64 in b64_list:
+        try:
+            raw = base64.b64decode(b64)
+        except Exception:
+            continue
+        pic = io.BytesIO(raw)
+        try:
+            doc.add_picture(pic, width=Inches(4.5))
+        except Exception:
+            try:
+                pic.seek(0)
+                doc.add_picture(pic)
+            except Exception:
+                pass  # unsupported/corrupt image — keep the rest of the document
+
+
 def html_to_docx(data: bytes, name: str) -> dict:
-    """Convert HTML to DOCX with basic structure preservation."""
+    """Convert HTML to DOCX with basic structure preservation (figures included)."""
     from docx import Document
     from docx.shared import Pt
 
@@ -274,6 +301,15 @@ def html_to_docx(data: bytes, name: str) -> dict:
     # Extract headings and paragraphs
     blocks = re.split(r"</(p|div|h[1-6]|li|tr)>", clean, flags=re.IGNORECASE)
     for block in blocks:
+        # Pull embedded figure crops (data-URI <img>) BEFORE the tag-strip erases
+        # them, so figures survive into the DOCX (R-EXPORT/R-MATH). base64 has no
+        # '>' char, so both the capture and the img-strip below are unambiguous.
+        figures = re.findall(
+            r'<img[^>]*\bsrc="data:image/(?:png|jpe?g|gif);base64,([^"]+)"',
+            block, flags=re.IGNORECASE,
+        )
+        block = re.sub(r"<img[^>]*>", "", block, flags=re.IGNORECASE)
+
         # Check for heading
         h_match = re.search(r"<h([1-6])[^>]*>(.*)", block, re.IGNORECASE | re.DOTALL)
         if h_match:
@@ -281,6 +317,7 @@ def html_to_docx(data: bytes, name: str) -> dict:
             content = re.sub(r"<[^>]+>", "", h_match.group(2)).strip()
             if content:
                 doc.add_heading(content, level=min(level, 4))
+            _docx_add_data_uri_images(doc, figures)
             continue
         # Strip tags for regular text
         content = re.sub(r"<br\s*/?>", "\n", block, flags=re.IGNORECASE)
@@ -293,6 +330,7 @@ def html_to_docx(data: bytes, name: str) -> dict:
         if content:
             p = doc.add_paragraph(content)
             p.style.font.size = Pt(11)
+        _docx_add_data_uri_images(doc, figures)
 
     buf = io.BytesIO()
     doc.save(buf)

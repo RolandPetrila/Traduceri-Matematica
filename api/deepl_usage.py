@@ -33,7 +33,11 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             key1 = os.environ.get("DEEPL_API_KEY", "").strip()
-            key2 = os.environ.get("DEEPL_API_KEY2", "").strip()
+            # Failover key: accept both spellings (canonical DEEPL_API_KEY_2 with
+            # underscore, and legacy DEEPL_API_KEY2). Mirrors deepl_client.py so the
+            # combined counter doesn't silently drop KEY2 → false quota warnings.
+            key2 = (os.environ.get("DEEPL_API_KEY_2", "").strip()
+                    or os.environ.get("DEEPL_API_KEY2", "").strip())
 
             total_count = 0
             total_limit = 0
