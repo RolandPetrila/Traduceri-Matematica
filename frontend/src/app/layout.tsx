@@ -58,25 +58,29 @@ export default function RootLayout({
       </head>
       <body className="chalkboard-bg min-h-screen">
         {/* Math decorations */}
-        <span className="math-decoration" style={{ top: '10%', left: '5%' }}>
-          {'\\u222B f(x)dx'}
+        <span className="math-decoration" style={{ top: "10%", left: "5%" }}>
+          {"∫ f(x)dx"}
         </span>
-        <span className="math-decoration" style={{ top: '30%', right: '8%' }}>
-          {'\\u25B3 ABC'}
+        <span className="math-decoration" style={{ top: "30%", right: "8%" }}>
+          {"△ ABC"}
         </span>
-        <span className="math-decoration" style={{ bottom: '20%', left: '12%' }}>
-          {'\\u03C0 \\u00B7 r\\u00B2'}
+        <span
+          className="math-decoration"
+          style={{ bottom: "20%", left: "12%" }}
+        >
+          {"π · r²"}
         </span>
-        <span className="math-decoration" style={{ bottom: '40%', right: '15%' }}>
-          {'\\u2211 n\\u00B2'}
+        <span
+          className="math-decoration"
+          style={{ bottom: "40%", right: "15%" }}
+        >
+          {"∑ n²"}
         </span>
 
         <MonitoringInit />
         <ErrorBoundary>
           <LanguageProvider>
-            <div className="relative z-10">
-              {children}
-            </div>
+            <div className="relative z-10">{children}</div>
           </LanguageProvider>
         </ErrorBoundary>
       </body>

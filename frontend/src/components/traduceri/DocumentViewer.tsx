@@ -417,6 +417,7 @@ export default function DocumentViewer({
               onClick={() => setCurrentPageIdx((i) => Math.max(0, i - 1))}
               disabled={currentPageIdx === 0}
               className="chalk-btn text-sm px-3 py-1"
+              aria-label="Pagina anterioară"
             >
               &#8592;
             </button>
@@ -429,6 +430,7 @@ export default function DocumentViewer({
               }
               disabled={currentPageIdx === totalPages - 1}
               className="chalk-btn text-sm px-3 py-1"
+              aria-label="Pagina următoare"
             >
               &#8594;
             </button>
