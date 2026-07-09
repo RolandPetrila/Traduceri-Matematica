@@ -11,6 +11,7 @@
 ## Cum s-a deployat (pt referință / repetare)
 
 **2 proiecte Vercel** (team `rolandpetrilas-projects` / `team_Mt1Ou3cwc6O8BXh73dRACE22`):
+
 - `traduceri-api` (`prj_Ayi48yZMJUe38jXHzCGscmEjDC3z`) — root `.`, funcții Python. Deploy: `cd <repo>; vercel --prod --yes` (root `.vercel/` linkat).
 - `traduceri-frontend` (`prj_oV2VAykJ9rK7alVdtHiCDRwL18Kg`) — root `frontend/`, Next 15. Deploy: `cd frontend; export VERCEL_ORG_ID=team_Mt1Ou3cwc6O8BXh73dRACE22 VERCEL_PROJECT_ID=prj_oV2VAykJ9rK7alVdtHiCDRwL18Kg; vercel --prod --yes`.
 
@@ -18,7 +19,7 @@
 
 ## RĂMAS (polish, nu blocaje)
 
-1. **Chei proxy Asistent** (module `/asistent`): `frontend/scripts/set-vercel-env.ps1` push-uiește GROQ/GOOGLE_API_KEY/MISTRAL/etc. pe `traduceri-frontend`. Rulat 2026-07-09 (lent, 22 apeluri). **După ce sunt setate → REDEPLOY frontend** (`vercel --prod` din frontend/) ca să le preia. Fără ele, doar Asistentul e degradat; restul merge.
+1. ✅ **Chei proxy Asistent = FĂCUT** (22 env vars setate + frontend redeployat 2026-07-09). Asistentul `/asistent` are cheile AI. (NB: `GOOGLE_API_KEY` proxy putea fi billing-blocked → provider Gemini din Asistent degradat, dar fallback-ul din llm.js acoperă.)
 2. **Test flux live** (Roland, browser): deschide frontend → upload poză → OCR → switch RO/SK → export. (Infra verificată; testul real consumă cotă.)
 3. **Supabase** = amânat (logare fail-open; `/diagnostics` n-are log-uri cross-device până la setup — vezi `docs/DEPLOY_VERCEL.md` Pas 1).
 4. **Merge `faza-g-editor` → `main`** după validare (opțional; deploy-urile sunt din `faza-g-editor` via CLI, nu git-auto).
