@@ -61,6 +61,11 @@
       "severity": "warn",
       "area": "validate"
     },
+    "E-OVL-001": {
+      "message": "Extragerea overlay (PDF text) a esuat",
+      "severity": "error",
+      "area": "overlay"
+    },
     "E-NET-001": {
       "message": "Eroare de retea la apelul API",
       "severity": "error",
