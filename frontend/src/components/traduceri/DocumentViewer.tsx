@@ -196,7 +196,12 @@ export default function DocumentViewer({
 
           const res = await fetchWithRetry(`${API_URL}/api/translate-text`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            // text/plain (NOT application/json) keeps this a CORS "simple request"
+            // → no preflight. A JSON content-type triggers a preflight OPTIONS, and
+            // on this Vercel Python API the preflighted POST is rejected at the edge
+            // with 503 (OPTIONS 200, but the POST never reaches the function). The
+            // handler parses the body as JSON regardless. See finding_cors_preflight_503.
+            headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({
               // Send text only — figure crops (img_b64/svg) are re-attached from
               // the source below, keeping the body under Vercel's ~4.5MB cap.
