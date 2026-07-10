@@ -161,8 +161,13 @@ class handler(BaseHTTPRequestHandler):
     """Translate text sections only — no OCR, no file upload."""
 
     def do_OPTIONS(self):
+        # 200, NOT 204: on Vercel's Python runtime a 204 No-Content OPTIONS drops the
+        # subsequently-set CORS headers (Allow-Methods/Allow-Headers survive only on a
+        # 200), which fails the browser preflight for this JSON POST endpoint → every
+        # in-browser translation call errored with "Failed to fetch" while curl (no
+        # preflight) still passed. Every other endpoint here uses 200; match them.
         origin = os.environ.get("ALLOWED_ORIGIN", "*")
-        self.send_response(204)
+        self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", origin)
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")

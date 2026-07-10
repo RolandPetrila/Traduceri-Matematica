@@ -182,6 +182,7 @@ export default function OverlayViewer({
   >("loading");
   const [statusMsg, setStatusMsg] = useState("Se extrage documentul...");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [warnMsg, setWarnMsg] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("translated");
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -229,7 +230,9 @@ export default function OverlayViewer({
         ).filter(shouldTranslate);
 
         setStatus("translating");
+        setWarnMsg(null);
         const map: Record<string, string> = {};
+        let failedLines = 0;
         const t0 = Date.now();
         for (let i = 0; i < uniq.length; i += CHUNK) {
           if (cancelled) return;
@@ -265,6 +268,7 @@ export default function OverlayViewer({
             chunk.forEach((t) => {
               map[t] = t;
             });
+            failedLines += chunk.length;
             logCodedWarn(
               "E-TRANS-001",
               `Overlay: chunk de traducere esuat (${chunk.length} linii) — pastrez originalul`,
@@ -276,6 +280,17 @@ export default function OverlayViewer({
           }
         }
         if (cancelled) return;
+
+        // R-DIAG: a silently-untranslated document must NOT look "processed". If any
+        // (especially all) translatable lines failed, surface it visibly + coded.
+        if (failedLines > 0) {
+          const allFailed = failedLines >= uniq.length;
+          setWarnMsg(
+            allFailed
+              ? "Traducerea NU a reusit — documentul e afisat in limba originala. Verifica /diagnostics (E-TRANS-001)."
+              : `Traducerea a esuat partial pentru ${failedLines}/${uniq.length} fragmente — acele randuri raman in original.`,
+          );
+        }
 
         setTranslations(map);
         setPages(loaded);
@@ -465,6 +480,20 @@ export default function OverlayViewer({
           Printeaza / PDF
         </button>
       </div>
+
+      {warnMsg && (
+        <div
+          className="rounded-lg p-3 mb-3 text-center"
+          role="alert"
+          style={{
+            background: "rgba(232, 131, 107, 0.15)",
+            border: "1px solid var(--chalk-red)",
+            color: "var(--chalk-red)",
+          }}
+        >
+          ⚠ {warnMsg}
+        </div>
+      )}
 
       {status !== "ready" ? (
         <div className="ov-loading" aria-live="polite">
