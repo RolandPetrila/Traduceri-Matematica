@@ -1,6 +1,6 @@
 # Sistem Traduceri Matematica
 
-Aplicatie web (PWA) pentru traducerea documentelor matematice cu AI — RO, SK, EN.
+Aplicatie web (PWA) pentru traducerea documentelor matematice cu AI — RO, SK, EN, DE.
 Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 
 ## Live

@@ -6,6 +6,7 @@ const LANGUAGES = [
   { code: "ro", name: "Romana", flag: "\u{1F1F7}\u{1F1F4}" },
   { code: "sk", name: "Slovaca", flag: "\u{1F1F8}\u{1F1F0}" },
   { code: "en", name: "Engleza", flag: "\u{1F1EC}\u{1F1E7}" },
+  { code: "de", name: "Germana", flag: "\u{1F1E9}\u{1F1EA}" },
 ];
 
 interface LanguageSelectorProps {
@@ -22,7 +23,10 @@ export default function LanguageSelector({
   onTargetChange,
 }: LanguageSelectorProps) {
   const swap = () => {
-    logAction("Limba inversata", { from: `${sourceLang}->${targetLang}`, to: `${targetLang}->${sourceLang}` });
+    logAction("Limba inversata", {
+      from: `${sourceLang}->${targetLang}`,
+      to: `${targetLang}->${sourceLang}`,
+    });
     onSourceChange(targetLang);
     onTargetChange(sourceLang);
   };
@@ -47,7 +51,11 @@ export default function LanguageSelector({
           className="bg-white/10 border border-chalk-white/20 rounded-lg px-4 py-2 text-chalk-white appearance-none cursor-pointer"
         >
           {LANGUAGES.map((l) => (
-            <option key={l.code} value={l.code} className="bg-chalkboard text-chalk-white">
+            <option
+              key={l.code}
+              value={l.code}
+              className="bg-chalkboard text-chalk-white"
+            >
               {l.flag} {l.name}
             </option>
           ))}
@@ -70,7 +78,11 @@ export default function LanguageSelector({
           className="bg-white/10 border border-chalk-white/20 rounded-lg px-4 py-2 text-chalk-white appearance-none cursor-pointer"
         >
           {LANGUAGES.filter((l) => l.code !== sourceLang).map((l) => (
-            <option key={l.code} value={l.code} className="bg-chalkboard text-chalk-white">
+            <option
+              key={l.code}
+              value={l.code}
+              className="bg-chalkboard text-chalk-white"
+            >
               {l.flag} {l.name}
             </option>
           ))}

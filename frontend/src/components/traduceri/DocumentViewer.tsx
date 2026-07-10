@@ -47,6 +47,7 @@ const LANGUAGES = [
   { code: "ro", label: "RO", flag: "\u{1F1F7}\u{1F1F4}" },
   { code: "sk", label: "SK", flag: "\u{1F1F8}\u{1F1F0}" },
   { code: "en", label: "EN", flag: "\u{1F1EC}\u{1F1E7}" },
+  { code: "de", label: "DE", flag: "\u{1F1E9}\u{1F1EA}" },
 ];
 
 /**

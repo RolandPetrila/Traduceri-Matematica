@@ -20,6 +20,13 @@
       "flag": "🇬🇧",
       "can_be_source": true,
       "can_be_target": true
+    },
+    {
+      "code": "de",
+      "name": "Germana",
+      "flag": "🇩🇪",
+      "can_be_source": true,
+      "can_be_target": true
     }
   ],
   "default_source": "ro",

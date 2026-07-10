@@ -22,6 +22,7 @@ LANG_MAP = {
     "ro": "RO",
     "sk": "SK",
     "en": "EN",
+    "de": "DE",
 }
 
 

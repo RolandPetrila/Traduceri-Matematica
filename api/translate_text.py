@@ -83,7 +83,7 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
     protected, placeholders = protect_with_placeholders(text)
 
     import urllib.request
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English", "de": "German"}
     src = lang_names.get(source_lang, source_lang)
     tgt = lang_names.get(target_lang, target_lang)
 

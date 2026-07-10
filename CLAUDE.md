@@ -45,7 +45,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md` — imbunatatiri planificate
 - `vercel.json` — config functii Python (maxDuration 60s)
 - `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
-- `config/languages.json` — limbi suportate (RO/SK/EN + extensibil)
+- `config/languages.json` — limbi suportate (RO/SK/EN/DE + extensibil)
 - `config/error_codes.json` — coduri de eroare (`E-<ARIE>-<NNN>`)
 - `config/math_terms_ro_sk.json` — dictionar RO-SK
 - `api/ocr.py` — OCR o pagina (Gemini JSON, Pro→Flash fallback)
@@ -112,6 +112,6 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - Fara autentificare — acces direct (inclusiv Supabase: fara auth, RLS strict)
 - PWA instalabil pe Windows, Android, iPhone
 - Utilizator principal: Cristina; owner proiect: Roland (petrilarolly@gmail.com)
-- Limbi: RO -> SK (principal), RO -> EN (secundar), extensibil
+- Limbi: RO -> SK (principal), RO -> EN (secundar), DE (germana, ex. rapoarte/documente oficiale), extensibil
 - Toate serviciile: GRATUIT, fara exceptie
 - Editor matematic + Asistent_Text_AI: INTEGRATE ca module iframe (Faza G) — vezi 99_Plan_vs_Audit/PLAN_v3.md
