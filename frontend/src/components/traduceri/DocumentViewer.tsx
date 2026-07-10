@@ -643,28 +643,30 @@ function RenderSection({ section }: { section: StructuredSection }) {
   }
 
   if (type === "list") {
-    // Split into items; edits rebuild the single \n-delimited content string.
-    const items = (content || "")
-      .split("\n")
-      .filter((l) => l.trim())
-      .map((l) => l.replace(/^\d+\.\s*/, ""));
+    // The OCR keeps the literal enumerator ("1.", "a)", "•") inside each line, so
+    // render lines as-is with a hanging indent — never wrap in <ol>, which would
+    // add a SECOND number ("1. 1.") or, when each item is its own list section,
+    // reset every item to "1.". Edits rejoin the lines verbatim (no renumbering).
+    const items = (content || "").split("\n").filter((l) => l.trim());
     return (
-      <ol style={{ marginTop: "0.45em", marginBottom: "0.6em" }}>
+      <div style={{ marginTop: "0.45em", marginBottom: "0.6em" }}>
         {items.map((item, i) => (
           <EditableBlock
             key={i}
-            as="li"
+            as="p"
             raw={item}
             onSave={(v) => {
               items[i] = v;
-              section.content = items
-                .map((t, k) => `${k + 1}. ${t}`)
-                .join("\n");
+              section.content = items.join("\n");
             }}
-            style={{ marginBottom: "0.2em" }}
+            style={{
+              margin: "0.15em 0",
+              paddingLeft: "1.6em",
+              textIndent: "-1.6em",
+            }}
           />
         ))}
-      </ol>
+      </div>
     );
   }
 
@@ -787,6 +789,8 @@ function buildHtmlFromPages(pages: StructuredPage[], lang: string): string {
     hr { border:none; border-top:1px solid #cfcfcf; margin:1em 0; }
     ul,ol { margin-top:0.45em; margin-bottom:0.6em; }
     li { margin-bottom:0.2em; }
+    .list { margin:0.45em 0 0.6em; }
+    .li { margin:0.15em 0; padding-left:1.6em; text-indent:-1.6em; }
     img { max-width:100%; height:auto; }
     svg { max-width:100%; height:auto; }
     .MathJax { font-size:1em !important; }
@@ -846,7 +850,7 @@ function buildInteractiveHtml(
     (s || "")
       .split("\n")
       .filter((l) => l.trim())
-      .map((it) => `<li>${renderInline(it.replace(/^\d+\.\s*/, ""))}</li>`)
+      .map((it) => `<p class="li">${renderInline(it)}</p>`)
       .join("");
 
   // Collect translatable node inner-HTML per language in a FIXED traversal order
@@ -907,7 +911,7 @@ function buildInteractiveHtml(
       return h;
     }
     if (sec.type === "list") {
-      return `<ol data-i="${i++}">${renderListInner(sec.content || "")}</ol>\n`;
+      return `<div class="list" data-i="${i++}">${renderListInner(sec.content || "")}</div>\n`;
     }
     if (sec.type === "heading") {
       if ((sec.content || "").length > 200) {
@@ -973,6 +977,8 @@ function buildInteractiveHtml(
     hr { border:none; border-top:1px solid #cfcfcf; margin:1em 0; }
     ul,ol { margin-top:0.45em; margin-bottom:0.6em; }
     li { margin-bottom:0.2em; }
+    .list { margin:0.45em 0 0.6em; }
+    .li { margin:0.15em 0; padding-left:1.6em; text-indent:-1.6em; }
     img { max-width:100%; height:auto; }
     svg { max-width:100%; height:auto; }
     .MathJax { font-size:1em !important; }
@@ -1040,13 +1046,7 @@ function buildSectionHtml(sec: StructuredSection): string {
 
   if (sec.type === "list") {
     const items = (sec.content || "").split("\n").filter((l) => l.trim());
-    let html = "<ol>";
-    for (const item of items) {
-      const clean = item.replace(/^\d+\.\s*/, "");
-      html += `<li>${clean}</li>`;
-    }
-    html += "</ol>\n";
-    return html;
+    return items.map((item) => `<p class="li">${item}</p>`).join("") + "\n";
   }
 
   const text = (sec.content || "").replace(

@@ -14,6 +14,57 @@ from PIL import Image
 
 PLACEHOLDER_B64 = None  # Lazy-generated placeholder for invalid crops
 
+_INK_THRESHOLD = 110  # grayscale value below which a pixel counts as "ink"
+
+
+def _snap_to_content(gray_region):
+    """Tighten a rough figure region to the actual drawing.
+
+    Gemini's bbox is spatially imprecise — it often catches an adjacent formula
+    line above the figure and/or clips the figure's base. Given a (generously
+    expanded) grayscale search region, this finds the TALLEST contiguous block of
+    ink rows — the figure — and returns its tight box, dropping short adjacent
+    text lines (a formula, a caption, the next numbered step). Works for any
+    figure shape (triangle, circle, graph, construction) because it keys off ink
+    density, not the figure type. Fast: uses PIL resize to build a 1-px-wide row
+    profile instead of a Python per-pixel scan.
+
+    Returns (x0, y0, x1, y1) in region coordinates, or None to fall back.
+    """
+    w, h = gray_region.size
+    if w < 10 or h < 10:
+        return None
+    # Ink mask: dark pixels -> 255, background -> 0.
+    mask = gray_region.point(lambda p: 255 if p < _INK_THRESHOLD else 0)
+    # Rows that contain ANY ink. Using presence (not a row average) keeps thin
+    # strokes on wide pages from being averaged below a threshold and lost.
+    data = list(mask.getdata())
+    ink_rows = [y for y in range(h) if any(data[y * w:(y + 1) * w])]
+    if not ink_rows:
+        return None
+    # Group ink rows into contiguous runs, tolerating small blank gaps inside a
+    # figure (between a shape and its vertex labels). Kept small on purpose: the
+    # search box is only moderately expanded, so a further-away formula line or
+    # next step stays a separate run and loses to the (taller) figure run.
+    gap = max(14, h // 18)
+    runs = []
+    start = prev = ink_rows[0]
+    for r in ink_rows[1:]:
+        if r - prev > gap:
+            runs.append((start, prev))
+            start = r
+        prev = r
+    runs.append((start, prev))
+    y0, y1 = max(runs, key=lambda ab: ab[1] - ab[0])  # tallest run = the figure
+    # Horizontal extent of ink within that vertical slice.
+    bb = mask.crop((0, y0, w, y1 + 1)).getbbox()
+    if not bb:
+        return None
+    x0, _, x1, _ = bb
+    if (x1 - x0) < 8 or (y1 - y0) < 8:
+        return None
+    return x0, y0, x1, y1 + 1
+
 
 def _generate_placeholder() -> str:
     """Generate a small placeholder image with 'Figure unavailable' text."""
@@ -76,6 +127,27 @@ def crop_figure(
         if PLACEHOLDER_B64 is None:
             PLACEHOLDER_B64 = _generate_placeholder()
         return PLACEHOLDER_B64
+
+    # Content-aware snap: expand the box (Gemini frequently clips the figure or
+    # captures an adjacent formula/caption) then lock onto the actual drawing so
+    # the crop is tight and complete for ANY figure. Falls back to Gemini's box.
+    bw_px, bh_px = x2 - x1, y2 - y1
+    sx1 = max(0, int(x1 - 0.15 * bw_px))
+    sy1 = max(0, int(y1 - 0.35 * bh_px))
+    sx2 = min(w, int(x2 + 0.15 * bw_px))
+    sy2 = min(h, int(y2 + 0.35 * bh_px))
+    try:
+        snapped = _snap_to_content(img.convert("L").crop((sx1, sy1, sx2, sy2)))
+    except Exception as snap_err:
+        print(f"[CROP] snap failed, using raw bbox: {snap_err}", file=sys.stderr)
+        snapped = None
+    if snapped:
+        rx0, ry0, rx1, ry1 = snapped
+        p = 12  # breathing room around the drawing
+        x1 = max(0, sx1 + rx0 - p)
+        y1 = max(0, sy1 + ry0 - p)
+        x2 = min(w, sx1 + rx1 + p)
+        y2 = min(h, sy1 + ry1 + p)
 
     # Crop region
     cropped = img.crop((x1, y1, x2, y2)).convert("RGBA")

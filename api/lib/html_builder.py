@@ -143,12 +143,10 @@ def _render_section(section: dict, figs: dict | None = None) -> str:
     elif sec_type == "list":
         items = [line.strip() for line in content.split("\n") if line.strip()]
         if items:
-            html = "<ol>"
-            for item in items:
-                clean = re.sub(r"^\d+\.\s*", "", item)
-                html += f"<li>{clean}</li>"
-            html += "</ol>"
-            return html
+            # Keep the OCR's literal enumerator ("1.", "a)", "•") and render as
+            # hanging-indent lines — NOT <ol>, which would double-number, or reset
+            # each single-item list section back to "1.".
+            return "".join(f'<p class="list-item">{item}</p>' for item in items)
         return ""
 
     elif sec_type == "figure":
@@ -231,6 +229,7 @@ def _build_html_shell(pages_html: str, page_count: int, target_lang: str) -> str
     hr {{ border:none; border-top:1px solid #cfcfcf; margin:1em 0; }}
     ul, ol {{ margin-top:0.45em; margin-bottom:0.6em; }}
     li {{ margin-bottom:0.2em; }}
+    .list-item {{ margin:0.15em 0; padding-left:1.6em; text-indent:-1.6em; }}
     img {{ max-width:100%; height:auto; }}
     svg {{ max-width:100%; height:auto; display:block; margin:0.8em auto; }}
     .MathJax {{ font-size:1em !important; }}
