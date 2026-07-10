@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
+import { markEngine } from "@/lib/export-naming";
 import { expandFilesToPages } from "@/lib/pdf-rasterize";
 
 interface BatchResult {
@@ -19,7 +20,11 @@ interface BatchPanelProps {
   translateEngine: string;
 }
 
-export default function BatchPanel({ sourceLang, targetLang, translateEngine }: BatchPanelProps) {
+export default function BatchPanel({
+  sourceLang,
+  targetLang,
+  translateEngine,
+}: BatchPanelProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [results, setResults] = useState<BatchResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -29,11 +34,19 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
     if (e.target.files) {
       const selected = Array.from(e.target.files);
       setFiles(selected);
-      setResults(selected.map((f) => ({ filename: f.name, html: "", status: "pending" })));
+      setResults(
+        selected.map((f) => ({
+          filename: f.name,
+          html: "",
+          status: "pending",
+        })),
+      );
     }
   };
 
-  const translateFile = async (file: File): Promise<{ html: string; duration: number }> => {
+  const translateFile = async (
+    file: File,
+  ): Promise<{ html: string; duration: number }> => {
     const dictKey = `dict_${sourceLang}_${targetLang}`;
     const dictRaw = localStorage.getItem(dictKey);
 
@@ -53,7 +66,10 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
       formData.append("translate_engine", translateEngine);
       if (dictRaw) formData.append("dictionary", dictRaw);
 
-      const res = await fetch(`${API_URL}/api/translate`, { method: "POST", body: formData });
+      const res = await fetch(`${API_URL}/api/translate`, {
+        method: "POST",
+        body: formData,
+      });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`${res.status}: ${text.substring(0, 100)}`);
@@ -71,26 +87,37 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
     setIsRunning(true);
     abortRef.current = false;
 
-    logAction("Batch pornit", { fileCount: files.length, engine: translateEngine });
+    logAction("Batch pornit", {
+      fileCount: files.length,
+      engine: translateEngine,
+    });
 
     for (let i = 0; i < files.length; i++) {
       if (abortRef.current) break;
 
-      setResults((prev) => prev.map((r, idx) =>
-        idx === i ? { ...r, status: "processing" } : r
-      ));
+      setResults((prev) =>
+        prev.map((r, idx) => (idx === i ? { ...r, status: "processing" } : r)),
+      );
 
       try {
         const { html, duration } = await translateFile(files[i]);
-        setResults((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, html, status: "done", duration } : r
-        ));
+        setResults((prev) =>
+          prev.map((r, idx) =>
+            idx === i ? { ...r, html, status: "done", duration } : r,
+          ),
+        );
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Eroare";
-        logError(`Batch eroare: ${files[i].name}`, { source: "translate", errorCode: "E-TRANS-002", context: { error: msg } });
-        setResults((prev) => prev.map((r, idx) =>
-          idx === i ? { ...r, status: "error", error: msg } : r
-        ));
+        logError(`Batch eroare: ${files[i].name}`, {
+          source: "translate",
+          errorCode: "E-TRANS-002",
+          context: { error: msg },
+        });
+        setResults((prev) =>
+          prev.map((r, idx) =>
+            idx === i ? { ...r, status: "error", error: msg } : r,
+          ),
+        );
       }
     }
 
@@ -103,7 +130,7 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = r.filename.replace(/\.[^.]+$/, `_${translateEngine}.html`);
+    a.download = `${markEngine(r.filename.replace(/\.[^.]+$/, ""), translateEngine)}.html`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -119,7 +146,9 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
 
   return (
     <div className="space-y-4 p-4 bg-white/5 rounded-lg border border-chalk-white/10">
-      <h3 className="text-lg font-bold text-chalk-yellow">Traducere Batch (multi-fisiere)</h3>
+      <h3 className="text-lg font-bold text-chalk-yellow">
+        Traducere Batch (multi-fisiere)
+      </h3>
 
       <div className="flex gap-3 items-center flex-wrap">
         <label className="chalk-btn text-sm cursor-pointer">
@@ -133,7 +162,9 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
           />
         </label>
         <span className="text-sm opacity-60">
-          {files.length > 0 ? `${files.length} fisier(e) selectate` : "Niciun fisier"}
+          {files.length > 0
+            ? `${files.length} fisier(e) selectate`
+            : "Niciun fisier"}
         </span>
       </div>
 
@@ -145,11 +176,15 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
               disabled={isRunning}
               className="chalk-btn px-6 py-2 disabled:opacity-30"
             >
-              {isRunning ? `Se traduce... (${doneCount}/${files.length})` : `Traduce ${files.length} fisiere`}
+              {isRunning
+                ? `Se traduce... (${doneCount}/${files.length})`
+                : `Traduce ${files.length} fisiere`}
             </button>
             {isRunning && (
               <button
-                onClick={() => { abortRef.current = true; }}
+                onClick={() => {
+                  abortRef.current = true;
+                }}
                 className="chalk-btn px-4 py-2 text-chalk-red border-chalk-red"
               >
                 Stop
@@ -167,24 +202,41 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
             {results.map((r, i) => (
               <div key={i} className="flex items-center gap-3 text-sm py-1">
                 <span className="w-5 text-center">
-                  {r.status === "pending" && <span className="opacity-30">-</span>}
-                  {r.status === "processing" && <span className="animate-spin inline-block">&#9696;</span>}
-                  {r.status === "done" && <span className="text-green-400">&#10003;</span>}
-                  {r.status === "error" && <span className="text-chalk-red">&#10007;</span>}
+                  {r.status === "pending" && (
+                    <span className="opacity-30">-</span>
+                  )}
+                  {r.status === "processing" && (
+                    <span className="animate-spin inline-block">&#9696;</span>
+                  )}
+                  {r.status === "done" && (
+                    <span className="text-green-400">&#10003;</span>
+                  )}
+                  {r.status === "error" && (
+                    <span className="text-chalk-red">&#10007;</span>
+                  )}
                 </span>
-                <span className={`flex-1 truncate ${r.status === "processing" ? "text-chalk-yellow" : ""}`}>
+                <span
+                  className={`flex-1 truncate ${r.status === "processing" ? "text-chalk-yellow" : ""}`}
+                >
                   {r.filename}
                 </span>
                 {r.duration && (
-                  <span className="opacity-40 text-xs">{(r.duration / 1000).toFixed(1)}s</span>
+                  <span className="opacity-40 text-xs">
+                    {(r.duration / 1000).toFixed(1)}s
+                  </span>
                 )}
                 {r.status === "done" && (
-                  <button onClick={() => downloadResult(r)} className="text-xs text-chalk-yellow hover:underline">
+                  <button
+                    onClick={() => downloadResult(r)}
+                    className="text-xs text-chalk-yellow hover:underline"
+                  >
                     Descarca
                   </button>
                 )}
                 {r.status === "error" && (
-                  <span className="text-xs text-chalk-red truncate max-w-[200px]">{r.error}</span>
+                  <span className="text-xs text-chalk-red truncate max-w-[200px]">
+                    {r.error}
+                  </span>
                 )}
               </div>
             ))}
@@ -192,7 +244,8 @@ export default function BatchPanel({ sourceLang, targetLang, translateEngine }: 
 
           {!isRunning && doneCount > 0 && (
             <div className="text-sm opacity-60 pt-2">
-              Rezultat: {doneCount} reusit(e){errorCount > 0 ? `, ${errorCount} eroare(i)` : ""}
+              Rezultat: {doneCount} reusit(e)
+              {errorCount > 0 ? `, ${errorCount} eroare(i)` : ""}
             </div>
           )}
         </>

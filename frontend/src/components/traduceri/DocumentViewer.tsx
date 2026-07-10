@@ -11,6 +11,7 @@ import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { fetchWithRetry } from "@/lib/fetch-retry";
+import { markEngine } from "@/lib/export-naming";
 import {
   type StructuredSection,
   stripFigurePayloads,
@@ -266,7 +267,7 @@ export default function DocumentViewer({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${filename}_interactiv.html`;
+    a.download = `${markEngine(filename, translateEngine)}_interactiv.html`;
     a.click();
     URL.revokeObjectURL(url);
     logAction("Download HTML interactiv", {
@@ -290,6 +291,8 @@ export default function DocumentViewer({
     }
     win.document.write(html);
     win.document.close();
+    // Chrome derives the Save-as-PDF suggested name from the print window title.
+    win.document.title = `${markEngine(filename, translateEngine)}_${activeLang}`;
     logAction("Export PDF (print)", {
       lang: activeLang,
       pages: currentPages.length,
@@ -345,7 +348,7 @@ export default function DocumentViewer({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${filename}_${activeLang}.docx`;
+      a.download = `${markEngine(filename, translateEngine)}_${activeLang}.docx`;
       a.click();
       URL.revokeObjectURL(url);
       logAction("Download DOCX", { lang: activeLang });

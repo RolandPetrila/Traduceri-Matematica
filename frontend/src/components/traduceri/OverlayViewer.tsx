@@ -26,6 +26,7 @@ import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { API_URL } from "@/lib/api-url";
 import { fetchWithRetry } from "@/lib/fetch-retry";
 import { logAction, logError, logCodedWarn } from "@/lib/monitoring";
+import { markEngine } from "@/lib/export-naming";
 import type { TranslateEngine } from "@/components/traduceri/EngineSelector";
 
 // ---- Types (mirror the /api/overlay contract) ----
@@ -334,8 +335,16 @@ export default function OverlayViewer({
   // ---- Export: print the translated document (vector text over raster bg). ----
   const handlePrint = useCallback(() => {
     logAction("Overlay print/PDF", { pages: pages.length });
+    // Chrome derives the Save-as-PDF suggested name from document.title.
+    const orig = document.title;
+    document.title = `${markEngine(filename, translateEngine)}_overlay`;
+    const restore = () => {
+      document.title = orig;
+      window.removeEventListener("afterprint", restore);
+    };
+    window.addEventListener("afterprint", restore);
     window.print();
-  }, [pages.length]);
+  }, [pages.length, filename, translateEngine]);
 
   // ---- Export: self-contained interactive HTML built from the LIVE DOM (edits included). ----
   const handleDownloadHtml = useCallback(() => {
@@ -412,7 +421,7 @@ export default function OverlayViewer({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${filename}_overlay.html`;
+    a.download = `${markEngine(filename, translateEngine)}_overlay.html`;
     a.click();
     URL.revokeObjectURL(url);
     logAction("Overlay download HTML", { pages: pages.length });
