@@ -492,9 +492,14 @@ const OVERLAY_CSS = `
 .ov-spinner { width:42px; height:42px; border:4px solid rgba(245,213,101,.25);
   border-top-color:var(--chalk-yellow); border-radius:50%; animation:ov-spin .9s linear infinite; }
 @keyframes ov-spin { to { transform:rotate(360deg); } }
-.ov-wrap { display:flex; flex-direction:column; align-items:center; gap:20px; }
+/* The page is a FIXED pt-sized sheet with absolutely-positioned pt spans, so it
+   must NOT be shrunk (no max-width) — that would distort the raster background and
+   clip the right-hand spans. On viewports narrower than the sheet (~793px for A4,
+   e.g. mobile PWA) the wrap scrolls horizontally instead of clipping. */
+.ov-wrap { display:flex; flex-direction:column; align-items:center; gap:20px; overflow-x:auto; }
 .ov-page { position:relative; background:#fff; box-shadow:0 4px 22px rgba(0,0,0,.5); overflow:hidden;
-  max-width:100%; }
+  flex:0 0 auto; }
+@media (max-width: 900px) { .ov-wrap { align-items:flex-start; } }
 .ov-bg { position:absolute; left:0; top:0; width:100%; height:100%; user-select:none; pointer-events:none; }
 .ov-s { position:absolute; line-height:1.0; white-space:nowrap; outline:none; cursor:text; }
 .ov-s:focus { background:rgba(245,213,101,.35); box-shadow:0 0 0 1px var(--chalk-yellow); }

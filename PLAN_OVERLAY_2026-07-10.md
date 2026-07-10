@@ -51,6 +51,10 @@ complexe: reordonează, pierde tabele, taie logo-uri. Vezi `Analyse CettaClear 2
       font web-safe (Arial), auto-shrink (`fitSize`), fallback per-chunk. `api/overlay` adăugat în `dev_server.py`. — 2026-07-10
 - [x] **GATE local** — tsc 0 · eslint 0 erori · jest 15/15 · next build ✓ · pytest 41/41 · endpoint `/api/overlay`
       testat LIVE local (HTTP 200, 96 linii, 2 PNG-uri, contract corect pe raportul real). — 2026-07-10
+- [x] **RENDER verificat** — CSS-ul componentei (`.ov-*`) randat in Chrome pe datele reale: spans aliniate
+      perfect pe fundalul redactat, coloanele din dreapta NEclipate, tabel+semnatura+footer identice cu
+      originalul. Fix: scos `max-width:100%` de pe `.ov-page` (distorsiona/cliba spans pt fix) → `.ov-wrap`
+      scroll orizontal + media query <900px. — 2026-07-10
 - [ ] **D3** (GATED — deploy Roland) redeploy api+frontend + verificare live pe `Analyse CettaClear` + o fișă
       matematică (non-regresie). Necesită `!` de la Roland (R-DEPLOY, outward-facing).
 
