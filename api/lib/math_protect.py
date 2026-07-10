@@ -55,8 +55,17 @@ def protect_for_deepl(text: str) -> str:
     out = []
     last = 0
     for m in _PROTECT_RE.finditer(text):
-        out.append(_xml_escape(text[last:m.start()]))
-        out.append("<keep>" + _xml_escape(m.group(0)) + "</keep>")
+        between = text[last:m.start()]
+        # Move a single space that sits right before the formula INSIDE the <keep>
+        # tag. DeepL's XML tag handling trims whitespace between a word and an
+        # inline tag ("je <keep>$60$</keep>" → "je<keep>...") which restored as
+        # "je$60$" — a missing space before every formula. Keeping the space
+        # inside the ignored region makes DeepL preserve it verbatim.
+        lead = ""
+        if between.endswith(" "):
+            lead, between = " ", between[:-1]
+        out.append(_xml_escape(between))
+        out.append("<keep>" + lead + _xml_escape(m.group(0)) + "</keep>")
         last = m.end()
     out.append(_xml_escape(text[last:]))
     return "".join(out)

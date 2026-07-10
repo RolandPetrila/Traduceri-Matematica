@@ -67,6 +67,27 @@ def test_xml_unescape_decodes_amp_last():
     assert _xml_unescape("&amp;lt;") == "&lt;"
 
 
+def test_deepl_preserves_space_before_formula():
+    """DeepL trims whitespace between a word and an inline tag, which used to drop
+    the space before every formula ('je $60$' -> 'je$60$'). The fix moves that
+    space INSIDE <keep>, so even after DeepL's trim the space survives. We simulate
+    the trim with a regex and assert the space is still there after restore.
+    """
+    import re
+
+    def deepl_trims_space_before_tag(protected: str) -> str:
+        return re.sub(r"(\S) <keep>", r"\1<keep>", protected)
+
+    cases = [
+        "Veľkosť uhla A je $60^\\circ$ a B je $80^\\circ$.",
+        "Vypočítajte pomocou vzťahu: $m(\\angle A) = 180$",
+        "($x$) plus $y$ stays correct",  # paren must NOT gain a stray space
+    ]
+    for s in cases:
+        restored = restore_from_deepl(deepl_trims_space_before_tag(protect_for_deepl(s)))
+        assert restored == s, f"space not preserved: {restored!r} != {s!r}"
+
+
 def test_placeholder_roundtrip_is_identity():
     for s in ROUNDTRIP_CASES:
         protected, placeholders = protect_with_placeholders(s)
