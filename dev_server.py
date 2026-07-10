@@ -47,6 +47,7 @@ from api.translate_text import handler as TranslateTextHandler
 from api.convert import handler as ConvertHandler
 from api.deepl_usage import handler as DeeplUsageHandler
 from api.gemini_usage import handler as GeminiUsageHandler
+from api.overlay import handler as OverlayHandler
 
 from api.lib.rate_limiter import is_rate_limited, start_cleanup_timer
 
@@ -60,6 +61,7 @@ ROUTES = {
     "/api/translate-text": TranslateTextHandler,
     "/api/translate": TranslateHandler,
     "/api/convert": ConvertHandler,
+    "/api/overlay": OverlayHandler,
 }
 
 

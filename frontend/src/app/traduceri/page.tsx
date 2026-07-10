@@ -14,6 +14,9 @@ import EngineSelector, {
 } from "@/components/traduceri/EngineSelector";
 import BatchPanel from "@/components/traduceri/BatchPanel";
 import DocumentViewer from "@/components/traduceri/DocumentViewer";
+import OverlayViewer, {
+  type OverlayPageData,
+} from "@/components/traduceri/OverlayViewer";
 import DeeplUsage from "@/components/traduceri/DeeplUsage";
 import GeminiUsage from "@/components/traduceri/GeminiUsage";
 
@@ -36,8 +39,38 @@ export default function TraduceriPage() {
   const [error, setError] = useState<string | null>(null);
   const [translateEngine, setTranslateEngine] =
     useState<TranslateEngine>("deepl");
+  // Overlay mode (pixel-perfect, layout-faithful) for TEXT PDFs.
+  const [overlayFile, setOverlayFile] = useState<File | null>(null);
+  const [overlayFirstPage, setOverlayFirstPage] =
+    useState<OverlayPageData | null>(null);
 
-  const handleProcess = async () => {
+  const isPdf = (f: File) =>
+    f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+
+  /**
+   * Probe /api/overlay for page 0. Returns the page data if this is a real TEXT
+   * PDF (→ overlay path), or null if it's scanned/image (→ OCR path) or the probe
+   * fails (fail-open: overlay is an enhancement, never a blocker).
+   */
+  const probeOverlay = async (file: File): Promise<OverlayPageData | null> => {
+    try {
+      const fd = new FormData();
+      fd.append("files", file, file.name);
+      fd.append("page", "0");
+      const res = await fetchWithRetry(
+        `${API_URL}/api/overlay`,
+        { method: "POST", body: fd },
+        1,
+      );
+      if (!res.ok) return null;
+      const data = (await res.json()) as OverlayPageData;
+      return data.is_text_pdf === false ? null : data;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleProcess = async (opts?: { forceOcr?: boolean }) => {
     if (files.length === 0) return;
     setIsProcessing(true);
     setProgress(0);
@@ -45,7 +78,31 @@ export default function TraduceriPage() {
     setError(null);
     setResult(null);
     setStructuredPages(null);
+    setOverlayFile(null);
+    setOverlayFirstPage(null);
     setOriginalFiles([...files]);
+
+    // Auto-detect: a single TEXT PDF (official docs, reports) is rendered
+    // layout-faithful via overlay; scanned/image PDFs and everything else go
+    // through OCR. Math worksheets arrive as photos/images → not a text PDF →
+    // OCR reconstruction (unaffected). D3 verifies non-regression there.
+    if (!opts?.forceOcr && files.length === 1 && isPdf(files[0])) {
+      setStepLabel("Se analizeaza documentul...");
+      const probe = await probeOverlay(files[0]);
+      if (probe) {
+        setOverlayFile(files[0]);
+        setOverlayFirstPage(probe);
+        setResult("overlay");
+        setProgress(100);
+        setStepLabel("Document fidel pregatit!");
+        setIsProcessing(false);
+        logInfo("Overlay activat (PDF text)", {
+          file: files[0].name,
+          pages: probe.page_count,
+        });
+        return;
+      }
+    }
 
     logAction("OCR pornit", {
       fileCount: files.length,
@@ -178,7 +235,7 @@ export default function TraduceriPage() {
           onEngineChange={setTranslateEngine}
         />
         <button
-          onClick={handleProcess}
+          onClick={() => handleProcess()}
           disabled={files.length === 0 || isProcessing}
           aria-label="Proceseaza fisierele selectate"
           aria-busy={isProcessing}
@@ -225,14 +282,29 @@ export default function TraduceriPage() {
             Document procesat!
           </p>
           <p className="text-sm opacity-70 mt-1">
-            Foloseste butoanele Original / RO / SK pentru a naviga intre
-            variante.
+            {overlayFile
+              ? "Document fidel: comuta Original / Tradus, editeaza direct pe pagina, apoi Printeaza / PDF."
+              : "Foloseste butoanele Original / RO / SK pentru a naviga intre variante."}
           </p>
         </div>
       )}
 
-      {/* Document Viewer with 3-step method (or fallback to PreviewPanel) */}
-      {result && structuredPages ? (
+      {/* Overlay (pixel-perfect) for text PDFs, else 3-step Document Viewer, else preview */}
+      {overlayFile ? (
+        <OverlayViewer
+          file={overlayFile}
+          firstPage={overlayFirstPage ?? undefined}
+          sourceLang={sourceLang}
+          targetLang={targetLang}
+          translateEngine={translateEngine}
+          filename={files[0]?.name?.replace(/\.[^.]+$/, "") || "traducere"}
+          onFallback={() => {
+            setOverlayFile(null);
+            setOverlayFirstPage(null);
+            handleProcess({ forceOcr: true });
+          }}
+        />
+      ) : result && structuredPages ? (
         <DocumentViewer
           structuredPages={structuredPages as never[]}
           fullHtml={result}
