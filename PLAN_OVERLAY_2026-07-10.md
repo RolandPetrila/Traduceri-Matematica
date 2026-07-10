@@ -55,8 +55,12 @@ complexe: reordonează, pierde tabele, taie logo-uri. Vezi `Analyse CettaClear 2
       perfect pe fundalul redactat, coloanele din dreapta NEclipate, tabel+semnatura+footer identice cu
       originalul. Fix: scos `max-width:100%` de pe `.ov-page` (distorsiona/cliba spans pt fix) → `.ov-wrap`
       scroll orizontal + media query <900px. — 2026-07-10
-- [ ] **D3** (GATED — deploy Roland) redeploy api+frontend + verificare live pe `Analyse CettaClear` + o fișă
-      matematică (non-regresie). Necesită `!` de la Roland (R-DEPLOY, outward-facing).
+- [x] **D3** — DEPLOY LIVE FĂCUT (Roland via `!`, 2026-07-10): API `traduceri-api` + frontend `traduceri-frontend`
+      redeployate. `/api/overlay` verificat LIVE în PRODUCȚIE (POST raport real → HTTP 200, CORS OK, 96 linii,
+      2 PNG-uri, 708ms). Frontend live încarcă bundle-ul nou fără erori. Capcană rezolvată: `cd` cu backslash
+      eșua în bash (`!` rulează în bash) → folosește `/c/...` forward-slash. RĂMAS (test manual Roland): upload
+      `Analyse CettaClear.pdf` în app live → confirmă overlay-ul + editare/toggle/print; + o poză de fișă
+      matematică pt non-regresie (trebuie să meargă pe OCR, nu overlay).
 
 ## Gotchas (din POC + audit pilot)
 
