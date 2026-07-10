@@ -72,9 +72,20 @@ def protect_for_deepl(text: str) -> str:
 
 
 def restore_from_deepl(text: str) -> str:
-    """Strip <keep> wrappers and undo XML escaping after DeepL translation."""
+    """Strip <keep> wrappers and undo XML escaping after DeepL translation.
+
+    DeepL's XML tag handling perturbs whitespace around inline tags: combined with
+    protect_for_deepl moving the leading space INSIDE <keep> (so it's never lost),
+    DeepL sometimes ALSO inserts its own space → a double space before a formula
+    ("je  $60$"). It can likewise leave a space before punctuation ("$80$ ."). Both
+    are always wrong in prose, so normalize: collapse space runs and drop spaces
+    before punctuation. Math content lives inside $...$ and is unaffected in practice.
+    """
     text = text.replace("<keep>", "").replace("</keep>", "")
-    return _xml_unescape(text)
+    text = _xml_unescape(text)
+    text = re.sub(r"  +", " ", text)
+    text = re.sub(r" +([.,;:!?])", r"\1", text)
+    return text
 
 
 def protect_with_placeholders(text: str) -> tuple[str, dict[str, str]]:

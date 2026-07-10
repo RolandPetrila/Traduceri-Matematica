@@ -75,17 +75,22 @@ def test_deepl_preserves_space_before_formula():
     """
     import re
 
-    def deepl_trims_space_before_tag(protected: str) -> str:
-        return re.sub(r"(\S) <keep>", r"\1<keep>", protected)
-
+    # DeepL's whitespace handling around inline tags is inconsistent; cover the
+    # three observed behaviours. All must round-trip to the original single space.
+    sims = [
+        lambda p: p,                                          # leaves as-is
+        lambda p: re.sub(r"(\S) <keep>", r"\1<keep>", p),     # drops the outside space
+        lambda p: re.sub(r"(\S)<keep> ", r"\1 <keep> ", p),  # adds one -> double space
+    ]
     cases = [
         "Veľkosť uhla A je $60^\\circ$ a B je $80^\\circ$.",
         "Vypočítajte pomocou vzťahu: $m(\\angle A) = 180$",
         "($x$) plus $y$ stays correct",  # paren must NOT gain a stray space
     ]
     for s in cases:
-        restored = restore_from_deepl(deepl_trims_space_before_tag(protect_for_deepl(s)))
-        assert restored == s, f"space not preserved: {restored!r} != {s!r}"
+        for sim in sims:
+            restored = restore_from_deepl(sim(protect_for_deepl(s)))
+            assert restored == s, f"space not preserved: {restored!r} != {s!r}"
 
 
 def test_placeholder_roundtrip_is_identity():
