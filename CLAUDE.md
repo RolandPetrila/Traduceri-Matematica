@@ -16,7 +16,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
   - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
   - Deploy real = confirmare explicita de la Roland (linkare conturi + env vars).
-- **Ultima sesiune**: 2026-07-07
+- **Ultima sesiune**: 2026-07-11 — Overlay „document fidel" LIVE (pixel-perfect PDF text) + fix SEV1 CORS (traducere browser reparata: text/plain) + naming export D/G. Snapshot: `~/.claude/context-snapshots/Traduceri-Matematica-checkpoint-2026-07-11/`
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 
