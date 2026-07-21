@@ -8,9 +8,17 @@ export interface TabConfig {
   label: string;
   icon: string;
   default?: boolean;
+  // "iframe" = static self-contained module served from public/<id>/index.html,
+  // wired natively by the shell via <IframeModule> (drop folder + tabs.json
+  // entry, zero shell edits). Absent/"react" = a native React panel wired
+  // explicitly in page.tsx. See PLAN_modul_planse §16.3.
+  kind?: "iframe" | "react";
+  description?: string;
 }
 
-export const TABS: TabConfig[] = tabsData.tabs;
+// Cast: JSON widens the `kind` literals to `string`; the shape is validated by
+// the canonical tabs.json we control.
+export const TABS: TabConfig[] = tabsData.tabs as TabConfig[];
 export const DEFAULT_TAB =
   TABS.find((t) => t.default)?.id || TABS[0]?.id || "traduceri";
 export type TabId = string;

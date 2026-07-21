@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planșe — generatoare educaționale</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="planse-app">
+      <header class="planse-head">
+        <h1>🧩 Planșe educaționale</h1>
+        <p class="sub">
+          Generare instant, offline, printabilă A4. Alege un tip din bara de mai
+          jos.
+        </p>
+      </header>
+
+      <!-- Sub-tab bar: one per generator + Școlare (AI, online). Populated by
+           app.js from the SUBTABS list so adding a generator later = one line. -->
+      <nav id="subtabs" class="subtabs" aria-label="Tipuri de planșe"></nav>
+
+      <main id="panel" class="panel" aria-live="polite">
+        <!-- filled by app.js -->
+      </main>
+
+      <footer class="planse-foot">
+        <span>Modul „Planșe" · Faza 0 (schelet)</span>
+      </footer>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>

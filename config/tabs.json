@@ -4,6 +4,13 @@
     { "id": "convertor", "label": "Convertor", "icon": "🔄" },
     { "id": "editor", "label": "Editor", "icon": "✏️" },
     { "id": "asistent", "label": "Asistent AI", "icon": "🤖" },
-    { "id": "istoric", "label": "Istoric", "icon": "📋" }
+    { "id": "istoric", "label": "Istoric", "icon": "📋" },
+    {
+      "id": "planse",
+      "label": "Planșe",
+      "icon": "🧩",
+      "kind": "iframe",
+      "description": "Generatoare de planșe educaționale A4 — instant, offline, printabile."
+    }
   ]
 }
