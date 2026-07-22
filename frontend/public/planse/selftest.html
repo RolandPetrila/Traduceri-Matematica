@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planșe — Selftest (gate corectitudine)</title>
+    <style>
+      body {
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        background: #10240a;
+        color: #e8f0e0;
+        margin: 0;
+        padding: 24px;
+        line-height: 1.5;
+      }
+      h1 {
+        margin: 0 0 4px;
+      }
+      .sub {
+        opacity: 0.6;
+        margin-bottom: 20px;
+      }
+      .group {
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 16px;
+      }
+      .group h2 {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+      }
+      .ok {
+        color: #86e08a;
+      }
+      .fail {
+        color: #ff8a7a;
+        font-weight: bold;
+      }
+      .line {
+        white-space: pre-wrap;
+      }
+      #verdict {
+        font-size: 1.4rem;
+        font-weight: bold;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      #verdict.pass {
+        background: #1c4a12;
+        color: #b9f5b0;
+      }
+      #verdict.err {
+        background: #4a1512;
+        color: #ffb0a5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧩 Selftest Planșe</h1>
+    <div class="sub">
+      Gate de corectitudine — Stratul 1 (invarianți) + Stratul 2 (oracol
+      byte-exact vs Python). Niciun generator „gata" fără verde aici.
+    </div>
+    <div id="verdict">Se rulează…</div>
+    <div id="out"></div>
+
+    <!-- Ordinea contează: infra întâi, apoi generatoarele -->
+    <script src="./lib/prng.js"></script>
+    <script src="./lib/signature.js"></script>
+    <script src="./lib/render.js"></script>
+    <script src="./generators/labirint.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        var out = document.getElementById("out");
+        var allOk = true;
+
+        // Referință generată din Python real (generator_labirint.py) — dovada
+        // byte-exact a oracolului MT19937. { "nivel:seed": {sig, drumlen} }
+        var PY_REF = {
+          "Usor:0": { sig: "Usor|8x8|619e9b8597d6", drumlen: 45 },
+          "Usor:1": { sig: "Usor|8x8|a7d1231d1032", drumlen: 39 },
+          "Usor:2": { sig: "Usor|8x8|546fc448a118", drumlen: 21 },
+          "Usor:3": { sig: "Usor|8x8|06a4f1ff124d", drumlen: 49 },
+          "Usor:4": { sig: "Usor|8x8|714aa011b900", drumlen: 17 },
+          "Usor:5": { sig: "Usor|8x8|23f82420129c", drumlen: 19 },
+          "Usor:6": { sig: "Usor|8x8|874b852b442f", drumlen: 21 },
+          "Usor:7": { sig: "Usor|8x8|d45c8268a74f", drumlen: 27 },
+          "Standard:0": { sig: "Standard|12x12|7886b1bfd9ed", drumlen: 61 },
+          "Standard:1": { sig: "Standard|12x12|026989476664", drumlen: 65 },
+          "Standard:2": { sig: "Standard|12x12|608dcb43033d", drumlen: 37 },
+          "Standard:3": { sig: "Standard|12x12|280c83b82a63", drumlen: 105 },
+          "Standard:4": { sig: "Standard|12x12|8defaf3d4f22", drumlen: 35 },
+          "Standard:5": { sig: "Standard|12x12|7d11a75bbe0b", drumlen: 79 },
+          "Standard:6": { sig: "Standard|12x12|6e2c4ef3aef0", drumlen: 99 },
+          "Standard:7": { sig: "Standard|12x12|f590742e0563", drumlen: 57 },
+          "Avansat:0": { sig: "Avansat|16x16|bc870d35911b", drumlen: 113 },
+          "Avansat:1": { sig: "Avansat|16x16|afecdefb4c47", drumlen: 89 },
+          "Avansat:2": { sig: "Avansat|16x16|e28e82439872", drumlen: 131 },
+          "Avansat:3": { sig: "Avansat|16x16|744e32d07556", drumlen: 85 },
+          "Avansat:4": { sig: "Avansat|16x16|d5cc4be2160d", drumlen: 69 },
+          "Avansat:5": { sig: "Avansat|16x16|77733475f1fb", drumlen: 95 },
+          "Avansat:6": { sig: "Avansat|16x16|ced3597ac4a6", drumlen: 109 },
+          "Avansat:7": { sig: "Avansat|16x16|d55821e6d7f2", drumlen: 107 },
+        };
+
+        function group(title) {
+          var g = document.createElement("div");
+          g.className = "group";
+          var h = document.createElement("h2");
+          h.textContent = title;
+          g.appendChild(h);
+          out.appendChild(g);
+          return g;
+        }
+        function line(g, text, ok) {
+          var d = document.createElement("div");
+          d.className =
+            "line " + (ok === false ? "fail" : ok === true ? "ok" : "");
+          d.textContent = text;
+          g.appendChild(d);
+          if (ok === false) allOk = false;
+        }
+
+        // 1) MD5 sanity (vectori cunoscuți)
+        (function () {
+          var g = group("1) MD5 — vectori cunoscuți");
+          var Sig = window.PlanseSig;
+          var t1 = Sig.md5("abc") === "900150983cd24fb0d6963f7d28e17f72";
+          var t2 = Sig.md5("") === "d41d8cd98f00b204e9800998ecf8427e";
+          line(g, "md5('abc') = " + Sig.md5("abc"), t1);
+          line(g, "md5('')    = " + Sig.md5(""), t2);
+        })();
+
+        // 2) Labirint — selftest invarianți (Stratul 1)
+        (function () {
+          var g = group("2) Labirint — invarianți (arbore + BFS + drum)");
+          var res = window.PlanseGen.labirint.selftest();
+          res.detalii.forEach(function (d) {
+            line(g, d, d.indexOf("[FAIL]") === -1);
+          });
+        })();
+
+        // 3) Oracol byte-exact vs Python (Stratul 2)
+        (function () {
+          var g = group(
+            "3) Oracol MT19937 — semnături JS == Python (24 cazuri)",
+          );
+          var lab = window.PlanseGen.labirint;
+          var okCount = 0,
+            total = 0;
+          Object.keys(PY_REF).forEach(function (kkey) {
+            total++;
+            var parts = kkey.split(":");
+            var nivel = parts[0],
+              seed = parseInt(parts[1], 10);
+            var ref = PY_REF[kkey];
+            try {
+              var item = lab.buildOne({ nivel: nivel }, seed);
+              var sigOk = item.semnatura === ref.sig;
+              var drumOk = item.drum.length === ref.drumlen;
+              if (sigOk && drumOk) {
+                okCount++;
+              } else {
+                line(
+                  g,
+                  "[FAIL] " +
+                    kkey +
+                    " JS=" +
+                    item.semnatura +
+                    " (drum " +
+                    item.drum.length +
+                    ") vs PY=" +
+                    ref.sig +
+                    " (drum " +
+                    ref.drumlen +
+                    ")",
+                  false,
+                );
+              }
+            } catch (e) {
+              line(g, "[FAIL] " + kkey + " excepție: " + e.message, false);
+            }
+          });
+          line(
+            g,
+            "[" +
+              (okCount === total ? "OK" : "FAIL") +
+              "] " +
+              okCount +
+              "/" +
+              total +
+              " semnături identice byte-cu-byte cu Python",
+            okCount === total,
+          );
+        })();
+
+        var v = document.getElementById("verdict");
+        if (allOk) {
+          v.className = "pass";
+          v.textContent = "✅ TOATE OK — gate de corectitudine VERDE";
+        } else {
+          v.className = "err";
+          v.textContent = "❌ EȘEC — vezi liniile roșii de mai jos";
+        }
+        // expune rezultatul pentru verificare programatică (Puppeteer/CI)
+        window.__SELFTEST_OK__ = allOk;
+      })();
+    </script>
+  </body>
+</html>
