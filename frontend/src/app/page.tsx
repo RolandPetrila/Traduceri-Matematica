@@ -34,7 +34,7 @@ export default function Home() {
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-6">
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
       <Header />
       <TabNav activeTab={activeTab} onTabChange={handleTabChange} />
 

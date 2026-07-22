@@ -25,6 +25,15 @@
     min-height: 100vh;
     font-family: "Patrick Hand", cursive;
   }
+
+  /* Mobile safety: never allow the whole page to scroll sideways (the cause of
+     the "deformed framing" on phones). Wide content scrolls inside its own
+     overflow container instead. */
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
 }
 
 /* Chalkboard texture overlay */
@@ -128,6 +137,24 @@
   pointer-events: none;
   z-index: 0;
   font-family: "Cambria Math", Cambria, serif;
+}
+/* Hide the fixed background math symbols on phones — they clutter the small
+   screen and can push past the viewport edge. */
+@media (max-width: 640px) {
+  .math-decoration {
+    display: none;
+  }
+}
+
+/* Tab bar: on phones the 6 tabs don't fit in one row → scroll horizontally
+   inside the nav instead of breaking the page layout. */
+.tab-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* Drop zone */
