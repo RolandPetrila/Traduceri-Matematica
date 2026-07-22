@@ -13,6 +13,29 @@
     --chalk-yellow: #f5d565;
     --chalk-red: #e8836b;
     --chalk-blue: #7bb8d4;
+
+    /* shadcn/ui tokens — mapate pe tema „cretă" (tabla verde + creta alb/galben).
+       Componentele shadcn (toolbar editor, Sheet, DropdownMenu) mostenesc paleta app-ului. */
+    --background: 94 68% 11%; /* chalkboard-dark */
+    --foreground: 37 24% 92%; /* chalk-white */
+    --card: 96 57% 20%; /* chalkboard */
+    --card-foreground: 37 24% 92%;
+    --popover: 96 45% 13%; /* verde-inchis pt dropdown/sheet (lizibil) */
+    --popover-foreground: 37 24% 92%;
+    --primary: 47 88% 68%; /* chalk-yellow */
+    --primary-foreground: 94 68% 11%;
+    --secondary: 95 56% 27%; /* chalkboard-light */
+    --secondary-foreground: 37 24% 92%;
+    --muted: 96 40% 18%;
+    --muted-foreground: 37 14% 74%;
+    --accent: 95 56% 27%;
+    --accent-foreground: 37 24% 92%;
+    --destructive: 12 74% 66%; /* chalk-red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 94 42% 32%; /* chalkboard-border */
+    --input: 94 42% 32%;
+    --ring: 47 88% 68%; /* focus = chalk-yellow */
+    --radius: 0.5rem;
   }
 
   body {
