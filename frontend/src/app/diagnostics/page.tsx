@@ -168,6 +168,64 @@ export default function DiagnosticsPage() {
     }
   };
 
+  // Auto-recuperare: dezinstaleaza service worker-ul + goleste TOT cache-ul, apoi
+  // reincarca de la retea. Repara situatia "PWA blocat pe o versiune veche".
+  const handleHardReset = async () => {
+    if (
+      !confirm(
+        "Golesti cache-ul aplicatiei si reincarci de la zero? (Repara blocajele pe versiuni vechi. Logurile locale raman.)",
+      )
+    )
+      return;
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if (typeof caches !== "undefined") {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      // best-effort; reincarcam oricum
+    }
+    // reincarca fortand reteaua (bypass cache)
+    location.replace(
+      location.pathname.replace("/diagnostics", "/") + "?fresh=" + Date.now(),
+    );
+  };
+
+  // Self-test: verifica functiile interne cheie (endpoint-uri) si arata rezultatul.
+  const [selfTest, setSelfTest] = useState<string>("");
+  const runSelfTest = async () => {
+    setSelfTest("Se ruleaza...");
+    const api = process.env.NEXT_PUBLIC_API_URL || "";
+    const checks: Array<{ name: string; url: string; opts?: RequestInit }> = [
+      { name: "API health", url: `${api}/api/health` },
+      { name: "DeepL usage", url: `${api}/api/deepl-usage` },
+      { name: "Gemini usage", url: `${api}/api/gemini-usage` },
+      { name: "Loguri (Supabase)", url: `/api/logs?limit=1` },
+    ];
+    const results: string[] = [];
+    for (const c of checks) {
+      const t0 = Date.now();
+      try {
+        const res = await fetch(c.url, { cache: "no-store" });
+        results.push(
+          `${res.ok ? "✅" : "⚠️"} ${c.name}: HTTP ${res.status} (${Date.now() - t0}ms)`,
+        );
+      } catch (e) {
+        results.push(
+          `❌ ${c.name}: ${e instanceof Error ? e.message : "eroare retea"} (${Date.now() - t0}ms)`,
+        );
+      }
+    }
+    results.push(
+      `ℹ️ Service worker: ${"serviceWorker" in navigator ? (navigator.serviceWorker.controller ? "activ" : "inregistrat, fara controller") : "nesuportat"}`,
+    );
+    setSelfTest(results.join("\n"));
+  };
+
   const copyLogs = () => {
     const text = filteredLogs
       .map((l) => {
@@ -231,6 +289,20 @@ export default function DiagnosticsPage() {
           <button onClick={load} className="chalk-btn text-sm">
             Reincarca
           </button>
+          <button
+            onClick={runSelfTest}
+            className="chalk-btn text-sm"
+            title="Verifica functiile interne (API, loguri, service worker)"
+          >
+            Test functii
+          </button>
+          <button
+            onClick={handleHardReset}
+            className="chalk-btn text-sm"
+            title="Goleste cache-ul + service worker si reincarca (repara blocaje pe versiuni vechi)"
+          >
+            Goleste cache &amp; reincarca
+          </button>
           <label className="flex items-center gap-2 text-sm text-chalk-white/70">
             <input
               type="checkbox"
@@ -241,6 +313,12 @@ export default function DiagnosticsPage() {
             Auto-refresh (5s)
           </label>
         </div>
+
+        {selfTest && (
+          <pre className="text-xs bg-black/30 border border-chalk-white/20 rounded-lg p-3 mb-3 whitespace-pre-wrap text-chalk-white/90">
+            {selfTest}
+          </pre>
+        )}
 
         {note && <p className="text-chalk-yellow/80 text-xs mb-3">{note}</p>}
 
