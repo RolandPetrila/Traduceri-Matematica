@@ -612,6 +612,12 @@
         font-family: "Segoe UI", Arial, sans-serif;
       }
 
+      /* Bottom-sheet de unelte — pe desktop = flux normal (panourile se vad ca inainte);
+         titlul/handle-ul de sheet apare doar pe mobil. */
+      .sheet-title {
+        display: none;
+      }
+
       /* ---------- MOBIL (Android / iPhone): foaie fluida, fara ghidaje ---------- */
       @media (max-width: 840px) {
         .page-stack,
@@ -638,8 +644,68 @@
         .findbar input {
           width: 110px;
         }
-        .docname input {
-          width: 130px;
+        .docname {
+          display: none;
+        }
+        .quickbar {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        .quickbar::-webkit-scrollbar {
+          display: none;
+        }
+        .titlerow {
+          margin-bottom: 4px;
+        }
+        .status {
+          display: none;
+        }
+        /* Panourile de unelte devin un panou de jos (bottom-sheet) ascuns implicit,
+           ca foaia de scris sa fie primara. Apesi o categorie ribbon -> se deschide
+           DOAR panoul ei; „Inchide" -> foaia pe tot ecranul. */
+        .tools-sheet {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          max-height: 62vh;
+          overflow-y: auto;
+          background: var(--tool);
+          border-top: 2px solid #4b5563;
+          box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.55);
+          transform: translateY(105%);
+          transition: transform 0.25s ease;
+          z-index: 40;
+        }
+        .tools-sheet.open {
+          transform: translateY(0);
+        }
+        .sheet-title {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          position: sticky;
+          top: 0;
+          background: var(--tool);
+          padding: 10px 12px;
+          font-weight: 700;
+          color: #fff;
+          border-bottom: 1px solid #000;
+          font-size: 15px;
+        }
+        .sheet-close {
+          background: #374151;
+          color: #fff;
+          border: 1px solid #4b5563;
+          border-radius: 8px;
+          padding: 6px 14px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        .tools-sheet .toolbar {
+          padding: 10px 12px;
         }
       }
 
@@ -766,395 +832,418 @@
         <button class="rtab" data-tab="math">🧮 Matematică</button>
       </div>
 
-      <!-- ACASA: formatare text + paragraf -->
-      <div class="toolbar tabpanel" data-panel="home">
-        <select onchange="cmd('fontName', this.value)" title="Font">
-          <option value="">Font</option>
-          <optgroup label="Oficiale / documente">
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Cambria">Cambria</option>
-            <option value="Garamond">Garamond</option>
-            <option value="Book Antiqua">Book Antiqua</option>
-            <option value="Calibri">Calibri</option>
-          </optgroup>
-          <optgroup label="Sans / moderne">
-            <option value="Arial">Arial</option>
-            <option value="Verdana">Verdana</option>
-            <option value="Tahoma">Tahoma</option>
-            <option value="Segoe UI">Segoe UI</option>
-          </optgroup>
-          <optgroup label="Monospace">
-            <option value="Courier New">Courier New</option>
-            <option value="Consolas">Consolas</option>
-          </optgroup>
-        </select>
-        <select onchange="setFontSize(this.value)" title="Mărime (pt)">
-          <option value="">pt</option>
-          <option>8</option>
-          <option>9</option>
-          <option>10</option>
-          <option>11</option>
-          <option selected>12</option>
-          <option>14</option>
-          <option>16</option>
-          <option>18</option>
-          <option>20</option>
-          <option>24</option>
-          <option>28</option>
-          <option>36</option>
-          <option>48</option>
-          <option>72</option>
-        </select>
-        <span class="sep"></span>
-        <button onclick="cmd('bold')" title="Îngroșat"><b>B</b></button>
-        <button onclick="cmd('italic')" title="Înclinat"><i>I</i></button>
-        <button onclick="cmd('underline')" title="Subliniat"><u>U</u></button>
-        <button onclick="cmd('strikeThrough')" title="Tăiat">S̶</button>
-        <span class="sep"></span>
-        <button
-          onmousedown="event.preventDefault()"
-          onclick="openPalette('text', this)"
-          title="Culoare text"
-        >
-          <b style="color: #ef4444">A</b> ▾
-        </button>
-        <button
-          onmousedown="event.preventDefault()"
-          onclick="openPalette('hl', this)"
-          title="Evidențiere"
-        >
-          🖍 ▾
-        </button>
-        <button onclick="cmd('removeFormat')" title="Șterge formatarea">
-          ⌫
-        </button>
-        <span class="sep"></span>
-        <select onchange="block(this.value)" title="Stil paragraf">
-          <option value="P">Text normal</option>
-          <option value="H1">Titlu 1</option>
-          <option value="H2">Titlu 2</option>
-          <option value="H3">Titlu 3</option>
-          <option value="BLOCKQUOTE">Citat</option>
-        </select>
-        <button onclick="cmd('justifyLeft')" title="Stânga">⯇</button>
-        <button onclick="cmd('justifyCenter')" title="Centru">☰</button>
-        <button onclick="cmd('justifyRight')" title="Dreapta">⯈</button>
-        <button onclick="cmd('justifyFull')" title="Justify">▤</button>
-        <button onclick="cmd('insertUnorderedList')" title="Listă">•</button>
-        <button onclick="cmd('insertOrderedList')" title="Listă numerotată">
-          1.
-        </button>
-        <button onclick="cmd('outdent')" title="Indent −">⇤</button>
-        <button onclick="cmd('indent')" title="Indent +">⇥</button>
-        <span class="sep"></span>
-        <button
-          onclick="toggleFindBar()"
-          title="Găsește și înlocuiește (Ctrl+F)"
-        >
-          🔍 Găsește
-        </button>
-      </div>
-
-      <!-- INSERARE -->
-      <div class="toolbar tabpanel" data-panel="insert" hidden>
-        <button onclick="insertLink()" title="Inserează link">🔗 Link</button>
-        <button onclick="insertImage()" title="Inserează imagine">
-          🖼 Imagine
-        </button>
-        <button onclick="cmd('insertHorizontalRule')" title="Linie orizontală">
-          — Linie
-        </button>
-        <button onclick="insertDate()" title="Inserează data de azi">
-          📅 Data
-        </button>
-        <button
-          onclick="pageBreak()"
-          title="Întrerupere de pagină (la print/PDF)"
-        >
-          ⤓ Întrerupere pagină
-        </button>
-        <span class="sep"></span>
-        <button onclick="insertTable()" title="Inserează tabel 3×3">
-          ▦ Tabel nou
-        </button>
-      </div>
-
-      <!-- TABEL: unelte tip Excel -->
-      <div class="toolbar tabpanel" data-panel="table" hidden>
-        <button onclick="addRow(false)" title="Adaugă rând deasupra">
-          + Rând ↑
-        </button>
-        <button onclick="addRow(true)" title="Adaugă rând dedesubt">
-          + Rând ↓
-        </button>
-        <button onclick="delRow()" title="Șterge rândul curent">− Rând</button>
-        <span class="sep"></span>
-        <button onclick="addCol(false)" title="Adaugă coloană la stânga">
-          + Col ←
-        </button>
-        <button onclick="addCol(true)" title="Adaugă coloană la dreapta">
-          + Col →
-        </button>
-        <button onclick="delCol()" title="Șterge coloana curentă">− Col</button>
-        <span class="sep"></span>
-        <button
-          onclick="toggleHeaderRow()"
-          title="Marchează rândul curent ca titlu de tabel (bold)"
-        >
-          ⬒ Rând titlu
-        </button>
-        <span class="sep"></span>
-        <button
-          onclick="mergeCells()"
-          title="Unește celulele selectate (click pe prima, Shift+Click pe ultima)"
-        >
-          ⛓ Unește
-        </button>
-        <button onclick="splitCell()" title="Desparte celula unită curentă">
-          ✂ Desparte
-        </button>
-        <span class="sep"></span>
-        <button
-          onclick="sortTable(1)"
-          title="Sortează tabelul crescător după coloana curentă"
-        >
-          🔼 Sortează
-        </button>
-        <button
-          onclick="sortTable(-1)"
-          title="Sortează tabelul descrescător după coloana curentă"
-        >
-          🔽 Sortează
-        </button>
-        <button
-          onclick="sumRow()"
-          title="Adaugă/actualizează un rând cu totalul pe fiecare coloană numerică"
-        >
-          Σ Total
-        </button>
-        <span class="sep"></span>
-        <button
-          onmousedown="event.preventDefault()"
-          onclick="openPalette('cell', this)"
-          title="Culoare fundal celulă"
-        >
-          🎨 Celulă ▾
-        </button>
-        <button
-          onclick="toggleZebra()"
-          title="Activează/dezactivează dungi alternante pe rânduri"
-        >
-          ▥ Dungi
-        </button>
-      </div>
-
-      <!-- MATEMATICA: simboluri + formule pe clase (gimnaziu + liceu) -->
-      <div class="toolbar tabpanel" data-panel="math" hidden>
-        <div class="math-search">
-          <input
-            id="mathSearch"
-            type="text"
-            placeholder="🔍 Caută: limită, fracție, √, integrală, derivată..."
-            autocomplete="off"
-            title="Caută simbol / structură / formulă și inserează direct"
-          />
-          <div class="math-results" id="mathResults" hidden></div>
+      <!-- Panou de unelte (mobil = bottom-sheet ascuns implicit; desktop = flux normal) -->
+      <div class="tools-sheet" id="toolsSheet">
+        <div class="sheet-title">
+          <span id="sheetTitle">Unelte</span>
+          <button
+            type="button"
+            class="sheet-close"
+            onclick="closeTools()"
+            title="Închide uneltele — foaia pe tot ecranul"
+          >
+            ▾ Închide
+          </button>
         </div>
-        <span class="sep"></span>
-        <button onclick="cmd('subscript')" title="Indice">x₂</button>
-        <button onclick="cmd('superscript')" title="Exponent">x²</button>
-        <span class="sep"></span>
-        <select
-          onchange="insertSymbol(this)"
-          title="Inserează simbol matematic"
-        >
-          <option value="">∑ Simbol ▾</option>
-          <optgroup label="Aritmetică / relații">
-            <option value="±">± (plus-minus)</option>
-            <option value="×">× (înmulțire)</option>
-            <option value="÷">÷ (împărțire)</option>
-            <option value="≠">≠ (diferit)</option>
-            <option value="≤">≤ (mai mic sau egal)</option>
-            <option value="≥">≥ (mai mare sau egal)</option>
-            <option value="≈">≈ (aproximativ egal)</option>
-            <option value="≡">≡ (identic / congruent modulo)</option>
-            <option value="∝">∝ (direct proporțional cu)</option>
-            <option value="∞">∞ (infinit)</option>
-            <option value="%">% (procent)</option>
-            <option value="‰">‰ (la mie)</option>
-            <option value="⌊⌋">⌊ ⌋ (parte întreagă)</option>
-            <option value="⌈⌉">⌈ ⌉ (rotunjire în sus)</option>
-            <option value="∣">∣ (divide)</option>
-            <option value="∤">∤ (nu divide)</option>
-          </optgroup>
-          <optgroup label="Puteri și radicali">
-            <option value="√">√ (radical de ordin 2)</option>
-            <option value="∛">∛ (radical de ordin 3)</option>
-            <option value="∜">∜ (radical de ordin 4)</option>
-            <option value="π">π (pi)</option>
-            <option value="e">e (numărul lui Euler)</option>
-          </optgroup>
-          <optgroup label="Analiză / calcul">
-            <option value="Σ">Σ (sumă)</option>
-            <option value="∏">∏ (produs)</option>
-            <option value="∫">∫ (integrală)</option>
-            <option value="∬">∬ (integrală dublă)</option>
-            <option value="∮">∮ (integrală pe contur)</option>
-            <option value="∂">∂ (derivată parțială)</option>
-            <option value="∇">∇ (nabla)</option>
-            <option value="Δ">Δ (delta, variație)</option>
-            <option value="lim">lim (limită)</option>
-            <option value="→">→ (tinde către)</option>
-            <option value="↦">↦ (funcția asociază)</option>
-            <option value="′">′ (derivata întâi)</option>
-            <option value="″">″ (derivata a doua)</option>
-          </optgroup>
-          <optgroup label="Mulțimi">
-            <option value="∈">∈ (aparține)</option>
-            <option value="∉">∉ (nu aparține)</option>
-            <option value="⊂">⊂ (inclus strict)</option>
-            <option value="⊆">⊆ (inclus)</option>
-            <option value="⊃">⊃ (include strict)</option>
-            <option value="⊇">⊇ (include)</option>
-            <option value="∪">∪ (reuniune)</option>
-            <option value="∩">∩ (intersecție)</option>
-            <option value="∖">∖ (diferență de mulțimi)</option>
-            <option value="∅">∅ (mulțimea vidă)</option>
-            <option value="ℕ">ℕ (numere naturale)</option>
-            <option value="ℕ*">ℕ* (naturale nenule)</option>
-            <option value="ℤ">ℤ (numere întregi)</option>
-            <option value="ℚ">ℚ (numere raționale)</option>
-            <option value="ℝ">ℝ (numere reale)</option>
-            <option value="ℝ*">ℝ* (reale nenule)</option>
-            <option value="ℂ">ℂ (numere complexe)</option>
-          </optgroup>
-          <optgroup label="Logică">
-            <option value="∀">∀ (oricare ar fi)</option>
-            <option value="∃">∃ (există)</option>
-            <option value="∄">∄ (nu există)</option>
-            <option value="¬">¬ (negație)</option>
-            <option value="∧">∧ (și)</option>
-            <option value="∨">∨ (sau)</option>
-            <option value="⊕">⊕ (sau exclusiv)</option>
-            <option value="⇒">⇒ (implică)</option>
-            <option value="⇔">⇔ (echivalent)</option>
-            <option value="∴">∴ (deci, prin urmare)</option>
-            <option value="∵">∵ (deoarece, pentru că)</option>
-          </optgroup>
-          <optgroup label="Geometrie">
-            <option value="∠">∠ (unghi)</option>
-            <option value="∡">∡ (unghi măsurat)</option>
-            <option value="△">△ (triunghi)</option>
-            <option value="∥">∥ (paralel)</option>
-            <option value="∦">∦ (neparalel)</option>
-            <option value="⊥">⊥ (perpendicular)</option>
-            <option value="≅">≅ (congruent)</option>
-            <option value="∼">∼ (asemenea)</option>
-            <option value="°">° (grad)</option>
-            <option value="□">□ (pătrat/dreptunghi)</option>
-            <option value="▱">▱ (paralelogram)</option>
-            <option value="⊙">⊙ (cerc)</option>
-            <option value="⌢">⌢ (arc de cerc)</option>
-          </optgroup>
-          <optgroup label="Vectori">
-            <option value="a⃗">a⃗ (vector a)</option>
-            <option value="u⃗">u⃗ (vector u)</option>
-            <option value="v⃗">v⃗ (vector v)</option>
-            <option value="AB⃗">AB⃗ (vector AB)</option>
-            <option value="·">· (produs scalar)</option>
-          </optgroup>
-          <optgroup label="Combinatorică / statistică / probabilități">
-            <option value="!">! (factorial)</option>
-            <option value="∁">∁ (complementară)</option>
-            <option value="Ω">Ω (spațiu de selecție)</option>
-            <option value="x̄">x̄ (medie)</option>
-          </optgroup>
-          <optgroup label="Litere grecești">
-            <option value="α">α (alfa)</option>
-            <option value="β">β (beta)</option>
-            <option value="γ">γ (gama)</option>
-            <option value="δ">δ (delta mic)</option>
-            <option value="ε">ε (epsilon)</option>
-            <option value="θ">θ (theta)</option>
-            <option value="λ">λ (lambda)</option>
-            <option value="μ">μ (miu)</option>
-            <option value="ξ">ξ (xi)</option>
-            <option value="ρ">ρ (rho)</option>
-            <option value="σ">σ (sigma)</option>
-            <option value="τ">τ (tau)</option>
-            <option value="φ">φ (fi)</option>
-            <option value="ψ">ψ (psi)</option>
-            <option value="ω">ω (omega mic)</option>
-            <option value="Φ">Φ (fi mare)</option>
-            <option value="Ψ">Ψ (psi mare)</option>
-            <option value="Θ">Θ (theta mare)</option>
-            <option value="Λ">Λ (lambda mare)</option>
-          </optgroup>
-        </select>
-        <select
-          onchange="insertStructure(this)"
-          title="Inserează structură editabilă (fracție, radical, matrice...)"
-        >
-          <option value="">⚟ Structură ▾</option>
-          <optgroup label="Fracție">
-            <option value="frac">Fracție (a/b)</option>
-          </optgroup>
-          <optgroup label="Radical">
-            <option value="root">Radical (√, cu index opțional)</option>
-          </optgroup>
-          <optgroup label="Sumă / Produs / Integrală">
-            <option value="sum">Sumă (Σ) cu limite</option>
-            <option value="prod">Produs (∏) cu limite</option>
-            <option value="integral">Integrală (∫) cu limite</option>
-          </optgroup>
-          <optgroup label="Paranteze">
-            <option value="paren_round">( ) rotunde</option>
-            <option value="paren_square">[ ] pătrate</option>
-            <option value="paren_curly">{ } acolade</option>
-            <option value="paren_abs">| | (modul)</option>
-          </optgroup>
-          <optgroup label="Funcție">
-            <option value="func_sin">sin( )</option>
-            <option value="func_cos">cos( )</option>
-            <option value="func_tg">tg( )</option>
-            <option value="func_ctg">ctg( )</option>
-            <option value="func_ln">ln( )</option>
-            <option value="func_log">log ( ) cu bază</option>
-          </optgroup>
-          <optgroup label="Limită">
-            <option value="limit">lim, cu subscript</option>
-          </optgroup>
-          <optgroup label="Accent">
-            <option value="accent_bar">bară deasupra (x̄, medie)</option>
-            <option value="accent_vec">vector deasupra (x⃗)</option>
-          </optgroup>
-          <optgroup label="Matrice">
-            <option value="matrix2">Matrice 2×2</option>
-            <option value="matrix3">Matrice 3×3</option>
-          </optgroup>
-        </select>
-        <span class="sep"></span>
-        <select id="clasaSelect" onchange="onClasaChange(this)" title="Clasă">
-          <option value="">Clasă ▾</option>
-          <option value="5">Clasa a V-a</option>
-          <option value="6">Clasa a VI-a</option>
-          <option value="7">Clasa a VII-a</option>
-          <option value="8">Clasa a VIII-a</option>
-          <option value="9">Clasa a IX-a</option>
-          <option value="10">Clasa a X-a</option>
-          <option value="11">Clasa a XI-a</option>
-          <option value="12">Clasa a XII-a</option>
-        </select>
-        <select
-          id="formulaSelect"
-          onchange="insertFormula(this)"
-          title="Formulă"
-          disabled
-        >
-          <option value="">Alege clasa întâi</option>
-        </select>
+
+        <!-- ACASA: formatare text + paragraf -->
+        <div class="toolbar tabpanel" data-panel="home">
+          <select onchange="cmd('fontName', this.value)" title="Font">
+            <option value="">Font</option>
+            <optgroup label="Oficiale / documente">
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Cambria">Cambria</option>
+              <option value="Garamond">Garamond</option>
+              <option value="Book Antiqua">Book Antiqua</option>
+              <option value="Calibri">Calibri</option>
+            </optgroup>
+            <optgroup label="Sans / moderne">
+              <option value="Arial">Arial</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Tahoma">Tahoma</option>
+              <option value="Segoe UI">Segoe UI</option>
+            </optgroup>
+            <optgroup label="Monospace">
+              <option value="Courier New">Courier New</option>
+              <option value="Consolas">Consolas</option>
+            </optgroup>
+          </select>
+          <select onchange="setFontSize(this.value)" title="Mărime (pt)">
+            <option value="">pt</option>
+            <option>8</option>
+            <option>9</option>
+            <option>10</option>
+            <option>11</option>
+            <option selected>12</option>
+            <option>14</option>
+            <option>16</option>
+            <option>18</option>
+            <option>20</option>
+            <option>24</option>
+            <option>28</option>
+            <option>36</option>
+            <option>48</option>
+            <option>72</option>
+          </select>
+          <span class="sep"></span>
+          <button onclick="cmd('bold')" title="Îngroșat"><b>B</b></button>
+          <button onclick="cmd('italic')" title="Înclinat"><i>I</i></button>
+          <button onclick="cmd('underline')" title="Subliniat"><u>U</u></button>
+          <button onclick="cmd('strikeThrough')" title="Tăiat">S̶</button>
+          <span class="sep"></span>
+          <button
+            onmousedown="event.preventDefault()"
+            onclick="openPalette('text', this)"
+            title="Culoare text"
+          >
+            <b style="color: #ef4444">A</b> ▾
+          </button>
+          <button
+            onmousedown="event.preventDefault()"
+            onclick="openPalette('hl', this)"
+            title="Evidențiere"
+          >
+            🖍 ▾
+          </button>
+          <button onclick="cmd('removeFormat')" title="Șterge formatarea">
+            ⌫
+          </button>
+          <span class="sep"></span>
+          <select onchange="block(this.value)" title="Stil paragraf">
+            <option value="P">Text normal</option>
+            <option value="H1">Titlu 1</option>
+            <option value="H2">Titlu 2</option>
+            <option value="H3">Titlu 3</option>
+            <option value="BLOCKQUOTE">Citat</option>
+          </select>
+          <button onclick="cmd('justifyLeft')" title="Stânga">⯇</button>
+          <button onclick="cmd('justifyCenter')" title="Centru">☰</button>
+          <button onclick="cmd('justifyRight')" title="Dreapta">⯈</button>
+          <button onclick="cmd('justifyFull')" title="Justify">▤</button>
+          <button onclick="cmd('insertUnorderedList')" title="Listă">•</button>
+          <button onclick="cmd('insertOrderedList')" title="Listă numerotată">
+            1.
+          </button>
+          <button onclick="cmd('outdent')" title="Indent −">⇤</button>
+          <button onclick="cmd('indent')" title="Indent +">⇥</button>
+          <span class="sep"></span>
+          <button
+            onclick="toggleFindBar()"
+            title="Găsește și înlocuiește (Ctrl+F)"
+          >
+            🔍 Găsește
+          </button>
+        </div>
+
+        <!-- INSERARE -->
+        <div class="toolbar tabpanel" data-panel="insert" hidden>
+          <button onclick="insertLink()" title="Inserează link">🔗 Link</button>
+          <button onclick="insertImage()" title="Inserează imagine">
+            🖼 Imagine
+          </button>
+          <button
+            onclick="cmd('insertHorizontalRule')"
+            title="Linie orizontală"
+          >
+            — Linie
+          </button>
+          <button onclick="insertDate()" title="Inserează data de azi">
+            📅 Data
+          </button>
+          <button
+            onclick="pageBreak()"
+            title="Întrerupere de pagină (la print/PDF)"
+          >
+            ⤓ Întrerupere pagină
+          </button>
+          <span class="sep"></span>
+          <button onclick="insertTable()" title="Inserează tabel 3×3">
+            ▦ Tabel nou
+          </button>
+        </div>
+
+        <!-- TABEL: unelte tip Excel -->
+        <div class="toolbar tabpanel" data-panel="table" hidden>
+          <button onclick="addRow(false)" title="Adaugă rând deasupra">
+            + Rând ↑
+          </button>
+          <button onclick="addRow(true)" title="Adaugă rând dedesubt">
+            + Rând ↓
+          </button>
+          <button onclick="delRow()" title="Șterge rândul curent">
+            − Rând
+          </button>
+          <span class="sep"></span>
+          <button onclick="addCol(false)" title="Adaugă coloană la stânga">
+            + Col ←
+          </button>
+          <button onclick="addCol(true)" title="Adaugă coloană la dreapta">
+            + Col →
+          </button>
+          <button onclick="delCol()" title="Șterge coloana curentă">
+            − Col
+          </button>
+          <span class="sep"></span>
+          <button
+            onclick="toggleHeaderRow()"
+            title="Marchează rândul curent ca titlu de tabel (bold)"
+          >
+            ⬒ Rând titlu
+          </button>
+          <span class="sep"></span>
+          <button
+            onclick="mergeCells()"
+            title="Unește celulele selectate (click pe prima, Shift+Click pe ultima)"
+          >
+            ⛓ Unește
+          </button>
+          <button onclick="splitCell()" title="Desparte celula unită curentă">
+            ✂ Desparte
+          </button>
+          <span class="sep"></span>
+          <button
+            onclick="sortTable(1)"
+            title="Sortează tabelul crescător după coloana curentă"
+          >
+            🔼 Sortează
+          </button>
+          <button
+            onclick="sortTable(-1)"
+            title="Sortează tabelul descrescător după coloana curentă"
+          >
+            🔽 Sortează
+          </button>
+          <button
+            onclick="sumRow()"
+            title="Adaugă/actualizează un rând cu totalul pe fiecare coloană numerică"
+          >
+            Σ Total
+          </button>
+          <span class="sep"></span>
+          <button
+            onmousedown="event.preventDefault()"
+            onclick="openPalette('cell', this)"
+            title="Culoare fundal celulă"
+          >
+            🎨 Celulă ▾
+          </button>
+          <button
+            onclick="toggleZebra()"
+            title="Activează/dezactivează dungi alternante pe rânduri"
+          >
+            ▥ Dungi
+          </button>
+        </div>
+
+        <!-- MATEMATICA: simboluri + formule pe clase (gimnaziu + liceu) -->
+        <div class="toolbar tabpanel" data-panel="math" hidden>
+          <div class="math-search">
+            <input
+              id="mathSearch"
+              type="text"
+              placeholder="🔍 Caută: limită, fracție, √, integrală, derivată..."
+              autocomplete="off"
+              title="Caută simbol / structură / formulă și inserează direct"
+            />
+            <div class="math-results" id="mathResults" hidden></div>
+          </div>
+          <span class="sep"></span>
+          <button onclick="cmd('subscript')" title="Indice">x₂</button>
+          <button onclick="cmd('superscript')" title="Exponent">x²</button>
+          <span class="sep"></span>
+          <select
+            onchange="insertSymbol(this)"
+            title="Inserează simbol matematic"
+          >
+            <option value="">∑ Simbol ▾</option>
+            <optgroup label="Aritmetică / relații">
+              <option value="±">± (plus-minus)</option>
+              <option value="×">× (înmulțire)</option>
+              <option value="÷">÷ (împărțire)</option>
+              <option value="≠">≠ (diferit)</option>
+              <option value="≤">≤ (mai mic sau egal)</option>
+              <option value="≥">≥ (mai mare sau egal)</option>
+              <option value="≈">≈ (aproximativ egal)</option>
+              <option value="≡">≡ (identic / congruent modulo)</option>
+              <option value="∝">∝ (direct proporțional cu)</option>
+              <option value="∞">∞ (infinit)</option>
+              <option value="%">% (procent)</option>
+              <option value="‰">‰ (la mie)</option>
+              <option value="⌊⌋">⌊ ⌋ (parte întreagă)</option>
+              <option value="⌈⌉">⌈ ⌉ (rotunjire în sus)</option>
+              <option value="∣">∣ (divide)</option>
+              <option value="∤">∤ (nu divide)</option>
+            </optgroup>
+            <optgroup label="Puteri și radicali">
+              <option value="√">√ (radical de ordin 2)</option>
+              <option value="∛">∛ (radical de ordin 3)</option>
+              <option value="∜">∜ (radical de ordin 4)</option>
+              <option value="π">π (pi)</option>
+              <option value="e">e (numărul lui Euler)</option>
+            </optgroup>
+            <optgroup label="Analiză / calcul">
+              <option value="Σ">Σ (sumă)</option>
+              <option value="∏">∏ (produs)</option>
+              <option value="∫">∫ (integrală)</option>
+              <option value="∬">∬ (integrală dublă)</option>
+              <option value="∮">∮ (integrală pe contur)</option>
+              <option value="∂">∂ (derivată parțială)</option>
+              <option value="∇">∇ (nabla)</option>
+              <option value="Δ">Δ (delta, variație)</option>
+              <option value="lim">lim (limită)</option>
+              <option value="→">→ (tinde către)</option>
+              <option value="↦">↦ (funcția asociază)</option>
+              <option value="′">′ (derivata întâi)</option>
+              <option value="″">″ (derivata a doua)</option>
+            </optgroup>
+            <optgroup label="Mulțimi">
+              <option value="∈">∈ (aparține)</option>
+              <option value="∉">∉ (nu aparține)</option>
+              <option value="⊂">⊂ (inclus strict)</option>
+              <option value="⊆">⊆ (inclus)</option>
+              <option value="⊃">⊃ (include strict)</option>
+              <option value="⊇">⊇ (include)</option>
+              <option value="∪">∪ (reuniune)</option>
+              <option value="∩">∩ (intersecție)</option>
+              <option value="∖">∖ (diferență de mulțimi)</option>
+              <option value="∅">∅ (mulțimea vidă)</option>
+              <option value="ℕ">ℕ (numere naturale)</option>
+              <option value="ℕ*">ℕ* (naturale nenule)</option>
+              <option value="ℤ">ℤ (numere întregi)</option>
+              <option value="ℚ">ℚ (numere raționale)</option>
+              <option value="ℝ">ℝ (numere reale)</option>
+              <option value="ℝ*">ℝ* (reale nenule)</option>
+              <option value="ℂ">ℂ (numere complexe)</option>
+            </optgroup>
+            <optgroup label="Logică">
+              <option value="∀">∀ (oricare ar fi)</option>
+              <option value="∃">∃ (există)</option>
+              <option value="∄">∄ (nu există)</option>
+              <option value="¬">¬ (negație)</option>
+              <option value="∧">∧ (și)</option>
+              <option value="∨">∨ (sau)</option>
+              <option value="⊕">⊕ (sau exclusiv)</option>
+              <option value="⇒">⇒ (implică)</option>
+              <option value="⇔">⇔ (echivalent)</option>
+              <option value="∴">∴ (deci, prin urmare)</option>
+              <option value="∵">∵ (deoarece, pentru că)</option>
+            </optgroup>
+            <optgroup label="Geometrie">
+              <option value="∠">∠ (unghi)</option>
+              <option value="∡">∡ (unghi măsurat)</option>
+              <option value="△">△ (triunghi)</option>
+              <option value="∥">∥ (paralel)</option>
+              <option value="∦">∦ (neparalel)</option>
+              <option value="⊥">⊥ (perpendicular)</option>
+              <option value="≅">≅ (congruent)</option>
+              <option value="∼">∼ (asemenea)</option>
+              <option value="°">° (grad)</option>
+              <option value="□">□ (pătrat/dreptunghi)</option>
+              <option value="▱">▱ (paralelogram)</option>
+              <option value="⊙">⊙ (cerc)</option>
+              <option value="⌢">⌢ (arc de cerc)</option>
+            </optgroup>
+            <optgroup label="Vectori">
+              <option value="a⃗">a⃗ (vector a)</option>
+              <option value="u⃗">u⃗ (vector u)</option>
+              <option value="v⃗">v⃗ (vector v)</option>
+              <option value="AB⃗">AB⃗ (vector AB)</option>
+              <option value="·">· (produs scalar)</option>
+            </optgroup>
+            <optgroup label="Combinatorică / statistică / probabilități">
+              <option value="!">! (factorial)</option>
+              <option value="∁">∁ (complementară)</option>
+              <option value="Ω">Ω (spațiu de selecție)</option>
+              <option value="x̄">x̄ (medie)</option>
+            </optgroup>
+            <optgroup label="Litere grecești">
+              <option value="α">α (alfa)</option>
+              <option value="β">β (beta)</option>
+              <option value="γ">γ (gama)</option>
+              <option value="δ">δ (delta mic)</option>
+              <option value="ε">ε (epsilon)</option>
+              <option value="θ">θ (theta)</option>
+              <option value="λ">λ (lambda)</option>
+              <option value="μ">μ (miu)</option>
+              <option value="ξ">ξ (xi)</option>
+              <option value="ρ">ρ (rho)</option>
+              <option value="σ">σ (sigma)</option>
+              <option value="τ">τ (tau)</option>
+              <option value="φ">φ (fi)</option>
+              <option value="ψ">ψ (psi)</option>
+              <option value="ω">ω (omega mic)</option>
+              <option value="Φ">Φ (fi mare)</option>
+              <option value="Ψ">Ψ (psi mare)</option>
+              <option value="Θ">Θ (theta mare)</option>
+              <option value="Λ">Λ (lambda mare)</option>
+            </optgroup>
+          </select>
+          <select
+            onchange="insertStructure(this)"
+            title="Inserează structură editabilă (fracție, radical, matrice...)"
+          >
+            <option value="">⚟ Structură ▾</option>
+            <optgroup label="Fracție">
+              <option value="frac">Fracție (a/b)</option>
+            </optgroup>
+            <optgroup label="Radical">
+              <option value="root">Radical (√, cu index opțional)</option>
+            </optgroup>
+            <optgroup label="Sumă / Produs / Integrală">
+              <option value="sum">Sumă (Σ) cu limite</option>
+              <option value="prod">Produs (∏) cu limite</option>
+              <option value="integral">Integrală (∫) cu limite</option>
+            </optgroup>
+            <optgroup label="Paranteze">
+              <option value="paren_round">( ) rotunde</option>
+              <option value="paren_square">[ ] pătrate</option>
+              <option value="paren_curly">{ } acolade</option>
+              <option value="paren_abs">| | (modul)</option>
+            </optgroup>
+            <optgroup label="Funcție">
+              <option value="func_sin">sin( )</option>
+              <option value="func_cos">cos( )</option>
+              <option value="func_tg">tg( )</option>
+              <option value="func_ctg">ctg( )</option>
+              <option value="func_ln">ln( )</option>
+              <option value="func_log">log ( ) cu bază</option>
+            </optgroup>
+            <optgroup label="Limită">
+              <option value="limit">lim, cu subscript</option>
+            </optgroup>
+            <optgroup label="Accent">
+              <option value="accent_bar">bară deasupra (x̄, medie)</option>
+              <option value="accent_vec">vector deasupra (x⃗)</option>
+            </optgroup>
+            <optgroup label="Matrice">
+              <option value="matrix2">Matrice 2×2</option>
+              <option value="matrix3">Matrice 3×3</option>
+            </optgroup>
+          </select>
+          <span class="sep"></span>
+          <select id="clasaSelect" onchange="onClasaChange(this)" title="Clasă">
+            <option value="">Clasă ▾</option>
+            <option value="5">Clasa a V-a</option>
+            <option value="6">Clasa a VI-a</option>
+            <option value="7">Clasa a VII-a</option>
+            <option value="8">Clasa a VIII-a</option>
+            <option value="9">Clasa a IX-a</option>
+            <option value="10">Clasa a X-a</option>
+            <option value="11">Clasa a XI-a</option>
+            <option value="12">Clasa a XII-a</option>
+          </select>
+          <select
+            id="formulaSelect"
+            onchange="insertFormula(this)"
+            title="Formulă"
+            disabled
+          >
+            <option value="">Alege clasa întâi</option>
+          </select>
+        </div>
       </div>
+      <!-- /tools-sheet -->
 
       <!-- FISIER: mutat in quickbar-ul persistent de sus (Step B) -->
 
@@ -1214,17 +1303,48 @@
         return false;
       }
 
+      /* Bottom-sheet de unelte (mobil): deschide/inchide panoul de unelte */
+      const RIBBON_NAMES = {
+        home: "🏠 Acasă",
+        insert: "➕ Inserare",
+        table: "▦ Tabel",
+        math: "🧮 Matematică",
+      };
+      function isMobileEditor() {
+        return window.matchMedia("(max-width: 840px)").matches;
+      }
+      function openTools(tab) {
+        const sheet = document.getElementById("toolsSheet");
+        if (sheet) sheet.classList.add("open");
+        const t = document.getElementById("sheetTitle");
+        if (t) t.textContent = RIBBON_NAMES[tab] || "Unelte";
+      }
+      function closeTools() {
+        const sheet = document.getElementById("toolsSheet");
+        if (sheet) sheet.classList.remove("open");
+      }
+
       /* ribbon taburi */
       document.querySelectorAll(".rtab").forEach((btn) => {
         btn.addEventListener("click", () => {
+          const tab = btn.dataset.tab;
+          const mobile = isMobileEditor();
+          const wasActive = btn.classList.contains("active");
+          const sheet = document.getElementById("toolsSheet");
+          const sheetOpen = sheet && sheet.classList.contains("open");
           document
             .querySelectorAll(".rtab")
             .forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
-          const tab = btn.dataset.tab;
           document
             .querySelectorAll(".tabpanel")
             .forEach((p) => (p.hidden = p.dataset.panel !== tab));
+          if (mobile) {
+            // pe mobil: re-apasa categoria activa cand sheet-ul e deschis -> inchide;
+            // altfel -> deschide DOAR panoul acelei categorii.
+            if (wasActive && sheetOpen) closeTools();
+            else openTools(tab);
+          }
         });
       });
 

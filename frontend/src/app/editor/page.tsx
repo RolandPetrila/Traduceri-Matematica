@@ -1,28 +1,24 @@
 "use client";
 
-import Link from "next/link";
-
 /**
- * Editor matematic — modul izolat (Faza G).
+ * Editor matematic — modul izolat (Faza G). Wrapper subțire peste iframe-ul
+ * standalone (frontend/public/editor/index.html), embedat same-origin.
  *
- * Editorul e un artefact standalone (vanilla HTML/JS, ~3100 linii) servit ca fisier
- * static din /public/editor/index.html. Il embed-uim intr-un iframe same-origin ca
- * sa ramana 100% functional si complet izolat de restul aplicatiei
- * (R-EXT: modul separat, fara a atinge pipeline-ul de traducere).
- *
- * Nota: iframe-ul same-origin necesita X-Frame-Options: SAMEORIGIN +
- * CSP frame-ancestors 'self' (vezi next.config.js).
+ * Pe mobil: antet MINIMAL (doar titlu scurt + buton „tot ecranul") și iframe-ul
+ * ocupă cât mai mult din ecran (dvh — ține cont de barele browserului), ca foaia
+ * de scris să aibă spațiu maxim. Layout-ul intern al editorului (toolbar → panou
+ * de jos on-demand) e în public/editor/index.html.
  */
 export default function EditorPage() {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl font-bold chalk-text">
-            <span className="text-chalk-yellow">&#x270F;</span> Editor Documente
-            Matematic
+    <div className="space-y-2 sm:space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-base sm:text-2xl font-bold chalk-text truncate">
+            <span className="text-chalk-yellow">&#x270F;</span> Editor{" "}
+            <span className="hidden sm:inline">Documente Matematic</span>
           </h2>
-          <p className="text-sm opacity-60">
+          <p className="hidden sm:block text-sm opacity-60">
             Editor A4 tip Word &mdash; 103 simboluri, 20 structuri editabile,
             214 formule (clasele V&ndash;XII).
           </p>
@@ -31,24 +27,16 @@ export default function EditorPage() {
           href="/editor/index.html"
           target="_blank"
           rel="noopener noreferrer"
-          className="chalk-btn text-sm whitespace-nowrap"
-          title="Deschide editorul intr-o fereastra separata (ecran complet)"
+          className="chalk-btn text-xs sm:text-sm whitespace-nowrap shrink-0"
+          title="Deschide editorul pe tot ecranul (fereastră separată)"
         >
-          &#x26F6; Deschide in fereastra noua
+          &#x26F6;{" "}
+          <span className="hidden sm:inline">Deschide in fereastra noua</span>
+          <span className="sm:hidden">Tot ecranul</span>
         </a>
-        <Link
-          href="/"
-          className="chalk-btn text-sm whitespace-nowrap"
-          title="Inapoi la aplicatie (Traduceri / Convertor)"
-        >
-          &#x2190; Inapoi la aplicatie
-        </Link>
       </div>
 
-      <div
-        className="rounded-lg overflow-hidden border-2 border-chalk-white/20 bg-white"
-        style={{ height: "calc(100vh - 230px)", minHeight: "560px" }}
-      >
+      <div className="rounded-lg overflow-hidden border-2 border-chalk-white/20 bg-white h-[calc(100dvh-150px)] sm:h-[calc(100vh-230px)] min-h-[420px] sm:min-h-[560px]">
         <iframe
           src="/editor/index.html"
           title="Editor Documente Matematic"
