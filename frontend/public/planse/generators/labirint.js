@@ -264,10 +264,12 @@
     );
   }
 
-  // CSS print — port fidel al css-ului din randeaza() (Python).
+  // CSS print — port al css-ului din randeaza() (Python), dar fontul unificat pe
+  // Patrick Hand (același ca restul aplicației — consistență cerută de Roland).
   var PRINT_CSS =
+    '  @import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");\n' +
     "  * { box-sizing:border-box; margin:0; padding:0; }\n" +
-    "  body { font-family:'Comic Neue','Quicksand',sans-serif; color:#111; background:#fff; }\n" +
+    "  body { font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
     "  @page { size:A4; margin:0mm; }\n" +
     "  @media print {\n" +
     "    body { margin:0 !important; padding:0 !important; }\n" +
@@ -288,7 +290,7 @@
 
   // CSS pentru preview-ul interactiv (pe alb, în modul; soluția pe toggle).
   var INTERACTIVE_CSS =
-    ".lab-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; overflow:auto; font-family:'Comic Neue','Quicksand',sans-serif; }\n" +
+    ".lab-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; overflow:auto; font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
     ".lab-sheet .lab-head { display:flex; justify-content:space-between; align-items:baseline; font-weight:bold; margin-bottom:6px; }\n" +
     ".lab-sheet .lab-sub { font-size:0.9rem; color:#333; margin-bottom:10px; }\n" +
     ".lab-sheet .labirint { display:grid; margin:0 auto; }\n" +

@@ -1,5 +1,10 @@
 /* Modul „Planșe" — temă „cretă" (tabla verde + creta alb/galben), self-contained.
-   Aliniat vizual cu shell-ul gazdă (chalk-*), dar independent (iframe izolat). */
+   Aliniat vizual cu shell-ul gazdă (chalk-*), dar independent (iframe izolat).
+
+   Font: Patrick Hand — ACELAȘI ca restul aplicației (consistență tipografică
+   cerută de Roland). Încărcat din Google Fonts când e online; self-hosting
+   pentru offline complet = task F5. Vezi PLAN §5 (convenția de font). */
+@import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");
 
 :root {
   --chalk-green: #2d5016;
@@ -28,12 +33,7 @@ body {
     var(--chalk-green-dark)
   );
   color: var(--chalk-white);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: "Patrick Hand", ui-rounded, "Segoe UI", system-ui, sans-serif;
 }
 
 .planse-app {
