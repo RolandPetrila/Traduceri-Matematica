@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Local Python dev server for API functions on localhost:8000 (mirrors Render)."""
+"""Local Python dev server for API functions on localhost:8000 (mirrors Vercel serverless routing)."""
 
 from __future__ import annotations
 

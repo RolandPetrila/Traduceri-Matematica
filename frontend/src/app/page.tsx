@@ -4,7 +4,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/components/layout/Header";
 import TabNav from "@/components/layout/TabNav";
-import ServerWakeup from "@/components/layout/ServerWakeup";
 import IframeModule from "@/components/layout/IframeModule";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
 
@@ -35,51 +34,45 @@ export default function Home() {
   };
 
   return (
-    <ServerWakeup>
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <Header />
-        <TabNav activeTab={activeTab} onTabChange={handleTabChange} />
+    <main className="max-w-7xl mx-auto px-4 py-6">
+      <Header />
+      <TabNav activeTab={activeTab} onTabChange={handleTabChange} />
 
-        <div className="mt-6">
-          <div
-            style={{ display: activeTab === "traduceri" ? "block" : "none" }}
-          >
-            <TraduceriPage />
-          </div>
-          <div
-            style={{ display: activeTab === "convertor" ? "block" : "none" }}
-          >
-            <ConvertorPage />
-          </div>
-          <div style={{ display: activeTab === "editor" ? "block" : "none" }}>
-            <EditorPage />
-          </div>
-          <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
-            <AsistentPage />
-          </div>
-          <div style={{ display: activeTab === "istoric" ? "block" : "none" }}>
-            <HistoryList />
-          </div>
+      <div className="mt-6">
+        <div style={{ display: activeTab === "traduceri" ? "block" : "none" }}>
+          <TraduceriPage />
+        </div>
+        <div style={{ display: activeTab === "convertor" ? "block" : "none" }}>
+          <ConvertorPage />
+        </div>
+        <div style={{ display: activeTab === "editor" ? "block" : "none" }}>
+          <EditorPage />
+        </div>
+        <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
+          <AsistentPage />
+        </div>
+        <div style={{ display: activeTab === "istoric" ? "block" : "none" }}>
+          <HistoryList />
+        </div>
 
-          {/* Generic iframe-modules (§16.3): any tab marked kind:"iframe" in
+        {/* Generic iframe-modules (§16.3): any tab marked kind:"iframe" in
               tabs.json is rendered here automatically — no per-module wiring.
               Existing tabs above (editor/asistent included) keep their own
               wrappers untouched; only new modules ride this convention. */}
-          {TABS.filter((t) => t.kind === "iframe").map((t) => (
-            <div
-              key={t.id}
-              style={{ display: activeTab === t.id ? "block" : "none" }}
-            >
-              <IframeModule
-                tabId={t.id}
-                label={t.label}
-                icon={t.icon}
-                description={t.description}
-              />
-            </div>
-          ))}
-        </div>
-      </main>
-    </ServerWakeup>
+        {TABS.filter((t) => t.kind === "iframe").map((t) => (
+          <div
+            key={t.id}
+            style={{ display: activeTab === t.id ? "block" : "none" }}
+          >
+            <IframeModule
+              tabId={t.id}
+              label={t.label}
+              icon={t.icon}
+              description={t.description}
+            />
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }

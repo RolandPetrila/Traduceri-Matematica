@@ -9,8 +9,8 @@ Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 - **API**: Vercel (Python serverless, `api/*.py`)
 - **Log-uri diagnostic**: Supabase (centralizat, cross-device)
 
-> Migrare in curs Render → Vercel + Supabase (v4). Domeniile finale se seteaza in
-> variabilele de mediu Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
+> LIVE pe Vercel + Supabase (v4) — migrat integral de pe Render. Domeniile finale se
+> seteaza in variabilele de mediu Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
 
 ## Stack
 

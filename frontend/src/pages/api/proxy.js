@@ -170,7 +170,7 @@ export default async function handler(req, res) {
   }
 
   // Rate-limit best-effort (per IP). Foloseste `x-real-ip` (setat de platforma
-  // Vercel/Render la IP-ul real al clientului) inainte de `x-forwarded-for`, al
+  // Vercel la IP-ul real al clientului) inainte de `x-forwarded-for`, al
   // carui prim element e controlabil de client (spoof -> bucket nou/cerere).
   const ip =
     String(req.headers["x-real-ip"] || "").trim() ||

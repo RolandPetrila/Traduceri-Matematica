@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api-url";
 
-// Render sets RENDER_GIT_COMMIT at build time
+// Vercel exposes the commit SHA as VERCEL_GIT_COMMIT_SHA; next.config.js maps it
+// to NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA so it's readable client-side.
 const BUILD_VERSION =
   process.env.NEXT_PUBLIC_BUILD_VERSION ||
-  process.env.NEXT_PUBLIC_RENDER_GIT_COMMIT?.slice(0, 7) ||
+  process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ||
   "dev";
 
 type Status = "current" | "updating" | "stale";
@@ -41,8 +42,18 @@ export default function VersionBadge() {
     return () => clearInterval(interval);
   }, []);
 
-  const color = status === "current" ? "bg-green-500" : status === "updating" ? "bg-yellow-500" : "bg-red-500";
-  const label = status === "current" ? BUILD_VERSION : status === "updating" ? "updating..." : "reincarca";
+  const color =
+    status === "current"
+      ? "bg-green-500"
+      : status === "updating"
+        ? "bg-yellow-500"
+        : "bg-red-500";
+  const label =
+    status === "current"
+      ? BUILD_VERSION
+      : status === "updating"
+        ? "updating..."
+        : "reincarca";
 
   return (
     <button
@@ -56,8 +67,8 @@ export default function VersionBadge() {
         status === "current"
           ? `Versiune: ${BUILD_VERSION}`
           : status === "updating"
-          ? "Deploy in curs..."
-          : `Versiune noua disponibila (${serverVersion}). Click pentru reincarca.`
+            ? "Deploy in curs..."
+            : `Versiune noua disponibila (${serverVersion}). Click pentru reincarca.`
       }
     >
       <span className={`w-2 h-2 rounded-full ${color}`} />

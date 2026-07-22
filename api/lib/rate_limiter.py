@@ -57,7 +57,7 @@ def _make_key(ip: str, endpoint: str) -> str:
 
 
 def get_client_ip(handler) -> str:
-    """Extract real client IP behind the platform proxy (Vercel/Render/local).
+    """Extract real client IP behind the platform proxy (Vercel/local).
 
     Prefer X-Real-IP (set by the platform to the true client IP). Fall back to
     the RIGHTMOST X-Forwarded-For entry (added by the closest trusted proxy) —

@@ -130,16 +130,14 @@ Plus: convertor fisiere, chat AI, calculator, corectare si generare teste.
 
 ## Limite servicii gratuite (R14)
 
-| Serviciu              | Limita                                | Ce inseamna in practica                   | Solutie la epuizare                                                      |
-| --------------------- | ------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| **DeepL**             | 500K car/luna/cheie (2 chei = 1M)     | ~350-500 pagini traduse/luna              | Fallback pe Gemini traducere (calitate mai mica) + mesaj clar utilizator |
-| **Gemini OCR**        | 250 cereri/zi, 10/min                 | ~250 pagini OCR/zi                        | Procesare pe rand cu asteptare, fallback Mistral                         |
-| **Gemini Chat**       | Impartit cu OCR (250 total/zi)        | ~100 mesaje chat/zi (daca se face si OCR) | Chat foloseste Groq prioritar, Gemini doar pt poze                       |
-| **Groq**              | ~14.400 cereri/zi                     | Suficient ca backup traducere + chat      | Fara alt fallback (nu e nevoie)                                          |
-| **Render RAM**        | 512 MB per serviciu                   | Max ~10-15 pagini procesate simultan      | PDF >20 pag: procesare in loturi de 5                                    |
-| **Render ore**        | 750 ore/luna (2 servicii)             | OK la utilizare intermitenta (3-4 ore/zi) | Spin-down automat economiseste ore                                       |
-| **Render cold start** | 30-60 sec (poate ajunge la 90+)       | Prima accesare dupa pauza e lenta         | Ecran "Se incarca..." + timeout 120s + retry                             |
-| **Browser storage**   | ~5 MB localStorage pt cache traduceri | ~30-50 documente cached persistent        | Curatare automata cele mai vechi                                         |
+| Serviciu             | Limita                                   | Ce inseamna in practica                                                       | Solutie la epuizare                                                      |
+| -------------------- | ---------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **DeepL**            | 500K car/luna/cheie (2 chei = 1M)        | ~350-500 pagini traduse/luna                                                  | Fallback pe Gemini traducere (calitate mai mica) + mesaj clar utilizator |
+| **Gemini OCR**       | 250 cereri/zi, 10/min                    | ~250 pagini OCR/zi                                                            | Procesare pe rand cu asteptare, fallback Mistral                         |
+| **Gemini Chat**      | Impartit cu OCR (250 total/zi)           | ~100 mesaje chat/zi (daca se face si OCR)                                     | Chat foloseste Groq prioritar, Gemini doar pt poze                       |
+| **Groq**             | ~14.400 cereri/zi                        | Suficient ca backup traducere + chat                                          | Fara alt fallback (nu e nevoie)                                          |
+| **Vercel Functions** | 60s max/invocare (vercel.json), ~1GB RAM | Procesare grea per-pagina (1 pagina/invocare); FARA cold-start-idle ca Render | Fara proces persistent; contoare/stare in Supabase                       |
+| **Browser storage**  | ~5 MB localStorage pt cache traduceri    | ~30-50 documente cached persistent                                            | Curatare automata cele mai vechi                                         |
 
 ---
 

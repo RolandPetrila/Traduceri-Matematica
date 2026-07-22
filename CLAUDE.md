@@ -11,7 +11,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 
 ## Status
 
-- **Faza curenta**: v4.0 — Migrare Render → Vercel + Supabase, restructurare masiva
+- **Faza curenta**: v4.0 — LIVE pe Vercel + Supabase (migrat integral de pe Render; fara cold-start/keep-alive)
 - **Progres**: Vezi `99_Plan_vs_Audit/PLAN_v3.md` — SURSA UNICA de adevar
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
   - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).

@@ -1,4 +1,4 @@
-"""Python Serverless Function for OCR + Translation (Render).
+"""Python Serverless Function for OCR + Translation (Vercel).
 
 Thin handler — delegates to lib/ modules for OCR, translation, and HTML building.
 Handles POST /api/translate — image files -> AI OCR -> translate -> HTML.

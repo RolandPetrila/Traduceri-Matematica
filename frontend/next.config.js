@@ -9,6 +9,11 @@ const connectSrc = ["'self'", apiUrl, supabaseUrl, "https://*.supabase.co"]
 
 const nextConfig = {
   reactStrictMode: true,
+  // Expose the Vercel deploy commit SHA to the client (VersionBadge). Vercel sets
+  // VERCEL_GIT_COMMIT_SHA at build time; Next inlines NEXT_PUBLIC_* into the bundle.
+  env: {
+    NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "",
+  },
   // Lint runs as its own step (`npm run lint` → eslint CLI), NOT during
   // `next build`. This keeps the production/deploy build green even if a lint
   // rule trips, so a style nit can never block a deploy. CI/pre-push runs lint.
