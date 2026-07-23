@@ -14,8 +14,8 @@ Apoi citește INTEGRAL, în ordine:
 2. docs/PLAN_editor_tiptap_2026-07-23.md  (sursa de adevăr pentru rescrierea Editorului: faze F0–F6, decizii §17, non-regresie G1–G9)
 3. git log --oneline -15  (jurnalul fazelor)
 
-Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3.
-Următorul pas pe care îl aleg eu: [F4 fișier+export+dictare]  SAU  [F3b structuri interactive].
+Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3 + F4a (export).
+Următorul pas pe care îl aleg eu: [F4b fișier: Nou/Salvare/auto-save/nume]  SAU  [F4c dictare]  SAU  [F3b structuri interactive].
 Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și gate-ul de non-regresie.
 ```
 
@@ -32,10 +32,13 @@ Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe te
 - [x] F2 tabele (G3) + inserare (G4: link/imagine/dată/linie)
 - [~] F3 matematică (G2): **214 formule pe clase V–XII + 103 simboluri + căutare** ✓ (fidel)
 - [ ] **F3b** structuri interactive (fracție/radical cu găuri) — custom TipTap NodeView; **abordare de confirmat cu Roland**
-- [ ] **F4** dictare vocală + fișier (nou/salvare/auto-save/export PDF·Word·HTML) + pagini A4 — **recomandat următor** (fără salvare/export editorul nu-i folosibil)
+- [~] **F4** — sub-fazat:
+  - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE (turbodocx blob OK 20.967 B; mobil Sheet OK). PDF de eyeball manual.
+  - [ ] **F4b** Nou/Salvare/auto-save/nume document (localStorage) — **recomandat următor** (fără salvare munca se pierde)
+  - [ ] **F4c** dictare Web Speech ro-RO · **F4d** pagini A4
 - [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
 
-**Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). Fișiere: `frontend/src/components/editor/*` + `frontend/src/app/editor-nou/page.tsx` + `frontend/src/lib/tiptap-font-size.ts` + `frontend/src/components/editor/math-data.json` (214 formule + 103 simboluri extrase).
+**Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). Fișiere: `frontend/src/components/editor/*` (incl. `EditorFileMenu.tsx` = export) + `frontend/src/app/editor-nou/page.tsx` + `frontend/src/lib/tiptap-font-size.ts` + `frontend/src/lib/editor-export.ts` (PDF/Word/HTML) + `frontend/src/components/editor/math-data.json` (214 formule + 103 simboluri extrase). Dep nouă: `@turbodocx/html-to-docx`.
 
 ---
 

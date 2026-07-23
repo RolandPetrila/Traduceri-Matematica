@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { EditorInsertMenu } from "./EditorInsertMenu";
 import { EditorMathMenu } from "./EditorMathMenu";
+import { EditorFileMenu } from "./EditorFileMenu";
 
 /** Re-randare toolbar la fiecare tranzactie a editorului (pt. stari active). */
 function useEditorTick(editor: Editor | null) {
@@ -137,6 +138,13 @@ export function TiptapToolbar({
           : "flex flex-wrap items-center gap-1.5 p-2"
       }
     >
+      {/* Fișier (export PDF/Word/HTML) — primul (stânga desktop / sus în Sheet mobil) */}
+      <div className={groupCls}>
+        <EditorFileMenu editor={editor} />
+      </div>
+
+      {!isSheet && <Separator orientation="vertical" className="h-6" />}
+
       {/* Font + marime */}
       <div className={groupCls}>
         <Select

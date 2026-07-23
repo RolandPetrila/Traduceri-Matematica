@@ -66,7 +66,10 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 - [x] **F2 — G3 Tabele + G4 Inserare** ✅ 2026-07-23: `EditorInsertMenu.tsx` — DropdownMenu **Inserare** (link cu prompt/unset, imagine base64 upload, dată RO, linie) + DropdownMenu **Tabel** (inserează 3×3 cu antet, +/- coloană, +/- rând, unește/split celule, comută antet, șterge tabel — Table resizable). CSS tabele (selectedCell + resize handle + tableWrapper scroll). Verificat LIVE (tabel inserat + randat). Gate: tsc 0 · build OK. **RĂMAS (decizie ulterioară):** sortare/total/zebra (custom, NU native TipTap — rar folosite; de confirmat dacă mai trebuie); page-break la F4 (print).
 - [~] **F3 — G2 Matematică** (parțial ✅ 2026-07-23): `EditorMathMenu.tsx` — Popover cu **214 formule pe clase V–XII** (Select clasă + preview randat sup/sub, insert HTML nativ) + **103 simboluri** (grid, insert Unicode) + **căutare** integrată (filtrează formule+simboluri din toate clasele). Date extrase programatic din editorul vechi → `math-data.json`. Verificat LIVE (formulă inserată cu superscript corect). Gate: tsc 0 · build OK.
   - [ ] **F3b — Structuri interactive** (fracție/radical/matrice cu găuri editabile): necesită **custom TipTap node cu NodeView** (ProseMirror nu suportă contenteditable imbricat nativ). Abordare de confirmat cu Roland: (a) noduri editabile reale (efort mare), (b) inserare vizuală cu conținut la inserare (prompt/selecție), (c) doar din bibliotecă (fracțiile există ca text `a/b` în formule).
-- [ ] **F4 — G5 Dictare + G6 Fișier + G7 Pagini**: Web Speech ro-RO; save/auto-save/restore (localStorage, compat cu cheia actuală dacă se poate); export PDF(print)/Word(turbodocx)/HTML; page-count A4.
+- [~] **F4 — G5 Dictare + G6 Fișier + G7 Pagini**: Web Speech ro-RO; save/auto-save/restore (localStorage, compat cu cheia actuală dacă se poate); export PDF(print)/Word(turbodocx)/HTML; page-count A4.
+  - [x] **F4a — Export** ✅ 2026-07-23: `lib/editor-export.ts` (PDF print vectorial A4 alb + fallback iframe · Word `.docx` via `@turbodocx/html-to-docx` 1.22 import dinamic · HTML standalone) + `EditorFileMenu.tsx` (DropdownMenu **Fișier ▾**, primul în toolbar → apare și în Sheet-ul mobil). Document = alb clasic (nu tema cretă). Nume provizoriu „Document" (câmpul editabil → F4b). Verificat LIVE: desktop dropdown + **turbodocx blob 20.967 B/MIME DOCX corect/0 erori** + mobil 390px (Fișier primul în Sheet). PDF (print) = de verificat manual (dialog blochează MCP). Gate: tsc 0 · build OK.
+  - [ ] **F4b — Fișier (Nou/Salvare/auto-save/nume document)** + restore localStorage.
+  - [ ] **F4c — Dictare vocală** (Web Speech ro-RO) + **F4d — Pagini A4** (page-count/print-break).
 - [ ] **F5 — G8 Find/Replace + G9 Temă + polish**: find/replace; temă cretă tokenizată; a11y (focus/aria); dark-mode opțional.
 - [ ] **F6 — Non-regresie + QA mobil + retragere iframe**: checklist G1–G9 pe desktop + telefon (Android+iPhone); apoi retrag `public/editor/index.html`. Gate: toate grupurile verzi.
 
@@ -76,7 +79,7 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 
 1. ✅ **Toolbar mobil = bară slim sus (undo/redo/B/I/U/„⋯ Format") + bottom `Sheet`** cu grupuri de unelte (ca Google Docs). Foaia = primară.
 2. ✅ **Matematică FIDEL**: simboluri Unicode + structuri HTML editabile (fracție/radical/matrice) + **biblioteca RO pe clase V–XII NESCHIMBATĂ**. NU LaTeX/KaTeX. Paritate 100%, editabil inline, risc mic.
-3. [ ] **Export** — de confirmat la F4 (refolosire cale actuală vs turbodocx DOCX + print-PDF). Default provizoriu: refolosesc logica actuală (HTML→print PDF, DOCX/HTML).
+3. ✅ **Export** (confirmat F4a, 2026-07-23): PDF = print vectorial A4 alb (`window.print`), Word = `@turbodocx/html-to-docx` (client, gratuit), HTML = standalone. Document livrat = **alb clasic** (tema cretă doar la editare). Sursa = conținutul EDITAT (`editor.getHTML()`).
 4. ✅ **Temă „cretă" tokenizată** (verde/galben în variabilele shadcn); foaia rămâne albă. NU paleta neutral.
 5. [ ] **Paritate** — țintă 100% (G1–G9); orice tăiere se confirmă la faza respectivă.
 
