@@ -40,6 +40,7 @@ import { EditorInsertMenu } from "./EditorInsertMenu";
 import { EditorMathMenu } from "./EditorMathMenu";
 import { EditorFileMenu } from "./EditorFileMenu";
 import { EditorPageCount } from "./editor-pages";
+import { EditorDictateButton } from "./editor-dictation";
 
 /** Re-randare toolbar la fiecare tranzactie a editorului (pt. stari active). */
 function useEditorTick(editor: Editor | null) {
@@ -142,6 +143,7 @@ export function TiptapToolbar({
       {/* Fișier (document + export) — primul (stânga desktop / sus în Sheet mobil) */}
       <div className={groupCls}>
         <EditorFileMenu editor={editor} />
+        <EditorDictateButton />
         <EditorPageCount />
       </div>
 

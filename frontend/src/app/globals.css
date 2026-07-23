@@ -221,6 +221,15 @@
   }
 }
 
+/* Text interimar de dictare (F4c) — DECORAȚIE ProseMirror, nu conținut de document.
+   Nu poate ajunge niciodată în getHTML() → nici în auto-save, nici în export. */
+.dictation-interim {
+  color: #64748b;
+  font-style: italic;
+  opacity: 0.85;
+  user-select: none;
+}
+
 /* Ghidaje de pagină — overlay peste foaie, nu blochează editarea (F4d). */
 .page-guides {
   position: absolute;

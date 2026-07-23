@@ -13,6 +13,7 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { FontSize } from "@/lib/tiptap-font-size";
+import { DictationInterim } from "./dictation-interim";
 
 /**
  * Setul de extensii TipTap — portat din config-ul dovedit Mösslein
@@ -35,4 +36,5 @@ export const editorExtensions = [
   TableRow,
   TableHeader,
   TableCell,
+  DictationInterim, // text interimar de dictare ca decoratie (nu intra in document)
 ];

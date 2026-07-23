@@ -14,8 +14,8 @@ Apoi citește INTEGRAL, în ordine:
 2. docs/PLAN_editor_tiptap_2026-07-23.md  (sursa de adevăr pentru rescrierea Editorului: faze F0–F6, decizii §17, non-regresie G1–G9)
 3. git log --oneline -15  (jurnalul fazelor)
 
-Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3 + F4a (export) + F4b (fișier/auto-save) + F4d (pagini A4).
-Următorul pas pe care îl aleg eu: [F4c dictare vocală]  SAU  [F5 find/replace + polish]  SAU  [F3b structuri interactive].
+Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3 și TOATĂ faza F4 (a export · b fișier/auto-save · c dictare · d pagini A4).
+Următorul pas pe care îl aleg eu: [F5 find/replace + polish]  SAU  [F3b structuri interactive]  SAU  [F6 non-regresie + retragerea iframe-ului vechi].
 Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și gate-ul de non-regresie.
 ```
 
@@ -36,7 +36,8 @@ Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe te
   - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE + **fidelitate R-MATH pe conținut real** (sup/sub/tabel/bold păstrate în DOCX dezarhivat + HTML; PDF = același body). Mobil Sheet OK. PDF click = eyeball manual.
   - [x] **F4b Fișier** ✅ 2026-07-24: cheie `editor_nou_v1` (separată de editorul vechi), auto-save debounce 1.5s + Salvează manual + Redenumește (numele → export) + Document nou cu confirmare + restore la reload + status „✓ salvat HH:MM". Verificat LIVE desktop + mobil 390px + **non-regresie R-MATH**: restore după reload păstrează sup/sub/tabel(4 celule)/bold; export re-testat post-refactor (numele → `Test-F4b.html`, corp fidel).
   - [x] **F4d Pagini A4** ✅ 2026-07-24: foaia desktop la metrici A4 REALE (210mm, 20/18mm) = identice cu documentul exportat (lățime conținut 174mm în ambele) → ghidajele „Pagina N" indică fidel sfârșitul paginii; contor „📄 N pag. A4". **Limită onestă:** ruptura reală din PDF poate fi cu un element mai sus (print-ul nu taie la mijloc de paragraf) — spune „aliniat la A4", nu „exact". Pe mobil foaia rămâne fluidă → ghidaje+contor ASCUNSE (ar minți). Verificat LIVE.
-  - [ ] **F4c** dictare Web Speech ro-RO — **singurul rămas din F4** (atenție: suport limitat pe iPhone/Safari, de semnalat înainte)
+  - [x] **F4c Dictare** ✅ 2026-07-24: microfon în bara slim mobil + toolbar desktop, `ro-RO` continuous cu auto-restart, interimar gri ca DECORAȚIE ProseMirror (structural imposibil să ajungă în document/auto-save/export), aviz cloud o singură dată. Suport verificat: Chrome/Edge/Opera + **Safari macOS 14.1+/iOS 14.5+**; Firefox NU → buton ascuns. Verificat LIVE cu motor simulat.
+  - ⇒ **FAZA F4 COMPLETĂ** (F4a export · F4b fișier · F4c dictare · F4d pagini)
 - [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
 
 **Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). Fișiere: `frontend/src/components/editor/*` (incl. `EditorFileMenu.tsx` = export) + `frontend/src/app/editor-nou/page.tsx` + `frontend/src/lib/tiptap-font-size.ts` + `frontend/src/lib/editor-export.ts` (PDF/Word/HTML) + `frontend/src/components/editor/math-data.json` (214 formule + 103 simboluri extrase). Dep nouă: `@turbodocx/html-to-docx`.

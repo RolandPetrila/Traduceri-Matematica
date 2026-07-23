@@ -21,6 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { TiptapToolbar } from "./TiptapToolbar";
+import { EditorDictateButton } from "./editor-dictation";
 
 function useEditorTick(editor: Editor | null) {
   const [, setTick] = useState(0);
@@ -91,6 +92,11 @@ export function MobileToolbar({ editor }: { editor: Editor | null }) {
       >
         <Underline className="h-4 w-4" />
       </Toggle>
+
+      {/* Dictarea e scopul principal pe telefon → microfon DIRECT în bara slim,
+          nu îngropat în Sheet (un tap, nu două). */}
+      <Separator orientation="vertical" className="h-6" />
+      <EditorDictateButton variant="slim" />
 
       <div className="ml-auto">
         <Sheet>
