@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditorInsertMenu } from "./EditorInsertMenu";
+import { EditorMathMenu } from "./EditorMathMenu";
 
 /** Re-randare toolbar la fiecare tranzactie a editorului (pt. stari active). */
 function useEditorTick(editor: Editor | null) {
@@ -429,8 +430,9 @@ export function TiptapToolbar({
 
       {!isSheet && <Separator orientation="vertical" className="h-6" />}
 
-      {/* Inserare + Tabel (G3/G4) */}
+      {/* Inserare + Tabel (G3/G4) + Matematică (G2) */}
       <EditorInsertMenu editor={editor} />
+      <EditorMathMenu editor={editor} />
     </div>
   );
 }
