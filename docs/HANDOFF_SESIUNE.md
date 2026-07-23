@@ -1,6 +1,6 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-23. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-24. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
@@ -21,7 +21,7 @@ Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și g
 
 ---
 
-## 📍 UNDE SUNTEM (2026-07-23)
+## 📍 UNDE SUNTEM (2026-07-24)
 
 Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe telefon) în **modul nativ React: TipTap 3 + shadcn/ui**, aliniat cu app-ul de referință Mösslein (`C:\Proiecte\Mosslein_Sistem_Gestiune - Copy`).
 
@@ -40,7 +40,17 @@ Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe te
   - ⇒ **FAZA F4 COMPLETĂ** (F4a export · F4b fișier · F4c dictare · F4d pagini)
 - [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
 
-**Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). Fișiere: `frontend/src/components/editor/*` (incl. `EditorFileMenu.tsx` = export) + `frontend/src/app/editor-nou/page.tsx` + `frontend/src/lib/tiptap-font-size.ts` + `frontend/src/lib/editor-export.ts` (PDF/Word/HTML) + `frontend/src/components/editor/math-data.json` (214 formule + 103 simboluri extrase). Dep nouă: `@turbodocx/html-to-docx`.
+**Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). **Tot F4 e LIVE pe producție** (`traduceri-frontend.vercel.app/editor-nou`, verificat 2026-07-24).
+
+Fișiere: `frontend/src/app/editor-nou/page.tsx` + `frontend/src/components/editor/`:
+`EditorTiptap.tsx` (3 providere imbricate: document → pagini → dictare) · `TiptapToolbar.tsx` · `MobileToolbar.tsx` · `EditorInsertMenu.tsx` · `EditorMathMenu.tsx` · `EditorFileMenu.tsx` (fișier+export) · `editor-document.tsx` (auto-save/restore) · `editor-pages.tsx` (paginare A4) · `editor-dictation.tsx` + `dictation-interim.ts` (dictare) · `extensions.ts` · `math-data.json`.
+Plus `frontend/src/lib/editor-export.ts`, `lib/tiptap-font-size.ts`, `components/ui/dialog.tsx`. Dep nouă: `@turbodocx/html-to-docx`.
+
+### ⚠️ DE PIPĂIT MANUAL de Roland (nu se pot automatiza — rămân deschise)
+
+1. **Export PDF** — `window.print()` deschide dialog modal care blochează Chrome MCP. De verificat că PDF-ul arată corect ȘI unde cade ruptura de pagină vs ghidajul „Pagina N".
+2. **Dictare cu voce reală** — nu există intrare audio în automatizare. De verificat: textul intră **la cursor**; `continuous` ține prin pauze (auto-restart); **Oprește** stinge indicatorul de microfon.
+3. **O dictare reală → Export Word** — singura cale care combină motor vocal real + export real.
 
 ---
 
