@@ -20,11 +20,12 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 
-1. Citeste `99_Plan_vs_Audit/PLAN_v3.md` — sursa UNICA de adevar pt progres
+0. **Citeste `docs/HANDOFF_SESIUNE.md`** — starea curenta + prompt de reluare + context operational (URL canonic, deploy, testare mobil). Apoi planul ACTIV din `docs/PLAN_*.md`. (Vezi **R-HANDOFF** in `.claude/rules/project_rules.md`.)
+1. Citeste `99_Plan_vs_Audit/PLAN_v3.md` — sursa de adevar pt progresul de baza (v4)
 2. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
 3. Citeste `.claude/memory/*` si `.claude/rules/project_rules.md`
-4. Continua cu primul task [ ] nemarcat din PLAN_v3.md
-5. Dupa ORICE implementare: marcheaza [x] cu data in plan; commit/push doar cu confirmare (deploy = outward-facing)
+4. Continua cu primul task [ ] nemarcat din planul activ
+5. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` + planul (bifeaza [x] cu data) + memoria; commit/push (deploy = outward-facing, cu confirmare)
 
 ## Stack v4.0
 
