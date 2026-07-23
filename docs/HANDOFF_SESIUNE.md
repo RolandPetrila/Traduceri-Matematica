@@ -14,8 +14,8 @@ Apoi citește INTEGRAL, în ordine:
 2. docs/PLAN_editor_tiptap_2026-07-23.md  (sursa de adevăr pentru rescrierea Editorului: faze F0–F6, decizii §17, non-regresie G1–G9)
 3. git log --oneline -15  (jurnalul fazelor)
 
-Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3 + F4a (export).
-Următorul pas pe care îl aleg eu: [F4b fișier: Nou/Salvare/auto-save/nume]  SAU  [F4c dictare]  SAU  [F3b structuri interactive].
+Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3 + F4a (export) + F4b (fișier/auto-save).
+Următorul pas pe care îl aleg eu: [F4c dictare vocală]  SAU  [F4d pagini A4]  SAU  [F3b structuri interactive].
 Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și gate-ul de non-regresie.
 ```
 
@@ -34,8 +34,8 @@ Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe te
 - [ ] **F3b** structuri interactive (fracție/radical cu găuri) — custom TipTap NodeView; **abordare de confirmat cu Roland**
 - [~] **F4** — sub-fazat:
   - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE + **fidelitate R-MATH pe conținut real** (sup/sub/tabel/bold păstrate în DOCX dezarhivat + HTML; PDF = același body). Mobil Sheet OK. PDF click = eyeball manual.
-  - [ ] **F4b** Nou/Salvare/auto-save/nume document (localStorage) — **recomandat următor** (fără salvare munca se pierde)
-  - [ ] **F4c** dictare Web Speech ro-RO · **F4d** pagini A4
+  - [x] **F4b Fișier** ✅ 2026-07-24: cheie `editor_nou_v1` (separată de editorul vechi), auto-save debounce 1.5s + Salvează manual + Redenumește (numele → export) + Document nou cu confirmare + restore la reload + status „✓ salvat HH:MM". Verificat LIVE desktop + mobil 390px.
+  - [ ] **F4c** dictare Web Speech ro-RO · **F4d** pagini A4 — **recomandat următor**
 - [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
 
 **Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). Fișiere: `frontend/src/components/editor/*` (incl. `EditorFileMenu.tsx` = export) + `frontend/src/app/editor-nou/page.tsx` + `frontend/src/lib/tiptap-font-size.ts` + `frontend/src/lib/editor-export.ts` (PDF/Word/HTML) + `frontend/src/components/editor/math-data.json` (214 formule + 103 simboluri extrase). Dep nouă: `@turbodocx/html-to-docx`.
