@@ -34,7 +34,7 @@ Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe te
 - [ ] **F3b** structuri interactive (fracție/radical cu găuri) — custom TipTap NodeView; **abordare de confirmat cu Roland**
 - [~] **F4** — sub-fazat:
   - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE + **fidelitate R-MATH pe conținut real** (sup/sub/tabel/bold păstrate în DOCX dezarhivat + HTML; PDF = același body). Mobil Sheet OK. PDF click = eyeball manual.
-  - [x] **F4b Fișier** ✅ 2026-07-24: cheie `editor_nou_v1` (separată de editorul vechi), auto-save debounce 1.5s + Salvează manual + Redenumește (numele → export) + Document nou cu confirmare + restore la reload + status „✓ salvat HH:MM". Verificat LIVE desktop + mobil 390px.
+  - [x] **F4b Fișier** ✅ 2026-07-24: cheie `editor_nou_v1` (separată de editorul vechi), auto-save debounce 1.5s + Salvează manual + Redenumește (numele → export) + Document nou cu confirmare + restore la reload + status „✓ salvat HH:MM". Verificat LIVE desktop + mobil 390px + **non-regresie R-MATH**: restore după reload păstrează sup/sub/tabel(4 celule)/bold; export re-testat post-refactor (numele → `Test-F4b.html`, corp fidel).
   - [ ] **F4c** dictare Web Speech ro-RO · **F4d** pagini A4 — **recomandat următor**
 - [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
 
