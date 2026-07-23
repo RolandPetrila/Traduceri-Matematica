@@ -199,20 +199,60 @@
 
 /* ── Editor TipTap (F1) — foaia = document alb A4; toolbar mostenește tema cretă ── */
 .editor-sheet {
+  position: relative; /* ancoră pt. ghidajele de pagină */
   background: #ffffff;
   color: #111827;
   border-radius: 8px;
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3);
   min-height: 60vh;
-  padding: 22px 18px;
+  padding: 22px 18px; /* mobil: foaie fluidă, lizibilă (NU A4 micșorat) */
   font-family: "Times New Roman", Georgia, serif;
   font-size: 12pt;
   line-height: 1.5;
 }
-@media (min-width: 640px) {
+/* Desktop: metrici A4 REALE, identice cu documentul exportat (@page A4, margin 20mm 18mm)
+   → linia „Pagina N" cade exact unde se rupe PDF-ul la print. */
+@media (min-width: 840px) {
   .editor-sheet {
-    padding: 56px 64px;
-    min-height: 78vh;
+    width: 210mm;
+    max-width: 210mm;
+    padding: 20mm 18mm;
+    min-height: 297mm;
+  }
+}
+
+/* Ghidaje de pagină — overlay peste foaie, nu blochează editarea (F4d). */
+.page-guides {
+  position: absolute;
+  left: 18mm;
+  right: 18mm;
+  top: 20mm;
+  bottom: 0;
+  pointer-events: none;
+}
+.page-guide {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed #94a3b8;
+}
+.page-guide > span {
+  position: absolute;
+  right: 0;
+  top: -0.95em;
+  background: #ffffff;
+  padding: 0 5px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 9pt;
+  color: #64748b;
+}
+/* Pe mobil foaia e fluidă (nu A4) → ghidajele ar minți; le ascundem (ca în editorul vechi). */
+@media (max-width: 839px) {
+  .page-guides {
+    display: none;
   }
 }
 .editor-content {

@@ -39,6 +39,7 @@ import {
 import { EditorInsertMenu } from "./EditorInsertMenu";
 import { EditorMathMenu } from "./EditorMathMenu";
 import { EditorFileMenu } from "./EditorFileMenu";
+import { EditorPageCount } from "./editor-pages";
 
 /** Re-randare toolbar la fiecare tranzactie a editorului (pt. stari active). */
 function useEditorTick(editor: Editor | null) {
@@ -138,9 +139,10 @@ export function TiptapToolbar({
           : "flex flex-wrap items-center gap-1.5 p-2"
       }
     >
-      {/* Fișier (export PDF/Word/HTML) — primul (stânga desktop / sus în Sheet mobil) */}
+      {/* Fișier (document + export) — primul (stânga desktop / sus în Sheet mobil) */}
       <div className={groupCls}>
         <EditorFileMenu editor={editor} />
+        <EditorPageCount />
       </div>
 
       {!isSheet && <Separator orientation="vertical" className="h-6" />}

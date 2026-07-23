@@ -5,6 +5,7 @@ import { editorExtensions } from "./extensions";
 import { TiptapToolbar } from "./TiptapToolbar";
 import { MobileToolbar } from "./MobileToolbar";
 import { EditorDocumentProvider } from "./editor-document";
+import { EditorPagesProvider, EditorPageGuides } from "./editor-pages";
 
 const INITIAL = `
 <h1>Document nou</h1>
@@ -31,23 +32,27 @@ export default function EditorTiptap() {
 
   return (
     <EditorDocumentProvider editor={editor}>
-      <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card">
-        {/* Toolbar desktop */}
-        <div className="hidden shrink-0 border-b border-border md:block">
-          <TiptapToolbar editor={editor} />
-        </div>
-        {/* Toolbar mobil (slim + Sheet) */}
-        <div className="shrink-0 border-b border-border md:hidden">
-          <MobileToolbar editor={editor} />
-        </div>
+      <EditorPagesProvider editor={editor}>
+        <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card">
+          {/* Toolbar desktop */}
+          <div className="hidden shrink-0 border-b border-border md:block">
+            <TiptapToolbar editor={editor} />
+          </div>
+          {/* Toolbar mobil (slim + Sheet) */}
+          <div className="shrink-0 border-b border-border md:hidden">
+            <MobileToolbar editor={editor} />
+          </div>
 
-        {/* Zona de scris (foaia A4) — scrollabilă, primară */}
-        <div className="flex-1 overflow-auto bg-muted p-2 sm:p-6">
-          <div className="editor-sheet mx-auto w-full max-w-[820px]">
-            <EditorContent editor={editor} />
+          {/* Zona de scris (foaia A4) — scrollabilă, primară.
+            Lățimea o dictează `.editor-sheet` (210mm pe desktop, fluid pe mobil). */}
+          <div className="flex-1 overflow-auto bg-muted p-2 sm:p-6">
+            <div className="editor-sheet mx-auto w-full">
+              <EditorContent editor={editor} />
+              <EditorPageGuides />
+            </div>
           </div>
         </div>
-      </div>
+      </EditorPagesProvider>
     </EditorDocumentProvider>
   );
 }
