@@ -33,7 +33,7 @@ Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe te
 - [~] F3 matematică (G2): **214 formule pe clase V–XII + 103 simboluri + căutare** ✓ (fidel)
 - [ ] **F3b** structuri interactive (fracție/radical cu găuri) — custom TipTap NodeView; **abordare de confirmat cu Roland**
 - [~] **F4** — sub-fazat:
-  - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE (turbodocx blob OK 20.967 B; mobil Sheet OK). PDF de eyeball manual.
+  - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE + **fidelitate R-MATH pe conținut real** (sup/sub/tabel/bold păstrate în DOCX dezarhivat + HTML; PDF = același body). Mobil Sheet OK. PDF click = eyeball manual.
   - [ ] **F4b** Nou/Salvare/auto-save/nume document (localStorage) — **recomandat următor** (fără salvare munca se pierde)
   - [ ] **F4c** dictare Web Speech ro-RO · **F4d** pagini A4
 - [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
