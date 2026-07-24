@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sheet";
 import { TiptapToolbar } from "./TiptapToolbar";
 import { EditorDictateButton } from "./editor-dictation";
+import { useEditorFind } from "./editor-find";
 
 function useEditorTick(editor: Editor | null) {
   const [, setTick] = useState(0);
@@ -42,6 +43,15 @@ function useEditorTick(editor: Editor | null) {
  */
 export function MobileToolbar({ editor }: { editor: Editor | null }) {
   useEditorTick(editor);
+  const { isOpen: findOpen } = useEditorFind();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Când se deschide Găsește (tap pe 🔍 din Sheet), închidem Sheet-ul: altfel
+  // overlay-ul lui ar acoperi și ar bloca bara de căutare care apare sus.
+  useEffect(() => {
+    if (findOpen) setSheetOpen(false);
+  }, [findOpen]);
+
   if (!editor) return null;
 
   return (
@@ -99,7 +109,7 @@ export function MobileToolbar({ editor }: { editor: Editor | null }) {
       <EditorDictateButton variant="slim" />
 
       <div className="ml-auto">
-        <Sheet>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
             <Button
               size="sm"

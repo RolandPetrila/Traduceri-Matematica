@@ -21,6 +21,15 @@ const STORAGE_KEY = "editor_nou_v1";
 const DEFAULT_NAME = "Document";
 const AUTOSAVE_MS = 1500;
 
+/**
+ * Migrare de la editorul vechi (iframe), retras în F6. Aceeași origine → aceeași
+ * zonă localStorage: fără import, documentul salvat acolo ar rămâne în browser
+ * dar n-ar mai fi citit de nimeni (dispariție silențioasă din interfață).
+ * Flag-ul împiedică re-importul după un „Document nou".
+ */
+const LEGACY_KEY = "editor_documente_v1";
+const LEGACY_FLAG = "editor_nou_legacy_imported_v1";
+
 type Saved = { html: string; name: string; savedAt: number };
 
 type DocumentApi = {
@@ -32,6 +41,10 @@ type DocumentApi = {
   rename: (newName: string) => void;
   /** Document nou: golește editorul, resetează numele, șterge salvarea. */
   newDocument: () => void;
+  /** Numele documentului adus din editorul vechi (null = niciun import). */
+  legacyImportedName: string | null;
+  /** Ascunde anunțul de import. */
+  dismissLegacyNotice: () => void;
 };
 
 const DocumentContext = createContext<DocumentApi | null>(null);
@@ -64,6 +77,22 @@ function readSaved(): Saved | null {
   return null;
 }
 
+/** Documentul editorului vechi (format `{name, html}`), o singură dată. */
+function readLegacy(): { html: string; name: string } | null {
+  try {
+    if (localStorage.getItem(LEGACY_FLAG)) return null;
+    const raw = localStorage.getItem(LEGACY_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (d && typeof d.html === "string" && d.html.trim()) {
+      return { html: d.html, name: d.name || DEFAULT_NAME };
+    }
+  } catch {
+    /* localStorage indisponibil / JSON corupt → fără import */
+  }
+  return null;
+}
+
 export function EditorDocumentProvider({
   editor,
   children,
@@ -73,6 +102,9 @@ export function EditorDocumentProvider({
 }) {
   const [name, setName] = useState(DEFAULT_NAME);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [legacyImportedName, setLegacyImportedName] = useState<string | null>(
+    null,
+  );
   const nameRef = useRef(name);
   nameRef.current = name;
   const restoredRef = useRef(false);
@@ -123,8 +155,23 @@ export function EditorDocumentProvider({
       editor.commands.setContent(saved.html);
       setName(saved.name);
       setLastSavedAt(saved.savedAt || null);
+      return;
     }
-  }, [editor]);
+    // Nimic în cheia nouă → aducem documentul din editorul vechi (o singură dată)
+    // și îl adoptăm imediat în cheia nouă, ca următoarea deschidere să fie normală.
+    const legacy = readLegacy();
+    if (legacy) {
+      editor.commands.setContent(legacy.html);
+      setName(legacy.name);
+      persist(legacy.html, legacy.name);
+      setLegacyImportedName(legacy.name);
+      try {
+        localStorage.setItem(LEGACY_FLAG, "1");
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [editor, persist]);
 
   // Auto-save debounced pe fiecare modificare (după ce restore-ul a rulat).
   useEffect(() => {
@@ -145,7 +192,15 @@ export function EditorDocumentProvider({
 
   return (
     <DocumentContext.Provider
-      value={{ name, lastSavedAt, saveNow, rename, newDocument }}
+      value={{
+        name,
+        lastSavedAt,
+        saveNow,
+        rename,
+        newDocument,
+        legacyImportedName,
+        dismissLegacyNotice: () => setLegacyImportedName(null),
+      }}
     >
       {children}
     </DocumentContext.Provider>

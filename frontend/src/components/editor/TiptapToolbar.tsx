@@ -20,6 +20,9 @@ import {
   RemoveFormatting,
   Baseline,
   Highlighter,
+  Undo2,
+  Redo2,
+  Search,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,7 @@ import { EditorMathMenu } from "./EditorMathMenu";
 import { EditorFileMenu } from "./EditorFileMenu";
 import { EditorPageCount } from "./editor-pages";
 import { EditorDictateButton } from "./editor-dictation";
+import { useEditorFind } from "./editor-find";
 
 /** Re-randare toolbar la fiecare tranzactie a editorului (pt. stari active). */
 function useEditorTick(editor: Editor | null) {
@@ -111,6 +115,7 @@ export function TiptapToolbar({
   variant?: "bar" | "sheet";
 }) {
   useEditorTick(editor);
+  const { openFind } = useEditorFind();
   if (!editor) return null;
 
   const run = (fn: () => void) => () => {
@@ -143,6 +148,45 @@ export function TiptapToolbar({
       {/* Fișier (document + export) — primul (stânga desktop / sus în Sheet mobil) */}
       <div className={groupCls}>
         <EditorFileMenu editor={editor} />
+        {/* Undo/redo doar pe bara desktop: pe mobil sunt deja în bara slim,
+            duplicarea lor în Sheet ar ocupa spațiu degeaba. */}
+        {!isSheet && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              title="Anulează (Ctrl+Z)"
+              aria-label="Anulează"
+              onClick={() => editor.chain().focus().undo().run()}
+              disabled={!editor.can().undo()}
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              title="Refă (Ctrl+Y)"
+              aria-label="Refă"
+              onClick={() => editor.chain().focus().redo().run()}
+              disabled={!editor.can().redo()}
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+        {/* Căutarea are nevoie de buton: pe telefon nu există Ctrl+F. */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 w-8 p-0"
+          title="Găsește și înlocuiește (Ctrl+F)"
+          aria-label="Găsește și înlocuiește"
+          onClick={openFind}
+        >
+          <Search className="h-4 w-4" />
+        </Button>
         <EditorDictateButton />
         <EditorPageCount />
       </div>

@@ -37,16 +37,17 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 ## 3. Non-regresie — TOT ce trebuie păstrat din editorul actual
 
 > Gate: nicio fază „gata" fără ca funcțiile din grupul ei să fie verificate.
+> **Stare la F6 (2026-07-25):** verificat LIVE desktop + probă mobil 390px. Vezi statusul per grup ↓.
 
-- **G1 Formatare**: bold, italic, underline, strike, font, mărime(pt), culoare text, evidențiere, aliniere (L/C/R/Justify), listă •, listă 1., indent ±, stiluri paragraf (Text normal/Titlu 1-3/Citat), removeFormat.
-- **G2 Matematică** ⚠️ (cel mai delicat): 103 simboluri (`insertSymbol`), structuri editabile (fracție/radical/Σ/∏/∫/paranteze/funcții/limită/accent-bară-vector/matrice 2×2·3×3 — `insertStructure`+`eq*Html`), **bibliotecă formule pe clase V–XII** (`insertFormula`+`onClasaChange`), **căutare matematică** autocomplete (`initMathSearch`/`search`).
-- **G3 Tabele Excel-like**: `insertTable`, add/del rând·coloană, `mergeCells`/`splitCell`, `sortTable`, `sumRow`(total), `toggleHeaderRow`, `toggleZebra`, selecție celule.
-- **G4 Inserare**: link, imagine, dată, linie orizontală, întrerupere pagină.
-- **G5 Dictare** vocală RO (Web Speech, live/interim, `toggleMic`).
-- **G6 Fișier**: nou, salvare + **auto-save localStorage** + restore, **export PDF/Word/HTML**, nume document.
-- **G7 Pagini A4** paginat + „Pagina 2" automat (`updatePages`).
-- **G8 Găsește & Înlocuiește** (find/replace + highlight).
-- **G9 Temă „cretă"** păstrată (sau tokenizată shadcn în paleta verde-cretă a app-ului).
+- **G1 Formatare** ✅: bold, italic, underline, strike, font, mărime(pt), culoare text, evidențiere, aliniere (L/C/R/Justify), listă •, listă 1., indent ±, stiluri paragraf (Text normal/Titlu 1-3/Citat), removeFormat. **+ undo/redo pe bara desktop** (F6; pe mobil erau deja în bara slim). Ctrl+Z/Y merg nativ (StarterKit history).
+- **G2 Matematică** ✅ parțial: 103 simboluri + **bibliotecă 214 formule pe clase V–XII** + **căutare** ✓ (verificat). **[ ] Structuri interactive** (fracție/radical/matrice cu găuri) = **F3b DEFERAT** (custom NodeView; Roland: NU e condiție de retragere — formulele+simbolurile acoperă scrisul curent).
+- **G3 Tabele** ✅: `insertTable`, add/del rând·coloană, `mergeCells`/`splitCell`, `toggleHeaderRow`, selecție celule ✓ + **zebra (dungi alternante) + culoare fundal celulă** (F6, verificat live + în `getHTML`). **RETRAS INTENȚIONAT** (decizie Roland 2026-07-24): `sortTable` + `sumRow`(total) — rescriu structura tabelului (risc pe celule unite/formule) pentru unelte de foaie-de-calcul rar folosite pe fișe.
+- **G4 Inserare** ✅: link, imagine, dată, linie orizontală ✓ + **întrerupere de pagină** (F6, nod `pageBreak`; marcaj vizibil în editor + rupere reală la print/PDF/HTML/DOCX — `class="page-break"` exact → `<w:br w:type="page"/>` în turbodocx).
+- **G5 Dictare** ✅ (F4c): vocală RO (Web Speech, interimar ca decorație).
+- **G6 Fișier** ✅ (F4a/b): nou, salvare + auto-save localStorage + restore, export PDF/Word/HTML, nume document + **import automat din editorul vechi** (F6, cheia `editor_documente_v1` → adus o singură dată la prima deschidere, cu banner).
+- **G7 Pagini A4** ✅ (F4d): ghidaje + contor (desktop; ascunse pe mobil — foaie fluidă).
+- **G8 Găsește & Înlocuiește** ✅ (F6): bară sub toolbar (Ctrl+F desktop, buton 🔍 desktop+mobil), evidențiere galben/portocaliu ca **decorații** (nu poluează `getHTML`), contor N/M, navigare, potrivire exactă, Înlocuiește/Toate (păstrează formatarea). Verificat live desktop.
+- **G9 Temă „cretă"** ✅: toolbar tokenizat verde-cretă, foaia albă A4 (verificat live).
 
 ---
 
@@ -77,8 +78,8 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
     - **Decizie de arhitectură (integritate document):** textul interimar se randează ca **DECORAȚIE ProseMirror**, nu ca text inserat. Decorațiile nu fac parte din document → `getHTML()` nu le vede NICIODATĂ → e structural imposibil ca text neconfirmat să ajungă în auto-save (debounce 1.5s) sau în export. Cu inserare inline, auto-save-ul ar fi capturat text provizoriu. Bonus: tranzacțiile doar-meta nu modifică documentul → nu poluează undo și nu declanșează auto-save la fiecare silabă.
     - **Verificat LIVE cu motor vocal SIMULAT** (fără microfon real, rezultate deterministe): buton randat desktop+slim mobil · aviz afișat cu Google/Apple menționați ȘI **motorul NU pornește înainte de consimțământ** · config `ro-RO/continuous/interimResults` · **interimar VIZIBIL pe ecran dar ABSENT din `getHTML()` ȘI din localStorage** · text final intră în document+auto-save, interimarul se curăță · fără `SpeechRecognition` (caz Firefox) butonul NU se randează, restul editorului merge. Gate: tsc 0 · build OK.
     - **Capcană:** Chrome expune ȘI `SpeechRecognition` neprefixat, ȘI `webkitSpeechRecognition` — un mock de test care înlocuiește doar varianta `webkit` NU e folosit (codul preferă cea neprefixată) → pornește motorul REAL și cere microfonul. La testare, înlocuiește AMBII constructori.
-- [ ] **F5 — G8 Find/Replace + G9 Temă + polish**: find/replace; temă cretă tokenizată; a11y (focus/aria); dark-mode opțional.
-- [ ] **F6 — Non-regresie + QA mobil + retragere iframe**: checklist G1–G9 pe desktop + telefon (Android+iPhone); apoi retrag `public/editor/index.html`. Gate: toate grupurile verzi.
+- [~] **F5 — G8 Find/Replace + G9 Temă + polish**: **G8 find/replace FĂCUT în F6** (bară Ctrl+F, decorații); **G9 temă cretă FĂCUTĂ** (verificat live). RĂMAS (polish, neblocant): a11y aprofundat (deja aria-label pe butoane) + dark-mode opțional — de făcut la nevoie.
+- [x] **F6 — Non-regresie + retragere iframe** ✅ 2026-07-25: închise gap-urile de paritate (G1 undo/redo desktop · G3 zebra+fundal celulă · G4 întrerupere de pagină · G8 find/replace · G6 import automat din editorul vechi) + audit LIVE G1–G9 (desktop + probă 390px) + **retras `public/editor/` (iframe vechi, `git rm`)**; tabul „Editor" (`app/editor/page.tsx`) randează acum editorul NATIV; `/editor-nou` rămâne ca „Tot ecranul". Gate: tsc 0 · next build OK (9 rute) · verificat live (`/editor` = nativ, fără iframe). Fix-uri descoperite la audit: **zebra invizibilă live** (nodeView `TableView` ignoră atribute HTML → decorație ProseMirror pune `data-zebra` pe `.tableWrapper`) + **`Duplicate extension names: ['link']`** (StarterKit 3 include Link → configurat prin `StarterKit.configure({link})`, scoasă extensia separată). **RĂMAS:** F3b (structuri interactive, deferat) + eyeball manual PDF/dictare reală (de la F4) + polish F5.
 
 ---
 
@@ -88,7 +89,7 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 2. ✅ **Matematică FIDEL**: simboluri Unicode + structuri HTML editabile (fracție/radical/matrice) + **biblioteca RO pe clase V–XII NESCHIMBATĂ**. NU LaTeX/KaTeX. Paritate 100%, editabil inline, risc mic.
 3. ✅ **Export** (confirmat F4a, 2026-07-23): PDF = print vectorial A4 alb (`window.print`), Word = `@turbodocx/html-to-docx` (client, gratuit), HTML = standalone. Document livrat = **alb clasic** (tema cretă doar la editare). Sursa = conținutul EDITAT (`editor.getHTML()`).
 4. ✅ **Temă „cretă" tokenizată** (verde/galben în variabilele shadcn); foaia rămâne albă. NU paleta neutral.
-5. [ ] **Paritate** — țintă 100% (G1–G9); orice tăiere se confirmă la faza respectivă.
+5. ✅ **Paritate** (F6, 2026-07-25): G1–G9 verzi cu **două tăieri confirmate de Roland**: (a) **F3b structuri interactive** (fracție/radical cu găuri) = DEFERATE (nu blochează retragerea; formulele+simbolurile acoperă); (b) **sortare + rând-total tabel** = RETRASE INTENȚIONAT (rar folosite, cod fragil pe structura tabelului). G8 find/replace: **bară** (nu dialog). G3: **zebra + fundal celulă** (nu sortare/total).
 
 ---
 
@@ -106,4 +107,4 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 
 ## 8. Ce NU se atinge
 
-Modulele Traduceri / Convertor / Planșe / Asistent rămân neatinse (R-EXT). shadcn se adaugă aditiv. Iframe-ul editor vechi rămâne până la paritate, apoi se retrage.
+Modulele Traduceri / Convertor / Planșe / Asistent rămân neatinse (R-EXT). shadcn se adaugă aditiv. ~~Iframe-ul editor vechi rămâne până la paritate, apoi se retrage.~~ **FĂCUT (F6, 2026-07-25): iframe-ul vechi (`public/editor/`) retras după atingerea parității; git păstrează istoricul.**

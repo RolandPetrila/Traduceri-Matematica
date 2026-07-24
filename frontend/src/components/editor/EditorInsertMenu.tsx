@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import {
   Plus,
@@ -10,11 +10,14 @@ import {
   Calendar,
   Minus,
   Rows3,
+  Rows4,
   Columns3,
   Trash2,
   Merge,
   Split,
   Heading,
+  SeparatorHorizontal,
+  PaintBucket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CELL_COLORS } from "./table-extensions";
 
 /**
  * G4 Inserare (link/imagine/dată/linie) + G3 Tabele (Excel-like: inserare,
@@ -33,7 +37,12 @@ import {
  */
 export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  // Meniu controlat: paleta de fundal nu e un DropdownMenuItem (e o grilă), deci
+  // trebuie închis explicit după alegerea culorii.
+  const [tableMenuOpen, setTableMenuOpen] = useState(false);
   if (!editor) return null;
+
+  const zebraOn = Boolean(editor.getAttributes("table").zebra);
 
   const addLink = () => {
     const prev = editor.getAttributes("link").href as string | undefined;
@@ -106,11 +115,17 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
           >
             <Minus className="mr-2 h-4 w-4" /> Linie orizontală
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().setPageBreak().run()}
+          >
+            <SeparatorHorizontal className="mr-2 h-4 w-4" /> Întrerupere de
+            pagină
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       {/* Tabel */}
-      <DropdownMenu>
+      <DropdownMenu open={tableMenuOpen} onOpenChange={setTableMenuOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
@@ -172,6 +187,51 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
           >
             <Heading className="mr-2 h-4 w-4" /> Comută rând-antet
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Aspect</DropdownMenuLabel>
+          <DropdownMenuItem
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .updateAttributes("table", { zebra: !zebraOn })
+                .run()
+            }
+          >
+            <Rows4 className="mr-2 h-4 w-4" /> Dungi alternante
+            {zebraOn && <span className="ml-auto pl-2">✓</span>}
+          </DropdownMenuItem>
+          <div className="px-2 py-1.5">
+            <div className="mb-1.5 flex items-center text-xs opacity-70">
+              <PaintBucket className="mr-2 h-4 w-4" /> Fundal celulă
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {CELL_COLORS.map((color) => (
+                <button
+                  key={color.label}
+                  type="button"
+                  title={color.label}
+                  aria-label={color.label}
+                  onClick={() => {
+                    editor
+                      .chain()
+                      .focus()
+                      .setCellAttribute("backgroundColor", color.value)
+                      .run();
+                    setTableMenuOpen(false);
+                  }}
+                  className="h-6 w-6 rounded border border-border text-[10px] leading-none"
+                  style={
+                    color.value
+                      ? { background: color.value }
+                      : { background: "transparent" }
+                  }
+                >
+                  {color.value ? "" : "✕"}
+                </button>
+              ))}
+            </div>
+          </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"

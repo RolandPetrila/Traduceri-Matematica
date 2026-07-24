@@ -1,14 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 /**
- * Editor matematic — modul izolat (Faza G). Wrapper subțire peste iframe-ul
- * standalone (frontend/public/editor/index.html), embedat same-origin.
+ * Tabul „Editor" — editor matematic NATIV (TipTap + shadcn), fără iframe.
  *
- * Pe mobil: antet MINIMAL (doar titlu scurt + buton „tot ecranul") și iframe-ul
- * ocupă cât mai mult din ecran (dvh — ține cont de barele browserului), ca foaia
- * de scris să aibă spațiu maxim. Layout-ul intern al editorului (toolbar → panou
- * de jos on-demand) e în public/editor/index.html.
+ * Rescriere F0–F6 (2026-07): a înlocuit aplicația HTML-vanilla-în-iframe
+ * (`public/editor/index.html`, retrasă la F6) care dădea chrome triplu pe telefon.
+ * Acum: o singură bară, responsive nativ. „Tot ecranul" = ruta `/editor-nou`
+ * (aceeași componentă, pe toată pagina). SSR off (immediatelyRender:false).
  */
+const EditorTiptap = dynamic(() => import("@/components/editor/EditorTiptap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-chalk-white/60">
+      Se încarcă editorul…
+    </div>
+  ),
+});
+
 export default function EditorPage() {
   return (
     <div className="space-y-2 sm:space-y-3">
@@ -19,12 +29,12 @@ export default function EditorPage() {
             <span className="hidden sm:inline">Documente Matematic</span>
           </h2>
           <p className="hidden sm:block text-sm opacity-60">
-            Editor A4 tip Word &mdash; 103 simboluri, 20 structuri editabile,
-            214 formule (clasele V&ndash;XII).
+            Editor A4 tip Word &mdash; 103 simboluri, 214 formule (clasele
+            V&ndash;XII), tabele, dictare, export PDF/Word/HTML.
           </p>
         </div>
         <a
-          href="/editor/index.html"
+          href="/editor-nou"
           target="_blank"
           rel="noopener noreferrer"
           className="chalk-btn text-xs sm:text-sm whitespace-nowrap shrink-0"
@@ -36,13 +46,8 @@ export default function EditorPage() {
         </a>
       </div>
 
-      <div className="rounded-lg overflow-hidden border-2 border-chalk-white/20 bg-white h-[calc(100dvh-150px)] sm:h-[calc(100vh-230px)] min-h-[420px] sm:min-h-[560px]">
-        <iframe
-          src="/editor/index.html"
-          title="Editor Documente Matematic"
-          className="block w-full h-full"
-          style={{ border: "none" }}
-        />
+      <div className="h-[calc(100dvh-150px)] sm:h-[calc(100vh-230px)] min-h-[420px] sm:min-h-[560px]">
+        <EditorTiptap />
       </div>
     </div>
   );

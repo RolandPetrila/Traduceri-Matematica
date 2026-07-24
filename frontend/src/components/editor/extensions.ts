@@ -7,13 +7,16 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
 import { Image } from "@tiptap/extension-image";
-import { Link } from "@tiptap/extension-link";
-import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
-import { TableHeader } from "@tiptap/extension-table-header";
-import { TableCell } from "@tiptap/extension-table-cell";
 import { FontSize } from "@/lib/tiptap-font-size";
 import { DictationInterim } from "./dictation-interim";
+import { PageBreak } from "./page-break";
+import { FindHighlight } from "./search-find";
+import {
+  TableWithZebra,
+  TableCellWithBg,
+  TableHeaderWithBg,
+} from "./table-extensions";
 
 /**
  * Setul de extensii TipTap — portat din config-ul dovedit Mösslein
@@ -21,7 +24,11 @@ import { DictationInterim } from "./dictation-interim";
  * Tabele + inserare (link/imagine) sunt incluse aici; UI-ul lor vine in F2.
  */
 export const editorExtensions = [
-  StarterKit,
+  // StarterKit 3 include DEJA Link → îl configurăm aici (nu ca extensie separată,
+  // altfel „Duplicate extension names: ['link']" + configul nostru poate fi ignorat).
+  StarterKit.configure({
+    link: { openOnClick: false, autolink: true },
+  }),
   TextStyle,
   Color,
   FontFamily,
@@ -31,10 +38,11 @@ export const editorExtensions = [
   Subscript,
   Superscript,
   Image.configure({ allowBase64: true }),
-  Link.configure({ openOnClick: false, autolink: true }),
-  Table.configure({ resizable: true }),
+  TableWithZebra, // Table + atribut `zebra` (deja configurat resizable)
   TableRow,
-  TableHeader,
-  TableCell,
+  TableHeaderWithBg,
+  TableCellWithBg,
+  PageBreak, // intrerupere de pagina (G4) — print/PDF/Word
   DictationInterim, // text interimar de dictare ca decoratie (nu intra in document)
+  FindHighlight, // gaseste & inlocuieste (G8) — evidentiere ca decoratie
 ];

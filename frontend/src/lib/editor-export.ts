@@ -7,6 +7,33 @@
  * ecranului — tema verde e doar pentru editare.
  */
 
+import { ZEBRA_COLOR } from "@/components/editor/table-extensions";
+
+/**
+ * Dungile de tabel sunt un selector CSS (`nth-child`) — nu supraviețuiesc
+ * conversiei în .docx, unde contează doar stilul inline. Înainte de livrare
+ * scriem fundalul direct pe celulele rândurilor pare, ca documentul exportat să
+ * arate ca cel de pe ecran în TOATE formatele (R-EXPORT).
+ */
+function inlineZebra(bodyHtml: string): string {
+  if (typeof document === "undefined" || !bodyHtml.includes("data-zebra")) {
+    return bodyHtml;
+  }
+  const host = document.createElement("div");
+  host.innerHTML = bodyHtml;
+  host.querySelectorAll('table[data-zebra="true"]').forEach((table) => {
+    Array.from(table.querySelectorAll("tr")).forEach((row, index) => {
+      if (index % 2 !== 1) return;
+      row.querySelectorAll("td, th").forEach((cell) => {
+        const el = cell as HTMLElement;
+        // Culoarea aleasă manual pe celulă are prioritate.
+        if (!el.style.backgroundColor) el.style.backgroundColor = ZEBRA_COLOR;
+      });
+    });
+  });
+  return host.innerHTML;
+}
+
 /** Nume de fișier sigur (fără caractere interzise pe Windows/mac/linux). */
 function safeName(title: string): string {
   const t = (title || "Document").trim().replace(/[\\/:*?"<>|]+/g, "_");
@@ -63,6 +90,14 @@ const DOCUMENT_CSS = `
   .doc th { background: #f1f5f9; font-weight: 700; }
   .doc img { max-width: 100%; height: auto; }
   .doc hr { border: none; border-top: 2px solid #cbd5e1; margin: 1em 0; }
+  .doc table[data-zebra="true"] tr:nth-child(even) td { background: ${ZEBRA_COLOR}; }
+  /* Întrerupere de pagină: invizibilă pe hârtie, dar rupe pagina. */
+  .doc .page-break {
+    break-after: page;
+    page-break-after: always;
+    height: 0;
+    border: none;
+  }
   @page { size: A4; margin: 20mm 18mm; }
   @media print {
     html, body { background: #ffffff; }
@@ -71,7 +106,8 @@ const DOCUMENT_CSS = `
 `;
 
 /** Construiește un document HTML standalone (alb A4) din conținutul editorului. */
-function buildDocumentHtml(bodyHtml: string, title: string): string {
+function buildDocumentHtml(rawBodyHtml: string, title: string): string {
+  const bodyHtml = inlineZebra(rawBodyHtml);
   return `<!DOCTYPE html>
 <html lang="ro">
 <head>
@@ -183,7 +219,8 @@ export async function exportDocx(
   ) => Promise<Blob | ArrayBuffer | Uint8Array>;
 
   // Wrap minim: turbodocx mapează stilurile inline/tag-uri → Word.
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${bodyHtml}</body></html>`;
+  // `<div class="page-break">` (clasă EXACTĂ) devine `<w:br w:type="page"/>`.
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${inlineZebra(bodyHtml)}</body></html>`;
 
   const result = await HTMLtoDOCX(html, null, {
     orientation: "portrait",

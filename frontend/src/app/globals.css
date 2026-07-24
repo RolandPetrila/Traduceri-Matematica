@@ -346,6 +346,49 @@
   border-top: 2px solid #cbd5e1;
   margin: 1em 0;
 }
+/* Dungi alternante pe tabel (G3). În editor, tabelul e desenat de nodeView-ul
+   `TableView` (resizable) care înfășoară tabelul într-un `div.tableWrapper`;
+   decorația pune `data-zebra` pe WRAPPER (nu pe <table>). La export/salvare,
+   `getHTML()` pune atributul direct pe <table> (fără wrapper). Acoperim ambele.
+   La export în .docx culoarea se scrie INLINE pe celule (nth-child nu merge acolo). */
+.editor-content .tableWrapper[data-zebra="true"] tr:nth-child(even) td,
+.editor-content table[data-zebra="true"] tr:nth-child(even) td {
+  background: #f1f5f9;
+}
+/* Întrerupere de pagină (G4): pe hârtie e invizibilă, în editor trebuie să se
+   vadă unde ai pus-o. */
+.editor-content .page-break {
+  position: relative;
+  height: 0;
+  border-top: 2px dashed #94a3b8;
+  margin: 1.4em 0;
+}
+.editor-content .page-break::after {
+  content: "Întrerupere de pagină";
+  position: absolute;
+  right: 0;
+  top: -0.95em;
+  background: #ffffff;
+  padding: 0 5px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 9pt;
+  color: #64748b;
+}
+.editor-content .page-break.ProseMirror-selectednode {
+  border-top-color: #2563eb;
+  outline: none;
+}
+/* Găsește & înlocuiește (G8) — DECORAȚII, nu conținut: nu ajung in getHTML(). */
+.editor-content .search-match {
+  background: #fde68a;
+  border-radius: 2px;
+}
+.editor-content .search-match-current {
+  background: #fb923c;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar {

@@ -73,3 +73,4 @@ dev_server_log.txt
 
 # Development screenshots
 *_screenshot.png
+.env*.local

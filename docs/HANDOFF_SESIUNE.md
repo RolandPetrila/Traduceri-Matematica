@@ -1,6 +1,6 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-24. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-25. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
@@ -14,43 +14,43 @@ Apoi citește INTEGRAL, în ordine:
 2. docs/PLAN_editor_tiptap_2026-07-23.md  (sursa de adevăr pentru rescrierea Editorului: faze F0–F6, decizii §17, non-regresie G1–G9)
 3. git log --oneline -15  (jurnalul fazelor)
 
-Continuăm rescrierea Editorului nativ TipTap+shadcn. Am terminat F0–F3 și TOATĂ faza F4 (a export · b fișier/auto-save · c dictare · d pagini A4).
-Următorul pas pe care îl aleg eu: [F5 find/replace + polish]  SAU  [F3b structuri interactive]  SAU  [F6 non-regresie + retragerea iframe-ului vechi].
+Rescrierea Editorului nativ TipTap+shadcn e la PARITATE: F0–F4 + **F6 COMPLET** (non-regresie G1–G9 + iframe vechi RETRAS; tabul „Editor" = editor nativ).
+Următorul pas pe care îl aleg eu: [F3b structuri interactive fracție/radical]  SAU  [F5 polish: a11y aprofundat + dark-mode]  SAU  [pipăitul manual PDF/dictare]  SAU  [alt modul: Planșe].
 Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și gate-ul de non-regresie.
 ```
 
 ---
 
-## 📍 UNDE SUNTEM (2026-07-24)
+## 📍 UNDE SUNTEM (2026-07-25)
 
-Rescriem **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe telefon) în **modul nativ React: TipTap 3 + shadcn/ui**, aliniat cu app-ul de referință Mösslein (`C:\Proiecte\Mosslein_Sistem_Gestiune - Copy`).
+Am rescris **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe telefon) în **modul nativ React: TipTap 3 + shadcn/ui**, aliniat cu app-ul de referință Mösslein (`C:\Proiecte\Mosslein_Sistem_Gestiune - Copy`). **PARITATE ATINSĂ — iframe-ul vechi RETRAS.**
 
 **Progres (vezi PLAN pt detalii):**
 
-- [x] F0 setup (TipTap 3.28 + 12 componente shadcn + temă cretă tokenizată)
-- [x] F1 editor core + G1 formatare (desktop toolbar + mobil bară slim + bottom Sheet)
-- [x] F2 tabele (G3) + inserare (G4: link/imagine/dată/linie)
-- [~] F3 matematică (G2): **214 formule pe clase V–XII + 103 simboluri + căutare** ✓ (fidel)
-- [ ] **F3b** structuri interactive (fracție/radical cu găuri) — custom TipTap NodeView; **abordare de confirmat cu Roland**
-- [~] **F4** — sub-fazat:
-  - [x] **F4a Export** ✅ 2026-07-23: `Fișier ▾` (PDF print vectorial · Word .docx turbodocx · HTML standalone), document alb clasic. Verificat LIVE + **fidelitate R-MATH pe conținut real** (sup/sub/tabel/bold păstrate în DOCX dezarhivat + HTML; PDF = același body). Mobil Sheet OK. PDF click = eyeball manual.
-  - [x] **F4b Fișier** ✅ 2026-07-24: cheie `editor_nou_v1` (separată de editorul vechi), auto-save debounce 1.5s + Salvează manual + Redenumește (numele → export) + Document nou cu confirmare + restore la reload + status „✓ salvat HH:MM". Verificat LIVE desktop + mobil 390px + **non-regresie R-MATH**: restore după reload păstrează sup/sub/tabel(4 celule)/bold; export re-testat post-refactor (numele → `Test-F4b.html`, corp fidel).
-  - [x] **F4d Pagini A4** ✅ 2026-07-24: foaia desktop la metrici A4 REALE (210mm, 20/18mm) = identice cu documentul exportat (lățime conținut 174mm în ambele) → ghidajele „Pagina N" indică fidel sfârșitul paginii; contor „📄 N pag. A4". **Limită onestă:** ruptura reală din PDF poate fi cu un element mai sus (print-ul nu taie la mijloc de paragraf) — spune „aliniat la A4", nu „exact". Pe mobil foaia rămâne fluidă → ghidaje+contor ASCUNSE (ar minți). Verificat LIVE.
-  - [x] **F4c Dictare** ✅ 2026-07-24: microfon în bara slim mobil + toolbar desktop, `ro-RO` continuous cu auto-restart, interimar gri ca DECORAȚIE ProseMirror (structural imposibil să ajungă în document/auto-save/export), aviz cloud o singură dată. Suport verificat: Chrome/Edge/Opera + **Safari macOS 14.1+/iOS 14.5+**; Firefox NU → buton ascuns. Verificat LIVE cu motor simulat.
-  - ⇒ **FAZA F4 COMPLETĂ** (F4a export · F4b fișier · F4c dictare · F4d pagini)
-- [ ] F5 find/replace + polish · F6 non-regresie + înlocuire iframe vechi
+- [x] F0 setup · F1 core+G1 · F2 tabele+inserare
+- [~] F3 matematică (G2): **214 formule V–XII + 103 simboluri + căutare** ✓ · **F3b** structuri interactive (fracție/radical cu găuri) = **DEFERAT** (custom NodeView; Roland: nu blochează retragerea)
+- [x] **F4 COMPLET** (a export · b fișier/auto-save · c dictare ro-RO · d pagini A4) — vezi istoricul git
+- [x] **F6 COMPLET** ✅ 2026-07-25 — non-regresie G1–G9 + retragere iframe:
+  - **G1**: + undo/redo pe bara desktop (Ctrl+Z/Y oricum nativ).
+  - **G3**: + **zebra (dungi alternante) + culoare fundal celulă**. Sortare/total = RETRASE INTENȚIONAT (Roland).
+  - **G4**: + **întrerupere de pagină** (nod `pageBreak` → print/PDF/HTML + `<w:br w:type=page>` în DOCX).
+  - **G6**: + **import automat din editorul vechi** (`editor_documente_v1` → adus o singură dată, cu banner; flag `editor_nou_legacy_imported_v1`).
+  - **G8**: **Găsește & Înlocuiește** — bară sub toolbar (Ctrl+F + buton 🔍), evidențiere ca decorații, contor, potrivire exactă, Înlocuiește/Toate.
+  - **Audit LIVE G1–G9** desktop + probă 390px: G8 (highlight+replace, decorații absente din getHTML), G4 (marcaj+getHTML), G3 (zebra+fundal live+getHTML), import (banner+R-MATH+one-time), G9 temă — toate verzi.
+  - **Retras `public/editor/` (`git rm`)**; `app/editor/page.tsx` randează acum editorul NATIV; `/editor-nou` = „Tot ecranul".
+  - Fix-uri la audit: zebra invizibilă live (nodeView TableView ignoră atribute → decorație pune `data-zebra` pe `.tableWrapper`) + `Duplicate extension names: ['link']` (StarterKit 3 include Link → `StarterKit.configure({link})`).
+- [~] F5 polish (a11y aprofundat + dark-mode opțional) — RĂMAS, neblocant.
 
-**Editorul nou = rută preview `/editor-nou`** (tabul „Editor" normal rămâne pe iframe-ul vechi funcțional până la paritate F6). **Tot F4 e LIVE pe producție** (`traduceri-frontend.vercel.app/editor-nou`, verificat 2026-07-24).
+**Editorul nativ = tabul „Editor" (`/editor`) + „Tot ecranul" (`/editor-nou`).** Ambele randează `components/editor/EditorTiptap.tsx`. **Cod la zi local (branch `faza-g-editor`), gate verde (tsc 0 · build 9 rute); DEPLOY încă NEfăcut** (outward-facing, cere confirmarea lui Roland — vezi mai jos).
 
-Fișiere: `frontend/src/app/editor-nou/page.tsx` + `frontend/src/components/editor/`:
-`EditorTiptap.tsx` (3 providere imbricate: document → pagini → dictare) · `TiptapToolbar.tsx` · `MobileToolbar.tsx` · `EditorInsertMenu.tsx` · `EditorMathMenu.tsx` · `EditorFileMenu.tsx` (fișier+export) · `editor-document.tsx` (auto-save/restore) · `editor-pages.tsx` (paginare A4) · `editor-dictation.tsx` + `dictation-interim.ts` (dictare) · `extensions.ts` · `math-data.json`.
-Plus `frontend/src/lib/editor-export.ts`, `lib/tiptap-font-size.ts`, `components/ui/dialog.tsx`. Dep nouă: `@turbodocx/html-to-docx`.
+Fișiere `frontend/src/components/editor/`: `EditorTiptap.tsx` (providere: document → pagini → dictare → **find**) · `TiptapToolbar.tsx` (+undo/redo/🔍) · `MobileToolbar.tsx` (Sheet controlat, se închide la deschiderea căutării) · `EditorInsertMenu.tsx` (+întrerupere pagină, +zebra/fundal celulă) · `EditorMathMenu.tsx` · `EditorFileMenu.tsx` · `editor-document.tsx` (+import legacy) · `editor-pages.tsx` · `editor-dictation.tsx` + `dictation-interim.ts` · **`editor-find.tsx` + `search-find.ts`** (G8) · **`page-break.ts`** (G4) · **`table-extensions.ts`** (zebra+fundal+decorație) · `extensions.ts` · `math-data.json`. Plus `lib/editor-export.ts` (+zebra inline+page-break CSS), `app/editor/page.tsx` (native, nu iframe), `app/globals.css`.
 
 ### ⚠️ DE PIPĂIT MANUAL de Roland (nu se pot automatiza — rămân deschise)
 
-1. **Export PDF** — `window.print()` deschide dialog modal care blochează Chrome MCP. De verificat că PDF-ul arată corect ȘI unde cade ruptura de pagină vs ghidajul „Pagina N".
-2. **Dictare cu voce reală** — nu există intrare audio în automatizare. De verificat: textul intră **la cursor**; `continuous` ține prin pauze (auto-restart); **Oprește** stinge indicatorul de microfon.
-3. **O dictare reală → Export Word** — singura cale care combină motor vocal real + export real.
+1. **Export PDF** — `window.print()` deschide dialog modal care blochează Chrome MCP. De verificat că PDF-ul arată corect, unde cade ruptura de pagină, ȘI că **întreruperea de pagină** rupe corect.
+2. **Dictare cu voce reală** — nu există intrare audio în automatizare. De verificat: textul intră **la cursor**; `continuous` ține prin pauze; **Oprește** stinge indicatorul.
+3. **O dictare reală → Export Word** (cu un tabel cu zebra + o întrerupere de pagină) — combină motor vocal real + export real + funcțiile noi F6.
+4. **Găsește & Înlocuiește pe MOBIL** — verificat prin logică + tsc (Sheet-ul se închide la deschiderea căutării), dar NU vizual (proba mobil instabilă). De confirmat pe telefon real: 🔍 din „Format" → bara apare sus și e utilizabilă.
 
 ---
 
