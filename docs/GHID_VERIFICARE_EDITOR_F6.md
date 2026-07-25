@@ -15,7 +15,7 @@ De aceea fiecare verificare de mai jos are două părți:
 - 🟢 **[LOG]** — ce confirmă logul **automat** (eu, într-o sesiune viitoare, citesc logul și spun „a mers / n-a mers"). Mecanic, obiectiv.
 - 🟡 **[OCHIUL TĂU]** — ce rămâne să judeci tu. Perceptual, subiectiv. Aici o poză/un cuvânt de la tine e suficient.
 
-> ⚠️ **Starea telemetriei ACUM:** logurile NU se salvează nicăieri accesibil (Supabase neconfigurat pe producție — vezi §8). Până rezolvăm asta, partea 🟢 e „pregătită, dar inactivă". Partea 🟡 (testarea manuală) merge oricum, de pe acum. Când pornim telemetria, tot ce scrie 🟢 devine automat, fără să schimbi nimic în cum testezi.
+> ✅ **Starea telemetriei ACUM (2026-07-25):** ACTIVĂ și dovedită live (vezi §8). Partea 🟢 se loghează automat în Supabase (`logs` în proiectul tenders-ro) la fiecare acțiune. Partea 🟡 (testarea manuală) rămâne a ta. Tu doar faci pașii de mai jos — eu citesc logurile după.
 
 ---
 
@@ -120,33 +120,34 @@ De aceea fiecare verificare de mai jos are două părți:
 
 ---
 
-## 8. Ce lipsește ca partea 🟢 (automată) să funcționeze
+## 8. Starea telemetriei — ACTIV ✅ (2026-07-25)
 
-Azi logurile se scriu doar local (pe dispozitiv) + în console-ul efemer al serverului — **nu ajung într-un loc pe care eu să-l pot citi**. Ca „detectarea automată prin loguri" să devină reală, trebuie un **sink persistent** (Supabase), care acum **nu e configurat pentru această aplicație**:
+Partea 🟢 e **pornită și dovedită live**. Nu mai e „pregătită, inactivă".
 
-- Nu există proiect Supabase pentru Traduceri (ai: ITP, Mosslein, tenders-ro — niciunul al acestei aplicații).
-- Env vars `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` nu sunt setate pe producție.
-- Atenție la nume: codul citește `SUPABASE_SERVICE_KEY`, cheia centrală e `SUPABASE_SERVICE_ROLE_KEY` — trebuie mapate corect, altfel rămâne mut.
+- **Sink:** tabela `logs` creată în proiectul Supabase **tenders-ro** (refolosit — 0 $, decizia ta pt R-COST; izolată prin `source` + prefixul `editor:` din mesaj; RLS activ, doar service-role scrie/citește).
+- **Env vars pe producție:** `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` setate (numele exact pe care-l citește codul — nepotrivirea `SERVICE_ROLE_KEY` rezolvată la cablare). Redeploy făcut.
+- **Instrumentare:** editorul emite evenimentele 🟢 de mai sus, **mereu pornit** (decizia ta), doar evenimente semantice.
+- **Dovadă end-to-end:** click real pe site-ul LIVE → au apărut în tabelă `editor:find_open` + `editor:page_count` (verificat prin interogare directă). Lanțul `UI → logAction → /api/logs → Supabase → interogare` funcționează.
 
-Odată rezolvat (o decizie de-a ta — vezi conversația), pornesc instrumentarea editorului (evenimentele 🟢 de mai sus), verific că **un eveniment real ajunge în tabela `logs`**, și de-atunci pot citi logurile și-ți dau un raport „trecut/picat" pe partea mecanică, lăsându-ți doar partea 🟡.
+**Cum citesc eu logurile** (într-o sesiune viitoare): interoghez tabela `logs` filtrând `message like 'editor:%'` pe fereastra de timp a testului tău, și-ți dau un raport „trecut/picat" pe partea 🟢 (mecanică), lăsându-ți doar 🟡 (perceptuală). Le vezi și tu live pe `/diagnostics`.
 
 ---
 
-## 9. Schema evenimentelor (contractul pe care îl voi implementa)
+## 9. Schema evenimentelor (contractul IMPLEMENTAT)
 
-Un singur canal: `logAction("editor:<eveniment>", { … })` → `/api/logs` → Supabase `logs` (`source:"editor"`). **Evenimente semantice, nu „fiecare click"** (clickul brut = zgomot + consumă cota gratuită + nu ajută la verificare).
+Un singur canal: `trackEditor("<ev>", {…})` → `logAction("editor:<ev>")` → `/api/logs` → Supabase `logs`. **Filtrare: `message like 'editor:%'`** (`level="action"`, `source="user-action"` — moștenit din `logAction`; NU `source="editor"`). **Evenimente semantice, nu „fiecare click"** (clickul brut = zgomot + consumă cotă + nu ajută la verificare).
 
-| Eveniment                 | Context (payload)                                                      | Verifică |
-| ------------------------- | ---------------------------------------------------------------------- | -------- |
-| `editor:math_insert`      | `{kind, clasa, htmlHasSup, htmlHasSub}`                                | §1       |
-| `editor:dictation_start`  | `{lang, continuous}`                                                   | §2       |
-| `editor:dictation_final`  | `{textLen, sample}`                                                    | §2       |
-| `editor:dictation_stop`   | `{durationMs}`                                                         | §2       |
-| `editor:page_count`       | `{pages}`                                                              | §3       |
-| `editor:insert`           | `{type}` (ex. `page_break`)                                            | §6       |
-| `editor:export`           | `{format, pageBreaks, hasSup, hasSub, hasTable, hasBold, bytes, name}` | §4, §5   |
-| `editor:find_open`        | `{}`                                                                   | §7       |
-| `editor:find_replace_all` | `{query, replaced}`                                                    | §7       |
-| `editor:legacy_bring`     | `{name, replaced}`                                                     | import   |
+| Eveniment                                           | Context (payload)                                                                  | Verifică |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------- | -------- |
+| `editor:math_insert`                                | `{kind:"formula"/"symbol", grup/clasa/symbol, hasSup, hasSub}`                     | §1       |
+| `editor:dictation_start`                            | `{lang:"ro-RO", continuous:true}`                                                  | §2       |
+| `editor:dictation_final`                            | `{textLen, sample}` (primele 80 caractere transcrise)                              | §2       |
+| `editor:dictation_stop`                             | `{durationMs}`                                                                     | §2       |
+| `editor:page_count`                                 | `{pages}` — emis DOAR la schimbarea numărului                                      | §3       |
+| `editor:insert`                                     | `{type}`: `page_break`/`table`/`table_zebra`/`cell_bg`/`link`/`image`/`date`/`hr`  | §6       |
+| `editor:export`                                     | `{format, name, htmlLen, pageBreaks, hasSup, hasSub, hasTable, hasBold, hasZebra}` | §4, §5   |
+| `editor:find_open`                                  | `{}`                                                                               | §7       |
+| `editor:find_replace_all`                           | `{query, replaced}`                                                                | §7       |
+| `editor:legacy_bring` / `editor:legacy_import_auto` | `{name}`                                                                           | import   |
 
-> Notă confidențialitate: „monitorizează toată activitatea" înseamnă logare în cloud a activității reale a Cristinei (fără autentificare, persoană reală). E o alegere conștientă, nu un default — de-asta întreb dacă vrei asta mereu-pornit sau doar într-un „mod verificare" pe care îl pornești tu.
+> Notă confidențialitate (decizie Roland 2026-07-25): telemetria e **MEREU PORNITĂ** — logare în cloud a activității reale (inclusiv a Cristinei, fără autentificare). Alegere conștientă, nu default. Dacă vrei vreodată s-o poți opri, se adaugă un comutator „mod verificare" în bara editorului.
