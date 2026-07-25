@@ -41,7 +41,7 @@ Am rescris **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe 
   - Fix-uri la audit: zebra invizibilă live (nodeView TableView ignoră atribute → decorație pune `data-zebra` pe `.tableWrapper`) + `Duplicate extension names: ['link']` (StarterKit 3 include Link → `StarterKit.configure({link})`).
 - [~] F5 polish (a11y aprofundat + dark-mode opțional) — RĂMAS, neblocant.
 
-**Editorul nativ = tabul „Editor" (`/editor`) + „Tot ecranul" (`/editor-nou`).** Ambele randează `components/editor/EditorTiptap.tsx`. **Cod la zi local (branch `faza-g-editor`), gate verde (tsc 0 · build 9 rute); DEPLOY încă NEfăcut** (outward-facing, cere confirmarea lui Roland — vezi mai jos).
+**Editorul nativ = tabul „Editor" (`/editor`) + „Tot ecranul" (`/editor-nou`).** Ambele randează `components/editor/EditorTiptap.tsx`. **Cod la zi (branch `faza-g-editor`, HEAD `3d604b2`), gate verde (tsc 0 · build 9 rute), DEPLOY FĂCUT pe `traduceri-frontend.vercel.app`** (2026-07-25, verificat LIVE). Vezi mai jos ce rămâne de pipăit manual.
 
 Fișiere `frontend/src/components/editor/`: `EditorTiptap.tsx` (providere: document → pagini → dictare → **find**) · `TiptapToolbar.tsx` (+undo/redo/🔍) · `MobileToolbar.tsx` (Sheet controlat, se închide la deschiderea căutării) · `EditorInsertMenu.tsx` (+întrerupere pagină, +zebra/fundal celulă) · `EditorMathMenu.tsx` · `EditorFileMenu.tsx` · `editor-document.tsx` (+import legacy) · `editor-pages.tsx` · `editor-dictation.tsx` + `dictation-interim.ts` · **`editor-find.tsx` + `search-find.ts`** (G8) · **`page-break.ts`** (G4) · **`table-extensions.ts`** (zebra+fundal+decorație) · `extensions.ts` · `math-data.json`. Plus `lib/editor-export.ts` (+zebra inline+page-break CSS), `app/editor/page.tsx` (native, nu iframe), `app/globals.css`.
 
@@ -52,13 +52,19 @@ Fișiere `frontend/src/components/editor/`: `EditorTiptap.tsx` (providere: docum
 3. **O dictare reală → Export Word** (cu un tabel cu zebra + o întrerupere de pagină) — combină motor vocal real + export real + funcțiile noi F6.
 4. **Găsește & Înlocuiește pe MOBIL** — verificat prin logică + tsc (Sheet-ul se închide la deschiderea căutării), dar NU vizual (proba mobil instabilă). De confirmat pe telefon real: 🔍 din „Format" → bara apare sus și e utilizabilă.
 
-### 🚀 ÎNAINTE DE DEPLOY F6 (deploy = NEfăcut, cere confirmarea lui Roland)
+### 🚀 DEPLOY F6 — FĂCUT ✅ 2026-07-25
 
-Producția rulează încă codul PRE-F6 (cu iframe). La deploy-ul F6:
+Deploy pe producție rulat (`vercel deploy --prod`, dpl_D6sHfPje…, READY) → **`traduceri-frontend.vercel.app` rulează acum editorul NATIV** (verificat LIVE: `/editor` = header nativ + toolbar, fără iframe; contor „2 pag A4"; consolă curată). `CACHE_VERSION` bumpat v8→v9 (PWA instalat ia bundle-urile noi). SW-ul NU precache-uiește fișierele șterse (`/editor/*`) — ștergere sigură (verificat).
 
-1. **Gaură cunoscută la importul legacy (conservativă, non-distructivă):** importul din editorul vechi rulează DOAR dacă `editor_nou_v1` e GOL. Cine a EDITAT deja în `/editor-nou` (LIVE din F4 — realist: dispozitivele de test ale lui Roland) are cheia plină → documentul din editorul vechi (`editor_documente_v1`) **NU se aduce automat** (rămâne în localStorage, nedistrus, dar nesurfațat). **Cristina NU e afectată** (ea ajunge prin tab → iframe vechi → `editor_documente_v1`, n-a atins ruta preview). **Propunere (de confirmat §17):** banner non-distructiv „ai un document în editorul vechi — [Adu-l]" când cheia nouă are conținut ȘI legacy există ȘI flag-ul e nesetat (aducerea = decizie a user-ului, nu suprascriere tăcută).
-2. **Re-verifică manual G2/G5/G7** (matematică/dictare/pagini) — NEre-testate în F6 (neatinse structural), plus eyeball PDF + dictare reală (de la F4).
-3. **Bump `CACHE_VERSION` în `frontend/public/sw.js`** (acum hardcodat `v8-20260723a`) ca PWA-ul instalat să ia bundle-urile noi. SW-ul NU precache-uiește fișierele șterse (`/editor/*`) → ștergerea e sigură (verificat).
+**Gaura de import — ÎNCHISĂ** (banner non-distructiv, LIVE): când `editor_nou_v1` are conținut ȘI există `editor_documente_v1` ȘI flag nesetat → banner „Ai un document salvat în editorul vechi: «X». [Adu-l]". „Adu-l" pe editor gol = aduce direct; pe editor cu conținut = dialog de confirmare „documentul curent va fi înlocuit" (R-EDIT). După tratare: flag setat (nu reoferă), documentul vechi rămâne intact în localStorage. **Demonstrat pe date reale** la deploy: browserul de test avea deja conținut + legacy → banner-ul a păstrat conținutul și a oferit aducerea. Cristina ajunge oricum prin auto-import (cheia nouă goală la ea).
+
+**RĂMAS de pipăit manual de Roland** (nu se pot automatiza):
+
+1. **G2/G5/G7 re-verificare** (matematică/dictare/pagini) — NEre-testate în F6 (neatinse structural).
+2. **Export PDF** — `window.print()` blochează Chrome MCP. Verifică PDF corect + unde cade ruptura vs ghidaj + **întreruperea de pagină** rupe corect.
+3. **Dictare cu voce reală** — text la cursor, `continuous` prin pauze, Oprește stinge microfonul.
+4. **O dictare reală → Export Word** (cu tabel-zebra + întrerupere de pagină) — combină toate funcțiile noi.
+5. **Găsește/Înlocuiește pe MOBIL real** — verificat prin logică+tsc (Sheet se închide la deschiderea căutării), nu vizual (probă mobil instabilă).
 
 ---
 
