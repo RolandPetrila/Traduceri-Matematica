@@ -41,10 +41,19 @@ type DocumentApi = {
   rename: (newName: string) => void;
   /** Document nou: golește editorul, resetează numele, șterge salvarea. */
   newDocument: () => void;
-  /** Numele documentului adus din editorul vechi (null = niciun import). */
+  /** Numele documentului adus AUTOMAT din editorul vechi (null = niciun import). */
   legacyImportedName: string | null;
-  /** Ascunde anunțul de import. */
+  /** Ascunde anunțul de import automat. */
   dismissLegacyNotice: () => void;
+  /**
+   * Numele unui document din editorul vechi care EXISTĂ dar NU s-a adus automat
+   * (fiindcă editorul nou avea deja conținut) — se oferă aducerea la cerere.
+   */
+  legacyAvailableName: string | null;
+  /** Aduce documentul vechi ÎN LOCUL celui curent (înlocuire, după confirmare în UI). */
+  bringLegacy: () => void;
+  /** Ascunde oferta de aducere (pentru sesiunea curentă). */
+  dismissLegacyAvailable: () => void;
 };
 
 const DocumentContext = createContext<DocumentApi | null>(null);
@@ -77,10 +86,25 @@ function readSaved(): Saved | null {
   return null;
 }
 
-/** Documentul editorului vechi (format `{name, html}`), o singură dată. */
-function readLegacy(): { html: string; name: string } | null {
+function legacyHandled(): boolean {
   try {
-    if (localStorage.getItem(LEGACY_FLAG)) return null;
+    return localStorage.getItem(LEGACY_FLAG) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markLegacyHandled(): void {
+  try {
+    localStorage.setItem(LEGACY_FLAG, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Documentul editorului vechi (format `{name, html}`), indiferent de flag. */
+function readLegacyRaw(): { html: string; name: string } | null {
+  try {
     const raw = localStorage.getItem(LEGACY_KEY);
     if (!raw) return null;
     const d = JSON.parse(raw);
@@ -93,6 +117,12 @@ function readLegacy(): { html: string; name: string } | null {
   return null;
 }
 
+/** Documentul vechi pentru auto-import (o singură dată — respectă flag-ul). */
+function readLegacy(): { html: string; name: string } | null {
+  if (legacyHandled()) return null;
+  return readLegacyRaw();
+}
+
 export function EditorDocumentProvider({
   editor,
   children,
@@ -103,6 +133,9 @@ export function EditorDocumentProvider({
   const [name, setName] = useState(DEFAULT_NAME);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [legacyImportedName, setLegacyImportedName] = useState<string | null>(
+    null,
+  );
+  const [legacyAvailableName, setLegacyAvailableName] = useState<string | null>(
     null,
   );
   const nameRef = useRef(name);
@@ -146,6 +179,20 @@ export function EditorDocumentProvider({
     }
   }, [editor]);
 
+  const bringLegacy = useCallback(() => {
+    if (!editor) return;
+    const legacy = readLegacyRaw();
+    if (!legacy) {
+      setLegacyAvailableName(null);
+      return;
+    }
+    editor.commands.setContent(legacy.html);
+    setName(legacy.name);
+    persist(legacy.html, legacy.name);
+    markLegacyHandled();
+    setLegacyAvailableName(null);
+  }, [editor, persist]);
+
   // Restore o singură dată, când editorul e gata.
   useEffect(() => {
     if (!editor || restoredRef.current) return;
@@ -155,6 +202,12 @@ export function EditorDocumentProvider({
       editor.commands.setContent(saved.html);
       setName(saved.name);
       setLastSavedAt(saved.savedAt || null);
+      // Cheia nouă are deja conținut → auto-importul NU rulează (n-am suprascrie
+      // munca curentă). Dacă totuși există un document vechi ne-tratat, OFERIM
+      // aducerea (banner cu confirmare), fără să atingem nimic acum.
+      if (!legacyHandled() && readLegacyRaw()) {
+        setLegacyAvailableName(readLegacyRaw()!.name);
+      }
       return;
     }
     // Nimic în cheia nouă → aducem documentul din editorul vechi (o singură dată)
@@ -165,11 +218,7 @@ export function EditorDocumentProvider({
       setName(legacy.name);
       persist(legacy.html, legacy.name);
       setLegacyImportedName(legacy.name);
-      try {
-        localStorage.setItem(LEGACY_FLAG, "1");
-      } catch {
-        /* ignore */
-      }
+      markLegacyHandled();
     }
   }, [editor, persist]);
 
@@ -200,6 +249,9 @@ export function EditorDocumentProvider({
         newDocument,
         legacyImportedName,
         dismissLegacyNotice: () => setLegacyImportedName(null),
+        legacyAvailableName,
+        bringLegacy,
+        dismissLegacyAvailable: () => setLegacyAvailableName(null),
       }}
     >
       {children}

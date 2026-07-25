@@ -1,8 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { editorExtensions } from "./extensions";
 import { TiptapToolbar } from "./TiptapToolbar";
 import { MobileToolbar } from "./MobileToolbar";
@@ -56,7 +65,21 @@ export default function EditorTiptap() {
  */
 function EditorShell({ editor }: { editor: Editor | null }) {
   const { isOpen, onEditorKeyDown } = useEditorFind();
-  const { legacyImportedName, dismissLegacyNotice } = useEditorDocument();
+  const {
+    legacyImportedName,
+    dismissLegacyNotice,
+    legacyAvailableName,
+    bringLegacy,
+    dismissLegacyAvailable,
+  } = useEditorDocument();
+  const [confirmBring, setConfirmBring] = useState(false);
+
+  // „Adu-l": dacă editorul e gol, aduc direct (nimic de pierdut); dacă are
+  // conținut, cer confirmare (R-EDIT — nu suprascriu munca fără consimțământ).
+  const onBringLegacy = () => {
+    if (editor && !editor.isEmpty) setConfirmBring(true);
+    else bringLegacy();
+  };
 
   return (
     // Ctrl+F e prins pe CONTAINER, nu pe window: toate taburile aplicației sunt
@@ -97,6 +120,63 @@ function EditorShell({ editor }: { editor: Editor | null }) {
           </Button>
         </div>
       )}
+
+      {/* Oferta de aducere: editorul nou avea deja conținut, deci auto-importul
+          nu a rulat, dar există un document în editorul vechi. */}
+      {legacyAvailableName && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-amber-500/10 px-3 py-2 text-xs">
+          <span className="flex-1 min-w-[12rem]">
+            Ai un document salvat în editorul vechi:{" "}
+            <strong>„{legacyAvailableName}"</strong>. Îl aduci aici?
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 gap-1 px-2"
+            onClick={onBringLegacy}
+            title="Adu documentul din editorul vechi"
+          >
+            <Download className="h-3.5 w-3.5" /> Adu-l
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 shrink-0 p-0"
+            onClick={dismissLegacyAvailable}
+            aria-label="Ignoră"
+            title="Ignoră"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Confirmare înainte de a înlocui conținutul curent cu documentul vechi. */}
+      <Dialog open={confirmBring} onOpenChange={setConfirmBring}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Înlocuiești documentul curent?</DialogTitle>
+            <DialogDescription>
+              Documentul curent va fi înlocuit cu{" "}
+              <strong>„{legacyAvailableName}"</strong> din editorul vechi.
+              Acțiunea nu se poate anula.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmBring(false)}>
+              Anulează
+            </Button>
+            <Button
+              onClick={() => {
+                bringLegacy();
+                setConfirmBring(false);
+              }}
+            >
+              Înlocuiește
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Zona de scris (foaia A4) — scrollabilă, primară.
       Lățimea o dictează `.editor-sheet` (210mm pe desktop, fluid pe mobil). */}
