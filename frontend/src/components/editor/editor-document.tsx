@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Editor } from "@tiptap/react";
+import { trackEditor } from "./editor-telemetry";
 
 /**
  * Persistență document (F4b) — cheie NOUĂ separată de editorul vechi (`editor_documente_v1`),
@@ -190,6 +191,7 @@ export function EditorDocumentProvider({
     setName(legacy.name);
     persist(legacy.html, legacy.name);
     markLegacyHandled();
+    trackEditor("legacy_bring", { name: legacy.name });
     setLegacyAvailableName(null);
   }, [editor, persist]);
 
@@ -219,6 +221,7 @@ export function EditorDocumentProvider({
       persist(legacy.html, legacy.name);
       setLegacyImportedName(legacy.name);
       markLegacyHandled();
+      trackEditor("legacy_import_auto", { name: legacy.name });
     }
   }, [editor, persist]);
 

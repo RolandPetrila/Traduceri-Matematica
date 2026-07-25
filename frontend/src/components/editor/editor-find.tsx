@@ -21,6 +21,7 @@ import {
   replaceAllMatches,
   replaceCurrentMatch,
 } from "./search-find";
+import { trackEditor } from "./editor-telemetry";
 
 /**
  * G8 Găsește & Înlocuiește — UI (F6).
@@ -102,6 +103,7 @@ export function EditorFindProvider({
   const openFind = useCallback(() => {
     setIsOpen(true);
     applySearch(query, caseSensitive); // re-evidențiere la redeschidere
+    trackEditor("find_open");
   }, [applySearch, query, caseSensitive]);
 
   const closeFind = useCallback(() => {
@@ -281,7 +283,10 @@ export function EditorFindBar() {
           variant="outline"
           size="sm"
           className="h-7 px-2 text-xs"
-          onClick={() => replaceAllMatches(editor, replaceWith)}
+          onClick={() => {
+            const replaced = replaceAllMatches(editor, replaceWith);
+            trackEditor("find_replace_all", { query, replaced });
+          }}
           disabled={total === 0}
           title="Înlocuiește toate potrivirile"
         >

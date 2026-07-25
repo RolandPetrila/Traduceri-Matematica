@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { setDictationInterim } from "./dictation-interim";
+import { trackEditor } from "./editor-telemetry";
 
 /**
  * Dictare vocală ro-RO (F4c) — Web Speech API.
@@ -83,6 +84,7 @@ export function EditorDictationProvider({
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const listeningRef = useRef(false);
+  const startedAtRef = useRef(0);
   const editorRef = useRef(editor);
   editorRef.current = editor;
 
@@ -96,6 +98,7 @@ export function EditorDictationProvider({
   }, []);
 
   const stop = useCallback(() => {
+    const wasListening = listeningRef.current;
     listeningRef.current = false;
     setListening(false);
     clearInterim();
@@ -103,6 +106,12 @@ export function EditorDictationProvider({
       recognitionRef.current?.stop();
     } catch {
       /* deja oprit */
+    }
+    if (wasListening && startedAtRef.current) {
+      trackEditor("dictation_stop", {
+        durationMs: Date.now() - startedAtRef.current,
+      });
+      startedAtRef.current = 0;
     }
   }, [clearInterim]);
 
@@ -136,6 +145,11 @@ export function EditorDictationProvider({
           .focus()
           .insertContent({ type: "text", text: finalText })
           .run();
+        // Logăm transcriptul → o sesiune viitoare poate CITI ce a auzit motorul.
+        trackEditor("dictation_final", {
+          textLen: finalText.length,
+          sample: finalText.slice(0, 80),
+        });
       }
       setDictationInterim(current, interimText);
     };
@@ -168,8 +182,10 @@ export function EditorDictationProvider({
     try {
       rec.start();
       listeningRef.current = true;
+      startedAtRef.current = Date.now();
       setListening(true);
       setError(null);
+      trackEditor("dictation_start", { lang: "ro-RO", continuous: true });
     } catch {
       setError("Nu am putut porni dictarea.");
     }

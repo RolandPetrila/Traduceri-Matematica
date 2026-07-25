@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { trackEditor } from "./editor-telemetry";
 
 type Formula = { grup: string; nume: string; html: string };
 const FORMULE = mathData.formule as Record<string, Formula[]>;
@@ -124,7 +125,16 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => insert(f.html)}
+                    onClick={() => {
+                      insert(f.html);
+                      trackEditor("math_insert", {
+                        kind: "formula",
+                        grup: f.grup,
+                        clasa: ql ? "cautare" : clasa,
+                        hasSup: /<sup[>\s]/.test(f.html),
+                        hasSub: /<sub[>\s]/.test(f.html),
+                      });
+                    }}
                     className="rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
                     title={f.grup}
                   >
@@ -149,7 +159,14 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => insert(s.s)}
+                    onClick={() => {
+                      insert(s.s);
+                      trackEditor("math_insert", {
+                        kind: "symbol",
+                        symbol: s.s,
+                        label: s.label,
+                      });
+                    }}
                     title={s.label}
                     className="flex h-9 items-center justify-center rounded-md border border-border text-base hover:bg-accent"
                   >

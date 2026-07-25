@@ -4,10 +4,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type { Editor } from "@tiptap/react";
+import { trackEditor } from "./editor-telemetry";
 
 /**
  * Paginare A4 (F4d) — model „ghidaje peste foaie" (ca editorul vechi): o singură
@@ -49,6 +51,9 @@ export function EditorPagesProvider({
 }) {
   const [pageCount, setPageCount] = useState(1);
   const [accurate, setAccurate] = useState(false);
+  // Ultimul contor LOGAT — telemetria se emite DOAR când numărul se schimbă
+  // (altfel, la always-on, fiecare tastă ar genera un eveniment = zgomot + cotă).
+  const lastTrackedPagesRef = useRef(1);
 
   // Urmărim dacă foaia e la metrici A4 (altfel contorul ar minți).
   useEffect(() => {
@@ -81,7 +86,12 @@ export function EditorPagesProvider({
         ro.observe(el);
         observed = el;
       }
-      setPageCount(Math.max(1, Math.ceil(el.scrollHeight / PAGE_CONTENT_PX)));
+      const next = Math.max(1, Math.ceil(el.scrollHeight / PAGE_CONTENT_PX));
+      setPageCount(next);
+      if (next !== lastTrackedPagesRef.current) {
+        lastTrackedPagesRef.current = next;
+        trackEditor("page_count", { pages: next });
+      }
     };
     const measure = () => {
       cancelAnimationFrame(frame);

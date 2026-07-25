@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { exportPdf, exportHtml, exportDocx } from "@/lib/editor-export";
 import { useEditorDocument } from "./editor-document";
+import { trackEditor, contentFlags } from "./editor-telemetry";
 
 /**
  * Meniul „Fișier" (F4a export + F4b fișier) — Document nou / Salvează / Redenumește
@@ -51,15 +52,26 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
 
   if (!editor) return null;
 
-  const onPdf = () => exportPdf(editor.getHTML(), name);
-  const onHtml = () => exportHtml(editor.getHTML(), name);
+  const onPdf = () => {
+    const html = editor.getHTML();
+    trackEditor("export", { format: "pdf", name, ...contentFlags(html) });
+    exportPdf(html, name);
+  };
+  const onHtml = () => {
+    const html = editor.getHTML();
+    trackEditor("export", { format: "html", name, ...contentFlags(html) });
+    exportHtml(html, name);
+  };
   const onDocx = async () => {
     if (busy) return;
     setBusy(true);
+    const html = editor.getHTML();
+    trackEditor("export", { format: "docx", name, ...contentFlags(html) });
     try {
-      await exportDocx(editor.getHTML(), name);
+      await exportDocx(html, name);
     } catch (err) {
       console.error("[editor] export DOCX a eșuat:", err);
+      trackEditor("export_error", { format: "docx" });
       alert("Exportul Word a eșuat. Încearcă PDF sau HTML.");
     } finally {
       setBusy(false);

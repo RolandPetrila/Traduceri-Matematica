@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CELL_COLORS } from "./table-extensions";
+import { trackEditor } from "./editor-telemetry";
 
 /**
  * G4 Inserare (link/imagine/dată/linie) + G3 Tabele (Excel-like: inserare,
@@ -53,18 +54,21 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
       return;
     }
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    trackEditor("insert", { type: "link" });
   };
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     const reader = new FileReader();
-    reader.onload = () =>
+    reader.onload = () => {
       editor
         .chain()
         .focus()
         .setImage({ src: String(reader.result) })
         .run();
+      trackEditor("insert", { type: "image" });
+    };
     reader.readAsDataURL(f);
     e.target.value = "";
   };
@@ -76,6 +80,7 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
       year: "numeric",
     });
     editor.chain().focus().insertContent(d).run();
+    trackEditor("insert", { type: "date" });
   };
 
   return (
@@ -111,12 +116,18 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
             <Calendar className="mr-2 h-4 w-4" /> Data de azi
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            onClick={() => {
+              editor.chain().focus().setHorizontalRule().run();
+              trackEditor("insert", { type: "hr" });
+            }}
           >
             <Minus className="mr-2 h-4 w-4" /> Linie orizontală
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => editor.chain().focus().setPageBreak().run()}
+            onClick={() => {
+              editor.chain().focus().setPageBreak().run();
+              trackEditor("insert", { type: "page_break" });
+            }}
           >
             <SeparatorHorizontal className="mr-2 h-4 w-4" /> Întrerupere de
             pagină
@@ -138,13 +149,14 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuItem
-            onClick={() =>
+            onClick={() => {
               editor
                 .chain()
                 .focus()
                 .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                .run()
-            }
+                .run();
+              trackEditor("insert", { type: "table" });
+            }}
           >
             <TableIcon className="mr-2 h-4 w-4" /> Inserează tabel 3×3
           </DropdownMenuItem>
@@ -190,13 +202,14 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Aspect</DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() =>
+            onClick={() => {
               editor
                 .chain()
                 .focus()
                 .updateAttributes("table", { zebra: !zebraOn })
-                .run()
-            }
+                .run();
+              trackEditor("insert", { type: "table_zebra", on: !zebraOn });
+            }}
           >
             <Rows4 className="mr-2 h-4 w-4" /> Dungi alternante
             {zebraOn && <span className="ml-auto pl-2">✓</span>}
@@ -218,6 +231,10 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
                       .focus()
                       .setCellAttribute("backgroundColor", color.value)
                       .run();
+                    trackEditor("insert", {
+                      type: "cell_bg",
+                      color: color.value,
+                    });
                     setTableMenuOpen(false);
                   }}
                   className="h-6 w-6 rounded border border-border text-[10px] leading-none"
