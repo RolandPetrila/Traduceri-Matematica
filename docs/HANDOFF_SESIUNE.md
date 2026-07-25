@@ -36,7 +36,7 @@ Am rescris **Editorul matematic** din HTML-vanilla-în-iframe (chrome triplu pe 
   - **G4**: + **întrerupere de pagină** (nod `pageBreak` → print/PDF/HTML + `<w:br w:type=page>` în DOCX).
   - **G6**: + **import automat din editorul vechi** (`editor_documente_v1` → adus o singură dată, cu banner; flag `editor_nou_legacy_imported_v1`).
   - **G8**: **Găsește & Înlocuiește** — bară sub toolbar (Ctrl+F + buton 🔍), evidențiere ca decorații, contor, potrivire exactă, Înlocuiește/Toate.
-  - **Audit LIVE G1–G9** desktop + probă 390px: G8 (highlight+replace, decorații absente din getHTML), G4 (marcaj+getHTML), G3 (zebra+fundal live+getHTML), import (banner+R-MATH+one-time), G9 temă — toate verzi.
+  - **Audit LIVE (grupurile F6)** desktop + probă 390px: G8 (highlight+replace, decorații absente din getHTML), G4 (marcaj+getHTML), G3 (zebra+fundal live+getHTML), G6 import (banner+R-MATH+one-time), G1 undo/redo, G9 temă — toate verzi. **G2/G5/G7 NEre-testate acum** (neatinse de F6) → pe pipăitul manual pre-deploy.
   - **Retras `public/editor/` (`git rm`)**; `app/editor/page.tsx` randează acum editorul NATIV; `/editor-nou` = „Tot ecranul".
   - Fix-uri la audit: zebra invizibilă live (nodeView TableView ignoră atribute → decorație pune `data-zebra` pe `.tableWrapper`) + `Duplicate extension names: ['link']` (StarterKit 3 include Link → `StarterKit.configure({link})`).
 - [~] F5 polish (a11y aprofundat + dark-mode opțional) — RĂMAS, neblocant.
@@ -51,6 +51,14 @@ Fișiere `frontend/src/components/editor/`: `EditorTiptap.tsx` (providere: docum
 2. **Dictare cu voce reală** — nu există intrare audio în automatizare. De verificat: textul intră **la cursor**; `continuous` ține prin pauze; **Oprește** stinge indicatorul.
 3. **O dictare reală → Export Word** (cu un tabel cu zebra + o întrerupere de pagină) — combină motor vocal real + export real + funcțiile noi F6.
 4. **Găsește & Înlocuiește pe MOBIL** — verificat prin logică + tsc (Sheet-ul se închide la deschiderea căutării), dar NU vizual (proba mobil instabilă). De confirmat pe telefon real: 🔍 din „Format" → bara apare sus și e utilizabilă.
+
+### 🚀 ÎNAINTE DE DEPLOY F6 (deploy = NEfăcut, cere confirmarea lui Roland)
+
+Producția rulează încă codul PRE-F6 (cu iframe). La deploy-ul F6:
+
+1. **Gaură cunoscută la importul legacy (conservativă, non-distructivă):** importul din editorul vechi rulează DOAR dacă `editor_nou_v1` e GOL. Cine a EDITAT deja în `/editor-nou` (LIVE din F4 — realist: dispozitivele de test ale lui Roland) are cheia plină → documentul din editorul vechi (`editor_documente_v1`) **NU se aduce automat** (rămâne în localStorage, nedistrus, dar nesurfațat). **Cristina NU e afectată** (ea ajunge prin tab → iframe vechi → `editor_documente_v1`, n-a atins ruta preview). **Propunere (de confirmat §17):** banner non-distructiv „ai un document în editorul vechi — [Adu-l]" când cheia nouă are conținut ȘI legacy există ȘI flag-ul e nesetat (aducerea = decizie a user-ului, nu suprascriere tăcută).
+2. **Re-verifică manual G2/G5/G7** (matematică/dictare/pagini) — NEre-testate în F6 (neatinse structural), plus eyeball PDF + dictare reală (de la F4).
+3. **Bump `CACHE_VERSION` în `frontend/public/sw.js`** (acum hardcodat `v8-20260723a`) ca PWA-ul instalat să ia bundle-urile noi. SW-ul NU precache-uiește fișierele șterse (`/editor/*`) → ștergerea e sigură (verificat).
 
 ---
 
