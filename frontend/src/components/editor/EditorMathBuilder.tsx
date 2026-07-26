@@ -1,74 +1,85 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import katex from "katex";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trackEditor } from "./editor-telemetry";
+import { norm } from "./math-input";
+import { MathSymbolPalette, useActiveField } from "./MathSymbolPalette";
 
 /**
  * Constructor de structuri academice (M2) — fracție / limită / radical → generează
  * LaTeX și îl inserează ca nod KaTeX (`insertInlineMath`). Cristina completează
- * câmpuri prietenoase (NU tastează LaTeX) și vede previzualizarea live.
+ * câmpuri prietenoase (NU tastează LaTeX), inserează semne cu UN CLICK din paletă
+ * și vede previzualizarea live.
+ *
+ * Persistență (2026-07-26): schița (tipul + toate câmpurile) se salvează în
+ * localStorage → dacă închizi meniul / comuți funcția înainte s-o aplici pe foaie,
+ * la redeschidere o regăsești (nu mai construiești de la zero).
  */
-
-const SUP: Record<string, string> = {
-  "⁰": "^0",
-  "¹": "^1",
-  "²": "^2",
-  "³": "^3",
-  "⁴": "^4",
-  "⁵": "^5",
-  "⁶": "^6",
-  "⁷": "^7",
-  "⁸": "^8",
-  "⁹": "^9",
-  ⁿ: "^n",
-};
-const SUB: Record<string, string> = {
-  "₀": "_0",
-  "₁": "_1",
-  "₂": "_2",
-  "₃": "_3",
-  "₄": "_4",
-  "₅": "_5",
-  "₆": "_6",
-  "₇": "_7",
-  "₈": "_8",
-  "₉": "_9",
-  ₙ: "_n",
-};
-
-/** Intrare prietenoasă → LaTeX: x²→x^2, a₁→a_1, √(…)/sqrt(…)→\sqrt{…}, ∞·×≤≥. */
-function norm(s: string): string {
-  let out = s;
-  out = out.replace(/√\(([^()]*)\)/g, "\\sqrt{$1}");
-  out = out.replace(/sqrt\(([^()]*)\)/gi, "\\sqrt{$1}");
-  for (const [k, v] of Object.entries(SUP)) out = out.split(k).join(v);
-  for (const [k, v] of Object.entries(SUB)) out = out.split(k).join(v);
-  out = out
-    .replace(/∞/g, "\\infty")
-    .replace(/·/g, "\\cdot")
-    .replace(/×/g, "\\times")
-    .replace(/≤/g, "\\le")
-    .replace(/≥/g, "\\ge")
-    .replace(/π/g, "\\pi");
-  return out;
-}
 
 type Kind = "frac" | "lim" | "root";
 
+const DRAFT_KEY = "editor_math_builder_draft_v1";
+type Draft = {
+  kind?: Kind;
+  num?: string;
+  den?: string;
+  lvar?: string;
+  lto?: string;
+  lnum?: string;
+  lden?: string;
+  rorder?: string;
+  rrad?: string;
+};
+
+function readDraft(): Draft {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as Draft) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
-  const [kind, setKind] = useState<Kind>("frac");
-  const [num, setNum] = useState("");
-  const [den, setDen] = useState("");
-  const [lvar, setLvar] = useState("x");
-  const [lto, setLto] = useState("∞");
-  const [lnum, setLnum] = useState("");
-  const [lden, setLden] = useState("");
-  const [rorder, setRorder] = useState("2");
-  const [rrad, setRrad] = useState("");
+  // Init din schița salvată (componentă client-only → fără hydration mismatch).
+  const draft = useMemo(readDraft, []);
+  const [kind, setKind] = useState<Kind>(draft.kind ?? "frac");
+  const [num, setNum] = useState(draft.num ?? "");
+  const [den, setDen] = useState(draft.den ?? "");
+  const [lvar, setLvar] = useState(draft.lvar ?? "x");
+  const [lto, setLto] = useState(draft.lto ?? "∞");
+  const [lnum, setLnum] = useState(draft.lnum ?? "");
+  const [lden, setLden] = useState(draft.lden ?? "");
+  const [rorder, setRorder] = useState(draft.rorder ?? "2");
+  const [rrad, setRrad] = useState(draft.rrad ?? "");
+
+  // Paletă → inserare în câmpul activ (ultimul focusat). Primul câmp al fiecărui
+  // tip e „primar": dacă apeși pe paletă fără să fi focusat vreun câmp, acolo intră.
+  const { elRef, setActive, insert } = useActiveField();
+  const primaryRef = useRef<HTMLInputElement | null>(null);
+  const onPalette = (sym: string) => {
+    if (!elRef.current) elRef.current = primaryRef.current;
+    insert(sym);
+  };
+  const focusProps = {
+    onFocus: (e: FocusEvent<HTMLInputElement>) => setActive(e.currentTarget),
+  };
+
+  // Persistăm schița la fiecare schimbare.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({ kind, num, den, lvar, lto, lnum, lden, rorder, rrad }),
+      );
+    } catch {
+      /* localStorage indisponibil — schița nu persistă, dar UI-ul merge */
+    }
+  }, [kind, num, den, lvar, lto, lnum, lden, rorder, rrad]);
 
   const latex = useMemo(() => {
     if (kind === "frac") {
@@ -100,7 +111,7 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
 
   if (!editor) return null;
 
-  const insert = () => {
+  const insertToSheet = () => {
     editor.chain().focus().insertInlineMath({ latex }).run();
     trackEditor("math_insert", { kind: `build_${kind}` });
   };
@@ -130,16 +141,19 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
       {kind === "frac" && (
         <div className="flex flex-col gap-1.5">
           <Input
+            ref={primaryRef}
             value={num}
             onChange={(e) => setNum(e.target.value)}
-            placeholder="Numărător (ex: 1+2x+x^2)"
+            placeholder="Numărător (ex: 1+2x)"
             className="h-8 text-sm"
+            {...focusProps}
           />
           <Input
             value={den}
             onChange={(e) => setDen(e.target.value)}
-            placeholder="Numitor (ex: 1+3x+x^2)"
+            placeholder="Numitor (ex: 1+3x)"
             className="h-8 text-sm"
+            {...focusProps}
           />
         </div>
       )}
@@ -153,6 +167,7 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
               placeholder="x"
               className="h-8 w-14 text-sm"
               aria-label="Variabilă"
+              {...focusProps}
             />
             <span className="text-sm opacity-70">→</span>
             <Input
@@ -161,19 +176,23 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
               placeholder="∞"
               className="h-8 flex-1 text-sm"
               aria-label="Tinde la"
+              {...focusProps}
             />
           </div>
           <Input
+            ref={primaryRef}
             value={lnum}
             onChange={(e) => setLnum(e.target.value)}
-            placeholder="Numărător (sau toată expresia)"
+            placeholder="Numărător (sau toată expresia, ex: √5)"
             className="h-8 text-sm"
+            {...focusProps}
           />
           <Input
             value={lden}
             onChange={(e) => setLden(e.target.value)}
             placeholder="Numitor (lasă gol dacă nu e fracție)"
             className="h-8 text-sm"
+            {...focusProps}
           />
         </div>
       )}
@@ -186,15 +205,22 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
             placeholder="Ordin (2, 3, n…)"
             className="h-8 w-24 text-sm"
             aria-label="Ordinul radicalului"
+            {...focusProps}
           />
           <Input
+            ref={primaryRef}
             value={rrad}
             onChange={(e) => setRrad(e.target.value)}
             placeholder="Sub radical (ex: 6x+3)"
             className="h-8 text-sm"
+            {...focusProps}
           />
         </div>
       )}
+
+      {/* Paletă de simboluri — un click → în câmpul activ (înlocuiește textul-ajutor
+          „Scrii normal: ^ = putere…"). */}
+      <MathSymbolPalette onInsert={onPalette} />
 
       {/* Previzualizare live KaTeX (sursa de adevăr vizuală) */}
       <div
@@ -203,12 +229,12 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
         dangerouslySetInnerHTML={{ __html: preview }}
       />
 
-      <Button size="sm" className="h-8" onClick={insert}>
-        Inserează
+      <Button size="sm" className="h-8" onClick={insertToSheet}>
+        Inserează pe foaie
       </Button>
       <p className="text-[11px] leading-tight text-muted-foreground">
-        Scrii normal: <code>^</code> = putere (x^2), <code>_</code> = indice
-        (a_1); poți lipi ² ³ √ ∞ π. Fără LaTeX — vezi rezultatul sus.
+        Apasă simbolurile de mai sus (² ³ √ ∞ π …) ca să le pui în câmpul activ.
+        Pentru radical scrie <code>√5</code> sau <code>√(6x+3)</code>.
       </p>
     </div>
   );

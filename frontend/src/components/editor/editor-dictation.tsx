@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { setDictationInterim } from "./dictation-interim";
 import { trackEditor } from "./editor-telemetry";
+import { MicTestDialog } from "./MicTestDialog";
 
 /**
  * Dictare vocală ro-RO (F4c) — Web Speech API.
@@ -83,6 +84,7 @@ export function EditorDictationProvider({
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noticeOpen, setNoticeOpen] = useState(false);
+  const [micTestOpen, setMicTestOpen] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const listeningRef = useRef(false);
@@ -317,15 +319,26 @@ export function EditorDictationProvider({
         </DialogContent>
       </Dialog>
 
-      {/* Eroare VIZIBILĂ (nu doar în tooltip) — dictarea eșua tăcut. */}
+      {/* Eroare VIZIBILĂ (nu doar în tooltip) — dictarea eșua tăcut. Oferim și
+          testul de microfon (cauza aproape mereu = dispozitiv de intrare tăcut). */}
       {error && (
         <div
           role="alert"
-          className="fixed bottom-4 left-1/2 z-[60] max-w-[92vw] -translate-x-1/2 rounded-md border border-destructive bg-destructive px-4 py-2 text-center text-sm text-destructive-foreground shadow-lg"
+          className="fixed bottom-4 left-1/2 z-[60] flex max-w-[92vw] -translate-x-1/2 flex-col items-center gap-2 rounded-md border border-destructive bg-destructive px-4 py-2 text-center text-sm text-destructive-foreground shadow-lg"
         >
-          🎤 {error}
+          <span>🎤 {error}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 bg-background text-foreground"
+            onClick={() => setMicTestOpen(true)}
+          >
+            Testează microfonul
+          </Button>
         </div>
       )}
+
+      <MicTestDialog open={micTestOpen} onOpenChange={setMicTestOpen} />
     </DictationContext.Provider>
   );
 }

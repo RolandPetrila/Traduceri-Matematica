@@ -24,6 +24,7 @@ import {
   EditorFindBar,
   useEditorFind,
 } from "./editor-find";
+import { MathEditDialog } from "./MathEditDialog";
 
 const INITIAL = `
 <h1>Document nou</h1>
@@ -187,6 +188,9 @@ function EditorShell({ editor }: { editor: Editor | null }) {
           <EditorPageGuides />
         </div>
       </div>
+
+      {/* Editarea unei formule existente (click pe formulă → math:edit). */}
+      <MathEditDialog editor={editor} />
     </div>
   );
 }

@@ -49,7 +49,31 @@ export const editorExtensions = [
   // Matematica ACADEMICA (KaTeX) — noduri InlineMath/BlockMath (atribut `latex`).
   // Randare fidela (fractii cu bara, lim cu x→a dedesubt, radicali cu overline).
   // throwOnError:false → LaTeX gresit nu darama editorul; strict:false → tolerant.
+  //
+  // onClick (2026-07-26): click pe orice formula emite `math:edit` (latex + pos) →
+  // MathEditDialog o redeschide editabil (nu mai poti DOAR sa o stergi). Event pe
+  // window ca sa decuplam config-ul static de React (dialogul asculta si updateaza).
   Mathematics.configure({
     katexOptions: { throwOnError: false, strict: false },
+    inlineOptions: {
+      onClick: (node, pos) => {
+        if (typeof window === "undefined") return;
+        window.dispatchEvent(
+          new CustomEvent("math:edit", {
+            detail: { latex: node.attrs.latex, pos, kind: "inline" },
+          }),
+        );
+      },
+    },
+    blockOptions: {
+      onClick: (node, pos) => {
+        if (typeof window === "undefined") return;
+        window.dispatchEvent(
+          new CustomEvent("math:edit", {
+            detail: { latex: node.attrs.latex, pos, kind: "block" },
+          }),
+        );
+      },
+    },
   }),
 ];
