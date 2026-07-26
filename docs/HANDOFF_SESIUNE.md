@@ -1,6 +1,6 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-26. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-27. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
@@ -10,13 +10,15 @@
 /onboard
 
 Apoi citește INTEGRAL, în ordine:
-1. docs/HANDOFF_SESIUNE.md — secțiunea „📋 BACKLOG MATEMATICĂ (2026-07-26)" de sus = munca ACTIVĂ; secțiunile „SESIUNE 2026-07-26 (3)/(2)" = ce e deja făcut + LIVE.
+1. docs/HANDOFF_SESIUNE.md — „📋 BACKLOG… STARE la 2026-07-27" + secțiunea „SESIUNE 2026-07-27" (#1/#2/#3 făcute, commise, NEDEPLOYAT) = ce e la zi; secțiunile „SESIUNE 2026-07-26 (3)/(2)" = context anterior LIVE.
 2. docs/PLAN_math_academic_2026-07-26.md (KaTeX M1–M5) + docs/PLAN_editor_tiptap_2026-07-23.md (editor F0–F6)
 3. git log --oneline -20 (jurnalul fazelor)
 
-Context: editorul matematic (branch faza-g-editor) e LIVE pe traduceri-frontend.vercel.app. Deja făcute + LIVE: formule EDITABILE (click pe formulă → dialog), PALETĂ simboluri one-click în constructor + editare, fix radical în limită, persistența schiței. Datele bibliotecii: frontend/src/components/editor/math-data.json (214 formule, clase V–XII + 103 simboluri). Acum EXTINDEM.
+Context: editorul matematic (branch faza-g-editor) e LIVE pe traduceri-frontend.vercel.app. Sesiunea 2026-07-27 a livrat (commis, NEDEPLOYAT): #1 grilă construcții gata one-click, #2 formule lungi se încadrează (zoom scale-to-fit + export), #3 audit proză→formulă+explicație (15) + chevron. Datele: frontend/src/components/editor/math-data.json (213 formule + 103 simboluri).
 
-Execută BACKLOG-ul matematică (detaliat mai jos în handoff), în ordinea priorității:
+DE DECIS de Roland (start sesiune): (a) #3-extins — autorez explicații pentru restul de ~157 formule ÎNAINTE sau DUPĂ taxonomia #4?; (b) start #4 (taxonomie programă 5–12 → confirmare → autorare); (c) deploy prod al #1/#2/#3.
+
+Referință backlog complet (mai jos în handoff), ordinea priorității:
 
 1. GHID DE SINTAXĂ / HINT-URI în „Construiește" + „Editează formula": panou de ajutor (pliabil) cu sintaxa pentru TOATE construcțiile — putere a^{1}→a¹, indice a_{1}→a₁, fracție \frac{a}{b}, radical \sqrt{}/\sqrt[n]{}, integrală \int, sumă \sum, limită \lim, produs \prod, trig, matrice, sisteme etc. — fiecare „ce scriu → ce obțin", ca Cristina să poată genera ORICE, nu doar ce e în paletă.
 
@@ -31,29 +33,57 @@ Respectă §17 (clarifică FORMA per funcție cu mock înainte de cod), gate-ul 
 
 ---
 
-## 📋 BACKLOG MATEMATICĂ (2026-07-26) — MUNCA ACTIVĂ pentru sesiunea următoare
+## 📋 BACKLOG MATEMATICĂ (2026-07-26) — STARE la 2026-07-27
+
+> **#1 ✅ · #2 ✅ · #3 ~ (parțial) · #4 ⏳ (netratat)** — commise pe `faza-g-editor` (`c37f22b`, `adaaaa8`), **NEDEPLOYAT** (deploy prod = confirmarea lui Roland). Detalii în „SESIUNE 2026-07-27" mai jos. Ce mai trebuie DECIS de Roland: (a) restul explicațiilor (#3-extins, ~157 formule) înainte/după #4; (b) start #4 (taxonomie); (c) deploy prod.
 
 Cerut de Roland (3 capturi 231/232/233 + text). Ordine de prioritate 1→4. Toate în modulul Editor. Respectă §17 + gate + R-MATH + R-COST + R-HANDOFF. Fișiere-cheie: `frontend/src/components/editor/{EditorMathMenu,EditorMathBuilder,MathEditDialog,math-input,math-data.json}` + `app/globals.css`.
 
 **1. Ghid de sintaxă / hint-uri (în „Construiește" + „Editează formula").**
+
 - Ce: panou pliabil „Cum scriu?" cu tabel `ce scriu → ce obțin` pentru toate construcțiile (putere `a^{1}`→a¹, indice `a_{1}`→a₁, `\frac{a}{b}`, `\sqrt{}`, `\sqrt[n]{}`, `\int`, `\sum`, `\prod`, `\lim`, trig `\sin/\cos/\tan`, `\vec{}`, `\overline{}`, matrice `\begin{matrix}`, sisteme `\begin{cases}`, ≤≥≠∈⊂∪∩ etc.). Cristina vrea să genereze ORICE, nu doar ce e în paletă.
 - Unde: în `EditorMathBuilder.tsx` (tab Construiește) + în `MathEditDialog.tsx`. Reutilizabil ca un component `MathSyntaxHelp`. §17: propune forma (accordion/popover/tab) cu mock.
 
 **2. Formule lungi — overflow/deformare (screenshot 232).**
+
 - Pe FOAIE: nodul inline-math lung iese din chenarul A4 în ambele părți. Fix în CSS (`app/globals.css` / `.editor-sheet` / nodurile `[data-type=inline-math]`/`block-math`): `max-width:100%`, `overflow-x:auto`, sau conversie la math BLOC pt formule lungi (wrap). Atenție: exportul re-randează din `data-latex` (`lib/math-render.ts`) → verifică și în PDF/HTML/Word.
 - În DIALOG: `MathEditDialog` e `max-w-md` → pt formule lungi câmpul + previzualizarea ies. Fă dialogul mai lat/responsiv + `overflow-x:auto` pe preview (deja parțial) + câmpul poate fi `textarea`.
 
 **3. Explicații la formule — dar NU inserate pe foaie (screenshot 233).**
+
 - Ce: fiecare formulă din bibliotecă capătă `explicatie` (text pt profesor). La CLICK pe formulă în meniu → se inserează DOAR `latex` (ca acum); explicația se vede în meniu (rând extensibil / tooltip / icon „i"), NU intră în document.
 - CONEXIUNE cu #2: unele din cele 214 intrări au proza/explicația stocată CHIAR în `latex` (ex. „se înmulțesc ca numere naturale…", „se așază virgulă sub virgulă…") → randează deformat (proză ca litere math lipite) + overflow. Auditează `math-data.json`: separă `latex` CURAT de `explicatie`; unde intrarea e pură explicație, mut-o în `explicatie` cu un `latex` real sau elimină formula falsă.
 - Date: `math-data.json` → `formule[clasa][]` are azi `{grup, nume, html, latex?}`. Adaugă `explicatie?`. Convertorul de referință: `scratchpad/convert-math.js` (a validat 214/214 KaTeX).
 
 **4. Extindere programă 5–12 (cercetare exhaustivă) — EFORT MARE, multi-sesiune.**
+
 - Acoperă TOATĂ materia RO clasele 5–12: algebră, geometrie (+ figuri geometrice), analiză, trigonometrie, teoreme (Pitagora, Thales, teorema catetei/înălțimii, teoreme de arie/volum), funcții, ecuații, progresii, combinatorică, numere complexe, derivate/integrale etc.
 - Proces OBLIGATORIU: (a) cercetează programa oficială RO pe clase; (b) fă o TAXONOMIE (clase × domenii × grupuri) în `docs/PLAN_math_curriculum_*.md`; (c) cere confirmarea lui Roland ÎNAINTE de a autor sute de formule; (d) autor incremental per clasă/domeniu, fiecare formulă cu `latex` + `explicatie`, VALIDAT KaTeX (script, ca la M4) + corect matematic (R3 — NU inventa formule); (e) grupează cu cele existente, totul editabil.
 - „Mai interactiv/smart": ex. figuri geometrice inserabile, structuri cu găuri (F3b deferat), căutare mai bună. Propune, nu presupune.
 
 **Gap deja cunoscut (de decis separat):** meniul Matematică e desktop-only (toolbar); pe mobil (Sheet) nu există math încă.
+
+---
+
+## 🆕 SESIUNE 2026-07-27 — backlog math #1/#2/#3 (commis, NEDEPLOYAT)
+
+Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3). Gate fiecare: **tsc 0 · build 11 rute · 28 teste · 213/213 KaTeX · verificat LIVE local** (probă desktop + JS pe DOM). **Deploy prod = confirmarea lui Roland (NEFĂCUT).**
+
+**#1 ✅ — Construcții gata-făcute (REFRAME Roland).** Roland la §17: NU vrea „ghid cum să scrii", ci **structuri gata, toate vizibile, un click = pe foaie**. Livrat: grilă de **24 construcții** (xⁿ, xₙ, x²ₙ, a/b, √, ⁿ√, |x|, lim, Σ, Π, ∫, ∫ᵃᵇ, f′, sin/cos/tg, vector, overline, binom, ∠, grade, sistem, matrice) în tab-ul „Construiește" (deasupra constructorului cu câmpuri), fiecare randată KaTeX, un click → `insertInlineMath` → editabilă la click. `math-input.ts` (`MATH_CONSTRUCTIONS`) + `EditorMathBuilder.tsx` + `AutoFitKatex.tsx` (nou). Verificat LIVE: grila randează, click inserează fracția academic.
+
+**#2 ✅ — Formule lungi se încadrează (nu ies din chenar).** Roland: „să cuprindă în casetă, calibrată corect" → **scale-to-fit (zoom)**, NU scroll (scroll nu supraviețuiește la print). `math-fit.ts` (`installMathAutoFit`): micșorează cu `zoom` nodurile `.katex` care depășesc lățimea foii; MutationObserver (re-randare) + ResizeObserver; **măsoară cu `getBoundingClientRect` — `.katex` e inline → `scrollWidth`=0 (BUG prins la verificare live)**. Montat în `EditorTiptap` robust (`editor.on('create')`, capcana view-lipsă). Export: script de fit (zoom) în PDF/HTML + **cap 658px pe imaginea DOCX** (aceeași lățime A4 în editor/PDF/Word). `MathEditDialog` responsiv (`max-w-2xl` + `Textarea` + preview scroll). Verificat LIVE: matrice/integrală se micșorează (zoom 0.61/0.77) și încap exact.
+
+**#3 ~ parțial — Explicații (audit + chevron).** `math-data.json`: cele **16 intrări proză-pură** auditate → **15 primesc `latex` REAL corect (R3) + câmp `explicatie`; 1 ștearsă** (înmulțirea zecimalelor — procedură fără formulă). **213/213 valide KaTeX** (era 214, −1 ștearsă). UI: `EditorMathMenu` — **rând extensibil (chevron)** arată explicația; click pe formulă inserează **DOAR** latex, NICIODATĂ explicația. `type Formula + explicatie?`. Verificat LIVE (mediana: chevron → „centrul de greutate").
+
+- **RĂMAS #3-extins (DECIZIE Roland):** restul de ~157 formule (116 curate + ~42 condiții/„sudate") **NU au încă `explicatie`**. Backlog-ul cerea explicație pt TOATE. De autorat separat — **înainte sau după taxonomia #4?** (În #4 oricum se autoreaza formula+explicatie la un standard.) NU se pliază tacit în #4.
+
+**#4 ⏳ NETRATAT — extindere programă 5–12.** Necesită: cercetare programă oficială RO (edu.ro/rocnee, R3 — NU din memorie), TAXONOMIE în `docs/PLAN_math_curriculum_*.md`, apoi **confirmarea lui Roland ÎNAINTE** de a autora sute de formule. Notă: firecrawl/brave MCP au picat în sesiune → folosește WebSearch/WebFetch.
+
+### DE PIPĂIT MANUAL de Roland (nu se pot automatiza)
+
+1. **Export PDF/DOCX cu o formulă LUNGĂ** — verifică vizual că se încadrează (scriptul de fit + cap-ul de imagine sunt în cod, dar `window.print` blochează Chrome MCP; DOCX = eyeball).
+2. **Mobil** — meniul Matematică rămâne desktop-only (gap cunoscut); #1/#3 nu apar pe telefon încă. De decis dacă intră paritatea mobilă.
+3. **Verificare de domeniu (Cristina)** pe cele 15 latex-uri noi (corecte matematic, dar expertul confirmă).
 
 ---
 
