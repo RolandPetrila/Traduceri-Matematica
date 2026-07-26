@@ -35,7 +35,7 @@ Respectă §17 (clarifică FORMA per funcție cu mock înainte de cod), gate-ul 
 
 ## 📋 BACKLOG MATEMATICĂ (2026-07-26) — STARE la 2026-07-27
 
-> **#1 ✅ · #2 ✅ · #3 ~ (parțial) · #4 ⏳ (netratat)** — commise pe `faza-g-editor` (`c37f22b`, `adaaaa8`), **NEDEPLOYAT** (deploy prod = confirmarea lui Roland). Detalii în „SESIUNE 2026-07-27" mai jos. Ce mai trebuie DECIS de Roland: (a) restul explicațiilor (#3-extins, ~157 formule) înainte/după #4; (b) start #4 (taxonomie); (c) deploy prod.
+> **#1 ✅ · #2 ✅ · #3 ~ (parțial) — DEPLOYATE LIVE 2026-07-27** (`dpl_DyPf8jS5`, target production, `CACHE_VERSION v12`; verificat pe alias `traduceri-frontend.vercel.app`: sw.js=v12 + 24 construcții + „Construcții gata"). **#4 ⏳ ÎN CURS (taxonomie).** Commise `c37f22b`, `adaaaa8`, `969af17`, `5efc9b6`. RĂMAS de decis de Roland: (a) #3-extins (explicații ~157 formule) — Roland a ales să le autorez în #4, la același standard; (b) confirmarea TAXONOMIEI #4 înainte de autorare.
 
 Cerut de Roland (3 capturi 231/232/233 + text). Ordine de prioritate 1→4. Toate în modulul Editor. Respectă §17 + gate + R-MATH + R-COST + R-HANDOFF. Fișiere-cheie: `frontend/src/components/editor/{EditorMathMenu,EditorMathBuilder,MathEditDialog,math-input,math-data.json}` + `app/globals.css`.
 
@@ -65,9 +65,9 @@ Cerut de Roland (3 capturi 231/232/233 + text). Ordine de prioritate 1→4. Toat
 
 ---
 
-## 🆕 SESIUNE 2026-07-27 — backlog math #1/#2/#3 (commis, NEDEPLOYAT)
+## 🆕 SESIUNE 2026-07-27 — backlog math #1/#2/#3 (DEPLOYAT LIVE) + #4 în curs
 
-Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3). Gate fiecare: **tsc 0 · build 11 rute · 28 teste · 213/213 KaTeX · verificat LIVE local** (probă desktop + JS pe DOM). **Deploy prod = confirmarea lui Roland (NEFĂCUT).**
+Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6` (fix html fallback + cache v12). Gate fiecare: **tsc 0 · build 11 rute · 28 teste · 213/213 KaTeX · verificat LIVE local + prod**. **DEPLOYAT prod 2026-07-27** (`dpl_DyPf8jS5`, `CACHE_VERSION v12`; Roland a aprobat; verificat pe alias). Roland a ales apoi **#4 taxonomie** ca următorul pas, iar #3-extins (explicații pt restul formulelor) să fie autorat în #4 la același standard.
 
 **#1 ✅ — Construcții gata-făcute (REFRAME Roland).** Roland la §17: NU vrea „ghid cum să scrii", ci **structuri gata, toate vizibile, un click = pe foaie**. Livrat: grilă de **24 construcții** (xⁿ, xₙ, x²ₙ, a/b, √, ⁿ√, |x|, lim, Σ, Π, ∫, ∫ᵃᵇ, f′, sin/cos/tg, vector, overline, binom, ∠, grade, sistem, matrice) în tab-ul „Construiește" (deasupra constructorului cu câmpuri), fiecare randată KaTeX, un click → `insertInlineMath` → editabilă la click. `math-input.ts` (`MATH_CONSTRUCTIONS`) + `EditorMathBuilder.tsx` + `AutoFitKatex.tsx` (nou). Verificat LIVE: grila randează, click inserează fracția academic.
 
