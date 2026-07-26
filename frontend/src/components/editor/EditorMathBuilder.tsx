@@ -6,8 +6,24 @@ import katex from "katex";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trackEditor } from "./editor-telemetry";
-import { norm } from "./math-input";
+import { norm, MATH_CONSTRUCTIONS } from "./math-input";
 import { MathSymbolPalette, useActiveField } from "./MathSymbolPalette";
+import { AutoFitKatex } from "./AutoFitKatex";
+
+/** Construcțiile gata (grila one-click) — randate KaTeX o singură dată (statice). */
+const CONSTRUCTIONS_RENDERED = MATH_CONSTRUCTIONS.map((c) => {
+  let html = c.title;
+  try {
+    html = katex.renderToString(c.latex, {
+      throwOnError: false,
+      strict: false,
+      output: "html",
+    });
+  } catch {
+    /* cade pe titlu dacă randarea eșuează */
+  }
+  return { ...c, html };
+});
 
 /**
  * Constructor de structuri academice (M2) — fracție / limită / radical → generează
@@ -116,6 +132,12 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
     trackEditor("math_insert", { kind: `build_${kind}` });
   };
 
+  // Construcție gata din grilă → un click = pe foaie (apoi editabilă la click).
+  const insertConstruction = (tpl: string) => {
+    editor.chain().focus().insertInlineMath({ latex: tpl }).run();
+    trackEditor("math_insert", { kind: "construction", latex: tpl });
+  };
+
   const seg = (k: Kind, label: string) => (
     <button
       type="button"
@@ -132,6 +154,32 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Construcții GATA-FĂCUTE (cerință Roland): toate structurile vizibile, un
+          click = pe foaie, apoi editabilă la click. NU trebuie scris LaTeX. */}
+      <div>
+        <p className="mb-1 text-[11px] font-medium text-muted-foreground">
+          Construcții gata — un click → pe foaie (apoi editabilă la click):
+        </p>
+        <div className="grid grid-cols-4 gap-1">
+          {CONSTRUCTIONS_RENDERED.map((c) => (
+            <button
+              key={c.latex}
+              type="button"
+              title={c.title}
+              aria-label={c.title}
+              onClick={() => insertConstruction(c.latex)}
+              className="flex h-9 items-center justify-center overflow-hidden rounded border border-border bg-white px-1 text-black hover:ring-2 hover:ring-chalk-yellow"
+            >
+              <AutoFitKatex html={c.html} className="w-full" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="my-0.5 border-t border-border" />
+      <p className="text-[11px] font-medium text-muted-foreground">
+        …sau completează câmpuri:
+      </p>
       <div className="flex gap-1 rounded-md border border-border p-0.5">
         {seg("frac", "Fracție")}
         {seg("lim", "Limită")}

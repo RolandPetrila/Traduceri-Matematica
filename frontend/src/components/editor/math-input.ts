@@ -81,6 +81,44 @@ export function norm(s: string): string {
   return out.trim();
 }
 
+/**
+ * Construcții matematice GATA-FĂCUTE (cerință Roland 2026-07-26): utilizatorul NU
+ * vrea să învețe „ce scriu → ce obțin"; vrea toate structurile vizibile, un click
+ * = inserată pe foaie, apoi o editează la click (dialogul de editare). Fiecare are
+ * `latex` (șablon cu litere-substituent a/b/x/n) și `label` (tooltip în română).
+ * Ordinea = de la simplu la complex, gruparea firească pentru gimnaziu→liceu.
+ */
+export type MathConstruction = { latex: string; title: string };
+export const MATH_CONSTRUCTIONS: MathConstruction[] = [
+  { latex: "x^{2}", title: "La pătrat" },
+  { latex: "x^{n}", title: "La puterea n" },
+  { latex: "x_{n}", title: "Indice (x cu n jos)" },
+  { latex: "x_{n}^{2}", title: "Indice și putere" },
+  { latex: "\\dfrac{a}{b}", title: "Fracție" },
+  { latex: "\\sqrt{a}", title: "Radical" },
+  { latex: "\\sqrt[n]{a}", title: "Radical de ordin n" },
+  { latex: "|x|", title: "Modul (valoare absolută)" },
+  { latex: "\\lim_{x \\to a} f(x)", title: "Limită" },
+  { latex: "\\sum_{i=1}^{n} a_{i}", title: "Sumă (Σ)" },
+  { latex: "\\prod_{i=1}^{n} a_{i}", title: "Produs (Π)" },
+  { latex: "\\int f(x)\\, dx", title: "Integrală" },
+  { latex: "\\int_{a}^{b} f(x)\\, dx", title: "Integrală definită" },
+  { latex: "f'(x)", title: "Derivată" },
+  { latex: "\\sin x", title: "Sinus" },
+  { latex: "\\cos x", title: "Cosinus" },
+  { latex: "\\operatorname{tg} x", title: "Tangentă" },
+  { latex: "\\vec{v}", title: "Vector" },
+  { latex: "\\overline{AB}", title: "Bară deasupra (segment / conjugat)" },
+  { latex: "\\binom{n}{k}", title: "Combinări (n peste k)" },
+  { latex: "\\angle ABC", title: "Unghi" },
+  { latex: "90^{\\circ}", title: "Grade" },
+  { latex: "\\begin{cases} a \\\\ b \\end{cases}", title: "Sistem (acoladă)" },
+  {
+    latex: "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}",
+    title: "Matrice 2×2",
+  },
+];
+
 /** Un buton din paletă: `ins` = ce se inserează în câmp; `glyph` = ce se afișează. */
 export type PaletteItem = { ins: string; title: string; glyph?: string };
 

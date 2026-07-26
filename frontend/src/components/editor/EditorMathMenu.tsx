@@ -120,7 +120,9 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
           </TabsList>
 
           <TabsContent value="construieste" className="mt-2">
-            <EditorMathBuilder editor={editor} />
+            <div className="max-h-[420px] overflow-y-auto pr-1">
+              <EditorMathBuilder editor={editor} />
+            </div>
           </TabsContent>
 
           <TabsContent value="formule" className="mt-2">
