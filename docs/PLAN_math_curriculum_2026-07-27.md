@@ -106,7 +106,16 @@ Backlog #3 cere `explicatie` pt TOATE. Roland a ales (2026-07-27) să fie autora
 3. Deploy prod doar cu confirmarea ta (grupat, nu per lot).
 4. Non-regresie: cele 213 existente rămân valide; fallback `html` rămâne curat.
 
-## 7. ❓ CONFIRMARE NECESARĂ (înainte de autorare)
+## 7. ✅ CONFIRMAT de Roland (2026-07-27) — autorare în curs
+
+- **Profil:** TOATE profilurile (Cristina predă la toate) — implementare **exhaustivă**.
+- **Volum:** complet (~65–95 noi + explicații la toate cele ~198 existente).
+- **Ordine:** V→XII, lot cu lot, gate + commit după fiecare clasă.
+- **Interactiv:** A + C + B (filtrare pe domeniu + construcții extinse + figuri geometrice SVG — B = fază separată, efort mare).
+- **Grupuri:** grupuri noi distincte unde e firesc (Logică, Combinatorică la X, Teoreme etc.).
+- **PROGRES:** Clasa V ✅ (commit `56afebd`, +11 formule + explicații la toate + curățat proză; bibliotecă 213→224). Următor: VI.
+
+### Întrebările inițiale (istoric)
 
 1. **Domeniu/profil:** confirmi **Real (mate-info + șt. naturii)** pt liceu? (Cristina — secția slovacă.) Sau adaug și trunchiul umanist (mai puține formule)?
 2. **Scop/volum:** OK cu **~65–95 formule noi** + explicații pt cele ~198 existente? Sau vrei mai țintit (ex. doar golurile ➕ marcate, fără „nice-to-have")?

@@ -77,7 +77,15 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 
 - **RĂMAS #3-extins (DECIZIE Roland):** restul de ~157 formule (116 curate + ~42 condiții/„sudate") **NU au încă `explicatie`**. Backlog-ul cerea explicație pt TOATE. De autorat separat — **înainte sau după taxonomia #4?** (În #4 oricum se autoreaza formula+explicatie la un standard.) NU se pliază tacit în #4.
 
-**#4 ⏳ TAXONOMIE GATA — AȘTEAPTĂ CONFIRMAREA lui Roland.** Cercetare făcută la sursă (OMEN 3393/2017 gimnaziu + Matematică_TC 2025 IX–X edu.ro + Real XI–XII); TAXONOMIE completă (clase×domenii×goluri) în **`docs/PLAN_math_curriculum_2026-07-27.md`**. Estimare: **~65–95 formule noi** + explicații pt cele ~198 existente (#3-extins pliat aici, per decizia Roland). **NU s-a autorat încă nimic** — 5 întrebări de confirmare în §7 al planului (profil Real?, volum, ordine V→XII, interactiv A/B/C, grupuri noi). Notă: firecrawl/brave MCP au picat → WebSearch/WebFetch/Read pe PDF.
+**#4 ▶️ ÎN EXECUȚIE — taxonomie confirmată, autorare V→XII pe loturi.** Cercetare la sursă (OMEN 3393/2017 + Matematică_TC 2025 edu.ro + Real XI–XII); TAXONOMIE în **`docs/PLAN_math_curriculum_2026-07-27.md`**.
+
+**DECIZII ROLAND (2026-07-27, confirmate):** (1) **TOATE profilurile** (Cristina predă la toate) — implementare **exhaustivă**; (2) **complet** (~65–95 formule noi + explicații la TOATE, inclusiv cele ~198 fără); (3) ordine **V→XII**, lot cu lot, gate+commit după fiecare clasă; (4) interactiv **A + C + B** (filtrare pe domeniu + construcții extinse + **figuri geometrice SVG** — B = feature mare, fază separată). Grupuri noi distincte unde e firesc.
+
+**PROGRES: Clasa V ✅ (lot 1, commit `56afebd`)** — +11 formule noi (arii, unități de măsură, probabilitate, ecuații simple, divizor/multiplu) + explicații la toate cele 40 + curățat proza rămasă (ordinea operațiilor, criterii divizibilitate, zecimale, modul→`\begin{cases}`). **Bibliotecă 213→224.** Gate: 224/224 KaTeX, NO_LATEX=0, proză_în_html=0. **NEDEPLOYAT** (deploy grupat, după mai multe clase, cu confirmarea Roland).
+
+**URMĂTORUL: Clasa VI** (apoi VII…XII), apoi interactiv A/C, apoi B (figuri).
+
+**ȘABLON de continuare (repetabil per clasă):** script Node ca `scratchpad/clasa_v.js` — `LATEX_FIX` (curăță proza/formulele sudate rămase), `EXPL` (explicație la fiecare intrare existentă), `NEW` (formule noi din golurile ➕ ale clasei din plan); `html` regenerat din latex cu `katex.renderToString`; apoi rulează `scratchpad/gate_check.js` (trebuie PASS: KaTeX 0 fail, NO_LATEX=0, proză_în_html=0) → commit → update handoff. Înainte de fiecare clasă, dump intrările existente (`python`) ca să NU dublezi + să vezi ce proză a mai rămas (bucket-c prinde doar proza pură; multe au proză AMESTECATĂ cu `\frac`/`^`).
 
 ### DE PIPĂIT MANUAL de Roland (nu se pot automatiza)
 
