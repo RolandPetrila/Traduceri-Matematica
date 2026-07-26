@@ -1,6 +1,6 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-25. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-26. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
@@ -18,6 +18,18 @@ Rescrierea Editorului nativ TipTap+shadcn e la PARITATE: F0–F4 + **F6 COMPLET*
 Următorul pas pe care îl aleg eu: [F3b structuri interactive fracție/radical]  SAU  [F5 polish: a11y aprofundat + dark-mode]  SAU  [pipăitul manual PDF/dictare]  SAU  [alt modul: Planșe].
 Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și gate-ul de non-regresie.
 ```
+
+---
+
+## 🆕 SESIUNE 2026-07-26 (2) — MATEMATICĂ ACADEMICĂ KaTeX (M1–M5, LIVE)
+
+Cerință Cristina (poză `Downloads/limite_matematica.jpeg`): fracții cu bară (NU `/`), `lim` cu x→a dedesubt, radicali cu overline, nivel academic. Plan: `docs/PLAN_math_academic_2026-07-26.md`. **TOATE fazele M1–M5 gata + deployate.**
+
+- **Motor:** KaTeX + `@tiptap/extension-mathematics@3.28.0` (EXACT ca `@tiptap/core` 3.28 — vezi capcană versiuni în [[project_math_academic_katex_2026_07_26]]) + `katex@0.16.11` + `@types/katex`. `Mathematics.configure` în `extensions.ts`, `import "katex/dist/katex.min.css"` în `EditorTiptap.tsx`.
+- **Constructor** (`EditorMathBuilder.tsx`) — tab „Construiește" în meniul Matematică: Fracție/Limită/Radical, câmpuri prietenoase + previzualizare KaTeX live → `insertInlineMath`. Fără LaTeX tastat.
+- **Bibliotecă (214 formule):** `EditorMathMenu` preferă `latex` (fallback `html`); convertor `scratchpad/convert-math.js` → 214/214 validate KaTeX; review vizual clase 5/9/11/12 corecte.
+- **Export** (`lib/math-render.ts`): getHTML dă noduri math GOALE → RE-randez la export. PDF/HTML = `renderMathToKatexHtml` + `lib/katex-inline-css.ts` (fonturi base64, self-contained). Word = `renderMathToImages` (foreignObject→canvas→PNG, fără CDN).
+- **Verificat LIVE + prod:** editor curat (0 erori), constructor + bibliotecă randează academic, export HTML are KaTeX + fonturi, DOCX valid. `CACHE_VERSION` v9→v10. **RĂMAS neblocant:** verificare domeniu Cristina (corectitudine 214), eyeball PDF/.docx real, cosmetice (proză italic în paranteze, `·` separator).
 
 ---
 
