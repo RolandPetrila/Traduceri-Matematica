@@ -66,6 +66,8 @@ export function norm(s: string): string {
   // Comenzile-cuvânt (\cdot, \times…) au nevoie de un spațiu terminator, altfel
   // se lipesc de litera următoare și devin o comandă necunoscută (ex. `a·b` →
   // `a\cdotb`, rupt în KaTeX). Adăugăm spațiu, apoi `.trim()` scoate cel de la coadă.
+  // NU colapsăm toate spațiile: spațiile din LaTeX-ul bibliotecii (214 formule) sunt
+  // nesemnificative în math-mode, deci colapsul n-ar aduce nimic — doar risc inutil.
   out = out
     .replace(/∞/g, "\\infty ")
     .replace(/·/g, "\\cdot ")
@@ -76,7 +78,7 @@ export function norm(s: string): string {
     .replace(/≠/g, "\\ne ")
     .replace(/±/g, "\\pm ")
     .replace(/π/g, "\\pi ");
-  return out.replace(/\s+/g, " ").trim();
+  return out.trim();
 }
 
 /** Un buton din paletă: `ins` = ce se inserează în câmp; `glyph` = ce se afișează. */
