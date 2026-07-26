@@ -10,6 +10,7 @@ import { Image } from "@tiptap/extension-image";
 import { TableRow } from "@tiptap/extension-table-row";
 import { FontSize } from "@/lib/tiptap-font-size";
 import { DictationInterim } from "./dictation-interim";
+import { Mathematics } from "@tiptap/extension-mathematics";
 import { PageBreak } from "./page-break";
 import { FindHighlight } from "./search-find";
 import {
@@ -45,4 +46,10 @@ export const editorExtensions = [
   PageBreak, // intrerupere de pagina (G4) — print/PDF/Word
   DictationInterim, // text interimar de dictare ca decoratie (nu intra in document)
   FindHighlight, // gaseste & inlocuieste (G8) — evidentiere ca decoratie
+  // Matematica ACADEMICA (KaTeX) — noduri InlineMath/BlockMath (atribut `latex`).
+  // Randare fidela (fractii cu bara, lim cu x→a dedesubt, radicali cu overline).
+  // throwOnError:false → LaTeX gresit nu darama editorul; strict:false → tolerant.
+  Mathematics.configure({
+    katexOptions: { throwOnError: false, strict: false },
+  }),
 ];

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { trackEditor } from "./editor-telemetry";
+import { EditorMathBuilder } from "./EditorMathBuilder";
 
 type Formula = { grup: string; nume: string; html: string };
 const FORMULE = mathData.formule as Record<string, Formula[]>;
@@ -93,11 +94,16 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
             className="h-9 pl-8"
           />
         </div>
-        <Tabs defaultValue="formule">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="construieste">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="construieste">Construiește</TabsTrigger>
             <TabsTrigger value="formule">Formule</TabsTrigger>
             <TabsTrigger value="simboluri">Simboluri</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="construieste" className="mt-2">
+            <EditorMathBuilder editor={editor} />
+          </TabsContent>
 
           <TabsContent value="formule" className="mt-2">
             {!ql && (

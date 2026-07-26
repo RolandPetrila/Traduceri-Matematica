@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import "katex/dist/katex.min.css"; // stiluri KaTeX (fonturile sunt bundle-uite de Next din pachet)
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import { X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
