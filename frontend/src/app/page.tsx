@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import Header from "@/components/layout/Header";
-import TabNav from "@/components/layout/TabNav";
+import TopBar from "@/components/layout/TopBar";
 import IframeModule from "@/components/layout/IframeModule";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
 
@@ -16,29 +15,36 @@ const HistoryList = dynamic(() => import("@/components/history/HistoryList"), {
 });
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    if (typeof window !== "undefined") {
+  // Pornim de la DEFAULT (identic SSR ↔ prima randare client → fără hydration
+  // mismatch), apoi restaurăm tabul salvat pe client. Înainte, citirea din
+  // localStorage direct în initializer diferea de SSR → „hydration mismatch"
+  // + uneori tabul afișat nu era cel salvat.
+  const [activeTab, setActiveTab] = useState<TabId>(DEFAULT_TAB);
+
+  useEffect(() => {
+    try {
       const saved = localStorage.getItem("activeTab") as TabId;
-      // Validate against the live tab registry (derived from TABS) — adding a
-      // tab no longer requires editing a hardcoded list here (§16.3).
-      if (saved && TABS.some((t) => t.id === saved)) {
-        return saved;
-      }
+      // Validăm față de registrul viu de taburi (§16.3).
+      if (saved && TABS.some((t) => t.id === saved)) setActiveTab(saved);
+    } catch {
+      /* localStorage indisponibil → rămânem pe DEFAULT */
     }
-    return DEFAULT_TAB;
-  });
+  }, []);
 
   const handleTabChange = (tab: TabId) => {
     setActiveTab(tab);
-    localStorage.setItem("activeTab", tab);
+    try {
+      localStorage.setItem("activeTab", tab);
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-      <Header />
-      <TabNav activeTab={activeTab} onTabChange={handleTabChange} />
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
+      <TopBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <div className="mt-6">
+      <div className="mt-2">
         <div style={{ display: activeTab === "traduceri" ? "block" : "none" }}>
           <TraduceriPage />
         </div>
