@@ -67,7 +67,9 @@ type SpeechRecognitionLike = {
 function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
   if (typeof window === "undefined") return null;
   const w = window as any;
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+  // În Chrome cele două sunt același obiect; webkit e forma dovedită pe toate
+  // browserele (Safari are DOAR webkit) → o preferăm.
+  return w.webkitSpeechRecognition || w.SpeechRecognition || null;
 }
 
 export function EditorDictationProvider({
@@ -85,6 +87,12 @@ export function EditorDictationProvider({
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const listeningRef = useRef(false);
   const startedAtRef = useRef(0);
+  // Diagnostic anti-„44s de nimic": urmărim dacă a ajuns SUNET la motor. Dacă
+  // motorul se termină de câteva ori la rând FĂRĂ audiostart, microfonul nu
+  // livrează (permisiune/dispozitiv) → oprim și arătăm o eroare clară, în loc
+  // să repornim la infinit în tăcere.
+  const gotAudioRef = useRef(false);
+  const emptyEndsRef = useRef(0);
   const editorRef = useRef(editor);
   editorRef.current = editor;
 
@@ -126,6 +134,16 @@ export function EditorDictationProvider({
     rec.continuous = true;
     rec.interimResults = true;
 
+    // Sunetul a început să ajungă la motor → microfonul livrează. Logăm o dată
+    // (diagnostic-cheie: distinge „mic mut" de „motor n-a returnat text").
+    (rec as any).onaudiostart = () => {
+      if (!gotAudioRef.current) {
+        gotAudioRef.current = true;
+        emptyEndsRef.current = 0;
+        trackEditor("dictation_audio", {});
+      }
+    };
+
     rec.onresult = (e: any) => {
       const current = editorRef.current;
       if (!current) return;
@@ -156,30 +174,61 @@ export function EditorDictationProvider({
 
     rec.onerror = (e: any) => {
       const code = e?.error;
+      // Logăm ORICE eroare (până acum eram orbi la cauză).
+      trackEditor("dictation_error", { code: code || "unknown" });
       if (code === "no-speech" || code === "aborted") return; // benign → onend repornește
       if (code === "not-allowed" || code === "service-not-allowed") {
         setError(
-          "Microfonul e blocat. Permite accesul din setările browserului.",
+          "Microfonul e blocat. Apasă lacătul din bara de adrese → Microfon → Permite, apoi reîncearcă.",
         );
         stop();
         return;
       }
-      setError("Dictarea s-a oprit (eroare motor vocal).");
+      if (code === "audio-capture") {
+        setError(
+          "Nu s-a găsit niciun microfon. Verifică dispozitivul de intrare din Windows.",
+        );
+        stop();
+        return;
+      }
+      if (code === "network") {
+        setError(
+          "Fără rețea pentru recunoașterea vocală. Verifică internetul.",
+        );
+        stop();
+        return;
+      }
+      setError("Dictarea s-a oprit (eroare motor vocal: " + code + ").");
     };
 
     rec.onend = () => {
-      // iOS Safari oprește `continuous` după câteva secunde → repornim singuri
-      // cât timp utilizatorul n-a apăsat stop.
-      if (listeningRef.current) {
-        try {
-          rec.start();
-        } catch {
-          /* start prea rapid → ignorăm, următorul onend reîncearcă */
+      // Oprit manual → nu repornim.
+      if (!listeningRef.current) return;
+      // A pornit dar NU a ajuns sunet la motor de câteva ori la rând →
+      // microfon/permisiune, NU tăcere. Oprim cu mesaj clar (nu buclă mută).
+      if (!gotAudioRef.current) {
+        emptyEndsRef.current += 1;
+        if (emptyEndsRef.current >= 3) {
+          trackEditor("dictation_error", { code: "no_audio_loop" });
+          setError(
+            "Dictarea pornește dar nu primește sunet. Verifică permisiunea de microfon a site-ului și dispozitivul de intrare, apoi reîncearcă.",
+          );
+          stop();
+          return;
         }
+      }
+      // Altfel (mic OK, sau iOS care oprește `continuous`) → repornim.
+      try {
+        rec.start();
+      } catch {
+        /* start prea rapid → ignorăm, următorul onend reîncearcă */
       }
     };
 
     try {
+      // Reset per sesiune nouă (NU per auto-restart din onend).
+      gotAudioRef.current = false;
+      emptyEndsRef.current = 0;
       rec.start();
       listeningRef.current = true;
       startedAtRef.current = Date.now();
@@ -254,6 +303,16 @@ export function EditorDictationProvider({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Eroare VIZIBILĂ (nu doar în tooltip) — dictarea eșua tăcut. */}
+      {error && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 z-[60] max-w-[92vw] -translate-x-1/2 rounded-md border border-destructive bg-destructive px-4 py-2 text-center text-sm text-destructive-foreground shadow-lg"
+        >
+          🎤 {error}
+        </div>
+      )}
     </DictationContext.Provider>
   );
 }
