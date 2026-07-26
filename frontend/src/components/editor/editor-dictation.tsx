@@ -91,8 +91,9 @@ export function EditorDictationProvider({
   // motorul se termină de câteva ori la rând FĂRĂ audiostart, microfonul nu
   // livrează (permisiune/dispozitiv) → oprim și arătăm o eroare clară, în loc
   // să repornim la infinit în tăcere.
-  const gotAudioRef = useRef(false);
-  const emptyEndsRef = useRef(0);
+  const gotAudioRef = useRef(false); // a pornit stream audio (chiar și silențios)
+  const gotResultRef = useRef(false); // a venit VREUN transcript (voce reală auzită)
+  const noResultEndsRef = useRef(0); // sesiuni consecutive terminate fără niciun rezultat
   const editorRef = useRef(editor);
   editorRef.current = editor;
 
@@ -139,7 +140,6 @@ export function EditorDictationProvider({
     (rec as any).onaudiostart = () => {
       if (!gotAudioRef.current) {
         gotAudioRef.current = true;
-        emptyEndsRef.current = 0;
         trackEditor("dictation_audio", {});
       }
     };
@@ -154,6 +154,11 @@ export function EditorDictationProvider({
         const chunk = res[0]?.transcript ?? "";
         if (res.isFinal) finalText += chunk;
         else interimText += chunk;
+      }
+      // Orice text (chiar interimar) = motorul AUDE vocea → resetăm garda de tăcere.
+      if (finalText || interimText) {
+        gotResultRef.current = true;
+        noResultEndsRef.current = 0;
       }
       if (finalText) {
         // Inserăm ca NOD TEXT (nu HTML) — transcriptul e text brut de la motor
@@ -204,20 +209,27 @@ export function EditorDictationProvider({
     rec.onend = () => {
       // Oprit manual → nu repornim.
       if (!listeningRef.current) return;
-      // A pornit dar NU a ajuns sunet la motor de câteva ori la rând →
-      // microfon/permisiune, NU tăcere. Oprim cu mesaj clar (nu buclă mută).
-      if (!gotAudioRef.current) {
-        emptyEndsRef.current += 1;
-        if (emptyEndsRef.current >= 3) {
-          trackEditor("dictation_error", { code: "no_audio_loop" });
+      // Câteva sesiuni la rând FĂRĂ niciun transcript → nu are rost să repornim
+      // la infinit în tăcere. Oprim cu mesaj clar, adaptat cauzei:
+      //  - gotAudio fals → microfonul nu livrează deloc sunet (permisiune/dispozitiv);
+      //  - gotAudio adevărat dar zero rezultate → stream pornit, dar NU se aude voce
+      //    (mic mut / nivel 0 / dispozitiv greșit — ex. `no-speech` repetat).
+      if (!gotResultRef.current) {
+        noResultEndsRef.current += 1;
+        if (noResultEndsRef.current >= 3) {
+          trackEditor("dictation_error", {
+            code: gotAudioRef.current ? "no_voice_loop" : "no_audio_loop",
+          });
           setError(
-            "Dictarea pornește dar nu primește sunet. Verifică permisiunea de microfon a site-ului și dispozitivul de intrare, apoi reîncearcă.",
+            gotAudioRef.current
+              ? "Microfonul e pornit, dar nu se aude nicio voce. În Windows: Setări → Sunet → Intrare — alege dispozitivul corect, dă-l Mai tare și scoate-l din Mut, apoi Testează. Apoi reîncearcă."
+              : "Dictarea pornește dar nu primește sunet. Verifică permisiunea de microfon a site-ului și dispozitivul de intrare, apoi reîncearcă.",
           );
           stop();
           return;
         }
       }
-      // Altfel (mic OK, sau iOS care oprește `continuous`) → repornim.
+      // Altfel (voce auzită, sau iOS care oprește `continuous`) → repornim.
       try {
         rec.start();
       } catch {
@@ -228,7 +240,8 @@ export function EditorDictationProvider({
     try {
       // Reset per sesiune nouă (NU per auto-restart din onend).
       gotAudioRef.current = false;
-      emptyEndsRef.current = 0;
+      gotResultRef.current = false;
+      noResultEndsRef.current = 0;
       rec.start();
       listeningRef.current = true;
       startedAtRef.current = Date.now();
