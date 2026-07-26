@@ -141,8 +141,10 @@ Un singur canal: `trackEditor("<ev>", {…})` → `logAction("editor:<ev>")` →
 | --------------------------------------------------- | ---------------------------------------------------------------------------------- | -------- |
 | `editor:math_insert`                                | `{kind:"formula"/"symbol", grup/clasa/symbol, hasSup, hasSub}`                     | §1       |
 | `editor:dictation_start`                            | `{lang:"ro-RO", continuous:true}`                                                  | §2       |
+| `editor:dictation_audio`                            | `{}` — micul livrează sunet (dacă LIPSEȘTE → mic/permisiune)                       | §2       |
 | `editor:dictation_final`                            | `{textLen, sample}` (primele 80 caractere transcrise)                              | §2       |
 | `editor:dictation_stop`                             | `{durationMs}`                                                                     | §2       |
+| `editor:dictation_error`                            | `{code}`: not-allowed/audio-capture/network/no_audio_loop/…                        | §2       |
 | `editor:page_count`                                 | `{pages}` — emis DOAR la schimbarea numărului                                      | §3       |
 | `editor:insert`                                     | `{type}`: `page_break`/`table`/`table_zebra`/`cell_bg`/`link`/`image`/`date`/`hr`  | §6       |
 | `editor:export`                                     | `{format, name, htmlLen, pageBreaks, hasSup, hasSub, hasTable, hasBold, hasZebra}` | §4, §5   |
