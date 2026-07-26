@@ -1,13 +1,16 @@
 /**
  * Export editor nativ (F4a) — PDF (print vectorial) · Word (.docx) · HTML.
  *
- * Sursa = `editor.getHTML()` (conținut EDITAT). Matematica e Unicode+HTML (fidel,
- * NU LaTeX) → la print rămâne text real, selectabil, fără MathJax.
+ * Sursa = `editor.getHTML()` (conținut EDITAT). Matematica ACADEMICĂ (KaTeX) e
+ * serializată ca `<span data-latex>` gol → o RE-randăm la export (vezi math-render):
+ * PDF/HTML = KaTeX HTML (fonturi base64 inline), Word = imagine PNG.
  * Livrabilul e un DOCUMENT ALB CLASIC (hârtie A4, text negru), nu tema cretă a
  * ecranului — tema verde e doar pentru editare.
  */
 
 import { ZEBRA_COLOR } from "@/components/editor/table-extensions";
+import { KATEX_INLINE_CSS } from "./katex-inline-css";
+import { renderMathToKatexHtml, renderMathToImages } from "./math-render";
 
 /**
  * Dungile de tabel sunt un selector CSS (`nth-child`) — nu supraviețuiesc
@@ -107,13 +110,16 @@ const DOCUMENT_CSS = `
 
 /** Construiește un document HTML standalone (alb A4) din conținutul editorului. */
 function buildDocumentHtml(rawBodyHtml: string, title: string): string {
-  const bodyHtml = inlineZebra(rawBodyHtml);
+  // Math: re-randăm nodurile `data-latex` în KaTeX HTML (getHTML le dă goale).
+  // KATEX_INLINE_CSS (inclus mai jos) le dă stilurile + fonturile base64.
+  const bodyHtml = renderMathToKatexHtml(inlineZebra(rawBodyHtml));
   return `<!DOCTYPE html>
 <html lang="ro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
+<style>${KATEX_INLINE_CSS}</style>
 <style>${DOCUMENT_CSS}</style>
 </head>
 <body>
@@ -220,7 +226,9 @@ export async function exportDocx(
 
   // Wrap minim: turbodocx mapează stilurile inline/tag-uri → Word.
   // `<div class="page-break">` (clasă EXACTĂ) devine `<w:br w:type="page"/>`.
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${inlineZebra(bodyHtml)}</body></html>`;
+  // Math: turbodocx NU știe KaTeX → re-randăm nodurile `data-latex` ca IMAGINE PNG.
+  const mathAsImages = await renderMathToImages(inlineZebra(bodyHtml));
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${mathAsImages}</body></html>`;
 
   const result = await HTMLtoDOCX(html, null, {
     orientation: "portrait",
