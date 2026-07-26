@@ -77,7 +77,7 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 
 - **RĂMAS #3-extins (DECIZIE Roland):** restul de ~157 formule (116 curate + ~42 condiții/„sudate") **NU au încă `explicatie`**. Backlog-ul cerea explicație pt TOATE. De autorat separat — **înainte sau după taxonomia #4?** (În #4 oricum se autoreaza formula+explicatie la un standard.) NU se pliază tacit în #4.
 
-**#4 ⏳ NETRATAT — extindere programă 5–12.** Necesită: cercetare programă oficială RO (edu.ro/rocnee, R3 — NU din memorie), TAXONOMIE în `docs/PLAN_math_curriculum_*.md`, apoi **confirmarea lui Roland ÎNAINTE** de a autora sute de formule. Notă: firecrawl/brave MCP au picat în sesiune → folosește WebSearch/WebFetch.
+**#4 ⏳ TAXONOMIE GATA — AȘTEAPTĂ CONFIRMAREA lui Roland.** Cercetare făcută la sursă (OMEN 3393/2017 gimnaziu + Matematică_TC 2025 IX–X edu.ro + Real XI–XII); TAXONOMIE completă (clase×domenii×goluri) în **`docs/PLAN_math_curriculum_2026-07-27.md`**. Estimare: **~65–95 formule noi** + explicații pt cele ~198 existente (#3-extins pliat aici, per decizia Roland). **NU s-a autorat încă nimic** — 5 întrebări de confirmare în §7 al planului (profil Real?, volum, ordine V→XII, interactiv A/B/C, grupuri noi). Notă: firecrawl/brave MCP au picat → WebSearch/WebFetch/Read pe PDF.
 
 ### DE PIPĂIT MANUAL de Roland (nu se pot automatiza)
 
