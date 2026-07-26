@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { Editor } from "@tiptap/react";
-import { Sigma, Search } from "lucide-react";
+import { Sigma, Search, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import mathData from "./math-data.json";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,10 +23,18 @@ import {
 } from "@/components/ui/select";
 import { trackEditor } from "./editor-telemetry";
 import { EditorMathBuilder } from "./EditorMathBuilder";
+import { AutoFitKatex } from "./AutoFitKatex";
 import katex from "katex";
 
-/** `latex` = randare academică KaTeX (M4); `html` = fallback vechi (sup/sub inline). */
-type Formula = { grup: string; nume: string; html: string; latex?: string };
+/** `latex` = randare academică KaTeX (M4); `html` = fallback vechi (sup/sub inline);
+ *  `explicatie` = text pt profesor (chevron), NU se inserează pe foaie (#3). */
+type Formula = {
+  grup: string;
+  nume: string;
+  html: string;
+  latex?: string;
+  explicatie?: string;
+};
 
 /** Preview: KaTeX dacă există `latex`, altfel HTML-ul vechi. */
 function formulaPreviewHtml(f: Formula): string {
@@ -65,6 +74,9 @@ const CLASE = [
 export function EditorMathMenu({ editor }: { editor: Editor | null }) {
   const [q, setQ] = useState("");
   const [clasa, setClasa] = useState("5");
+  // Care formulă are explicația deschisă (chevron). Cheie stabilă (grup|nume) ca
+  // să nu „sară" la filtrare/căutare. #3: explicația NU se inserează pe foaie.
+  const [expanded, setExpanded] = useState<string | null>(null);
   const ql = q.trim().toLowerCase();
 
   const symbolsShown = useMemo(
@@ -147,41 +159,70 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                     Nicio formulă găsită.
                   </p>
                 )}
-                {formuleShown.map((f, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      // Academic (KaTeX) dacă avem `latex`; altfel fallback HTML vechi.
-                      if (f.latex) {
-                        editor
-                          .chain()
-                          .focus()
-                          .insertInlineMath({ latex: f.latex })
-                          .run();
-                      } else {
-                        insert(f.html);
-                      }
-                      trackEditor("math_insert", {
-                        kind: f.latex ? "formula_latex" : "formula_html",
-                        grup: f.grup,
-                        clasa: ql ? "cautare" : clasa,
-                      });
-                    }}
-                    className="rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
-                    title={f.grup}
-                  >
-                    <span className="block text-xs text-muted-foreground">
-                      {f.grup} · {f.nume}
-                    </span>
-                    <span
-                      className="block text-foreground"
-                      dangerouslySetInnerHTML={{
-                        __html: formulaPreviewHtml(f),
-                      }}
-                    />
-                  </button>
-                ))}
+                {formuleShown.map((f, i) => {
+                  const key = `${f.grup}|${f.nume}`;
+                  const isOpen = expanded === key;
+                  return (
+                    <div key={i} className="rounded-md hover:bg-accent">
+                      <div className="flex items-stretch">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Academic (KaTeX) dacă avem `latex`; altfel HTML vechi.
+                            // Se inserează DOAR formula, NICIODATĂ explicația (#3).
+                            if (f.latex) {
+                              editor
+                                .chain()
+                                .focus()
+                                .insertInlineMath({ latex: f.latex })
+                                .run();
+                            } else {
+                              insert(f.html);
+                            }
+                            trackEditor("math_insert", {
+                              kind: f.latex ? "formula_latex" : "formula_html",
+                              grup: f.grup,
+                              clasa: ql ? "cautare" : clasa,
+                            });
+                          }}
+                          className="min-w-0 flex-1 rounded-md px-2 py-1.5 text-left text-sm"
+                          title={f.grup}
+                        >
+                          <span className="block text-xs text-muted-foreground">
+                            {f.grup} · {f.nume}
+                          </span>
+                          <AutoFitKatex
+                            html={formulaPreviewHtml(f)}
+                            className="text-foreground"
+                            align="left"
+                          />
+                        </button>
+                        {f.explicatie && (
+                          <button
+                            type="button"
+                            onClick={() => setExpanded(isOpen ? null : key)}
+                            className="flex shrink-0 items-center rounded-md px-2 text-muted-foreground hover:text-foreground"
+                            title="Explicație (nu se inserează pe foaie)"
+                            aria-label="Arată explicația"
+                            aria-expanded={isOpen}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                "h-4 w-4 transition-transform",
+                                isOpen && "rotate-180",
+                              )}
+                            />
+                          </button>
+                        )}
+                      </div>
+                      {f.explicatie && isOpen && (
+                        <p className="px-2 pb-2 text-xs leading-snug text-muted-foreground">
+                          {f.explicatie}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </TabsContent>

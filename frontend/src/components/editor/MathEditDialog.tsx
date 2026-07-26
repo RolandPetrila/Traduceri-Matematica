@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import katex from "katex";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ export function MathEditDialog({ editor }: { editor: Editor | null }) {
   const posRef = useRef<number | null>(null);
   const kindRef = useRef<"inline" | "block">("inline");
   const { elRef, setActive, insert } = useActiveField();
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -101,7 +101,7 @@ export function MathEditDialog({ editor }: { editor: Editor | null }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Editează formula</DialogTitle>
           <DialogDescription>
@@ -111,19 +111,19 @@ export function MathEditDialog({ editor }: { editor: Editor | null }) {
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <Input
+          <Textarea
             ref={inputRef}
             value={latex}
             onChange={(e) => setLatex(e.target.value)}
             onFocus={(e) => setActive(e.currentTarget)}
             placeholder="ex: \dfrac{x²+1}{x-3}  sau  √(6x+3)"
-            className="h-9 font-mono text-sm"
+            className="min-h-[64px] resize-y font-mono text-sm"
             aria-label="Formula"
             autoFocus
           />
           <MathSymbolPalette onInsert={onPalette} />
           <div
-            className="flex min-h-[52px] items-center justify-center overflow-x-auto rounded-md border border-dashed border-border bg-white px-2 py-1 text-lg text-black"
+            className="flex max-h-[40vh] min-h-[52px] items-center justify-center overflow-auto rounded-md border border-dashed border-border bg-white px-2 py-1 text-lg text-black"
             aria-label="Previzualizare"
             dangerouslySetInnerHTML={{ __html: preview }}
           />

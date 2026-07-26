@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "katex/dist/katex.min.css"; // stiluri KaTeX (fonturile sunt bundle-uite de Next din pachet)
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import { X, Download } from "lucide-react";
@@ -25,6 +25,7 @@ import {
   useEditorFind,
 } from "./editor-find";
 import { MathEditDialog } from "./MathEditDialog";
+import { installMathAutoFit } from "./math-fit";
 
 const INITIAL = `
 <h1>Document nou</h1>
@@ -75,6 +76,26 @@ function EditorShell({ editor }: { editor: Editor | null }) {
     dismissLegacyAvailable,
   } = useEditorDocument();
   const [confirmBring, setConfirmBring] = useState(false);
+
+  // Auto-fit al formulelor lungi pe foaie (#2): le micșorează cât să încapă în
+  // chenarul A4 (fără să spargă layout-ul). Se reaplică la re-randarea nodurilor.
+  // Robust la `immediatelyRender:false` (editor.view poate lipsi la primul efect →
+  // instalăm și pe evenimentul `create`, capcană cunoscută).
+  useEffect(() => {
+    if (!editor) return;
+    let cleanup: (() => void) | undefined;
+    const install = () => {
+      if (cleanup) return;
+      const dom = editor.view?.dom;
+      if (dom instanceof HTMLElement) cleanup = installMathAutoFit(dom);
+    };
+    install();
+    editor.on("create", install);
+    return () => {
+      editor.off("create", install);
+      cleanup?.();
+    };
+  }, [editor]);
 
   // „Adu-l": dacă editorul e gol, aduc direct (nimic de pierdut); dacă are
   // conținut, cer confirmare (R-EDIT — nu suprascriu munca fără consimțământ).

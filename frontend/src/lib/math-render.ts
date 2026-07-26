@@ -132,8 +132,19 @@ export async function renderMathToImages(bodyHtml: string): Promise<string> {
     }
     const png = await katexHtmlToPng(katexHtml);
     if (!png) continue;
+    // #2: cap lățimea la lățimea conținutului A4 (174mm = 210−2×18mm, @96dpi ≈ 658px)
+    // → o formulă lată (matrice, sistem) nu depășește pagina Word; scalăm proporțional.
+    // Aceeași lățime ca foaia (ProseMirror clientWidth) și PDF-ul (.doc clientWidth),
+    // deci aceeași formulă iese comparabil în editor / PDF / Word.
+    const MAX_W = 658;
+    let dw = png.w;
+    let dh = png.h;
+    if (dw > MAX_W) {
+      dh = Math.round(dh * (MAX_W / dw));
+      dw = MAX_W;
+    }
     const imgHtml =
-      `<img src="${png.url}" width="${png.w}" height="${png.h}" alt="${esc(latex)}" ` +
+      `<img src="${png.url}" width="${dw}" height="${dh}" alt="${esc(latex)}" ` +
       `style="vertical-align:middle;${isBlock ? "display:block;margin:0.4em auto;" : ""}" />`;
     const holder = document.createElement(isBlock ? "div" : "span");
     if (isBlock) holder.style.textAlign = "center";

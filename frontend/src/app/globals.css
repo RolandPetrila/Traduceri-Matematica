@@ -221,6 +221,18 @@
   }
 }
 
+/* Formule math pe foaie (#2, 2026-07-26) — nu trebuie să spargă chenarul A4.
+   Calibrarea principală o face `math-fit.ts` (zoom pe .katex care depășește
+   lățimea); astea sunt plase de siguranță: math-bloc lung derulează pe orizontală
+   în loc să lățească pagina, iar nimic nu depășește 100% din lățimea conținutului. */
+.editor-content [data-type="block-math"] {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.editor-content [data-type="inline-math"] {
+  max-width: 100%;
+}
+
 /* Text interimar de dictare (F4c) — DECORAȚIE ProseMirror, nu conținut de document.
    Nu poate ajunge niciodată în getHTML() → nici în auto-save, nici în export. */
 .dictation-interim {

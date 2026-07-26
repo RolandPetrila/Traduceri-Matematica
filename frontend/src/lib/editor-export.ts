@@ -101,12 +101,32 @@ const DOCUMENT_CSS = `
     height: 0;
     border: none;
   }
+  /* Math (#2): formulele lungi nu trebuie sa iasa din pagina. Scriptul de fit de
+     mai jos le micsoreaza cu zoom; astea sunt plase de siguranta. */
+  .doc [data-type="block-math"], .doc .katex-display { max-width: 100%; overflow-x: auto; }
   @page { size: A4; margin: 20mm 18mm; }
   @media print {
     html, body { background: #ffffff; }
     .page { max-width: none; margin: 0; padding: 0; }
   }
 `;
+
+/**
+ * Script de auto-fit pentru documentul exportat (#2): micșorează (zoom) formulele
+ * KaTeX care depășesc lățimea conținutului, ca la editor. Rulează la DOMContentLoaded
+ * (înainte de `print()`), deci PDF-ul iese cu formulele încadrate, nu tăiate.
+ */
+const MATH_FIT_SCRIPT = `<script>(function(){
+  function fit(){
+    var doc=document.querySelector('.doc');if(!doc)return;
+    var avail=doc.clientWidth;if(!avail)return;
+    var nodes=document.querySelectorAll('.doc .katex');
+    for(var i=0;i<nodes.length;i++){var el=nodes[i];el.style.zoom='';
+      var w=el.getBoundingClientRect().width;if(w>avail&&w>0){el.style.zoom=String(Math.max(avail/w,0.4));}}
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',fit);}else{fit();}
+  window.addEventListener('load',fit);
+})();</script>`;
 
 /** Construiește un document HTML standalone (alb A4) din conținutul editorului. */
 function buildDocumentHtml(rawBodyHtml: string, title: string): string {
@@ -124,6 +144,7 @@ function buildDocumentHtml(rawBodyHtml: string, title: string): string {
 </head>
 <body>
 <div class="page"><div class="doc">${bodyHtml}</div></div>
+${MATH_FIT_SCRIPT}
 </body>
 </html>`;
 }
