@@ -10,13 +10,17 @@
 /onboard
 
 Apoi citește INTEGRAL, în ordine:
-1. docs/HANDOFF_SESIUNE.md  (acest fișier — starea + contextul operațional)
-2. docs/PLAN_editor_tiptap_2026-07-23.md  (sursa de adevăr pentru rescrierea Editorului: faze F0–F6, decizii §17, non-regresie G1–G9)
-3. git log --oneline -15  (jurnalul fazelor)
+1. docs/HANDOFF_SESIUNE.md  (acest fișier — starea + contextul operațional; secțiunile „SESIUNE 2026-07-26" sus = cel mai recent)
+2. docs/PLAN_math_academic_2026-07-26.md  (matematica academică KaTeX, M1–M5) + docs/PLAN_editor_tiptap_2026-07-23.md (rescrierea editorului, F0–F6)
+3. git log --oneline -20  (jurnalul fazelor)
 
-Rescrierea Editorului nativ TipTap+shadcn e la PARITATE: F0–F4 + **F6 COMPLET** (non-regresie G1–G9 + iframe vechi RETRAS; tabul „Editor" = editor nativ).
-Următorul pas pe care îl aleg eu: [F3b structuri interactive fracție/radical]  SAU  [F5 polish: a11y aprofundat + dark-mode]  SAU  [pipăitul manual PDF/dictare]  SAU  [alt modul: Planșe].
-Respectă protocolul §17 (clarifică per funcție + mock înainte de cod) și gate-ul de non-regresie.
+Stare (2026-07-26, tot LIVE pe traduceri-frontend.vercel.app):
+- Editor nativ TipTap+shadcn la PARITATE (F6): non-regresie G1–G9 + iframe vechi retras + bară slim (funcția activă ocupă tot ecranul).
+- Matematică ACADEMICĂ KaTeX COMPLETĂ (M1–M5): constructor fracție/limită/radical, 214 formule re-randate, export PDF/HTML (fonturi inline) + Word (math ca imagine).
+- Dictare: diagnostic + eroare vizibilă reparate; cauza la Roland = microfon/permisiune Windows (nu app).
+
+Deschise (neblocante): verificarea de corectitudine a celor 214 formule de Cristina; eyeball PDF/.docx real (Roland); cosmetice math (proză italic în paranteze, „·" separator); dictare cu voce reală de reconfirmat; F3b structuri cu găuri (deferat); F5 polish.
+Următorul pas îl aleg eu dintre cele deschise SAU aștept ce-mi ceri. Respectă §17 (clarifică per funcție înainte de cod) + gate-ul de non-regresie + R-HANDOFF (ține fișierele la zi).
 ```
 
 ---
