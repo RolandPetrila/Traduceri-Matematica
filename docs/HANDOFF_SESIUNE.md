@@ -9,26 +9,30 @@
 ```
 /onboard
 
-Apoi citește INTEGRAL, în ordine:
-1. docs/HANDOFF_SESIUNE.md — „📋 BACKLOG… STARE la 2026-07-27" + secțiunea „SESIUNE 2026-07-27" (#1/#2/#3 făcute, commise, NEDEPLOYAT) = ce e la zi; secțiunile „SESIUNE 2026-07-26 (3)/(2)" = context anterior LIVE.
-2. docs/PLAN_math_academic_2026-07-26.md (KaTeX M1–M5) + docs/PLAN_editor_tiptap_2026-07-23.md (editor F0–F6)
-3. git log --oneline -20 (jurnalul fazelor)
+/effort xhigh
 
-Context: editorul matematic (branch faza-g-editor) e LIVE pe traduceri-frontend.vercel.app. Sesiunea 2026-07-27 a livrat (commis, NEDEPLOYAT): #1 grilă construcții gata one-click, #2 formule lungi se încadrează (zoom scale-to-fit + export), #3 audit proză→formulă+explicație (15) + chevron. Datele: frontend/src/components/editor/math-data.json (213 formule + 103 simboluri).
+Apoi citește INTEGRAL, în ordine, ÎNAINTE de a acționa:
+1. docs/HANDOFF_SESIUNE.md — secțiunea „SESIUNE 2026-07-27" + blocul „#4 ▶️ ÎN EXECUȚIE" (decizii + progres + ȘABLON de continuare).
+2. docs/PLAN_math_curriculum_2026-07-27.md — taxonomia (clase × domenii × goluri ➕) + §7 CONFIRMAT.
+3. scratchpad/README_autorare_math.md — pattern-ul repetabil per clasă + capcanele R3.
+4. git log --oneline -15 (jurnalul; ultimul lot = „feat(#4 clasa V)").
 
-DE DECIS de Roland (start sesiune): (a) #3-extins — autorez explicații pentru restul de ~157 formule ÎNAINTE sau DUPĂ taxonomia #4?; (b) start #4 (taxonomie programă 5–12 → confirmare → autorare); (c) deploy prod al #1/#2/#3.
+CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasa V (bibliotecă 213→224). Datele: frontend/src/components/editor/math-data.json (224 formule + 103 simboluri).
 
-Referință backlog complet (mai jos în handoff), ordinea priorității:
+DECIZII CONFIRMATE (Roland, nu le re-întreba): toate profilurile · implementare exhaustivă · ~65–95 formule noi + explicație la TOATE · ordine V→XII lot cu lot · interactiv A+C+B (B = figuri geometrice SVG, fază separată).
 
-1. GHID DE SINTAXĂ / HINT-URI în „Construiește" + „Editează formula": panou de ajutor (pliabil) cu sintaxa pentru TOATE construcțiile — putere a^{1}→a¹, indice a_{1}→a₁, fracție \frac{a}{b}, radical \sqrt{}/\sqrt[n]{}, integrală \int, sumă \sum, limită \lim, produs \prod, trig, matrice, sisteme etc. — fiecare „ce scriu → ce obțin", ca Cristina să poată genera ORICE, nu doar ce e în paletă.
+EXECUTĂ CONTINUAREA #4, în ordine:
+1. AUTORARE V→XII — clasa V e gata; continuă cu VI, apoi VII…XII, UN LOT PE CLASĂ, folosind pattern-ul din README_autorare_math.md: (a) dump intrările existente ale clasei (nu dubla + vezi ce proză amestecată a mai rămas); (b) script Node per clasă cu LATEX_FIX (curăță proza/formulele sudate) + EXPL (explicație la FIECARE intrare existentă) + NEW (formulele noi din golurile ➕ ale clasei din plan §2), html regenerat din latex cu katex; (c) rulează `node scratchpad/gate_check.js` → trebuie GATE: PASS; (d) commit `feat(#4 clasa <N>): …` + actualizează docs/HANDOFF_SESIUNE.md (progres + clasa următoare) + push.
+2. Apoi INTERACTIV A + C (filtrare pe domeniu în meniu + constructor extins: matrice n×n, sistem n ecuații, ∑/∫ cu limite editabile). Respectă §17 (clarifică FORMA cu mock înainte de cod).
+3. Apoi B (figuri geometrice SVG inserabile — feature mare, NodeView; §17 mock întâi).
 
-2. FORMULE LUNGI: la editare + pe foaie o formulă lungă IESE DIN CHENAR și se afișează deformat (screenshot 232). Repară: nodul math pe foaie să se încadreze (wrap/scroll/scalare, fără să spargă A4); dialogul „Editează formula" responsiv + previzualizare scrollabilă.
+REGULI OBLIGATORII:
+- R3 corectitudine: gate_check.js validează DOAR KaTeX + invarianți (NO_LATEX=0, proză_în_html=0), NU corectitudinea matematică/semantica. Verifică FIECARE formulă la sursă; NU inventa. Capcane cunoscute: divizibilitate = convenția RO `a \vdots b` (⋮ = „a se divide cu b", NU internaționala `b \mid a`); litru = `\ell` (nu `\text{l}`); zecimale RO = `{,}` (ex. `2{,}35`); `.katex` e inline → măsoară cu getBoundingClientRect, nu scrollWidth.
+- R-MATH (0% pierdere notație) · R-COST (gratuit) · R-EDIT.
+- R-HANDOFF: ține HANDOFF + plan + memoria la zi + commit/push după FIECARE clasă. Deploy prod DOAR cu confirmarea mea (grupat, după mai multe clase; bump CACHE_VERSION v12→v13 la deploy).
+- Non-regresie pt cod (interactiv A/C/B): tsc 0 · npm test (jest, 28) · npx next build · probă 390px+desktop.
 
-3. EXPLICAȚII la formule (toate clasele): fiecare formulă din bibliotecă să aibă o EXPLICAȚIE, dar explicația să NU se scrie pe foaie la inserare — doar formula. Explicația e pentru profesor (în meniu / tooltip / rând extensibil). CONEXIUNE cheie: unele intrări actuale au proza stocată CHIAR în `latex` (ex. „se înmulțesc ca numere naturale…") → de-aia se afișează deformat (screenshot 232/233); auditează cele 214, separă formula curată de explicație (câmp `explicatie` nou).
-
-4. EXTINDERE PROGRAMĂ 5–12 (cercetare exhaustivă): module/grupuri care acoperă TOATĂ materia RO clasele 5–12 — algebră, geometrie (+ figuri geometrice), analiză, trigonometrie, teoreme (cu explicații) etc. Cercetează exhaustiv (~95% acoperire), grupează cu cele existente, totul editabil + ușor de folosit. Fă întâi o TAXONOMIE + plan (clase × domenii) și cere confirmarea ÎNAINTE de a autor sute de formule; fiecare formulă = LaTeX validat KaTeX + corect matematic (R3, ca la M4). Extinde funcțiile existente să fie mai interactive/smart.
-
-Respectă §17 (clarifică FORMA per funcție cu mock înainte de cod), gate-ul de non-regresie (tsc 0 · build · probă 390px+desktop · 28+ teste), R-MATH (0% pierdere notație), R-COST (gratuit), R-HANDOFF (ține fișierele la zi + commit/push; deploy prod DOAR cu confirmarea lui Roland). Începe confirmând ce ai înțeles + ce e deja posibil vs de construit, cu mock-uri.
+Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce clasă/lot pornești, apoi execută Clasa VI. NU relua ce e deja gata (V + #1/#2/#3).
 ```
 
 ---
