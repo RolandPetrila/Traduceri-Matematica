@@ -22,8 +22,26 @@ import {
 } from "@/components/ui/select";
 import { trackEditor } from "./editor-telemetry";
 import { EditorMathBuilder } from "./EditorMathBuilder";
+import katex from "katex";
 
-type Formula = { grup: string; nume: string; html: string };
+/** `latex` = randare academică KaTeX (M4); `html` = fallback vechi (sup/sub inline). */
+type Formula = { grup: string; nume: string; html: string; latex?: string };
+
+/** Preview: KaTeX dacă există `latex`, altfel HTML-ul vechi. */
+function formulaPreviewHtml(f: Formula): string {
+  if (f.latex) {
+    try {
+      return katex.renderToString(f.latex, {
+        throwOnError: false,
+        strict: false,
+        output: "html",
+      });
+    } catch {
+      /* cade pe html */
+    }
+  }
+  return f.html;
+}
 const FORMULE = mathData.formule as Record<string, Formula[]>;
 const SYMBOLS = mathData.symbols as { s: string; label: string }[];
 
@@ -132,13 +150,20 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                     key={i}
                     type="button"
                     onClick={() => {
-                      insert(f.html);
+                      // Academic (KaTeX) dacă avem `latex`; altfel fallback HTML vechi.
+                      if (f.latex) {
+                        editor
+                          .chain()
+                          .focus()
+                          .insertInlineMath({ latex: f.latex })
+                          .run();
+                      } else {
+                        insert(f.html);
+                      }
                       trackEditor("math_insert", {
-                        kind: "formula",
+                        kind: f.latex ? "formula_latex" : "formula_html",
                         grup: f.grup,
                         clasa: ql ? "cautare" : clasa,
-                        hasSup: /<sup[>\s]/.test(f.html),
-                        hasSub: /<sub[>\s]/.test(f.html),
                       });
                     }}
                     className="rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
@@ -149,8 +174,9 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                     </span>
                     <span
                       className="block text-foreground"
-                      // formula = HTML simplu (sup/sub) — doar preview
-                      dangerouslySetInnerHTML={{ __html: f.html }}
+                      dangerouslySetInnerHTML={{
+                        __html: formulaPreviewHtml(f),
+                      }}
                     />
                   </button>
                 ))}
