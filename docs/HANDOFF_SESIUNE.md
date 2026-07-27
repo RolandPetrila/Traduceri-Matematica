@@ -17,6 +17,22 @@
 
 ---
 
+## 🆕 CERINȚE NOI (Roland, 2026-07-28) — prompt pt sesiunea următoare
+
+> ⚠️ #4 e GATA. Pentru sesiunea nouă folosește **acest** prompt (nu cel de la „PROMPT DE RELUARE" de mai jos, care e istoric pt #4).
+
+**Decizii confirmate (Roland, nu le re-întreba):**
+
+1. **Redimensionare chenar Matematică** (Screenshot (238).png = popover-ul `EditorMathMenu`): prinzi marginea/colțul cu mouse-ul → mai mare/mic; funcțiile dinăuntru se rearanjează automat după lățime; dimensiunea se ține minte (localStorage).
+2. **Verificare clasă corectă (V→XII) vs manuale oficiale** (manuale.edu.ro):
+   - cuprinsul la **2-3 manuale de edituri DIFERITE per clasă**; liceu (IX–XII) DOAR profil **M1** (mate-info, cel mai complet).
+   - agentul aduce singur manualele (analizează întâi editurile, folosește ~aceleași edituri consecvent la fiecare clasă), le salvează organizat în proiect (locație de propus+confirmat, ex. `docs/manuale/` GITIGNORED + `INDEX.md` committed — NU umfla repo-ul cu sute de MB).
+   - la formulă în clasă GREȘITĂ → **mut-o automat** (lot_engine REMOVE+add, gate+eyeball) + raport final al mutărilor.
+
+**Prompt gata de lipit (primul mesaj în sesiunea nouă):** vezi mesajul din chat 2026-07-28 (identic cu deciziile de mai sus). Efort: **xhigh**.
+
+---
+
 ## ⚡ PROMPT DE RELUARE (lipește-l ca PRIMUL mesaj în sesiunea nouă)
 
 ```
