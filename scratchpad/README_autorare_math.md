@@ -1,49 +1,66 @@
-# Autorare bibliotecă matematică (#4) — pattern repetabil V→XII
+# Autorare bibliotecă matematică (#4) — pattern repetabil + unelte
 
 Sursă de adevăr: `docs/PLAN_math_curriculum_2026-07-27.md` (taxonomie + goluri per clasă) și
 `docs/HANDOFF_SESIUNE.md` (decizii + progres). Deciziile Roland (2026-07-27): TOATE
 profilurile, exhaustiv, ~65–95 formule noi + explicații la TOATE, ordine V→XII lot cu lot,
 interactiv A+C+B (B=figuri SVG, fază separată).
 
-## Pași per clasă (ex. făcut pentru V în `feat(#4 clasa V)` — commit 56afebd)
+## STARE: ✅ AUTORARE V→XII COMPLETĂ (bibliotecă 213→276, toate cu explicație)
 
-1. **Dump** intrările existente ale clasei (nu dubla + vezi ce proză a mai rămas):
+8 loturi (`clasa_5.js` … `clasa_12.js`), toate committed+pushed, NEDEPLOYATE. Vezi tabelul
+din `docs/HANDOFF_SESIUNE.md`. Uneltele de mai jos rămân pentru referință / întreținere.
 
-   ```
-   python -c "import json;d=json.load(open('frontend/src/components/editor/math-data.json',encoding='utf-8'));[print(x['grup'],'::',x['nume'],'::',x.get('latex','')[:60]) for x in d['formule']['<CLASA>']]"
-   ```
+## Unelte persistente (în `scratchpad/`)
 
-   Bucket-c (proză pură) a fost curățat la #3, DAR multe intrări au proză AMESTECATĂ cu
-   `\frac`/`^`/`\cdot` (ex. „|a| = a, dacă a≥0 · …") — de curățat la clasa lor.
+- **`lot_engine.js`** — engine-ul: `applyLot({CLASA, LATEX_FIX, EXPL, NEW, REMOVE})`.
+  Aplică fix-uri de latex, adaugă explicații, adaugă/șterge intrări, regenerează `html`
+  din latex (`output:"html"`), scrie DOAR dacă totul randează (throwOnError). Guard
+  anti-typo pe `nume` + anti-dublură. Ordine chei canonică: grup, nume, html, latex, explicatie.
+- **`clasa_<N>.js`** — datele per clasă (require `./lot_engine`). Model complet: `clasa_12.js`.
+- **`eyeball.js <clasa>`** — dump latex + glifele RANDATE curat (fără MathML annotation),
+  pentru verificare manuală. **OBLIGATORIU** — gate-ul NU prinde proza fără explicatie.
+- **`gate_check.js`** — validează KaTeX + invarianți (NO_LATEX=0, proză_în_html=0, script fit).
 
-2. **Script Node per clasă** (model: cel folosit pt V) cu trei dicționare:
-   - `LATEX_FIX{nume: latex}` — curăță proza/formulele sudate rămase (folosește
-     `\begin{cases}` pt ramuri, exemplu numeric pt proceduri).
-   - `EXPL{nume: explicatie}` — explicație (text profesor) pt FIECARE intrare existentă.
-   - `NEW[{grup,nume,latex,explicatie}]` — formulele noi din golurile ➕ ale clasei (plan §2).
-     Pt fiecare atins: `html = katex.renderToString(latex, {throwOnError:false,output:"html"})`
-     (fallback curat — invariant NO_LATEX=0, fără proză în html).
+## Pași per clasă/lot (pattern)
 
-3. **Gate:** `node scratchpad/gate_check.js` → trebuie **GATE: PASS**
-   (KaTeX 0 fail, NO_LATEX=0, proză_în_html=0, script fit parsează).
+1. **Dump** intrările existente: `node scratchpad/eyeball.js <N>` — vezi ce proză amestecată
+   a mai rămas + nu dubla.
+2. **Copie** `clasa_12.js` → `clasa_<N>.js`; completează cele 3–4 dicționare:
+   - `LATEX_FIX{nume}` — curăță proza/formulele sudate. **Proza RO cu diacritice merge în
+     `explicatie`, NU în `\text{}`** (vezi capcane). Reprezentare simbolică + verbal în explicatie.
+   - `EXPL{nume}` — explicație (text profesor) pt FIECARE intrare existentă.
+   - `NEW[{grup,nume,latex,explicatie}]` — formule noi din golurile ➕ (plan §2).
+   - `REMOVE[nume]` — opțional, pt formule mutate la altă clasă (ex. combinatorică XI→X).
+3. **Aplică:** `node scratchpad/clasa_<N>.js` (scrie doar dacă render_fail=0).
+4. **Gate:** `node scratchpad/gate_check.js` → **GATE: PASS**.
+5. **EYEBALL (obligatoriu):** `node scratchpad/eyeball.js <N>` — citește FIECARE latex + RANDAT.
+   Gate PASS ≠ gata; gate nu vede proza-ca-litere. Verifică corectitudinea matematică la sursă (R3).
+6. La schimbări de COD (interactiv A/C/B): `npx tsc --noEmit` (0) + `npm test` (jest 28) + `npx next build`.
+7. **Commit** `feat(#4 clasa <N>): …` + actualizează `docs/HANDOFF_SESIUNE.md` (progres + următoarea) + push.
+   **Deploy grupat** (după mai multe clase), cu confirmarea Roland + bump `CACHE_VERSION`.
 
-4. `tsc` nu e necesar pt schimbări doar de date; dar la interactiv (A/C/B) rulează
-   `npx tsc --noEmit` + `npm test` (jest, 28) + `npx next build`.
+## Capcane R3 (dovedite empiric în această sesiune)
 
-5. **Commit** (`feat(#4 clasa <N>): …`) + **update handoff** (progres + următoarea clasă)
-   - push. **Deploy grupat** (după mai multe clase), cu confirmarea Roland + bump `CACHE_VERSION`.
+- **Gate ≠ corectitudine matematică.** PASS validează doar KaTeX + invarianți. Verifică la sursă;
+  Cristina = expert final. (Prinse la eyeball: 2 erori matematice în XI — `\ln\frac{1+x}{x}` și asimptota oblică.)
+- **Diacritice RO în `\text{}`:** NU randează curat (`ă â î` se descompun în bază+accent; `ș ț`
+  se păstrează dar font-fallback). → proza cu diacritice DOAR în `explicatie` (HTML). `\text{}`
+  doar pt etichete scurte FĂRĂ diacritice (`\text{compl.}`, `\text{cazuri favorabile}`).
+- **`%` în latex = comentariu KaTeX** (mănâncă restul liniei) → mereu `\%`.
+- **`log`/`\Sigma`/`\surd` fără `\`** randează greșit → `\log`, `\sum`, `\sqrt`.
+- **`\overparen` NEsuportat** în KaTeX 0.16.11 → arc de cerc cu `\overset{\frown}{AB}`.
+- **`′`/`″` raw (U+2032/2033)** → `f'`/`f''` (ASCII; altfel avertisment „No character metrics").
+- **Divizibilitate = convenția RO `a \vdots b`** (⋮ = „a se divide cu b"), NU `b \mid a`.
+- **Litru `\ell`** (nu `\text{l}`); **zecimale `{,}`** (`2{,}35`).
+- **`.katex` inline** → măsoară cu `getBoundingClientRect`, nu `scrollWidth` (vezi math-fit.ts).
 
-## Capcane (R3)
+## Formule care apar INTENȚIONAT la mai multe clase (revizitări — NU „repara" ca duplicate)
 
-- **Gate ≠ corectitudine matematică.** PASS validează doar KaTeX + invarianți, NU că formula
-  e corectă sau că simbolul are sensul potrivit. Verifică fiecare la sursă; Cristina = expert final.
-- **Divizibilitate:** convenția RO e `a \vdots b` (⋮ = „a se divide cu b"), NU internaționala
-  `b \mid a`. Recurs în V/VI/VII/XII — păstrează convenția RO (de confirmat cu Cristina glif).
-- **Litru:** `\ell` (ℓ), nu `\text{l}` (se confundă cu 1).
-- **Zecimale RO:** virgulă cu `{,}` (ex. `2{,}35`).
-- `.katex` e inline → măsoară cu `getBoundingClientRect`, nu `scrollWidth` (vezi math-fit.ts).
+Thales (VII+VIII), panta dreptei (VIII/IX/X), `sin²+cos²=1` (VIII+X), probabilitate (V/VIII/XII),
+aria pătrat/dreptunghi/triunghi (V+VI). Sunt revizitări curriculare per clasă, corecte.
 
 ## Interactiv rămas (după formule)
 
 - **A** filtrare pe domeniu în meniu · **C** constructor extins (matrice n×n, sistem n,
-  ∑/∫ cu limite editabile) · **B** figuri geometrice SVG inserabile (efort mare).
+  ∑/∫ cu limite editabile) · **B** figuri geometrice SVG inserabile (efort mare, NodeView).
+  §17: clarifică FORMA cu mock înainte de cod. Non-regresie: tsc 0 · jest 28 · next build · probă 390px+desktop.
