@@ -24,12 +24,11 @@
 **Decizii confirmate (Roland, nu le re-întreba):**
 
 1. **Redimensionare chenar Matematică** (Screenshot (238).png = popover-ul `EditorMathMenu`): prinzi marginea/colțul cu mouse-ul → mai mare/mic; funcțiile dinăuntru se rearanjează automat după lățime; dimensiunea se ține minte (localStorage).
-2. **Verificare clasă corectă (V→XII) vs manuale oficiale** (manuale.edu.ro):
-   - cuprinsul la **2-3 manuale de edituri DIFERITE per clasă**; liceu (IX–XII) DOAR profil **M1** (mate-info, cel mai complet).
-   - agentul aduce singur manualele (analizează întâi editurile, folosește ~aceleași edituri consecvent la fiecare clasă), le salvează organizat în proiect (locație de propus+confirmat, ex. `docs/manuale/` GITIGNORED + `INDEX.md` committed — NU umfla repo-ul cu sute de MB).
-   - la formulă în clasă GREȘITĂ → **mut-o automat** (lot_engine REMOVE+add, gate+eyeball) + raport final al mutărilor.
+2. **Verificare + completare vs manuale oficiale** (manuale.edu.ro). Roland a **DESCĂRCAT deja** manualele (13 PDF-uri) în `99_Roland_Work/Carti_descarcate_EDU/` (GITIGNORED — NU se committează). DOAR clasele din folder erau disponibile pe site; restul = conținut indisponibil (→ pt ele rămâne programa deja folosită).
+   - Agentul: (a) inventariază folderul (identifică pt fiecare PDF clasa + editura din copertă/cuprins → `INDEX.md`); (b) extrage CUPRINSUL din fiecare; (c) compară materiile din manualele oficiale cu materiile din editor (`math-data.json`) — **nu doar clasa, ci și COMPLETITUDINEA**: respectă documentarea din editor programa oficială? e completă? (d) remediază: formulă în clasă GREȘITĂ → **mut-o automat**; temă/formulă din manual LIPSĂ din editor → **adaug-o** (latex+explicatie, gate+eyeball); îmbunătățiri sesizate → **aplică-le**. (e) raport final (mutări + adăugiri + îmbunătățiri, cu manualul-sursă).
+   - A1739/A1740 = clasa VII (Booklet + art Klett) — verificate deja ca format.
 
-**Prompt gata de lipit (primul mesaj în sesiunea nouă):** vezi mesajul din chat 2026-07-28 (identic cu deciziile de mai sus). Efort: **xhigh**.
+**Prompt gata de lipit (primul mesaj în sesiunea nouă):** vezi mesajul din chat 2026-07-28 (v2, cu folderul local). Efort: **xhigh**.
 
 ---
 
