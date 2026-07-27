@@ -17,12 +17,12 @@ Apoi citește INTEGRAL, în ordine, ÎNAINTE de a acționa:
 3. scratchpad/README_autorare_math.md — pattern-ul repetabil per clasă + capcanele R3.
 4. git log --oneline -15 (jurnalul; ultimul lot = „feat(#4 clasa V)").
 
-CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V + VI (bibliotecă 213→233). Datele: frontend/src/components/editor/math-data.json (233 formule + 103 simboluri).
+CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V + VI + VII (bibliotecă 213→241). Datele: frontend/src/components/editor/math-data.json (241 formule + 103 simboluri).
 
 DECIZII CONFIRMATE (Roland, nu le re-întreba): toate profilurile · implementare exhaustivă · ~65–95 formule noi + explicație la TOATE · ordine V→XII lot cu lot · interactiv A+C+B (B = figuri geometrice SVG, fază separată).
 
 EXECUTĂ CONTINUAREA #4, în ordine:
-1. AUTORARE V→XII — clasele V + VI sunt gata; continuă cu VII, apoi VIII…XII, UN LOT PE CLASĂ, folosind pattern-ul din README_autorare_math.md + scriptul-model `scratchpad/clasa_6.js` (copie → `clasa_7.js`): (a) dump intrările existente ale clasei (`node scratchpad/eyeball.js 7` — vezi ce proză amestecată a mai rămas + nu dubla); (b) script Node per clasă cu LATEX_FIX (curăță proza/formulele sudate; proza RO cu diacritice → în `explicatie`, NU în `\text{}`) + EXPL (explicație la FIECARE intrare existentă) + NEW (formulele noi din golurile ➕ ale clasei din plan §2), html regenerat din latex cu katex; (c) `node scratchpad/gate_check.js` → GATE: PASS **+ `node scratchpad/eyeball.js <N>` citit manual** (gate NU prinde proza fără explicatie); (d) commit `feat(#4 clasa <N>): …` + actualizează docs/HANDOFF_SESIUNE.md (progres + clasa următoare) + push.
+1. AUTORARE V→XII — clasele V + VI + VII sunt gata; continuă cu VIII, apoi IX…XII, UN LOT PE CLASĂ, folosind pattern-ul din README_autorare_math.md + engine `scratchpad/lot_engine.js` (model de date: `clasa_7.js` → copie în `clasa_8.js`): (a) dump intrările existente ale clasei (`node scratchpad/eyeball.js 7` — vezi ce proză amestecată a mai rămas + nu dubla); (b) script Node per clasă cu LATEX_FIX (curăță proza/formulele sudate; proza RO cu diacritice → în `explicatie`, NU în `\text{}`) + EXPL (explicație la FIECARE intrare existentă) + NEW (formulele noi din golurile ➕ ale clasei din plan §2), html regenerat din latex cu katex; (c) `node scratchpad/gate_check.js` → GATE: PASS **+ `node scratchpad/eyeball.js <N>` citit manual** (gate NU prinde proza fără explicatie); (d) commit `feat(#4 clasa <N>): …` + actualizează docs/HANDOFF_SESIUNE.md (progres + clasa următoare) + push.
 2. Apoi INTERACTIV A + C (filtrare pe domeniu în meniu + constructor extins: matrice n×n, sistem n ecuații, ∑/∫ cu limite editabile). Respectă §17 (clarifică FORMA cu mock înainte de cod).
 3. Apoi B (figuri geometrice SVG inserabile — feature mare, NodeView; §17 mock întâi).
 
@@ -32,7 +32,7 @@ REGULI OBLIGATORII:
 - R-HANDOFF: ține HANDOFF + plan + memoria la zi + commit/push după FIECARE clasă. Deploy prod DOAR cu confirmarea mea (grupat, după mai multe clase; bump CACHE_VERSION v12→v13 la deploy).
 - Non-regresie pt cod (interactiv A/C/B): tsc 0 · npm test (jest, 28) · npx next build · probă 390px+desktop.
 
-Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce clasă/lot pornești, apoi execută Clasa VII. NU relua ce e deja gata (V + VI + #1/#2/#3).
+Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce clasă/lot pornești, apoi execută Clasa VIII. NU relua ce e deja gata (V + VI + VII + #1/#2/#3).
 ```
 
 ---
@@ -91,9 +91,13 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 
 **REGULĂ NOUĂ dovedită empiric (R3):** diacriticele RO **NU** randează curat în `\text{}` KaTeX (`ă â î` se descompun în bază+accent; `ș ț` se păstrează dar font-fallback) → proza RO cu diacritice merge **DOAR în `explicatie`** (text HTML), latex = pur simbolic; `\text{}` doar pt etichete scurte fără diacritice (`\text{compl.}`, `\text{din}`). Capcana `%` = comentariu KaTeX (mănâncă restul liniei) → mereu `\%`.
 
+**PROGRES: Clasa VII ✅ (lot 3, commit `feat(#4 clasa VII)`)** — 24→32 (+8 noi: pătratul trinomului, descompunere factor comun, **Teorema lui Thales**, triunghiuri asemenea + raportul ariilor (k²), media geometrică, aria+înălțimea triunghiului echilateral). Grupuri noi: „Asemănare", „Triunghi echilateral". Explicații la toate cele 32. Curățat 5 latex: direct proporț. (proză), teorema înălțimii/catetei (proiecțiile → explicatie), unghi la centru/înscris (proză pură → simbolic `m(\angle)=m(\overset{\frown}{})`; `\overparen` NU e suportat în KaTeX 0.16.11, folosit `\overset{\frown}{}`). **Bibliotecă 233→241.** Gate PASS (241/241) + eyeball 32/32. **NEDEPLOYAT.**
+
 **DE FĂCUT la lotul lor (găsite la scan global):** (a) Clasa VIII „Frecvența relativă" are proză sudată + `%` neescapat → de reparat la lotul VIII; (b) avertisment KaTeX `No character metrics for '″' (Main-Regular)` — o intrare (clasă superioară, probabil derivată f″ / secunde) folosește `″` (U+2033) în mod text → de înlocuit cu `''` sau `\prime\prime` la lotul ei.
 
-**URMĂTORUL: Clasa VII** (apoi VIII…XII), apoi interactiv A/C, apoi B (figuri).
+**Refactor unelte:** engine-ul de autorare e acum în `scratchpad/lot_engine.js` (`applyLot({CLASA,LATEX_FIX,EXPL,NEW})`); fiecare `clasa_<N>.js` doar furnizează datele. Model: `clasa_7.js`.
+
+**URMĂTORUL: Clasa VIII** (apoi IX…XII), apoi interactiv A/C, apoi B (figuri).
 
 **ȘABLON de continuare (repetabil per clasă):** script Node ca `scratchpad/clasa_v.js` — `LATEX_FIX` (curăță proza/formulele sudate rămase), `EXPL` (explicație la fiecare intrare existentă), `NEW` (formule noi din golurile ➕ ale clasei din plan); `html` regenerat din latex cu `katex.renderToString`; apoi rulează `scratchpad/gate_check.js` (trebuie PASS: KaTeX 0 fail, NO_LATEX=0, proză_în_html=0) → commit → update handoff. Înainte de fiecare clasă, dump intrările existente (`python`) ca să NU dublezi + să vezi ce proză a mai rămas (bucket-c prinde doar proza pură; multe au proză AMESTECATĂ cu `\frac`/`^`).
 
