@@ -1,8 +1,8 @@
 # PLAN — Taxonomie & extindere bibliotecă matematică 5–12 (#4)
 
-> Versiune 1.0 · 2026-07-27 · Efort: xhigh (multi-sesiune) · Cerut de Roland (backlog #4).
-> **STARE: TAXONOMIE + PLAN — AȘTEAPTĂ CONFIRMAREA lui Roland înainte de autorarea formulelor.**
-> R3: NU inventez formule; fiecare = LaTeX validat KaTeX (script, ca M4) + corect matematic.
+> Versiune 1.1 · 2026-07-27 · Efort: xhigh (multi-sesiune) · Cerut de Roland (backlog #4).
+> **STARE: ✅ AUTORARE V→XII COMPLETĂ (bibliotecă 213→276, toate cu explicație, 8 loturi pushed, NEDEPLOYATE). Următor: interactiv A+C (§17 mock întâi), apoi B (figuri SVG), apoi deploy grupat.**
+> R3: NU inventez formule; fiecare = LaTeX validat KaTeX (script) + corect matematic (Cristina = expert final).
 
 ## 0. Surse (R3 — cercetate la sursă, nu din memorie)
 
