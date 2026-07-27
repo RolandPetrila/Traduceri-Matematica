@@ -296,7 +296,7 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
         <p className="mb-1 text-[11px] font-medium text-muted-foreground">
           Construcții gata — un click → pe foaie (apoi editabilă la click):
         </p>
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))] gap-1">
           {CONSTRUCTIONS_RENDERED.map((c) => (
             <button
               key={c.latex}

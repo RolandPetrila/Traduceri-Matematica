@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import type { Editor } from "@tiptap/react";
 import { Sigma, Search, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,21 @@ const CLASE = [
   { v: "12", l: "Clasa a XII-a" },
 ];
 
+// Cerința 1 (2026-07-28): chenarul „Matematică" e redimensionabil prin grip
+// (margine dreaptă / margine jos / colț) + reflow auto pe coloane (grilele folosesc
+// auto-fill/minmax). Dimensiunea aleasă se ține minte în localStorage.
+const SIZE_KEY = "editor_math_menu_size_v1";
+const MIN_W = 320;
+const MAX_W = 760;
+const MIN_H = 380;
+const MAX_H = 900;
+const DEFAULT_W = 380;
+const DEFAULT_H = 540;
+const clampSize = (w: number, h: number, maxH = MAX_H) => ({
+  w: Math.min(MAX_W, Math.max(MIN_W, w)),
+  h: Math.min(maxH, Math.max(MIN_H, h)),
+});
+
 /**
  * G2 Matematică (fidel) — 103 simboluri (insert Unicode) + biblioteca de 276
  * formule pe clase V–XII (insert KaTeX `latex`, fallback `html`), fiecare cu
@@ -82,6 +98,83 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
   // să nu „sară" la filtrare/căutare. #3: explicația NU se inserează pe foaie.
   const [expanded, setExpanded] = useState<string | null>(null);
   const ql = q.trim().toLowerCase();
+
+  // Cerința 1: dimensiune persistentă + redimensionare prin grip (margine/colț).
+  // Init cu DEFAULT (SSR-safe) apoi încarcă din localStorage în useEffect (fără
+  // hydration mismatch — vezi [[finding_hydration_tab_and_deploy_verify_2026_07_26]]).
+  const [size, setSize] = useState<{ w: number; h: number }>({
+    w: DEFAULT_W,
+    h: DEFAULT_H,
+  });
+  const sizeRef = useRef(size);
+  const dragRef = useRef<{
+    dir: "e" | "s" | "se";
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SIZE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw) as { w?: number; h?: number };
+      if (typeof s.w === "number" && typeof s.h === "number") {
+        const next = clampSize(s.w, s.h);
+        sizeRef.current = next;
+        setSize(next);
+      }
+    } catch {
+      /* localStorage indisponibil — rămâne dimensiunea implicită */
+    }
+  }, []);
+
+  // Drag prin listeneri pe `window` (nu `setPointerCapture` — mai robust: prinde
+  // mișcarea și când cursorul iese din grip; nu depinde de particularitățile
+  // pointer-capture). `dragRef` e citit din listeneri (ref → mereu la zi).
+  const onGripDown =
+    (dir: "e" | "s" | "se") => (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragRef.current = {
+        dir,
+        x: e.clientX,
+        y: e.clientY,
+        w: sizeRef.current.w,
+        h: sizeRef.current.h,
+      };
+    };
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const maxH = Math.min(MAX_H, window.innerHeight - 80);
+      let { w, h } = sizeRef.current;
+      if (d.dir === "e" || d.dir === "se") w = d.w + (e.clientX - d.x);
+      if (d.dir === "s" || d.dir === "se") h = d.h + (e.clientY - d.y);
+      const next = clampSize(w, h, maxH);
+      sizeRef.current = next;
+      setSize(next);
+    };
+    const up = () => {
+      if (!dragRef.current) return;
+      dragRef.current = null;
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify(sizeRef.current));
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, []);
 
   // Domeniile (grupuri) distincte ale clasei curente, în ordinea din date.
   const grupuri = useMemo(
@@ -139,8 +232,12 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
           <Sigma className="h-4 w-4" /> Matematică
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[380px] p-2" align="start">
-        <div className="relative mb-2">
+      <PopoverContent
+        className="relative flex flex-col overflow-hidden p-2"
+        align="start"
+        style={{ width: size.w, height: size.h }}
+      >
+        <div className="relative mb-2 shrink-0">
           <Search className="absolute left-2 top-2.5 h-4 w-4 opacity-60" />
           <Input
             value={q}
@@ -149,8 +246,11 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
             className="h-9 pl-8"
           />
         </div>
-        <Tabs defaultValue="construieste">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs
+          defaultValue="construieste"
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <TabsList className="grid w-full shrink-0 grid-cols-4">
             <TabsTrigger value="construieste" className="px-1 text-xs">
               Construiește
             </TabsTrigger>
@@ -165,13 +265,19 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="construieste" className="mt-2">
-            <div className="max-h-[420px] overflow-y-auto pr-1">
+          <TabsContent
+            value="construieste"
+            className="mt-2 min-h-0 flex-1 data-[state=active]:flex data-[state=active]:flex-col"
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
               <EditorMathBuilder editor={editor} />
             </div>
           </TabsContent>
 
-          <TabsContent value="formule" className="mt-2">
+          <TabsContent
+            value="formule"
+            className="mt-2 min-h-0 flex-1 data-[state=active]:flex data-[state=active]:flex-col"
+          >
             {!ql && (
               <Select
                 value={clasa}
@@ -180,7 +286,7 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                   setDomeniu(null); // grupul selectat poate lipsi în noua clasă
                 }}
               >
-                <SelectTrigger className="mb-2 h-8 text-sm">
+                <SelectTrigger className="mb-2 h-8 shrink-0 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,7 +301,7 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
             {/* A: chips de filtrare pe domeniu (grup). Doar când NU cauți și există
                 mai multe grupuri. „Toate" = fără filtru. */}
             {!ql && grupuri.length > 1 && (
-              <div className="mb-2 flex gap-1 overflow-x-auto pb-1">
+              <div className="mb-2 flex shrink-0 gap-1 overflow-x-auto pb-1">
                 <button
                   type="button"
                   onClick={() => setDomeniu(null)}
@@ -226,8 +332,8 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                 ))}
               </div>
             )}
-            <ScrollArea className="h-64">
-              <div className="flex flex-col gap-0.5 pr-2">
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-1 pr-2">
                 {formuleShown.length === 0 && (
                   <p className="px-1 py-4 text-center text-sm text-muted-foreground">
                     Nicio formulă găsită.
@@ -301,9 +407,12 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="simboluri" className="mt-2">
-            <ScrollArea className="h-64">
-              <div className="grid grid-cols-6 gap-1 pr-2">
+          <TabsContent
+            value="simboluri"
+            className="mt-2 min-h-0 flex-1 data-[state=active]:flex data-[state=active]:flex-col"
+          >
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1 pr-2">
                 {symbolsShown.map((s, i) => (
                   <button
                     key={i}
@@ -326,8 +435,11 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="figuri" className="mt-2">
-            <ScrollArea className="h-64">
+          <TabsContent
+            value="figuri"
+            className="mt-2 min-h-0 flex-1 data-[state=active]:flex data-[state=active]:flex-col"
+          >
+            <ScrollArea className="min-h-0 flex-1">
               <div className="pr-2">
                 {figuriShown.length === 0 && (
                   <p className="px-1 py-4 text-center text-sm text-muted-foreground">
@@ -342,7 +454,7 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                       <p className="mb-1 text-[11px] font-medium text-muted-foreground">
                         {g === "Plane" ? "Figuri plane" : "Corpuri geometrice"}
                       </p>
-                      <div className="grid grid-cols-4 gap-1">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(4rem,1fr))] gap-1">
                         {items.map((f) => (
                           <button
                             key={f.key}
@@ -360,12 +472,42 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                 })}
               </div>
             </ScrollArea>
-            <p className="mt-1 px-1 text-[11px] leading-tight text-muted-foreground">
+            <p className="mt-1 shrink-0 px-1 text-[11px] leading-tight text-muted-foreground">
               Un click → figura se pune pe foaie ca imagine (cu notații A, B,
               C). Muchiile ascunse sunt punctate.
             </p>
           </TabsContent>
         </Tabs>
+
+        {/* Cerința 1: grip-uri de redimensionare — margine dreaptă / margine jos /
+            colț jos-dreapta. Prinzi ORICARE cu mouse-ul; dimensiunea se ține minte. */}
+        <div
+          onPointerDown={onGripDown("e")}
+          className="absolute right-0 top-2 bottom-3 w-1.5 cursor-ew-resize rounded-full hover:bg-chalk-yellow/40"
+          title="Trage marginea ca să lățești / îngustezi"
+          aria-hidden
+        />
+        <div
+          onPointerDown={onGripDown("s")}
+          className="absolute bottom-0 left-2 right-3 h-1.5 cursor-ns-resize rounded-full hover:bg-chalk-yellow/40"
+          title="Trage marginea ca să înalți / micșorezi"
+          aria-hidden
+        />
+        <div
+          onPointerDown={onGripDown("se")}
+          className="absolute bottom-0 right-0 flex h-4 w-4 cursor-nwse-resize items-end justify-end text-muted-foreground hover:text-chalk-yellow"
+          title="Trage colțul ca să redimensionezi"
+          aria-hidden
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden>
+            <path
+              d="M11 4 L4 11 M11 8 L8 11"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
       </PopoverContent>
     </Popover>
   );

@@ -32,6 +32,25 @@
 
 ---
 
+## 🆕 SESIUNE 2026-07-28 — EXECUȚIE cerințe noi
+
+### ✅ CERINȚA 1 — chenar „Matematică" REDIMENSIONABIL + responsive (LIVRAT, NEDEPLOYAT)
+
+Formă confirmată de Roland (§17, mock): **grip custom** (margine dreaptă + margine jos + colț jos-dreapta) — NU `resize:both` nativ (care prinde doar colțul) + **Formule auto 1→2→3 coloane** (nu doar grilele).
+
+Implementat în `frontend/src/components/editor/`:
+
+- **`EditorMathMenu.tsx`:** popover-ul e acum `flex flex-col` cu `width/height` din state (init default 380×540, încărcat din localStorage în `useEffect` — fără hydration mismatch, cf. [[finding_hydration_tab_and_deploy_verify_2026_07_26]]). 3 grip-uri absolute (est/sud/colț) cu `onPointerDown`; **drag prin listeneri pe `window`** (`pointermove`/`pointerup`/`pointercancel`) — NU `setPointerCapture` (capcană: `setPointerCapture` arunca pe pointer-ul CDP → dragRef nu se seta; window-listeners e robust și nu depinde de capture). Clamp `[320..760]×[380..min(900,vh-80)]`. Persistă în `localStorage["editor_math_menu_size_v1"]` la pointerup. Grilele: Simboluri/Figuri/Formule → `grid-cols-[repeat(auto-fill,minmax(...,1fr))]` (Formule minmax 230px → 1/2/3 coloane; Simboluri 2.5rem; Figuri 4rem). ScrollArea/TabsContent → `flex-1 min-h-0` (înălțimea se distribuie la resize); TabsContent activ = `data-[state=active]:flex` (ca `[hidden]` să câștige pe cele inactive).
+- **`EditorMathBuilder.tsx`:** grila „Construcții gata" `grid-cols-4` → `grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))]`.
+
+**Verificat LIVE (localhost:3311, Chrome MCP):** resize colț 380×540→580×604 + grip est →clamp 320; popover NU se închide la drag (grip inside + pointermove/up pe window; Radix se închide doar la pointer-DOWN outside); persistă la Escape+reopen (580×604); reflow: Construiește 4→8, Formule 1→2, Simboluri 6→11, Figuri 8/7 col; KaTeX se re-fit-ează (AutoFitKatex are ResizeObserver). **Non-regresie: tsc 0 · jest 28 · next build 11 rute · consolă curată.** NEDEPLOYAT (Roland confirmă; bump v15→v16 la deploy).
+
+### ⏳ CERINȚA 2 — audit vs manuale oficiale (ÎN CURS)
+
+Inventar (13 PDF-uri, `99_Roland_Work/Carti_descarcate_EDU/`, GITIGNORED verificat): V=A1254(Booklet)/A1259(Litera)/A1260(Art Klett); VI=A1497(Booklet)/A1498(Litera); VII=A1739(Booklet)/A1740(Art Klett)/A1742(Litera); VIII=A1983(Booklet); XI=A178(SIGMA M1)/A196(Carminis); XII=A197(Carminis M1)/A264(SIGMA M1). **Clase acoperite: V,VI,VII,VIII,XI,XII. FĂRĂ manual: IX,X** (rămâne programa). ⚠️ XI–XII = manuale 2006–2007 → dovadă de PREZENȚĂ, nu de absență. Unelte: `scratchpad/{pdf_inventory,extract_toc,locate_cuprins}.py` + `toc_*.txt`.
+
+---
+
 ## ⚡ PROMPT DE RELUARE (lipește-l ca PRIMUL mesaj în sesiunea nouă)
 
 ```
