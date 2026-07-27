@@ -20,10 +20,23 @@ const MATH = path.join(
   "math-data.json",
 );
 
-function applyLot({ CLASA, LATEX_FIX = {}, EXPL = {}, NEW = [] }) {
+function applyLot({ CLASA, LATEX_FIX = {}, EXPL = {}, NEW = [], REMOVE = [] }) {
   const d = JSON.parse(fs.readFileSync(MATH, "utf-8"));
-  const arr = d.formule[CLASA];
+  let arr = d.formule[CLASA];
   if (!arr) throw new Error(`Clasa ${CLASA} inexistentă`);
+
+  // REMOVE: elimină intrări (după nume) — ex. formule mutate la altă clasă (plan §2).
+  if (REMOVE.length) {
+    const before = arr.length;
+    const rmSet = new Set(REMOVE);
+    for (const r of REMOVE) {
+      if (!arr.some((x) => x.nume === r))
+        console.log(`  ⚠ REMOVE nu a găsit: ${JSON.stringify(r)}`);
+    }
+    arr = arr.filter((x) => !rmSet.has(x.nume));
+    d.formule[CLASA] = arr;
+    console.log(`  removed=${before - arr.length}`);
+  }
 
   const html = (l) =>
     katex.renderToString(l, {
