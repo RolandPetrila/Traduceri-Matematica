@@ -24,6 +24,7 @@ import {
 import { trackEditor } from "./editor-telemetry";
 import { EditorMathBuilder } from "./EditorMathBuilder";
 import { AutoFitKatex } from "./AutoFitKatex";
+import { FIGURES, figureDataUri } from "./editor-figures";
 import katex from "katex";
 
 /** `latex` = randare academică KaTeX (M4); `html` = fallback vechi (sup/sub inline);
@@ -106,10 +107,25 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
         : (FORMULE[clasa] || []).filter((f) => !domeniu || f.grup === domeniu),
     [ql, clasa, domeniu],
   );
+  // B: figuri geometrice (filtrate după titlu la căutare).
+  const figuriShown = useMemo(
+    () =>
+      ql ? FIGURES.filter((f) => f.title.toLowerCase().includes(ql)) : FIGURES,
+    [ql],
+  );
 
   if (!editor) return null;
   const insert = (content: string) =>
     editor.chain().focus().insertContent(content).run();
+  // B: inserează figura ca imagine (data-URI SVG) prin extensia Image.
+  const insertFigure = (f: (typeof FIGURES)[number]) => {
+    editor
+      .chain()
+      .focus()
+      .setImage({ src: figureDataUri(f.svg), alt: f.title, title: f.title })
+      .run();
+    trackEditor("math_insert", { kind: "figure", figure: f.key });
+  };
 
   return (
     <Popover>
@@ -123,7 +139,7 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
           <Sigma className="h-4 w-4" /> Matematică
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[340px] p-2" align="start">
+      <PopoverContent className="w-[380px] p-2" align="start">
         <div className="relative mb-2">
           <Search className="absolute left-2 top-2.5 h-4 w-4 opacity-60" />
           <Input
@@ -134,10 +150,19 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
           />
         </div>
         <Tabs defaultValue="construieste">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="construieste">Construiește</TabsTrigger>
-            <TabsTrigger value="formule">Formule</TabsTrigger>
-            <TabsTrigger value="simboluri">Simboluri</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="construieste" className="px-1 text-xs">
+              Construiește
+            </TabsTrigger>
+            <TabsTrigger value="formule" className="px-1 text-xs">
+              Formule
+            </TabsTrigger>
+            <TabsTrigger value="simboluri" className="px-1 text-xs">
+              Simboluri
+            </TabsTrigger>
+            <TabsTrigger value="figuri" className="px-1 text-xs">
+              Figuri
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="construieste" className="mt-2">
@@ -299,6 +324,46 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                 ))}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="figuri" className="mt-2">
+            <ScrollArea className="h-64">
+              <div className="pr-2">
+                {figuriShown.length === 0 && (
+                  <p className="px-1 py-4 text-center text-sm text-muted-foreground">
+                    Nicio figură găsită.
+                  </p>
+                )}
+                {(["Plane", "Corpuri"] as const).map((g) => {
+                  const items = figuriShown.filter((f) => f.grup === g);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={g} className="mb-2">
+                      <p className="mb-1 text-[11px] font-medium text-muted-foreground">
+                        {g === "Plane" ? "Figuri plane" : "Corpuri geometrice"}
+                      </p>
+                      <div className="grid grid-cols-4 gap-1">
+                        {items.map((f) => (
+                          <button
+                            key={f.key}
+                            type="button"
+                            title={f.title}
+                            aria-label={f.title}
+                            onClick={() => insertFigure(f)}
+                            className="flex h-16 items-center justify-center overflow-hidden rounded border border-border bg-white p-1 hover:ring-2 hover:ring-chalk-yellow [&>svg]:h-full [&>svg]:w-full"
+                            dangerouslySetInnerHTML={{ __html: f.svg }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+            <p className="mt-1 px-1 text-[11px] leading-tight text-muted-foreground">
+              Un click → figura se pune pe foaie ca imagine (cu notații A, B,
+              C). Muchiile ascunse sunt punctate.
+            </p>
           </TabsContent>
         </Tabs>
       </PopoverContent>
