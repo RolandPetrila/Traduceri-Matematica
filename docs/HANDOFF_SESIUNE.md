@@ -17,13 +17,13 @@ Apoi citește INTEGRAL, în ordine, ÎNAINTE de a acționa:
 3. scratchpad/README_autorare_math.md — pattern-ul repetabil per clasă + capcanele R3.
 4. git log --oneline -15 (jurnalul; ultimul lot = „feat(#4 clasa V)").
 
-CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V…XI (bibliotecă 213→270). Datele: frontend/src/components/editor/math-data.json (270 formule + 103 simboluri).
+CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V…XII COMPLETE (bibliotecă 213→276, TOATE cu explicație). Datele: frontend/src/components/editor/math-data.json (276 formule + 103 simboluri).
 
 DECIZII CONFIRMATE (Roland, nu le re-întreba): toate profilurile · implementare exhaustivă · ~65–95 formule noi + explicație la TOATE · ordine V→XII lot cu lot · interactiv A+C+B (B = figuri geometrice SVG, fază separată).
 
 EXECUTĂ CONTINUAREA #4, în ordine:
-1. AUTORARE V→XII — clasele V…XI sunt gata; continuă cu XII (ULTIMA), UN LOT PE CLASĂ, folosind pattern-ul din README_autorare_math.md + engine `scratchpad/lot_engine.js` (model de date: `clasa_11.js` → copie în `clasa_12.js`): (a) dump intrările existente ale clasei (`node scratchpad/eyeball.js 7` — vezi ce proză amestecată a mai rămas + nu dubla); (b) script Node per clasă cu LATEX_FIX (curăță proza/formulele sudate; proza RO cu diacritice → în `explicatie`, NU în `\text{}`) + EXPL (explicație la FIECARE intrare existentă) + NEW (formulele noi din golurile ➕ ale clasei din plan §2), html regenerat din latex cu katex; (c) `node scratchpad/gate_check.js` → GATE: PASS **+ `node scratchpad/eyeball.js <N>` citit manual** (gate NU prinde proza fără explicatie); (d) commit `feat(#4 clasa <N>): …` + actualizează docs/HANDOFF_SESIUNE.md (progres + clasa următoare) + push.
-2. Apoi INTERACTIV A + C (filtrare pe domeniu în meniu + constructor extins: matrice n×n, sistem n ecuații, ∑/∫ cu limite editabile). Respectă §17 (clarifică FORMA cu mock înainte de cod).
+1. ✅ AUTORARE V→XII — COMPLETĂ (8 loturi, bibliotecă 213→276, toate cu explicație). Vezi tabelul din secțiunea „AUTORARE V→XII COMPLETĂ". NU relua.
+2. ▶️ URMĂTORUL: INTERACTIV A + C — **A** filtrare pe domeniu în meniul Matematică (nu doar clasă); **C** constructor extins (matrice n×n, sistem n ecuații, ∑/∫ cu limite editabile). Respectă §17 (clarifică FORMA cu mock înainte de cod). Non-regresie: `npx tsc --noEmit` (0) · `npm test` (jest 28) · `npx next build` · probă 390px+desktop.
 3. Apoi B (figuri geometrice SVG inserabile — feature mare, NodeView; §17 mock întâi).
 
 REGULI OBLIGATORII:
@@ -32,7 +32,7 @@ REGULI OBLIGATORII:
 - R-HANDOFF: ține HANDOFF + plan + memoria la zi + commit/push după FIECARE clasă. Deploy prod DOAR cu confirmarea mea (grupat, după mai multe clase; bump CACHE_VERSION v12→v13 la deploy).
 - Non-regresie pt cod (interactiv A/C/B): tsc 0 · npm test (jest, 28) · npx next build · probă 390px+desktop.
 
-Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce clasă/lot pornești, apoi execută Clasa XII. NU relua ce e deja gata (V…XI + #1/#2/#3).
+Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce pornești (interactiv A+C), apoi respectă §17 (mock înainte de cod). NU relua autorarea (V…XII gata) sau #1/#2/#3.
 ```
 
 ---
@@ -101,7 +101,29 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 
 **PROGRES: Clasa XI ✅ (lot 7, commit `feat(#4 clasa XI)`)** — 29→32 (**−5 combinatorică mutată la X** conform plan §2 + **8 noi**: teoremele **Rolle/Lagrange/l'Hôpital**, limita fundamentală tg x/x, transpusa, det(AB)=detA·detB, inversa 2×2, (aˣ)'=aˣln a). Explicații la toate cele 32. Curățat **22 latex** (cel mai mare lot): `′`/`″` raw→`f'`/`f''` (ASCII prime — **avertismentul `″` rezolvat**); reguli derivare `\cdot`→`\begin{aligned}`; determinant→`\begin{vmatrix}`, inversa→`\begin{pmatrix}`; monotonia/Fermat/concavitate proză→simbolic; **2 ERORI MATEMATICE reparate**: `\ln\frac{1+x}{x}`→`\frac{\ln(1+x)}{x}` (limita e) și `m = \lim f\frac{x}{x}`→`\lim\frac{f(x)}{x}` (asimptota oblică). **Bibliotecă 267→270** (+8−5). Gate PASS (270/270, fără avertisment `″`) + eyeball 32/32. **NEDEPLOYAT.** Engine: `applyLot` acceptă acum `REMOVE`.
 
-**DE FĂCUT la lotul lui:** **Clasa XII** — primitive/integrare cu `F′`, `u′`, `v′`, `g′` raw → `'`; proză eventuală → explicatie.
+**PROGRES: Clasa XII ✅ (lot 8 — ULTIMA, commit `feat(#4 clasa XII)`)** — 25→31 (+6 noi: lungimea graficului, media unei funcții pe interval, morfism de grupuri, relațiile Viète grad 3, congruențe (aritmetică modulară), abaterea standard). Explicații la toate cele 31. Curățat **19 latex**: `\int [a,b]` literal→`\int_{a}^{b}` (Leibniz-Newton, arii, volum); `′` raw→`'`; probabilitate condiționată/Laplace malformate; Bézout/inel proză→simbolic (`P(x)\vdots(x-a)` convenția RO, `(A,+,\times)`); `grad`→`\operatorname{grad}`. **Bibliotecă 270→276.** Gate PASS + eyeball 31/31.
+
+## ✅✅ AUTORARE V→XII COMPLETĂ (2026-07-27) — bibliotecă 213→276, TOATE cu explicație
+
+**8 loturi (V…XII), toate committed+pushed, NEDEPLOYATE** (deploy grupat cu confirmarea Roland). Rezumat:
+
+| Lot | Clasă | Δ intrări | Noi                                     | Fix latex         | Commit      |
+| --- | ----- | --------- | --------------------------------------- | ----------------- | ----------- |
+| 1   | V     | 29→40     | +11                                     | proză             | `56afebd`   |
+| 2   | VI    | 27→36     | +9                                      | 14 (fix `%`)      | `c568c99`   |
+| 3   | VII   | 24→32     | +8 (Thales/asemănare)                   | 5                 | `114eb65`   |
+| 4   | VIII  | 27→35     | +8 (tabel trig)                         | 15                | `cf142ff`   |
+| 5   | IX    | 25→33     | +8 (logică)                             | 16                | `45a37e8`   |
+| 6   | X     | 27→37     | +10 (combinatorică)                     | 19 (`log`→`\log`) | `c8ca4bc`   |
+| 7   | XI    | 29→32     | +8 (Rolle/Lagrange/l'Hôpital), −5 comb. | 22 (2 erori mat.) | `b495287`   |
+| 8   | XII   | 25→31     | +6                                      | 19                | (acest lot) |
+
+- **Bibliotecă: 213 → 276 formule.** `cu_explicatie = 276/276` (obiectivul #3-extins + #4 atins: TOATE au explicație).
+- **Grupuri noi:** Unități de măsură, Organizarea datelor (V); Ecuații (VI); Asemănare, Triunghi echilateral (VII); Logică (IX); Combinatorică, Matematici financiare (X).
+- **Capcane R3 dovedite:** diacritice RO nu randează curat în `\text{}` (→ explicatie); `%`=comentariu KaTeX (→`\%`); `\surd`/`\Sigma`/`log` fără `\` randează greșit; `\overparen` nesuportat (→`\overset{\frown}{}`); `′`/`″` raw→`'`/`''`; convenția RO divizibilitate `\vdots`.
+- **Unelte persistente:** `scratchpad/lot_engine.js` (`applyLot`), `clasa_5..12.js`, `eyeball.js <clasa>`, `gate_check.js`.
+- **RĂMAS #4:** interactiv **A** (filtrare domeniu) + **C** (constructor extins) → apoi **B** (figuri SVG). Apoi DEPLOY grupat (bump `CACHE_VERSION` v12→v13).
+- **De verificat de Cristina (R3, expert final):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
 
 **Refactor unelte:** engine-ul de autorare e acum în `scratchpad/lot_engine.js` (`applyLot({CLASA,LATEX_FIX,EXPL,NEW})`); fiecare `clasa_<N>.js` doar furnizează datele. Model: `clasa_8.js`.
 
