@@ -17,13 +17,13 @@ Apoi citește INTEGRAL, în ordine, ÎNAINTE de a acționa:
 3. scratchpad/README_autorare_math.md — pattern-ul repetabil per clasă + capcanele R3.
 4. git log --oneline -15 (jurnalul; ultimul lot = „feat(#4 clasa V)").
 
-CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V…XII COMPLETE (bibliotecă 213→276, TOATE cu explicație). Datele: frontend/src/components/editor/math-data.json (276 formule + 103 simboluri).
+CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. #4 Clasele V…XII COMPLETE + DEPLOYAT LIVE (bibliotecă 213→276, TOATE cu explicație; cache v13 pe traduceri-frontend). Datele: frontend/src/components/editor/math-data.json (276 formule + 103 simboluri).
 
 DECIZII CONFIRMATE (Roland, nu le re-întreba): toate profilurile · implementare exhaustivă · ~65–95 formule noi + explicație la TOATE · ordine V→XII lot cu lot · interactiv A+C+B (B = figuri geometrice SVG, fază separată).
 
 EXECUTĂ CONTINUAREA #4, în ordine:
 1. ✅ AUTORARE V→XII — COMPLETĂ (8 loturi, bibliotecă 213→276, toate cu explicație). Vezi tabelul din secțiunea „AUTORARE V→XII COMPLETĂ". NU relua.
-2. ▶️ URMĂTORUL: INTERACTIV A + C — **A** filtrare pe domeniu în meniul Matematică (nu doar clasă); **C** constructor extins (matrice n×n, sistem n ecuații, ∑/∫ cu limite editabile). Respectă §17 (clarifică FORMA cu mock înainte de cod). Non-regresie: `npx tsc --noEmit` (0) · `npm test` (jest 28) · `npx next build` · probă 390px+desktop.
+2. ▶️ URMĂTORUL: INTERACTIV A + C (FORME CONFIRMATE §17): **A** = rând de chips de domeniu deasupra listei „Formule" (`EditorMathMenu.tsx`, filtrează lista plată pe `f.grup`, păstrează chevron-ul); **C** = segmente pe 2 rânduri în `EditorMathBuilder.tsx` (adaugă Kind: `matrix` n×n, `system` n ecuații, `sum`/`integral` cu limite editabile → `\begin{pmatrix}`/`\begin{cases}`/`\sum_{}^{}`/`\int_{}^{}`). Non-regresie: `npx tsc --noEmit` (0) · `npm test` (jest 28) · `npx next build` · probă 390px+desktop. Deploy A/C/B separat (v13→v14).
 3. Apoi B (figuri geometrice SVG inserabile — feature mare, NodeView; §17 mock întâi).
 
 REGULI OBLIGATORII:
@@ -103,9 +103,9 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 
 **PROGRES: Clasa XII ✅ (lot 8 — ULTIMA, commit `feat(#4 clasa XII)`)** — 25→31 (+6 noi: lungimea graficului, media unei funcții pe interval, morfism de grupuri, relațiile Viète grad 3, congruențe (aritmetică modulară), abaterea standard). Explicații la toate cele 31. Curățat **19 latex**: `\int [a,b]` literal→`\int_{a}^{b}` (Leibniz-Newton, arii, volum); `′` raw→`'`; probabilitate condiționată/Laplace malformate; Bézout/inel proză→simbolic (`P(x)\vdots(x-a)` convenția RO, `(A,+,\times)`); `grad`→`\operatorname{grad}`. **Bibliotecă 270→276.** Gate PASS + eyeball 31/31.
 
-## ✅✅ AUTORARE V→XII COMPLETĂ (2026-07-27) — bibliotecă 213→276, TOATE cu explicație
+## ✅✅ AUTORARE V→XII COMPLETĂ + DEPLOYAT LIVE (2026-07-27) — bibliotecă 213→276, TOATE cu explicație
 
-**8 loturi (V…XII), toate committed+pushed, NEDEPLOYATE** (deploy grupat cu confirmarea Roland). Rezumat:
+**8 loturi (V…XII), committed+pushed, ✅ DEPLOYAT prod 2026-07-27** (`dpl_9RqRLBqj3ovWL5CpZ48jMgR2kvro`, READY, `CACHE_VERSION v12→v13` = `v13-20260727b`; verificat: aliasul `traduceri-frontend.vercel.app/sw.js` servește v13). Roland a confirmat deploy „Acum". Rezumat:
 
 | Lot | Clasă | Δ intrări | Noi                                     | Fix latex         | Commit      |
 | --- | ----- | --------- | --------------------------------------- | ----------------- | ----------- |
@@ -122,7 +122,7 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 - **Grupuri noi:** Unități de măsură, Organizarea datelor (V); Ecuații (VI); Asemănare, Triunghi echilateral (VII); Logică (IX); Combinatorică, Matematici financiare (X).
 - **Capcane R3 dovedite:** diacritice RO nu randează curat în `\text{}` (→ explicatie); `%`=comentariu KaTeX (→`\%`); `\surd`/`\Sigma`/`log` fără `\` randează greșit; `\overparen` nesuportat (→`\overset{\frown}{}`); `′`/`″` raw→`'`/`''`; convenția RO divizibilitate `\vdots`.
 - **Unelte persistente:** `scratchpad/lot_engine.js` (`applyLot`), `clasa_5..12.js`, `eyeball.js <clasa>`, `gate_check.js`.
-- **RĂMAS #4:** interactiv **A** (filtrare domeniu) + **C** (constructor extins) → apoi **B** (figuri SVG). Apoi DEPLOY grupat (bump `CACHE_VERSION` v12→v13).
+- **RĂMAS #4:** interactiv **A** (filtrare domeniu) + **C** (constructor extins) → apoi **B** (figuri SVG). **FORME CONFIRMATE de Roland (§17, 2026-07-27):** A = **rând de chips** de domeniu deasupra listei (filtrează lista plată; păstrează chevron-ul); C = **segmente pe 2 rânduri** (Fracție/Limită/Radical + Matrice/Sistem/Sumă/Integrală, toate vizibile, un click). Deploy A/C/B = separat ulterior (v13→v14, cu confirmarea Roland).
 - **De verificat de Cristina (R3, expert final):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
 - **Duplicate INTENȚIONATE (revizitări per clasă — NU le „repara"):** Thales (VII+VIII), panta dreptei (VIII/IX/X), `sin²+cos²=1` (VIII+X), probabilitate (V/VIII/XII), arii pătrat/dreptunghi/triunghi (V+VI). Corecte — aceeași formulă revizitată la clase diferite.
 - **Baseline non-regresie post-autorare (2026-07-27):** `tsc 0 · npx next build OK (11 rute) · jest 28/28`; `math-data.json` = un singur consumator (`EditorMathMenu.tsx`, grupare dinamică pe `f.grup`, fără whitelist). Bază curată pt interactiv A/C/B.
