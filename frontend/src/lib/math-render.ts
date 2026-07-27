@@ -153,3 +153,62 @@ export async function renderMathToImages(bodyHtml: string): Promise<string> {
   }
   return host.innerHTML;
 }
+
+/** true dacă bodyHtml conține figuri SVG inserate (B: `<img src="data:image/svg+xml…">`). */
+export function hasSvgFigures(bodyHtml: string): boolean {
+  return /<img[^>]+src="data:image\/svg\+xml/.test(bodyHtml);
+}
+
+/** Încarcă un data-URI SVG într-un <img> și îl rasterizează pe canvas → PNG (fundal alb). */
+async function svgDataUriToPng(
+  svgDataUri: string,
+  scale = 3,
+): Promise<{ url: string; w: number; h: number } | null> {
+  const img = await new Promise<HTMLImageElement | null>((resolve) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => resolve(null);
+    im.src = svgDataUri;
+  });
+  if (!img) return null;
+  const w = Math.max(1, img.naturalWidth || 120);
+  const h = Math.max(1, img.naturalHeight || 112);
+  const canvas = document.createElement("canvas");
+  canvas.width = w * scale;
+  canvas.height = h * scale;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#ffffff"; // Word: fundal alb (SVG e transparent) ca pe foaie
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(scale, scale);
+  try {
+    ctx.drawImage(img, 0, 0, w, h);
+    return { url: canvas.toDataURL("image/png"), w, h };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Word (.docx): rasterizează figurile SVG (B) → PNG. turbodocx/Word NU embed-uiesc
+ * SVG data-URI (suport SVG limitat) → altfel figura ar apărea goală în Word. PDF/HTML
+ * le lasă SVG (browserul le randează). Async — o conversie per figură.
+ */
+export async function renderFiguresToPng(bodyHtml: string): Promise<string> {
+  if (typeof document === "undefined" || !hasSvgFigures(bodyHtml))
+    return bodyHtml;
+  const host = document.createElement("div");
+  host.innerHTML = bodyHtml;
+  const imgs = Array.from(
+    host.querySelectorAll('img[src^="data:image/svg+xml"]'),
+  ) as HTMLImageElement[];
+  for (const node of imgs) {
+    const png = await svgDataUriToPng(node.getAttribute("src") || "");
+    if (!png) continue;
+    node.setAttribute("src", png.url);
+    if (!node.getAttribute("width")) node.setAttribute("width", String(png.w));
+    if (!node.getAttribute("height"))
+      node.setAttribute("height", String(png.h));
+  }
+  return host.innerHTML;
+}

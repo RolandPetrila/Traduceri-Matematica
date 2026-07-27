@@ -2,6 +2,21 @@
 
 > Ultima actualizare: 2026-07-27. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
+## ✅✅ STARE #4 — COMPLET (2026-07-27)
+
+**Autorare V→XII (213→276 formule, toate cu explicație) + interactiv A (chips domeniu) + C (constructor Matrice/Sistem/Σ/∫) + B (paletă 16 figuri SVG).**
+
+- **LIVE pe `traduceri-frontend.vercel.app` (cache v14):** autorarea + A + C.
+- **Committed, NEDEPLOYAT:** B (figuri) + fix export Word figuri (rasterizare PNG). Deploy B = v14→v15, cu confirmarea Roland.
+
+### 🔵 RĂMAS DESCHIS (pt sesiunea următoare — consolidat)
+
+1. **Deploy B** (v14→v15) — figuri + fix export Word. Cu confirmarea Roland.
+2. **Eyeball Roland (manual, nu se automatizează):** PDF/.docx real cu o figură + o formulă (mecanica dovedită, perceptualul nu); redimensionarea figurii (acum fixă 120px).
+3. **Verificare de domeniu (Cristina):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
+4. **Paritate mobilă:** meniul Matematică (formule + A/B/C interactiv) e **desktop-only**; pe mobil (Sheet) nu există math. Decizie separată dacă se adaugă.
+5. **Opțional:** figuri EDITABILE pe foaie (NodeView parametric — amânat conștient la B); redimensionare figuri (handles Image).
+
 ---
 
 ## ⚡ PROMPT DE RELUARE (lipește-l ca PRIMUL mesaj în sesiunea nouă)
@@ -124,7 +139,8 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 - **Unelte persistente:** `scratchpad/lot_engine.js` (`applyLot`), `clasa_5..12.js`, `eyeball.js <clasa>`, `gate_check.js`.
 - **INTERACTIV A + C ✅ (commit `ced8cf8`, ✅ DEPLOYAT LIVE v13→v14 `v14-20260727c`, verificat pe alias):** A = rând de chips de domeniu (Toate + grupurile clasei) → filtrează lista plată pe `f.grup`, reset la schimbarea clasei, chevron intact (`EditorMathMenu.tsx`). C = constructor pe 2 rânduri (`EditorMathBuilder.tsx`): Kind-uri noi `matrix` (n×n≤5, grilă → `\begin{pmatrix}`), `system` (n≤6 → `\begin{cases}`), `sum` (limite editabile → `\sum_{}^{}`), `integral` (limite + `\,dx` → `\int_{}^{}`); celule goale = `\square`; draft persistat. **Verificat LIVE** (localhost:3300): A filtrează 40→8 Geometrie; Matrice randează pmatrix (4 celule 2×2); Σ cu limite k=1→n; insert end-to-end → nod `data-latex` pe foaie. Non-regresie: tsc 0 · jest 28 · next build 11 rute.
 - **INTERACTIV B ✅ (figuri geometrice SVG — commit pending, NEDEPLOYAT).** Formă confirmată de Roland (§17): **paletă SVG-ca-imagine** (NU NodeView parametric — amânat). `editor-figures.ts` = 16 figuri hand-drawn (9 plane: triunghi oarecare/dreptunghic/echilateral, pătrat, dreptunghi, paralelogram, romb, trapez, cerc; 7 corpuri: cub, paralelipiped, cilindru, con, sferă, piramidă, prismă) cu notații A/B/C(/D), muchii ascunse punctate. Tab nou „Figuri" în `EditorMathMenu` (popover lărgit 340→380px, 4 taburi), un click → `setImage({src: data-URI SVG base64})` (extensia Image, `allowBase64`). **Verificat LIVE**: toate 16 randează corect în paletă; click Cub → `<img>` cu `data:image/svg+xml;base64` + alt pe foaie. tsc 0 · jest 28 · build OK.
-  - **Caveat de eyeball Roland:** (a) figura se inserează la 120px, **NU e redimensionabilă** pe foaie (Image nu e configurat resizable) — de decis dacă adăugăm handles; (b) **export Word** (.docx): SVG-ca-imagine s-ar putea să nu se randeze în Word (suport SVG limitat) — de verificat; PDF/HTML afișează img inline corect. (c) figurile NU sunt editabile (etichete/dimensiuni) — asta ar fi NodeView-ul parametric amânat.
+  - **Export Word REZOLVAT** (nu mai e caveat): `renderFiguresToPng` (în `lib/math-render.ts`, apelat în `exportDocx`) rasterizează figurile SVG → PNG înainte de turbodocx (Word nu embed-uiește SVG). Mecanism = identic cu math-to-PNG (Image→canvas→`toDataURL`, ne-tainted — dovedit live: PNG 15KB, tainted=false). PDF/HTML lasă SVG (browserul randează). tsc 0 · jest 28 · build OK.
+  - **Caveat rămas (eyeball Roland):** (a) figura se inserează la 120px, **NU e redimensionabilă** pe foaie (Image nu-i configurat resizable) — de decis dacă adăugăm handles; (b) figurile NU sunt editabile (etichete/dimensiuni) = NodeView-ul parametric amânat; (c) eyeball vizual PDF/.docx real cu o figură (mecanica e dovedită, perceptualul rămâne la ochiul tău).
 - **✅ #4 COMPLET (autorare V→XII + interactiv A+C+B).** RĂMAS: deploy grupat interactiv (A+C deja LIVE v14; B de deployat la v15 cu confirmarea Roland). Notă: meniul Matematică e desktop-only — A/C/B apar doar pe desktop; paritatea mobilă = decizie separată.
 - **De verificat de Cristina (R3, expert final):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
 - **Duplicate INTENȚIONATE (revizitări per clasă — NU le „repara"):** Thales (VII+VIII), panta dreptei (VIII/IX/X), `sin²+cos²=1` (VIII+X), probabilitate (V/VIII/XII), arii pătrat/dreptunghi/triunghi (V+VI). Corecte — aceeași formulă revizitată la clase diferite.

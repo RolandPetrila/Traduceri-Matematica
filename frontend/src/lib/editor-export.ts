@@ -10,7 +10,11 @@
 
 import { ZEBRA_COLOR } from "@/components/editor/table-extensions";
 import { KATEX_INLINE_CSS } from "./katex-inline-css";
-import { renderMathToKatexHtml, renderMathToImages } from "./math-render";
+import {
+  renderMathToKatexHtml,
+  renderMathToImages,
+  renderFiguresToPng,
+} from "./math-render";
 
 /**
  * Dungile de tabel sunt un selector CSS (`nth-child`) — nu supraviețuiesc
@@ -249,7 +253,9 @@ export async function exportDocx(
   // `<div class="page-break">` (clasă EXACTĂ) devine `<w:br w:type="page"/>`.
   // Math: turbodocx NU știe KaTeX → re-randăm nodurile `data-latex` ca IMAGINE PNG.
   const mathAsImages = await renderMathToImages(inlineZebra(bodyHtml));
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${mathAsImages}</body></html>`;
+  // Figuri (B): turbodocx/Word NU embed-uiesc SVG → rasterizăm figurile SVG ca PNG.
+  const withFigures = await renderFiguresToPng(mathAsImages);
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${withFigures}</body></html>`;
 
   const result = await HTMLtoDOCX(html, null, {
     orientation: "portrait",
