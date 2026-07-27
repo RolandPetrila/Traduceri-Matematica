@@ -17,12 +17,12 @@ Apoi citește INTEGRAL, în ordine, ÎNAINTE de a acționa:
 3. scratchpad/README_autorare_math.md — pattern-ul repetabil per clasă + capcanele R3.
 4. git log --oneline -15 (jurnalul; ultimul lot = „feat(#4 clasa V)").
 
-CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V…IX (bibliotecă 213→257). Datele: frontend/src/components/editor/math-data.json (257 formule + 103 simboluri).
+CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. Commis dar NEDEPLOYAT: #4 Clasele V…X (bibliotecă 213→267). Datele: frontend/src/components/editor/math-data.json (267 formule + 103 simboluri).
 
 DECIZII CONFIRMATE (Roland, nu le re-întreba): toate profilurile · implementare exhaustivă · ~65–95 formule noi + explicație la TOATE · ordine V→XII lot cu lot · interactiv A+C+B (B = figuri geometrice SVG, fază separată).
 
 EXECUTĂ CONTINUAREA #4, în ordine:
-1. AUTORARE V→XII — clasele V…IX sunt gata; continuă cu X, apoi XI, XII, UN LOT PE CLASĂ, folosind pattern-ul din README_autorare_math.md + engine `scratchpad/lot_engine.js` (model de date: `clasa_9.js` → copie în `clasa_10.js`): (a) dump intrările existente ale clasei (`node scratchpad/eyeball.js 7` — vezi ce proză amestecată a mai rămas + nu dubla); (b) script Node per clasă cu LATEX_FIX (curăță proza/formulele sudate; proza RO cu diacritice → în `explicatie`, NU în `\text{}`) + EXPL (explicație la FIECARE intrare existentă) + NEW (formulele noi din golurile ➕ ale clasei din plan §2), html regenerat din latex cu katex; (c) `node scratchpad/gate_check.js` → GATE: PASS **+ `node scratchpad/eyeball.js <N>` citit manual** (gate NU prinde proza fără explicatie); (d) commit `feat(#4 clasa <N>): …` + actualizează docs/HANDOFF_SESIUNE.md (progres + clasa următoare) + push.
+1. AUTORARE V→XII — clasele V…X sunt gata; continuă cu XI, apoi XII, UN LOT PE CLASĂ, folosind pattern-ul din README_autorare_math.md + engine `scratchpad/lot_engine.js` (model de date: `clasa_10.js` → copie în `clasa_11.js`): (a) dump intrările existente ale clasei (`node scratchpad/eyeball.js 7` — vezi ce proză amestecată a mai rămas + nu dubla); (b) script Node per clasă cu LATEX_FIX (curăță proza/formulele sudate; proza RO cu diacritice → în `explicatie`, NU în `\text{}`) + EXPL (explicație la FIECARE intrare existentă) + NEW (formulele noi din golurile ➕ ale clasei din plan §2), html regenerat din latex cu katex; (c) `node scratchpad/gate_check.js` → GATE: PASS **+ `node scratchpad/eyeball.js <N>` citit manual** (gate NU prinde proza fără explicatie); (d) commit `feat(#4 clasa <N>): …` + actualizează docs/HANDOFF_SESIUNE.md (progres + clasa următoare) + push.
 2. Apoi INTERACTIV A + C (filtrare pe domeniu în meniu + constructor extins: matrice n×n, sistem n ecuații, ∑/∫ cu limite editabile). Respectă §17 (clarifică FORMA cu mock înainte de cod).
 3. Apoi B (figuri geometrice SVG inserabile — feature mare, NodeView; §17 mock întâi).
 
@@ -32,7 +32,7 @@ REGULI OBLIGATORII:
 - R-HANDOFF: ține HANDOFF + plan + memoria la zi + commit/push după FIECARE clasă. Deploy prod DOAR cu confirmarea mea (grupat, după mai multe clase; bump CACHE_VERSION v12→v13 la deploy).
 - Non-regresie pt cod (interactiv A/C/B): tsc 0 · npm test (jest, 28) · npx next build · probă 390px+desktop.
 
-Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce clasă/lot pornești, apoi execută Clasa X. NU relua ce e deja gata (V…IX + #1/#2/#3).
+Începe confirmând în 3–4 rânduri ce ai înțeles + cu ce clasă/lot pornești, apoi execută Clasa XI. NU relua ce e deja gata (V…X + #1/#2/#3).
 ```
 
 ---
@@ -97,7 +97,9 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 
 **PROGRES: Clasa IX ✅ (lot 5, commit `feat(#4 clasa IX)`)** — 25→33 (+8 noi: logică — negarea cuantificatorilor + De Morgan; geom. analitică — ecuația dreptei (pantă-punct), paralelism/perpendicularitate, distanța punct-dreaptă; produsul scalar; formula lui Heron). Grup nou: „Logică". Explicații la toate cele 33. Curățat **16 latex**: `\surd`→`\sqrt` (formula rădăcinilor, distanța), **teorema sinusurilor MALFORMATĂ** (`\frac{a}{\sin } A`) → `\dfrac{a}{\sin A}`; vectori `u⃗`/`v⃗` raw → `\vec{}`; sin/cos/tg rupt → forme cu litere; monotonia proză → `\nearrow`/`\searrow`; inj/surj/bij blob → `\begin{aligned}`. **Bibliotecă 249→257.** Gate PASS (257/257) + eyeball 33/33. **NEDEPLOYAT.**
 
-**DE FĂCUT la loturile lor (scan global raw-unicode):** (a) **Clasa XI** — cel mai mare cleanup: derivate cu `′` (U+2032) și `f″` (U+2033) raw + multă proză sudată („pe I", „crescătoare", „punct de extrem", `\cdot` separatori) → înlocuiește `′`→`'`/`^{\prime}`, `″`→`''`, proza→explicatie (avertismentul `No character metrics for '″'` vine de la „Concavitate/convexitate"). (b) **Clasa XII** — primitive/integrare cu `F′`, `u′`, `v′`, `g′` raw → `'`. (c) **Clasa X** — „Condiția de paralelism" cu `∥` raw → `\parallel`.
+**PROGRES: Clasa X ✅ (lot 6, commit `feat(#4 clasa X)`)** — 27→37 (+10 noi: **combinatorică** completă — permutări/aranjamente/combinări/complementare/binom Newton/sumă=2ⁿ (grup nou „Combinatorică"); compunerea + inversa funcțiilor; modul&argument (formă trig); dobânda compusă (grup nou „Matematici financiare")). Explicații la toate cele 37. Curățat **19 latex**: `log`→`\log` (7 intrări, altfel randa ca variabile italice!); `z̄`→`\bar{z}`; `∥`/`⊥` raw→`\parallel`/`\perp`; `\surd`→`\sqrt` (înjumătățire); `\cdot` separatori→`,\quad` (adunare/dublare); `ℤ`→`\mathbb{Z}`; inecuații proză „dacă"→`\begin{cases}`. **Bibliotecă 257→267.** Gate PASS (267/267) + eyeball 37/37. **NEDEPLOYAT.**
+
+**DE FĂCUT la loturile lor (scan global raw-unicode):** (a) **Clasa XI** — cel mai mare cleanup: derivate cu `′` (U+2032) și `f″` (U+2033) raw + multă proză sudată („pe I", „crescătoare", „punct de extrem", `\cdot` separatori) → înlocuiește `′`→`'`/`^{\prime}`, `″`→`''`, proza→explicatie (avertismentul `No character metrics for '″'` vine de la „Concavitate/convexitate"). (b) **Clasa XII** — primitive/integrare cu `F′`, `u′`, `v′`, `g′` raw → `'`.
 
 **Refactor unelte:** engine-ul de autorare e acum în `scratchpad/lot_engine.js` (`applyLot({CLASA,LATEX_FIX,EXPL,NEW})`); fiecare `clasa_<N>.js` doar furnizează datele. Model: `clasa_8.js`.
 
