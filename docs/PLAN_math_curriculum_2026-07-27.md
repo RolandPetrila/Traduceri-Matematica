@@ -113,7 +113,8 @@ Backlog #3 cere `explicatie` pt TOATE. Roland a ales (2026-07-27) să fie autora
 - **Ordine:** V→XII, lot cu lot, gate + commit după fiecare clasă.
 - **Interactiv:** A + C + B (filtrare pe domeniu + construcții extinse + figuri geometrice SVG — B = fază separată, efort mare).
 - **Grupuri:** grupuri noi distincte unde e firesc (Logică, Combinatorică la X, Teoreme etc.).
-- **PROGRES:** Clasa V ✅ (commit `56afebd`, +11 formule + explicații la toate + curățat proză; bibliotecă 213→224). Următor: VI.
+- **PROGRES:** Clasa V ✅ (commit `56afebd`, +11 formule + explicații la toate + curățat proză; bibliotecă 213→224). Clasa VI ✅ (lot 2, +9 formule + explicații la toate cele 36 + curățat 14 latex, inclusiv fix `%`=comentariu; grupuri noi „Ecuații"/„Organizarea datelor"; bibliotecă 224→233; gate PASS + eyeball 36/36). Următor: **VII**.
+- **Regulă R3 nouă (empiric):** proza RO cu diacritice NU randează curat în `\text{}` KaTeX (`ă â î` descompuse) → toată proza descriptivă merge în `explicatie` (HTML), latex = pur simbolic. `%` în latex = comentariu KaTeX → mereu `\%`.
 
 ### Întrebările inițiale (istoric)
 
