@@ -36,7 +36,7 @@ const CONSTRUCTIONS_RENDERED = MATH_CONSTRUCTIONS.map((c) => {
  * la redeschidere o regăsești (nu mai construiești de la zero).
  */
 
-type Kind = "frac" | "lim" | "root";
+type Kind = "frac" | "lim" | "root" | "matrix" | "system" | "sum" | "integral";
 
 const DRAFT_KEY = "editor_math_builder_draft_v1";
 type Draft = {
@@ -49,7 +49,25 @@ type Draft = {
   lden?: string;
   rorder?: string;
   rrad?: string;
+  // C (2026-07-27): structuri extinse
+  mrows?: string;
+  mcols?: string;
+  mcells?: string[];
+  seqn?: string;
+  seqs?: string[];
+  slo?: string;
+  shi?: string;
+  sbody?: string;
+  ilo?: string;
+  ihi?: string;
+  ibody?: string;
 };
+
+/** Parsează un întreg dintr-un input și îl limitează la [lo, hi] (evită matrice uriașe). */
+function clampInt(s: string, lo: number, hi: number): number {
+  const n = parseInt(s, 10);
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo;
+}
 
 function readDraft(): Draft {
   try {
@@ -72,6 +90,37 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
   const [lden, setLden] = useState(draft.lden ?? "");
   const [rorder, setRorder] = useState(draft.rorder ?? "2");
   const [rrad, setRrad] = useState(draft.rrad ?? "");
+  // C: Matrice n×n
+  const [mrows, setMrows] = useState(draft.mrows ?? "2");
+  const [mcols, setMcols] = useState(draft.mcols ?? "2");
+  const [mcells, setMcells] = useState<string[]>(draft.mcells ?? []);
+  // C: Sistem de n ecuații
+  const [seqn, setSeqn] = useState(draft.seqn ?? "2");
+  const [seqs, setSeqs] = useState<string[]>(draft.seqs ?? []);
+  // C: Sumă (Σ) cu limite editabile
+  const [slo, setSlo] = useState(draft.slo ?? "k=1");
+  const [shi, setShi] = useState(draft.shi ?? "n");
+  const [sbody, setSbody] = useState(draft.sbody ?? "");
+  // C: Integrală (∫) cu limite editabile
+  const [ilo, setIlo] = useState(draft.ilo ?? "a");
+  const [ihi, setIhi] = useState(draft.ihi ?? "b");
+  const [ibody, setIbody] = useState(draft.ibody ?? "");
+
+  const mR = clampInt(mrows, 1, 5);
+  const mC = clampInt(mcols, 1, 5);
+  const sysN = clampInt(seqn, 1, 6);
+  const setCell = (idx: number, val: string) =>
+    setMcells((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
+  const setEq = (idx: number, val: string) =>
+    setSeqs((prev) => {
+      const next = [...prev];
+      next[idx] = val;
+      return next;
+    });
 
   // Paletă → inserare în câmpul activ (ultimul focusat). Primul câmp al fiecărui
   // tip e „primar": dacă apeși pe paletă fără să fi focusat vreun câmp, acolo intră.
@@ -90,12 +139,54 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
     try {
       localStorage.setItem(
         DRAFT_KEY,
-        JSON.stringify({ kind, num, den, lvar, lto, lnum, lden, rorder, rrad }),
+        JSON.stringify({
+          kind,
+          num,
+          den,
+          lvar,
+          lto,
+          lnum,
+          lden,
+          rorder,
+          rrad,
+          mrows,
+          mcols,
+          mcells,
+          seqn,
+          seqs,
+          slo,
+          shi,
+          sbody,
+          ilo,
+          ihi,
+          ibody,
+        }),
       );
     } catch {
       /* localStorage indisponibil — schița nu persistă, dar UI-ul merge */
     }
-  }, [kind, num, den, lvar, lto, lnum, lden, rorder, rrad]);
+  }, [
+    kind,
+    num,
+    den,
+    lvar,
+    lto,
+    lnum,
+    lden,
+    rorder,
+    rrad,
+    mrows,
+    mcols,
+    mcells,
+    seqn,
+    seqs,
+    slo,
+    shi,
+    sbody,
+    ilo,
+    ihi,
+    ibody,
+  ]);
 
   const latex = useMemo(() => {
     if (kind === "frac") {
@@ -108,10 +199,55 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
         : norm(lnum) || "\\square";
       return `${head} ${body}`;
     }
+    if (kind === "matrix") {
+      const rows: string[] = [];
+      for (let r = 0; r < mR; r++) {
+        const cells: string[] = [];
+        for (let c = 0; c < mC; c++) {
+          cells.push(norm(mcells[r * mC + c] || "") || "\\square");
+        }
+        rows.push(cells.join(" & "));
+      }
+      return `\\begin{pmatrix} ${rows.join(" \\\\ ")} \\end{pmatrix}`;
+    }
+    if (kind === "system") {
+      const lines: string[] = [];
+      for (let i = 0; i < sysN; i++) {
+        lines.push(norm(seqs[i] || "") || "\\square");
+      }
+      return `\\begin{cases} ${lines.join(" \\\\ ")} \\end{cases}`;
+    }
+    if (kind === "sum") {
+      return `\\sum_{${norm(slo) || "k=1"}}^{${norm(shi) || "n"}} ${norm(sbody) || "\\square"}`;
+    }
+    if (kind === "integral") {
+      return `\\int_{${norm(ilo) || "a"}}^{${norm(ihi) || "b"}} ${norm(ibody) || "\\square"}\\, dx`;
+    }
     const n = rorder.trim();
     const rad = norm(rrad) || "\\square";
     return n && n !== "2" ? `\\sqrt[${n}]{${rad}}` : `\\sqrt{${rad}}`;
-  }, [kind, num, den, lvar, lto, lnum, lden, rorder, rrad]);
+  }, [
+    kind,
+    num,
+    den,
+    lvar,
+    lto,
+    lnum,
+    lden,
+    rorder,
+    rrad,
+    mR,
+    mC,
+    mcells,
+    sysN,
+    seqs,
+    slo,
+    shi,
+    sbody,
+    ilo,
+    ihi,
+    ibody,
+  ]);
 
   const preview = useMemo(() => {
     try {
@@ -180,10 +316,18 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
       <p className="text-[11px] font-medium text-muted-foreground">
         …sau completează câmpuri:
       </p>
-      <div className="flex gap-1 rounded-md border border-border p-0.5">
-        {seg("frac", "Fracție")}
-        {seg("lim", "Limită")}
-        {seg("root", "Radical")}
+      <div className="flex flex-col gap-1 rounded-md border border-border p-0.5">
+        <div className="flex gap-1">
+          {seg("frac", "Fracție")}
+          {seg("lim", "Limită")}
+          {seg("root", "Radical")}
+        </div>
+        <div className="flex gap-1">
+          {seg("matrix", "Matrice")}
+          {seg("system", "Sistem")}
+          {seg("sum", "Σ")}
+          {seg("integral", "∫")}
+        </div>
       </div>
 
       {kind === "frac" && (
@@ -263,6 +407,142 @@ export function EditorMathBuilder({ editor }: { editor: Editor | null }) {
             className="h-8 text-sm"
             {...focusProps}
           />
+        </div>
+      )}
+
+      {kind === "matrix" && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="opacity-70">Rânduri</span>
+            <Input
+              value={mrows}
+              onChange={(e) => setMrows(e.target.value)}
+              inputMode="numeric"
+              className="h-8 w-14 text-center text-sm"
+              aria-label="Rânduri (1–5)"
+            />
+            <span className="opacity-70">×</span>
+            <span className="opacity-70">Coloane</span>
+            <Input
+              value={mcols}
+              onChange={(e) => setMcols(e.target.value)}
+              inputMode="numeric"
+              className="h-8 w-14 text-center text-sm"
+              aria-label="Coloane (1–5)"
+            />
+          </div>
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${mC}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: mR * mC }).map((_, idx) => (
+              <Input
+                key={idx}
+                ref={idx === 0 ? primaryRef : undefined}
+                value={mcells[idx] || ""}
+                onChange={(e) => setCell(idx, e.target.value)}
+                placeholder="0"
+                className="h-8 text-center text-sm"
+                {...focusProps}
+              />
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Completează celulele; cele goale rămân □. Maxim 5×5.
+          </p>
+        </div>
+      )}
+
+      {kind === "system" && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="opacity-70">Ecuații</span>
+            <Input
+              value={seqn}
+              onChange={(e) => setSeqn(e.target.value)}
+              inputMode="numeric"
+              className="h-8 w-14 text-center text-sm"
+              aria-label="Număr de ecuații (1–6)"
+            />
+          </div>
+          {Array.from({ length: sysN }).map((_, i) => (
+            <Input
+              key={i}
+              ref={i === 0 ? primaryRef : undefined}
+              value={seqs[i] || ""}
+              onChange={(e) => setEq(i, e.target.value)}
+              placeholder={`Ecuația ${i + 1} (ex: 2x+3y=7)`}
+              className="h-8 text-sm"
+              {...focusProps}
+            />
+          ))}
+        </div>
+      )}
+
+      {kind === "sum" && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={slo}
+              onChange={(e) => setSlo(e.target.value)}
+              placeholder="k=1"
+              className="h-8 flex-1 text-sm"
+              aria-label="Limita de jos"
+              {...focusProps}
+            />
+            <span className="text-sm opacity-70">→</span>
+            <Input
+              value={shi}
+              onChange={(e) => setShi(e.target.value)}
+              placeholder="n"
+              className="h-8 flex-1 text-sm"
+              aria-label="Limita de sus"
+              {...focusProps}
+            />
+          </div>
+          <Input
+            ref={primaryRef}
+            value={sbody}
+            onChange={(e) => setSbody(e.target.value)}
+            placeholder="Termen (ex: a_k sau 1/k^2)"
+            className="h-8 text-sm"
+            {...focusProps}
+          />
+        </div>
+      )}
+
+      {kind === "integral" && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={ilo}
+              onChange={(e) => setIlo(e.target.value)}
+              placeholder="a"
+              className="h-8 flex-1 text-sm"
+              aria-label="Limita de jos"
+              {...focusProps}
+            />
+            <span className="text-sm opacity-70">→</span>
+            <Input
+              value={ihi}
+              onChange={(e) => setIhi(e.target.value)}
+              placeholder="b"
+              className="h-8 flex-1 text-sm"
+              aria-label="Limita de sus"
+              {...focusProps}
+            />
+          </div>
+          <Input
+            ref={primaryRef}
+            value={ibody}
+            onChange={(e) => setIbody(e.target.value)}
+            placeholder="Funcția (ex: x^2 sau sin x)"
+            className="h-8 text-sm"
+            {...focusProps}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Se adaugă automat „dx" la final.
+          </p>
         </div>
       )}
 

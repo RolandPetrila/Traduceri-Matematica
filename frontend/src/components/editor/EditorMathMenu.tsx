@@ -66,18 +66,27 @@ const CLASE = [
 ];
 
 /**
- * G2 Matematică (fidel) — 103 simboluri (insert Unicode) + biblioteca de 214
- * formule pe clase V–XII (insert HTML, sup/sub parsat nativ de TipTap) + căutare
- * integrată (filtrează simboluri + formule din toate clasele). Structurile
- * interactive (fracție/radical cu găuri) = F3b (custom node).
+ * G2 Matematică (fidel) — 103 simboluri (insert Unicode) + biblioteca de 276
+ * formule pe clase V–XII (insert KaTeX `latex`, fallback `html`), fiecare cu
+ * `explicatie` (chevron, NU se inserează) + căutare integrată (toate clasele) +
+ * A: filtrare pe DOMENIU (grup) prin chips în cadrul clasei.
  */
 export function EditorMathMenu({ editor }: { editor: Editor | null }) {
   const [q, setQ] = useState("");
   const [clasa, setClasa] = useState("5");
+  // A (2026-07-27): filtrare pe DOMENIU (grup) în cadrul clasei, prin chips.
+  // null = „Toate". Se resetează la schimbarea clasei (un grup poate lipsi în altă clasă).
+  const [domeniu, setDomeniu] = useState<string | null>(null);
   // Care formulă are explicația deschisă (chevron). Cheie stabilă (grup|nume) ca
   // să nu „sară" la filtrare/căutare. #3: explicația NU se inserează pe foaie.
   const [expanded, setExpanded] = useState<string | null>(null);
   const ql = q.trim().toLowerCase();
+
+  // Domeniile (grupuri) distincte ale clasei curente, în ordinea din date.
+  const grupuri = useMemo(
+    () => Array.from(new Set((FORMULE[clasa] || []).map((f) => f.grup))),
+    [clasa],
+  );
 
   const symbolsShown = useMemo(
     () =>
@@ -94,8 +103,8 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
         ? (Object.values(FORMULE).flat() as Formula[]).filter((f) =>
             (f.nume + " " + f.grup).toLowerCase().includes(ql),
           )
-        : FORMULE[clasa] || [],
-    [ql, clasa],
+        : (FORMULE[clasa] || []).filter((f) => !domeniu || f.grup === domeniu),
+    [ql, clasa, domeniu],
   );
 
   if (!editor) return null;
@@ -139,7 +148,13 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
 
           <TabsContent value="formule" className="mt-2">
             {!ql && (
-              <Select value={clasa} onValueChange={setClasa}>
+              <Select
+                value={clasa}
+                onValueChange={(v) => {
+                  setClasa(v);
+                  setDomeniu(null); // grupul selectat poate lipsi în noua clasă
+                }}
+              >
                 <SelectTrigger className="mb-2 h-8 text-sm">
                   <SelectValue />
                 </SelectTrigger>
@@ -151,6 +166,40 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
                   ))}
                 </SelectContent>
               </Select>
+            )}
+            {/* A: chips de filtrare pe domeniu (grup). Doar când NU cauți și există
+                mai multe grupuri. „Toate" = fără filtru. */}
+            {!ql && grupuri.length > 1 && (
+              <div className="mb-2 flex gap-1 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setDomeniu(null)}
+                  className={cn(
+                    "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    !domeniu
+                      ? "border-chalk-yellow bg-chalk-yellow/20 text-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Toate
+                </button>
+                {grupuri.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setDomeniu(g)}
+                    title={g}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                      domeniu === g
+                        ? "border-chalk-yellow bg-chalk-yellow/20 text-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
             )}
             <ScrollArea className="h-64">
               <div className="flex flex-col gap-0.5 pr-2">
