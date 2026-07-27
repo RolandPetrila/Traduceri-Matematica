@@ -6,16 +6,14 @@
 
 **Autorare V→XII (213→276 formule, toate cu explicație) + interactiv A (chips domeniu) + C (constructor Matrice/Sistem/Σ/∫) + B (paletă 16 figuri SVG).**
 
-- **LIVE pe `traduceri-frontend.vercel.app` (cache v14):** autorarea + A + C.
-- **Committed, NEDEPLOYAT:** B (figuri) + fix export Word figuri (rasterizare PNG). Deploy B = v14→v15, cu confirmarea Roland.
+- **TOT LIVE pe `traduceri-frontend.vercel.app` (cache v15, `dpl_h6VhYCxdAk1qqvAzPq4eAiLJyKvP`):** autorarea + A + C + B (figuri + fix export Word). Verificat: aliasul servește `v15-20260727d`.
 
 ### 🔵 RĂMAS DESCHIS (pt sesiunea următoare — consolidat)
 
-1. **Deploy B** (v14→v15) — figuri + fix export Word. Cu confirmarea Roland.
-2. **Eyeball Roland (manual, nu se automatizează):** PDF/.docx real cu o figură + o formulă (mecanica dovedită, perceptualul nu); redimensionarea figurii (acum fixă 120px).
-3. **Verificare de domeniu (Cristina):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
-4. **Paritate mobilă:** meniul Matematică (formule + A/B/C interactiv) e **desktop-only**; pe mobil (Sheet) nu există math. Decizie separată dacă se adaugă.
-5. **Opțional:** figuri EDITABILE pe foaie (NodeView parametric — amânat conștient la B); redimensionare figuri (handles Image).
+1. **Eyeball Roland (manual, nu se automatizează):** PDF/.docx real cu o figură + o formulă (mecanica dovedită, perceptualul nu); redimensionarea figurii (acum fixă 120px).
+2. **Verificare de domeniu (Cristina):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
+3. **Paritate mobilă:** meniul Matematică (formule + A/B/C interactiv) e **desktop-only**; pe mobil (Sheet) nu există math. Decizie separată dacă se adaugă.
+4. **Opțional:** figuri EDITABILE pe foaie (NodeView parametric — amânat conștient la B); redimensionare figuri (handles Image).
 
 ---
 
@@ -32,14 +30,14 @@ Apoi citește INTEGRAL, în ordine, ÎNAINTE de a acționa:
 3. scratchpad/README_autorare_math.md — pattern-ul repetabil per clasă + capcanele R3.
 4. git log --oneline -15 (jurnalul; ultimul lot = „feat(#4 clasa V)").
 
-CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v12). Deja LIVE: #1 construcții gata one-click, #2 formule lungi se încadrează (zoom), #3 explicații cu chevron. #4 Clasele V…XII COMPLETE + DEPLOYAT LIVE (bibliotecă 213→276, TOATE cu explicație; cache v13 pe traduceri-frontend). Datele: frontend/src/components/editor/math-data.json (276 formule + 103 simboluri).
+CONTEXT: editorul matematic e LIVE pe traduceri-frontend.vercel.app (cache v15). #4 COMPLET + TOT DEPLOYAT: autorare Clasele V…XII (bibliotecă 213→276, TOATE cu explicație) + interactiv A (chips domeniu) + C (constructor Matrice/Sistem/Σ/∫) + B (tab „Figuri", 16 figuri SVG, export Word reparat). Datele: frontend/src/components/editor/math-data.json (276 formule + 103 simboluri).
 
 DECIZII CONFIRMATE (Roland, nu le re-întreba): toate profilurile · implementare exhaustivă · ~65–95 formule noi + explicație la TOATE · ordine V→XII lot cu lot · interactiv A+C+B (B = figuri geometrice SVG, fază separată).
 
 EXECUTĂ CONTINUAREA #4, în ordine:
 1. ✅ AUTORARE V→XII — COMPLETĂ (8 loturi, bibliotecă 213→276, toate cu explicație). Vezi tabelul din secțiunea „AUTORARE V→XII COMPLETĂ". NU relua.
 2. ✅ INTERACTIV A + C — LIVRAT (commit `ced8cf8`, verificat live, NEDEPLOYAT). A = chips domeniu; C = constructor 2 rânduri (Matrice/Sistem/Σ/∫). NU relua.
-3. ✅ INTERACTIV B — LIVRAT (paletă SVG-ca-imagine, tab „Figuri", 16 figuri, verificat live, NEDEPLOYAT). #4 COMPLET. RĂMAS: deploy B (v14→v15, cu confirmarea Roland) + eyeball export Word/redimensionare.
+3. ✅ INTERACTIV B — LIVRAT + DEPLOYAT LIVE (paletă SVG-ca-imagine, tab „Figuri", 16 figuri, export Word reparat, cache v15). #4 COMPLET + TOT LIVE. RĂMAS opțional: eyeball PDF/.docx real + verificare domeniu Cristina + paritate mobilă.
 
 REGULI OBLIGATORII:
 - R3 corectitudine: gate_check.js validează DOAR KaTeX + invarianți (NO_LATEX=0, proză_în_html=0), NU corectitudinea matematică/semantica. Verifică FIECARE formulă la sursă; NU inventa. Capcane cunoscute: divizibilitate = convenția RO `a \vdots b` (⋮ = „a se divide cu b", NU internaționala `b \mid a`); litru = `\ell` (nu `\text{l}`); zecimale RO = `{,}` (ex. `2{,}35`); `.katex` e inline → măsoară cu getBoundingClientRect, nu scrollWidth.
@@ -141,7 +139,7 @@ Branch `faza-g-editor`. Commit-uri: `c37f22b` (#1), `adaaaa8` (#2+#3), `5efc9b6`
 - **INTERACTIV B ✅ (figuri geometrice SVG — commit pending, NEDEPLOYAT).** Formă confirmată de Roland (§17): **paletă SVG-ca-imagine** (NU NodeView parametric — amânat). `editor-figures.ts` = 16 figuri hand-drawn (9 plane: triunghi oarecare/dreptunghic/echilateral, pătrat, dreptunghi, paralelogram, romb, trapez, cerc; 7 corpuri: cub, paralelipiped, cilindru, con, sferă, piramidă, prismă) cu notații A/B/C(/D), muchii ascunse punctate. Tab nou „Figuri" în `EditorMathMenu` (popover lărgit 340→380px, 4 taburi), un click → `setImage({src: data-URI SVG base64})` (extensia Image, `allowBase64`). **Verificat LIVE**: toate 16 randează corect în paletă; click Cub → `<img>` cu `data:image/svg+xml;base64` + alt pe foaie. tsc 0 · jest 28 · build OK.
   - **Export Word REZOLVAT** (nu mai e caveat): `renderFiguresToPng` (în `lib/math-render.ts`, apelat în `exportDocx`) rasterizează figurile SVG → PNG înainte de turbodocx (Word nu embed-uiește SVG). Mecanism = identic cu math-to-PNG (Image→canvas→`toDataURL`, ne-tainted — dovedit live: PNG 15KB, tainted=false). PDF/HTML lasă SVG (browserul randează). tsc 0 · jest 28 · build OK.
   - **Caveat rămas (eyeball Roland):** (a) figura se inserează la 120px, **NU e redimensionabilă** pe foaie (Image nu-i configurat resizable) — de decis dacă adăugăm handles; (b) figurile NU sunt editabile (etichete/dimensiuni) = NodeView-ul parametric amânat; (c) eyeball vizual PDF/.docx real cu o figură (mecanica e dovedită, perceptualul rămâne la ochiul tău).
-- **✅ #4 COMPLET (autorare V→XII + interactiv A+C+B).** RĂMAS: deploy grupat interactiv (A+C deja LIVE v14; B de deployat la v15 cu confirmarea Roland). Notă: meniul Matematică e desktop-only — A/C/B apar doar pe desktop; paritatea mobilă = decizie separată.
+- **✅ #4 COMPLET + TOT DEPLOYAT LIVE (autorare V→XII + interactiv A+C+B, cache v15).** Notă: meniul Matematică e desktop-only — A/C/B apar doar pe desktop; paritatea mobilă = decizie separată.
 - **De verificat de Cristina (R3, expert final):** corectitudinea matematică/notațională a formulelor noi (gate+eyeball garantează KaTeX + curățenie, NU semantica).
 - **Duplicate INTENȚIONATE (revizitări per clasă — NU le „repara"):** Thales (VII+VIII), panta dreptei (VIII/IX/X), `sin²+cos²=1` (VIII+X), probabilitate (V/VIII/XII), arii pătrat/dreptunghi/triunghi (V+VI). Corecte — aceeași formulă revizitată la clase diferite.
 - **Baseline non-regresie post-autorare (2026-07-27):** `tsc 0 · npx next build OK (11 rute) · jest 28/28`; `math-data.json` = un singur consumator (`EditorMathMenu.tsx`, grupare dinamică pe `f.grup`, fără whitelist). Bază curată pt interactiv A/C/B.

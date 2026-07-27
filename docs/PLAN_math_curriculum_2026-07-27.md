@@ -118,8 +118,10 @@ Backlog #3 cere `explicatie` pt TOATE. Roland a ales (2026-07-27) să fie autora
 ## ✅ AUTORARE V→XII COMPLETĂ — bibliotecă 213→276, TOATE cu explicație (cu_explicatie=276/276). DEPLOYAT LIVE (v13).
 
 ## ✅ INTERACTIV A + C — LIVRAT + DEPLOYAT LIVE (v14): A = chips filtrare domeniu; C = constructor 2 rânduri (Matrice/Sistem/Σ/∫ cu limite editabile).
-## ✅ INTERACTIV B — LIVRAT (verificat live, NEDEPLOYAT): paletă SVG-ca-imagine (tab „Figuri", 16 figuri plane+corpuri cu notații, muchii ascunse punctate); un click → imagine pe foaie. Caveat: nu-i redimensionabilă/editabilă (NodeView parametric = amânat); export Word SVG de verificat.
-## ✅✅ #4 COMPLET — autorare V→XII (213→276) + interactiv A+C+B. RĂMAS: deploy B (v14→v15) + eyeball Roland.
+
+## ✅ INTERACTIV B — LIVRAT + DEPLOYAT LIVE (v15): paletă SVG-ca-imagine (tab „Figuri", 16 figuri plane+corpuri cu notații, muchii ascunse punctate); un click → imagine pe foaie. Export Word reparat (rasterizare SVG→PNG). Caveat rămas: figurile nu-s redimensionabile/editabile (NodeView parametric = amânat).
+
+## ✅✅ #4 COMPLET + TOT DEPLOYAT LIVE (cache v15) — autorare V→XII (213→276) + interactiv A+C+B. RĂMAS: eyeball Roland (PDF/docx real) + verificare domeniu Cristina.
 
 - **Regulă R3 nouă (empiric):** proza RO cu diacritice NU randează curat în `\text{}` KaTeX (`ă â î` descompuse) → toată proza descriptivă merge în `explicatie` (HTML), latex = pur simbolic. `%` în latex = comentariu KaTeX → mereu `\%`.
 
