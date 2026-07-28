@@ -1,15 +1,15 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-29 (F3c figuri redimensionabile — livrat, NEDEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-29 (F3c figuri redimensionabile — DEPLOYAT v17). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
-## ▶️ REIA DE AICI (2026-07-29) — CITEȘTE ÎNTÂI
+## ▶️ REIA DE AICI (2026-07-29, după deploy v17) — CITEȘTE ÎNTÂI
 
-**🆕 NELIVRAT ÎN PROD (commit pe branch, așteaptă confirmarea ta de deploy):**
+**✅ DEPLOYAT v17 pe `traduceri-frontend.vercel.app` (cache `v17-20260729a`, verificat live Age:0; deployment `dpl_2tRNxk5A…`):**
 
-- ✅ **F3c — Figuri/imagini REDIMENSIONABILE pe foaie** (2026-07-29): prinzi colțul jos-dreapta → mărești/micșorezi cu **aspect blocat**; **dublu-click = mărime originală**. Dimensiunea = atribut de nod `width/height` → în `getHTML()` (sursa export-urilor). **PDF/HTML verificat** (gate de export + live); **DOCX [PROBABIL]** — width-ul e păstrat în `<img>`-ul dat lui turbodocx, dar randarea la mărimea nouă în Word rămâne **eyeball-ul tău pe .docx** (neverificat empiric). `frontend/src/components/editor/image-resize.ts` (`ResizableImage`) + CSS handle în `globals.css` + test `image-resize.test.ts`. **F3b (formule cu găuri contenteditable) = SUPERSEDED** (formulele deja editabile via `MathEditDialog` + builder + bibliotecă). Verificat LIVE (Chrome MCP): insert→handle · click→selecție · drag 120×112→270×252 aspect păstrat · getHTML duce width/height · reset · 360px fără overflow. **Non-regresie: tsc 0 · jest 32/32 · build OK.** Detalii: `PLAN_editor_tiptap` F3c + memoria `finding_image_resize_nodeview_2026_07_29`.
-- **Deploy F3c = outward-facing → DOAR cu confirmarea ta**, apoi îl rulez EU (`vercel deploy --prod` din `frontend/` + bump `CACHE_VERSION` v16→v17 în `public/sw.js`).
+- ✅ **F3c — Figuri/imagini REDIMENSIONABILE pe foaie** (2026-07-29): prinzi colțul jos-dreapta → mărești/micșorezi cu **aspect blocat**; **dublu-click = mărime originală**. Dimensiunea = atribut de nod `width/height` → în `getHTML()` (sursa export-urilor). **PDF/HTML verificat** (gate de export + live); **DOCX [PROBABIL]** — width-ul e păstrat în `<img>`-ul dat lui turbodocx, dar randarea la mărimea nouă în Word rămâne **eyeball-ul tău pe .docx** (neverificat empiric). `frontend/src/components/editor/image-resize.ts` (`ResizableImage`) + CSS handle în `globals.css` + test `image-resize.test.ts`. **F3b (formule cu găuri contenteditable) = SUPERSEDED** (formulele deja editabile via `MathEditDialog` + builder + bibliotecă). Verificat LIVE (Chrome MCP): insert→handle · click→selecție · drag 120×112→270×252 aspect păstrat · getHTML duce width/height · reset · 360px fără overflow. **Non-regresie: tsc 0 · jest 33/33 · build OK.** Commits `58efcc5`+`8ac39d8`+`6075e91`. Detalii: `PLAN_editor_tiptap` F3c + memoria `finding_image_resize_nodeview_2026_07_29`.
+- **RĂMAS neblocant:** eyeball Roland pe .docx/PDF cu o figură redimensionată (confirmă DOCX-ul [PROBABIL]) + (opțional) figuri PARAMETRICE + paritate mobilă math.
 
 ---
 
