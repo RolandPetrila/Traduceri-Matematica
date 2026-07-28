@@ -1,6 +1,31 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-27. Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-28 (după deploy v16). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## ▶️ REIA DE AICI (2026-07-28, după deploy v16) — CITEȘTE ÎNTÂI
+
+**STARE LA ZI — TOT LIVE pe `traduceri-frontend.vercel.app` (cache `v16-20260728a`):**
+
+- ✅ **Cerința 1** — chenar „Matematică" REDIMENSIONABIL (grip est/sud/colț + reflow auto coloane). Commit `7d7ff29`. DEPLOYAT în v16.
+- ✅ **Cerința 2 / Decizia 4** — goluri autorate TOATE clasele: **biblioteca 272 → 334 formule** (toate cu explicație), 6 loturi (VII/VIII/VI/V/XI/XII), R3 la manuale, gate+eyeball, + 2 mutări [PROBABIL] + îmbunătățiri CAT.5. DEPLOYAT în v16. Detalii + tabel: § „SESIUNE 2026-07-28" mai jos.
+- Editorul nativ TipTap + interactiv A/B/C + matematică academică KaTeX = LIVE de dinainte (istoric mai jos).
+- Non-regresie la ultima livrare: `tsc 0 · jest 28/28 · next build OK (11 rute)`. Branch `faza-g-editor`, HEAD sincron cu origin.
+
+**CE A RĂMAS DESCHIS (niciunul nu blochează; alege cu Roland ce urmează):**
+
+1. **Verificare de domeniu (Cristina)** — semantica celor 62 formule noi. Gate+eyeball garantează DOAR KaTeX + curățenie, NU corectitudinea matematică. (Nu e „implementare", e validare de expert.)
+2. **Eyeball Roland** — PDF/.docx real cu o formulă + o figură (perceptualul; mecanica e dovedită).
+3. **Decizie deschisă Roland (semnalată, NEATINSĂ):** VIII „funcția liniară" `(a≠0)` vs `f(x)=ax+b` general `a,b∈ℝ`. Manualul nu impune a≠0; „funcția de gradul I" chiar cere a≠0. De ales denumirea.
+4. **Paritate mobilă math** — meniul „Matematică" (formule + A/B/C) e **desktop-only**; pe mobil (Sheet) nu există math. Adevărată implementare, dacă se dorește.
+5. **Opțional:** figuri EDITABILE pe foaie (NodeView parametric, amânat conștient) + redimensionare figuri (handles Image).
+
+**UNELTE autorare (persistente în `scratchpad/`):** `lot_engine.js` (`applyLot{CLASA,LATEX_FIX,EXPL,NEW,REMOVE,RENAME}`) · `gaps_5..12.js`+`gaps_7.js`+`gaps_fix.js` (datele per lot) · `gate_check.js` (KaTeX+invarianți) · `eyeball.js <N>` (dump latex+randat). Manuale (13 PDF) + TOC extracte = în `99_Roland_Work/` + `scratchpad/toc_*.txt` (GITIGNORED). Consumatorul datelor: `frontend/src/components/editor/math-data.json` → `EditorMathMenu.tsx`.
+
+**Deploy (când Roland confirmă):** din `frontend/`, `vercel deploy --prod --yes --token="$VERCEL_API_KEY"` (CLI 56.4.1, proiect `traduceri-frontend` `prj_oV2VAykJ...`); bump `CACHE_VERSION` în `frontend/public/sw.js`; verifică aliasul servește noua versiune.
+
+---
 
 ## ✅✅ STARE #4 — COMPLET (2026-07-27)
 
@@ -34,7 +59,7 @@
 
 ## 🆕 SESIUNE 2026-07-28 — EXECUȚIE cerințe noi
 
-### ✅ CERINȚA 1 — chenar „Matematică" REDIMENSIONABIL + responsive (LIVRAT, NEDEPLOYAT)
+### ✅ CERINȚA 1 — chenar „Matematică" REDIMENSIONABIL + responsive (LIVRAT + DEPLOYAT v16)
 
 Formă confirmată de Roland (§17, mock): **grip custom** (margine dreaptă + margine jos + colț jos-dreapta) — NU `resize:both` nativ (care prinde doar colțul) + **Formule auto 1→2→3 coloane** (nu doar grilele).
 
@@ -43,7 +68,7 @@ Implementat în `frontend/src/components/editor/`:
 - **`EditorMathMenu.tsx`:** popover-ul e acum `flex flex-col` cu `width/height` din state (init default 380×540, încărcat din localStorage în `useEffect` — fără hydration mismatch, cf. [[finding_hydration_tab_and_deploy_verify_2026_07_26]]). 3 grip-uri absolute (est/sud/colț) cu `onPointerDown`; **drag prin listeneri pe `window`** (`pointermove`/`pointerup`/`pointercancel`) — NU `setPointerCapture` (capcană: `setPointerCapture` arunca pe pointer-ul CDP → dragRef nu se seta; window-listeners e robust și nu depinde de capture). Clamp `[320..760]×[380..min(900,vh-80)]`. Persistă în `localStorage["editor_math_menu_size_v1"]` la pointerup. Grilele: Simboluri/Figuri/Formule → `grid-cols-[repeat(auto-fill,minmax(...,1fr))]` (Formule minmax 230px → 1/2/3 coloane; Simboluri 2.5rem; Figuri 4rem). ScrollArea/TabsContent → `flex-1 min-h-0` (înălțimea se distribuie la resize); TabsContent activ = `data-[state=active]:flex` (ca `[hidden]` să câștige pe cele inactive).
 - **`EditorMathBuilder.tsx`:** grila „Construcții gata" `grid-cols-4` → `grid-cols-[repeat(auto-fill,minmax(3.5rem,1fr))]`.
 
-**Verificat LIVE (localhost:3311, Chrome MCP):** resize colț 380×540→580×604 + grip est →clamp 320; popover NU se închide la drag (grip inside + pointermove/up pe window; Radix se închide doar la pointer-DOWN outside); persistă la Escape+reopen (580×604); reflow: Construiește 4→8, Formule 1→2, Simboluri 6→11, Figuri 8/7 col; KaTeX se re-fit-ează (AutoFitKatex are ResizeObserver). **Non-regresie: tsc 0 · jest 28 · next build 11 rute · consolă curată.** NEDEPLOYAT (Roland confirmă; bump v15→v16 la deploy).
+**Verificat LIVE (localhost:3311, Chrome MCP):** resize colț 380×540→580×604 + grip est →clamp 320; popover NU se închide la drag (grip inside + pointermove/up pe window; Radix se închide doar la pointer-DOWN outside); persistă la Escape+reopen (580×604); reflow: Construiește 4→8, Formule 1→2, Simboluri 6→11, Figuri 8/7 col; KaTeX se re-fit-ează (AutoFitKatex are ResizeObserver). **Non-regresie: tsc 0 · jest 28 · next build 11 rute · consolă curată.** ✅ DEPLOYAT în v16 (2026-07-28, împreună cu Decizia 4).
 
 ### ⏳ CERINȚA 2 — audit vs manuale oficiale (AUDIT GATA + safe-fixes aplicate; BLOCAT pe 4 decizii Roland)
 
