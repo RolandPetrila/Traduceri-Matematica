@@ -55,7 +55,11 @@ Inventar (13 PDF-uri, GITIGNORED verificat) → `docs/manuale/INDEX.md`. Clase a
 
 **APLICAT deja** (neambiguu, gate PASS, 276→275, NEDEPLOYAT): VIII −„Raport de arii" (duplicat VII); VI „Proporție derivată"→„Proprietatea fundamentală a proporției". Script: `scratchpad/apply_safe.js`. Unelte engine: `lot_engine.js` (REMOVE class-scoped), `gate_check.js`, `eyeball.js`.
 
-**BLOCAT pe 4 DECIZII Roland** (vezi RAPORT §🟡): (1) realiniere gimnazială VI↔VII↔VIII DA/NU; (2) probabilitate V (păstrez/mut/elimin → recomand înlocuire cu „Frecvența"); (3) trig VIII (mut la VII/revizit minim); (4) autorare ~40 goluri: scop+ordine (sesiune separată, latex verificat la corpul manualului, R3). URMĂTORUL: după deciziile lui Roland → aplic realinierea (lot per clasă) + autorez golurile.
+**DECIZII ROLAND (2026-07-28, confirmate):** (1) DA realiniere gimnazială; (2) probabilitate V→înlocuiesc cu Frecvența (mut prob. la VI); (3) trig VIII→mut definițiile la VII, păstrez sin²+cos²=1+tg=sin/cos la VIII; (4) autorez TOATE ~40 goluri, ordine VII→VIII→VI→V→XI→XII (sesiune separată).
+
+**✅ REALINIERE APLICATĂ (Decizia 1+2+3, commit pending, gate PASS 275→272, NEDEPLOYAT).** Script `scratchpad/realign.js` (mută obiecte întregi, păstrează latex+explicatie). Mutări: VI→VII (Proprietăți paralelogram/romb/trapez + Suma unghiuri patrulater + Lungimea cercului; șters ariile duplicate din VI); VIII→VII (Raționalizare, Introducere sub radical, Sistem 2×2, Linia mijlocie, def. sin/cos/tg/ctg + valori 30/45/60); VII→VIII ([Calcul algebric] 9 formule); V→VI (Probabilitatea) + NEW Frecvența relativă la V. **Counts: V40 VI28 VII34 VIII37 IX33 X37 XI32 XII31 = 272.** Grup nou [Trigonometrie] la VII. Rămas minor (VIII [PROBABIL] neincluse în lista Deciziei 1: Proprietăți paralelogram-diagonale, Inegalitatea triunghiului — de tratat la autorarea VIII, coliziune nume la VII).
+
+**URMĂTORUL: Decizia 4 — autorez ~40 goluri (ordine VII→VIII→VI→V→XI→XII), lot per clasă.** R3: latex verificat la CORPUL manualului (nu doar cuprins) + explicatie; gate+eyeball; commit după fiecare clasă. Lista golurilor: `docs/manuale/AUDIT_RAPORT.md` §📋. NEDEPLOYAT până Roland confirmă deploy (v15→v16).
 
 ---
 
