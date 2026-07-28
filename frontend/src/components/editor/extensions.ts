@@ -6,13 +6,13 @@ import { FontFamily } from "@tiptap/extension-font-family";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
-import { Image } from "@tiptap/extension-image";
 import { TableRow } from "@tiptap/extension-table-row";
 import { FontSize } from "@/lib/tiptap-font-size";
 import { DictationInterim } from "./dictation-interim";
 import { Mathematics } from "@tiptap/extension-mathematics";
 import { PageBreak } from "./page-break";
 import { FindHighlight } from "./search-find";
+import { ResizableImage } from "./image-resize";
 import {
   TableWithZebra,
   TableCellWithBg,
@@ -38,7 +38,7 @@ export const editorExtensions = [
   TextAlign.configure({ types: ["heading", "paragraph"] }),
   Subscript,
   Superscript,
-  Image.configure({ allowBase64: true }),
+  ResizableImage, // Image + atribute width/height + NodeView cu handle de resize (aspect blocat, dublu-click=reset)
   TableWithZebra, // Table + atribut `zebra` (deja configurat resizable)
   TableRow,
   TableHeaderWithBg,

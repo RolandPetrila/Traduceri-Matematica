@@ -334,6 +334,43 @@
   max-width: 100%;
   height: auto;
 }
+/* Imagini/figuri redimensionabile — wrapper + handle de colt (aspect blocat).
+   Handle-ul apare doar cand nodul e selectat (click pe figura). */
+.editor-content .img-resize-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+.editor-content .img-resize-wrap > img {
+  display: block;
+}
+.editor-content .img-resize-handle {
+  position: absolute;
+  /* Flush in coltul jos-dreapta (INTERIOR): un offset negativ ar depasi cutia si ar
+     produce scroll orizontal cand figura e la marginea foii pe mobil. */
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px 0 3px 0;
+  background: #2563eb;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  cursor: nwse-resize;
+  display: none;
+  touch-action: none;
+  z-index: 2;
+}
+.editor-content .img-resize-wrap.is-selected > .img-resize-handle,
+.editor-content .img-resize-wrap.ProseMirror-selectednode > .img-resize-handle {
+  display: block;
+}
+.editor-content .img-resize-wrap.is-selected,
+.editor-content .img-resize-wrap.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
 .editor-content .ProseMirror-selectednode {
   outline: 2px solid #2563eb;
 }

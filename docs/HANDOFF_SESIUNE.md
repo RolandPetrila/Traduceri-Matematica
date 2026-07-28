@@ -1,10 +1,19 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-28 (după deploy v16). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-29 (F3c figuri redimensionabile — livrat, NEDEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
-## ▶️ REIA DE AICI (2026-07-28, după deploy v16) — CITEȘTE ÎNTÂI
+## ▶️ REIA DE AICI (2026-07-29) — CITEȘTE ÎNTÂI
+
+**🆕 NELIVRAT ÎN PROD (commit pe branch, așteaptă confirmarea ta de deploy):**
+
+- ✅ **F3c — Figuri/imagini REDIMENSIONABILE pe foaie** (2026-07-29): prinzi colțul jos-dreapta → mărești/micșorezi cu **aspect blocat**; **dublu-click = mărime originală**. Dimensiunea = atribut de nod `width/height` → supraviețuiește în PDF/HTML/**DOCX** (export-safe, gate de export dovedit). `frontend/src/components/editor/image-resize.ts` (`ResizableImage`) + CSS handle în `globals.css` + test `image-resize.test.ts`. **F3b (formule cu găuri contenteditable) = SUPERSEDED** (formulele deja editabile via `MathEditDialog` + builder + bibliotecă). Verificat LIVE (Chrome MCP): insert→handle · click→selecție · drag 120×112→270×252 aspect păstrat · getHTML duce width/height · reset · 360px fără overflow. **Non-regresie: tsc 0 · jest 32/32 · build OK.** Detalii: `PLAN_editor_tiptap` F3c + memoria `finding_image_resize_nodeview_2026_07_29`.
+- **Deploy F3c = outward-facing → DOAR cu confirmarea ta**, apoi îl rulez EU (`vercel deploy --prod` din `frontend/` + bump `CACHE_VERSION` v16→v17 în `public/sw.js`).
+
+---
+
+## ▶️ REIA (2026-07-28, după deploy v16)
 
 **STARE LA ZI — TOT LIVE pe `traduceri-frontend.vercel.app` (cache `v16-20260728a`):**
 
@@ -19,7 +28,7 @@
 2. **Eyeball Roland** — PDF/.docx real cu o formulă + o figură (perceptualul; mecanica e dovedită).
 3. **Decizie deschisă Roland (semnalată, NEATINSĂ):** VIII „funcția liniară" `(a≠0)` vs `f(x)=ax+b` general `a,b∈ℝ`. Manualul nu impune a≠0; „funcția de gradul I" chiar cere a≠0. De ales denumirea.
 4. **Paritate mobilă math** — meniul „Matematică" (formule + A/B/C) e **desktop-only**; pe mobil (Sheet) nu există math. Adevărată implementare, dacă se dorește.
-5. **Opțional:** figuri EDITABILE pe foaie (NodeView parametric, amânat conștient) + redimensionare figuri (handles Image).
+5. **Opțional:** figuri PARAMETRICE pe foaie (schimbi etichetele A/B/C / laturile — NodeView parametric, amânat conștient). _(Redimensionarea figurilor/imaginilor = LIVRATĂ la F3c 2026-07-29, vezi blocul de sus.)_
 
 **UNELTE autorare (persistente în `scratchpad/`):** `lot_engine.js` (`applyLot{CLASA,LATEX_FIX,EXPL,NEW,REMOVE,RENAME}`) · `gaps_5..12.js`+`gaps_7.js`+`gaps_fix.js` (datele per lot) · `gate_check.js` (KaTeX+invarianți) · `eyeball.js <N>` (dump latex+randat). Manuale (13 PDF) + TOC extracte = în `99_Roland_Work/` + `scratchpad/toc_*.txt` (GITIGNORED). Consumatorul datelor: `frontend/src/components/editor/math-data.json` → `EditorMathMenu.tsx`.
 
