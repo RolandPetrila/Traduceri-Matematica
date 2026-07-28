@@ -58,4 +58,21 @@ describe("ResizableImage — round-trip width/height pt export", () => {
     expect(html).not.toContain("height=");
     editor.destroy();
   });
+
+  it("save→reload: getHTML re-alimentat ca content păstrează dimensiunea (localStorage restore)", () => {
+    // editor-document.tsx salvează getHTML() în localStorage și restaurează prin
+    // setContent(html). Simulăm exact acel drum: editez → getHTML (=salvare) →
+    // editor NOU cu acel HTML (=restore) → dimensiunea trebuie să reziste.
+    const e1 = makeEditor(`<img src="${SRC}" alt="figura">`);
+    e1.commands.setNodeSelection(0);
+    e1.commands.updateAttributes("image", { width: 300, height: 180 });
+    const saved = e1.getHTML();
+    e1.destroy();
+
+    const e2 = makeEditor(saved); // restore
+    const restored = e2.getHTML();
+    expect(restored).toContain('width="300"');
+    expect(restored).toContain('height="180"');
+    e2.destroy();
+  });
 });
