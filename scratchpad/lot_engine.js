@@ -20,10 +20,32 @@ const MATH = path.join(
   "math-data.json",
 );
 
-function applyLot({ CLASA, LATEX_FIX = {}, EXPL = {}, NEW = [], REMOVE = [] }) {
+function applyLot({
+  CLASA,
+  LATEX_FIX = {},
+  EXPL = {},
+  NEW = [],
+  REMOVE = [],
+  RENAME = {},
+}) {
   const d = JSON.parse(fs.readFileSync(MATH, "utf-8"));
   let arr = d.formule[CLASA];
   if (!arr) throw new Error(`Clasa ${CLASA} inexistentă`);
+
+  // RENAME: schimbă `nume` (ex. „Aria cercului" → „Aria discului"). Guard exist + anti-coliziune.
+  for (const [oldN, newN] of Object.entries(RENAME)) {
+    const item = arr.find((x) => x.nume === oldN);
+    if (!item) {
+      console.log(`  ✗ RENAME nu a găsit: ${JSON.stringify(oldN)}`);
+      process.exit(1);
+    }
+    if (arr.some((x) => x.nume === newN)) {
+      console.log(`  ✗ RENAME coliziune: ${JSON.stringify(newN)} deja există`);
+      process.exit(1);
+    }
+    item.nume = newN;
+    console.log(`  renamed: ${JSON.stringify(oldN)} → ${JSON.stringify(newN)}`);
+  }
 
   // REMOVE: elimină intrări (după nume) — ex. formule mutate la altă clasă (plan §2).
   if (REMOVE.length) {
