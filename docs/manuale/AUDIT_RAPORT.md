@@ -66,6 +66,14 @@ la VIII păstrez `sin²+cos²=1` + `tg=sin/cos` ca revizitare (ancorate de dupli
 
 ### Decizia 4 — Autorarea golurilor: SCOP + ORDINE (sesiune separată)
 
+> **✅✅ REZOLVATĂ COMPLET (2026-07-28).** Toate golurile autorate, ordine VII→VIII→VI→V→XI→XII,
+> lot per clasă (`scratchpad/gaps_<N>.js`), R3 verificat la TOC-ul manualelor, gate PASS + eyeball,
+> commit per clasă. **Bibliotecă 276 → 334** (toate cu explicație). Cele 2 item-uri [PROBABIL] mutate
+> (Inegalitatea triunghiului VIII→VI; Proprietăți paralelogram-diagonale VIII→VII). Abandonate (R3,
+> absente din TOC): VIII fracții algebrice, V baza 2, VI modul rațional (near-dup). Vezi tabelul din
+> `docs/HANDOFF_SESIUNE.md` § SESIUNE 2026-07-28. Rămas: **deploy v15→v16** (confirmarea Roland) +
+> verificarea de domeniu a Cristinei (semantica). ⚠️ XI/XII = M1 2006-07 → prezență, nu programa curentă.
+
 Auditul a găsit **~40 de teme din manuale lipsă din editor** (listă completă mai jos). Fiecare cere
 `latex` verificat **la corpul manualului** (nu doar la cuprins) + `explicatie` (R3 — nu iau latexul
 propus de subagenți pe încredere). E o **sesiune separată** (autorare per clasă, lot cu lot, gate+eyeball).

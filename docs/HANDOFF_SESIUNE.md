@@ -59,9 +59,26 @@ Inventar (13 PDF-uri, GITIGNORED verificat) → `docs/manuale/INDEX.md`. Clase a
 
 **✅ REALINIERE APLICATĂ (Decizia 1+2+3, commit pending, gate PASS 275→272, NEDEPLOYAT).** Script `scratchpad/realign.js` (mută obiecte întregi, păstrează latex+explicatie). Mutări: VI→VII (Proprietăți paralelogram/romb/trapez + Suma unghiuri patrulater + Lungimea cercului; șters ariile duplicate din VI); VIII→VII (Raționalizare, Introducere sub radical, Sistem 2×2, Linia mijlocie, def. sin/cos/tg/ctg + valori 30/45/60); VII→VIII ([Calcul algebric] 9 formule); V→VI (Probabilitatea) + NEW Frecvența relativă la V. **Counts: V40 VI28 VII34 VIII37 IX33 X37 XI32 XII31 = 272.** Grup nou [Trigonometrie] la VII. Rămas minor (VIII [PROBABIL] neincluse în lista Deciziei 1: Proprietăți paralelogram-diagonale, Inegalitatea triunghiului — de tratat la autorarea VIII, coliziune nume la VII).
 
-**✅ Decizia 4 — GOLURI CLASA VII AUTORATE** (lot `scratchpad/gaps_7.js`, gate PASS, VII 34→41, total 272→**279**): +7 (Rădăcina pătrată a pătratului √(a²)=|a|, Modulul real, Puterea cu exp. întreg negativ, Ecuația x²=a, Tangente din punct exterior, Poligoane regulate înscrise l₆=R/l₄=R√2/l₃=R√3, Criteriul asemănare U.U.). Grup nou [Numere reale] la VII.
+**✅✅ Decizia 4 — GOLURI TOATE CLASELE AUTORATE (2026-07-28) — COMPLETĂ, NEDEPLOYAT.** Bibliotecă **276 → 334** formule, toate cu explicație. Ordine executată VII→VIII→VI→V→XI→XII, R3 verificat la TOC-ul/corpul manualelor (am PDF-urile local), gate PASS + eyeball la fiecare lot, commit per clasă.
 
-**URMĂTORUL (sesiune nouă): Decizia 4 goluri VIII→VI→V→XI→XII** (ordine rămasă). Lista completă: `docs/manuale/AUDIT_RAPORT.md` §📋. R3: latex verificat la CORPUL manualului (nu doar cuprins) + explicatie; lot per clasă (`scratchpad/gaps_<N>.js` model gaps_7); gate+eyeball; commit după fiecare. **VIII: atenție** — pe lângă goluri (indicatori statistici mediana/modul/amplitudine, trunchi piramidă/con, T3⊥, A_total prismă/con/piramidă), de tratat item-urile [PROBABIL] rămase (Proprietăți paralelogram-diagonale, Inegalitatea triunghiului → posibil VII cu redenumire să evite coliziunea). NEDEPLOYAT până Roland confirmă deploy (bump v15→v16).
+| Lot     | Clasă | Δ     | Noi                                       | Sursă TOC      | Commit    |
+| ------- | ----- | ----- | ----------------------------------------- | -------------- | --------- |
+| gaps_7  | VII   | 34→41 | +7                                        | A1739/40/42    | `80ca79b` |
+| gaps_8  | VIII  | 37→51 | +16 (+2 mutări la VI/VII)                 | A1983          | `5d6f6b5` |
+| gaps_6  | VI    | 29→38 | +9 (+fix Înălțimea +rename Aria discului) | A1497          | `eaac23a` |
+| gaps_5  | V     | 40→45 | +5                                        | A1254          | `bf3b96c` |
+| gaps_11 | XI    | 32→45 | +13                                       | A178/A196 (M1) | `407042d` |
+| gaps_12 | XII   | 31→43 | +12                                       | A197/A264 (M1) | `911090e` |
+
+- **Counts finale:** V45 VI38 VII42 VIII51 IX33 X37 XI45 XII43 = **334** (toate cu explicație).
+- **MUTĂRI [PROBABIL] rezolvate (gaps_8, geom. plană misplasată la VIII spațială):** „Inegalitatea triunghiului" VIII→VI (A1497 p.185, grup nou VI „Triunghiuri"); „Proprietăți paralelogram (diagonale)" VIII→VII (intrare distinctă, Roland „VII cu redenumire").
+- **CAT.5 aplicate:** VI „Înălțimea" latex era A=a·h/2 (ARIA!) → def. corectă `AD⊥BC`; VII „Aria cercului"→„Aria discului"; XI Cramer generalizat n×n + Kronecker-Capelli. Semnalat, NEATINS (decizia Roland): VIII funcția liniară `(a≠0)` vs `a,b∈ℝ`.
+- **ABANDONAT (R3, gate TOC):** VIII „fracții algebrice" (scoase din gimnaziu prog. 2017, absent din TOC); V „baza 2" (algoritm, fără formulă); VI „modul rațional" (near-dup cu VI[5] Modulul întreg).
+- **DEDUP XII (advisor):** FTC autorat ca `G(x)=∫ₐˣ⇒G'=f` (NU dublează Primitivă-def F'=f); „lege de compoziție/parte stabilă" (NU re-listare axiome Grup).
+- **⚠️ Onestitate R3:** XI/XII = manuale M1 2006-07 → golurile probează PREZENȚA temei în M1, NU apartenența la programa curentă. Gate+eyeball garantează KaTeX+curățenie; **corectitudinea semantică rămâne verificarea de domeniu a Cristinei**.
+- **Non-regresie (2026-07-28):** `tsc 0 · jest 28/28 · next build OK (11 rute)`. Unelte: `scratchpad/gaps_<N>.js` + `lot_engine.js` (acum cu `RENAME`) + `gate_check.js` + `eyeball.js`.
+
+**URMĂTORUL: DEPLOY grupat v15→v16** (Vercel prod, `traduceri-frontend`) — **DOAR cu confirmarea Roland** (outward-facing). Bump `CACHE_VERSION` v15→v16. Apoi: eyeball Roland (PDF/.docx) + verificare de domeniu Cristina (semantica celor 62 formule noi).
 
 ---
 
