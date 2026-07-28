@@ -78,7 +78,9 @@ Inventar (13 PDF-uri, GITIGNORED verificat) → `docs/manuale/INDEX.md`. Clase a
 - **⚠️ Onestitate R3:** XI/XII = manuale M1 2006-07 → golurile probează PREZENȚA temei în M1, NU apartenența la programa curentă. Gate+eyeball garantează KaTeX+curățenie; **corectitudinea semantică rămâne verificarea de domeniu a Cristinei**.
 - **Non-regresie (2026-07-28):** `tsc 0 · jest 28/28 · next build OK (11 rute)`. Unelte: `scratchpad/gaps_<N>.js` + `lot_engine.js` (acum cu `RENAME`) + `gate_check.js` + `eyeball.js`.
 
-**URMĂTORUL: DEPLOY grupat v15→v16** (Vercel prod, `traduceri-frontend`) — **DOAR cu confirmarea Roland** (outward-facing). Bump `CACHE_VERSION` v15→v16. Apoi: eyeball Roland (PDF/.docx) + verificare de domeniu Cristina (semantica celor 62 formule noi).
+**✅ DEPLOYAT v16 (2026-07-28, confirmat Roland „Deploy acum"):** `vercel deploy --prod` pe `traduceri-frontend`; `CACHE_VERSION` v15→**v16-20260728a**. Verificat: aliasul `traduceri-frontend.vercel.app/sw.js` servește v16 (Age:0). Deployment `traduceri-frontend-o8pi8ckhp`. Cele 62 formule noi + mutări + CAT.5 = LIVE.
+
+**RĂMAS (neblocant):** verificare de domeniu Cristina (semantica celor 62 formule noi — gate+eyeball garantează DOAR KaTeX+curățenie) + eyeball Roland PDF/.docx. **Decizie deschisă Roland:** VIII funcția liniară `(a≠0)` vs `a,b∈ℝ` (semnalat, neatins).
 
 ---
 
