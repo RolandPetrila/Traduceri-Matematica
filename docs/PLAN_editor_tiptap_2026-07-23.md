@@ -84,6 +84,28 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 
 ---
 
+## 5c. CONSOLIDARE Traduceri → Editor (2026-07-29, decizii Roland via AskUserQuestion)
+
+> **Context:** Roland retrage tab-ul standalone „Traduceri 📐" și mută cele două motoare ale lui în editor:
+> switch de limbi (traducere) + OCR matematic. Backend-ul Traduceri (`api/translate_text.py`, `ocr.py`,
+> `translation_router.py`, `math_protect.py`, `ocr_structured.py`, `figure_crop.py`, `html_builder.py`,
+> `config/languages.json`) = **PĂSTRAT integral** și reutilizat. Se scoate DOAR UI-ul (tab + `./traduceri` + `DocumentViewer`).
+> Ordine confirmată: **F7 → F8 → F9**, fiecare cu non-regresie (tsc/jest/build) + verificare live (390px+desktop) + deploy DOAR cu confirmarea Roland.
+
+- [ ] **F7 — Retragere tab Traduceri** (mic, sigur). Scot intrarea `traduceri` din `config/tabs.json` + copia `frontend/config/tabs.json`; mut `default:true` pe **`editor`**; scot blocul `traduceri` + `dynamic import` din `app/page.tsx`; `git rm` `app/traduceri/` + `components/traduceri/DocumentViewer.tsx` (+ ce e folosit DOAR de el — verific întâi ce e partajat: `figure-payloads.ts`, `OverlayViewer`, `monitoring.ts` pot fi shared). **PĂSTREZ** backend-ul + `lib/`-urile reutilizabile (translate/OCR). Gate: tsc 0 · jest · build OK · verificat live (tab dispărut, Editor = default, restul taburilor OK). Actualizez §8 + CLAUDE.md/PLAN_v3 (propus).
+- [ ] **F8 — Traducere-în-editor** (switch limbi RO/SK/EN/DE, tot documentul, reversibil+editabil). **§17: mock de formă confirmat ÎNAINTE de cod.**
+  - **Reuse:** `POST /api/translate-text`, `Content-Type: text/plain`, body `{ text_sections:[{type,content}], source_lang, target_lang, translate_engine }` → `{ translated_sections }` 1:1. Math protejat automat de `math_protect.py` dacă formulele TipTap se serializează inline ca `$…$`/`$$…$$`.
+  - **Design propus:** switch în toolbar (ca `Original|RO|SK`, nativ). Documentul are o **limbă-sursă** (`scris în: RO ▾`, schimbabilă). La selectarea altei limbi → traduc ÎNTREG documentul (extrag blocuri paragraf/titlu/listă/celulă ca `text_sections`, formulele ca `$latex$`, figurile SKIP), arăt versiunea tradusă **EDITABILĂ**; **cache pe limbă** (revii la sursă cu editările intacte, R-EDIT). Traduc mereu **sursă→țintă** (nu displayed→țintă) pt fidelitate. Figuri/formule/tabele/layout = INTACTE (R-MATH).
+  - **Capcane:** `text/plain` obligatoriu (altfel preflight 503, [[finding_cors_options_204_2026_07_11]]); cap 4MB → strip base64 înainte; separator server `|||SEP|||` (rar, dar de evitat în conținut); DE merge pe calea Gemini (NLLB n-are DE); persistența cache-ului pe limbă vs auto-save `editor_nou_v1` (de decis: salvez toate versiunile sau doar sursa+activă).
+  - Gate: tsc/jest/build + live (RO→SK→EN→DE, formule intacte, revenire cu editări, 390px+desktop) + gate de non-regresie a formulelor.
+- [ ] **F9 — OCR drag&drop matematic** (docx/pdf/img/txt/md → conținut EDITABIL în pagină). **§17: mock de formă confirmat ÎNAINTE de cod.**
+  - **Reuse:** OCR matematic = `POST /api/ocr` (multipart, Gemini JSON → `structured_pages`: text + `$LaTeX$` + `figure.img_b64`, 1 pagină/cerere, cap 4MB). UX drag&drop + dispecer fișiere = **portat din `Asistent_Text_AI`** (`pwa/index.html` 2263-2488): docx→`mammoth.extractRawText`, pdf-cu-text→`pdf.js getTextContent`, txt/md→`file.text()`, imagini/pdf-scanat→rasterizare client `pdf.js` (canvas, 1 pag/cerere) → `/api/ocr`.
+  - **Design propus:** zonă drag&drop peste foaia editorului; consumă `structured_pages` JSON (NU HTML-ul gata făcut) → mapez secțiuni în noduri TipTap **editabile**: paragraph/heading/list/step→text; `$…$`→nod `Mathematics` (KaTeX); `figure.img_b64`→nod **`ResizableImage`** (refolosește F3c! redimensionabil); `two_column`→coloane/flatten. Aterizează într-un **document nou** (dacă editorul e gol) sau întreb înlocuiește/adaugă (ca banner-ul legacy-import, R-EDIT).
+  - **Capcane:** paginare client (1 pag/cerere, cap Vercel 60s/4MB); `Asistent` folosește proxy propriu de chei — aici folosesc endpoint-ul `/api/ocr` (cheile deja server-side); Mistral-fallback dă doar markdown (fără figuri/LaTeX) → semnalez degradarea; docx/pdf-text NU au matematică (extragere brută) → dacă un docx are formule-imagine, ele NU se transcriu (onestitate R3).
+  - Gate: tsc/jest/build + live (drop pt fiecare tip → conținut corect editabil, formule KaTeX, figuri redimensionabile, 390px+desktop).
+
+---
+
 ## 6. Decizii §17 (Roland, 2026-07-23)
 
 1. ✅ **Toolbar mobil = bară slim sus (undo/redo/B/I/U/„⋯ Format") + bottom `Sheet`** cu grupuri de unelte (ca Google Docs). Foaia = primară.
@@ -108,4 +130,6 @@ Editorul actual = aplicație HTML-vanilla (3737 linii) într-un **iframe** în s
 
 ## 8. Ce NU se atinge
 
-Modulele Traduceri / Convertor / Planșe / Asistent rămân neatinse (R-EXT). shadcn se adaugă aditiv. ~~Iframe-ul editor vechi rămâne până la paritate, apoi se retrage.~~ **FĂCUT (F6, 2026-07-25): iframe-ul vechi (`public/editor/`) retras după atingerea parității; git păstrează istoricul.**
+Modulele Convertor / Planșe / Asistent rămân neatinse (R-EXT). shadcn se adaugă aditiv. ~~Iframe-ul editor vechi rămâne până la paritate, apoi se retrage.~~ **FĂCUT (F6, 2026-07-25): iframe-ul vechi (`public/editor/`) retras după atingerea parității; git păstrează istoricul.**
+
+> **UPDATE 2026-07-29 (consolidare §5c):** ~~Modulul Traduceri rămâne neatins.~~ Tab-ul **Traduceri se RETRAGE** (F7) și funcțiile lui (traducere + OCR matematic) se mută în editor (F8/F9). **Backend-ul Traduceri = păstrat** și reutilizat (nu se șterge). Se scoate doar UI-ul (tab + `./traduceri` + `DocumentViewer`).
