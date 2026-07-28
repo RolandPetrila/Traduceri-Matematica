@@ -74,3 +74,8 @@ dev_server_log.txt
 # Development screenshots
 *_screenshot.png
 .env*.local
+
+# Cerinta2 audit: extrase din manuale (copyright) + dump-uri regenerabile
+scratchpad/toc_*.txt
+scratchpad/editor_dump.txt
+scratchpad/pdf_inventory_out.txt

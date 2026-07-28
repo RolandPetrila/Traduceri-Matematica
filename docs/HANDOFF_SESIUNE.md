@@ -45,9 +45,17 @@ Implementat în `frontend/src/components/editor/`:
 
 **Verificat LIVE (localhost:3311, Chrome MCP):** resize colț 380×540→580×604 + grip est →clamp 320; popover NU se închide la drag (grip inside + pointermove/up pe window; Radix se închide doar la pointer-DOWN outside); persistă la Escape+reopen (580×604); reflow: Construiește 4→8, Formule 1→2, Simboluri 6→11, Figuri 8/7 col; KaTeX se re-fit-ează (AutoFitKatex are ResizeObserver). **Non-regresie: tsc 0 · jest 28 · next build 11 rute · consolă curată.** NEDEPLOYAT (Roland confirmă; bump v15→v16 la deploy).
 
-### ⏳ CERINȚA 2 — audit vs manuale oficiale (ÎN CURS)
+### ⏳ CERINȚA 2 — audit vs manuale oficiale (AUDIT GATA + safe-fixes aplicate; BLOCAT pe 4 decizii Roland)
 
-Inventar (13 PDF-uri, `99_Roland_Work/Carti_descarcate_EDU/`, GITIGNORED verificat): V=A1254(Booklet)/A1259(Litera)/A1260(Art Klett); VI=A1497(Booklet)/A1498(Litera); VII=A1739(Booklet)/A1740(Art Klett)/A1742(Litera); VIII=A1983(Booklet); XI=A178(SIGMA M1)/A196(Carminis); XII=A197(Carminis M1)/A264(SIGMA M1). **Clase acoperite: V,VI,VII,VIII,XI,XII. FĂRĂ manual: IX,X** (rămâne programa). ⚠️ XI–XII = manuale 2006–2007 → dovadă de PREZENȚĂ, nu de absență. Unelte: `scratchpad/{pdf_inventory,extract_toc,locate_cuprins}.py` + `toc_*.txt`.
+Inventar (13 PDF-uri, GITIGNORED verificat) → `docs/manuale/INDEX.md`. Clase acoperite: V,VI,VII,VIII,XI,XII. FĂRĂ manual: IX,X. ⚠️ XI–XII = manuale 2006–2007 → PREZENȚĂ nu absență. A1260 (Art Klett V) TOC eșuat → V pe 2 manuale.
+
+**Audit făcut** (6 subagenți, citat-dovadă din `scratchpad/toc_*.txt` vs `scratchpad/editor_dump.txt`). RAPORT: `docs/manuale/AUDIT_RAPORT.md` + sinteză `scratchpad/AUDIT_FINDINGS.md`.
+
+**DESCOPERIREA-CHEIE:** offset SISTEMATIC pre-2017 la gimnaziu — calcul prescurtat VII→VIII, radicali/sisteme/trig VIII→VII, patrulatere/cerc VI→VII (~20 formule = O realiniere coerentă, de aplicat ca un tot). Liceu XI/XII: 0 misplasări (curat).
+
+**APLICAT deja** (neambiguu, gate PASS, 276→275, NEDEPLOYAT): VIII −„Raport de arii" (duplicat VII); VI „Proporție derivată"→„Proprietatea fundamentală a proporției". Script: `scratchpad/apply_safe.js`. Unelte engine: `lot_engine.js` (REMOVE class-scoped), `gate_check.js`, `eyeball.js`.
+
+**BLOCAT pe 4 DECIZII Roland** (vezi RAPORT §🟡): (1) realiniere gimnazială VI↔VII↔VIII DA/NU; (2) probabilitate V (păstrez/mut/elimin → recomand înlocuire cu „Frecvența"); (3) trig VIII (mut la VII/revizit minim); (4) autorare ~40 goluri: scop+ordine (sesiune separată, latex verificat la corpul manualului, R3). URMĂTORUL: după deciziile lui Roland → aplic realinierea (lot per clasă) + autorez golurile.
 
 ---
 
