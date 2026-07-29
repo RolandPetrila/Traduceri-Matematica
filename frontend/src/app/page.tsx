@@ -6,7 +6,6 @@ import TopBar from "@/components/layout/TopBar";
 import IframeModule from "@/components/layout/IframeModule";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
 
-const TraduceriPage = dynamic(() => import("./traduceri/page"), { ssr: false });
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
 const AsistentPage = dynamic(() => import("./asistent/page"), { ssr: false });
@@ -45,9 +44,6 @@ export default function Home() {
       <TopBar activeTab={activeTab} onTabChange={handleTabChange} />
 
       <div className="mt-2">
-        <div style={{ display: activeTab === "traduceri" ? "block" : "none" }}>
-          <TraduceriPage />
-        </div>
         <div style={{ display: activeTab === "convertor" ? "block" : "none" }}>
           <ConvertorPage />
         </div>

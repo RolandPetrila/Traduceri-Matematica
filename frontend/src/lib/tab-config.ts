@@ -20,5 +20,5 @@ export interface TabConfig {
 // the canonical tabs.json we control.
 export const TABS: TabConfig[] = tabsData.tabs as TabConfig[];
 export const DEFAULT_TAB =
-  TABS.find((t) => t.default)?.id || TABS[0]?.id || "traduceri";
+  TABS.find((t) => t.default)?.id || TABS[0]?.id || "editor";
 export type TabId = string;

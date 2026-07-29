@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import ProgressBar from "@/components/traduceri/ProgressBar";
+import ProgressBar from "@/components/convertor/ProgressBar";
 import { logAction, logInfo, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
