@@ -1,10 +1,12 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-29 (F9 OCR drag&drop matematic — DONE, NEDEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-30 (F9 OCR drag&drop matematic — ✅ DEPLOYAT v19). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
-## ✅ F9 — OCR DRAG&DROP MATEMATIC (2026-07-29) — DONE, NEDEPLOYAT (ULTIMA fază §5c)
+## ✅ F9 — OCR DRAG&DROP MATEMATIC (2026-07-29/30) — DEPLOYAT v19 (ULTIMA fază §5c)
+
+**✅ DEPLOYAT 2026-07-30** pe `traduceri-frontend.vercel.app` (`CACHE_VERSION v18→v19-20260730a`, deployment `dpl_6Qgs1YtxUNuxp3ZkUGsQpLtcuLJf`). Verificat pe alias: `sw.js` servește v19, `/editor-nou`→200, `/api/ocr` OPTIONS→200 (CORS live), **smoke-test OCR real pe deploy-ul nou: POST imagine reală → 200 în 21.5s, 8 secțiuni** (backend confirmat pe ACEST deploy). Commits `08cae4a`+`fbb2cf9`+`cb883df`+`efcda27` (bump versiune). **RĂMAS: testarea end-to-end DIN BROWSER pe prod (Roland testează direct pe server+aplicație, nu doar local — preferință confirmată) + PDF multi-pagină + DOCX real** (vezi gap-urile onestе mai jos, neschimbate de deploy).
 
 **Consolidarea Traduceri→Editor e COMPLETĂ (F7 tab retras + F8 traducere + F9 OCR).** F9 = ultima fază din `PLAN_editor_tiptap` §5c.
 
