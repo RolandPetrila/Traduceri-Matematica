@@ -90,6 +90,7 @@
 - [ ] R3.3 Integrare în `editor-import.tsx`: la `.docx`, în loc de `mammoth.extractRawText` → citește `word/document.xml` (zip, ex. `jszip`/`fflate`) + păstrează ORDINEA text↔formule + `**bold**` unde e simplu
 - [ ] R3.4 Reutilizează `parseInlineToNodes` din `ocr-map.ts` (deja tratat `$$…$$` înainte de `$…$` + latex-gol→literal) pentru a produce noduri `inlineMath`
 - [ ] R3.5 **Onest (R3):** dacă un .docx are formule ca IMAGINE (nu OMML), ele NU se transcriu → semnalează în banner. Detectează și raportează câte OMML + câte imagini a găsit
+- [ ] R3.7 **`mammoth` devine dependință moartă** — a fost instalat ieri exact pentru calea `.docx` pe care R3 o înlocuiește. Scoate-l din `package.json` dacă nu mai e folosit; oricum ai nevoie de un cititor de zip (`fflate` sau `jszip`) → e un **schimb**, nu o dependință în plus
 - [ ] R3.6 Gate: unit tests + **eyeball obligatoriu pe `test.multimi2.docx`**: import → toate cele 20 de expresii apar la locul lor → export PDF → **compară cu `Downloads/test.multimi2.pdf` (varianta ruptă)** și cu .docx-ul original
 
 ### R4 — OCR: alege pe DOVADĂ cel mai calitativ provider
@@ -108,7 +109,7 @@
 | Google Document AI          | `GOOGLE_API_KEY`                                   | 1000 pag/lună     | OCR bun, formule = punct slab                                                                     |
 
 - [ ] R4.1 Confirmă la sursă capabilitatea Azure (docs oficiale) — dacă lipsește, taie Azure din comparație și spune-o explicit
-- [ ] R4.2 Set de test FIX (aceleași fișiere pentru toți): `99_Roland_Work/Teste_Input/2.0_test_page_1.jpeg` (construcție geometrică + 36 formule, referință cunoscută) + o pagină cu mulțimi + un PDF scanat
+- [ ] R4.2 Set de test FIX (aceleași fișiere pentru toți) — **numai IMAGINI/PDF scanat**, fiindcă OCR-ul se aplică doar acolo (`.docx` merge prin OMML după R3, NU prin OCR): `99_Roland_Work/Teste_Input/2.0_test_page_1.jpeg` (construcție geometrică + 36 formule, referință cunoscută) + o **poză/scan** cu mulțimi (ex. printează pagina din `test.multimi2.docx` și fotografiaz-o, ca să ai aceeași materie pe ambele căi) + un PDF scanat multi-pagină
 - [ ] R4.3 Rulează fiecare provider pe setul fix; **compară formulă-cu-formulă** (câte corecte / greșite / pierdute), plus: figuri detectate, timp, cost în cote
 - [ ] R4.4 Raport `docs/OCR_COMPARATIE_2026-07-30.md` cu tabel + verdict motivat + **declară costul consumat** din cotele free
 - [ ] R4.5 Implementează câștigătorul ca primary în `api/lib/ocr_structured.py`, păstrând lanțul de fallback (nu rupe F9)
@@ -120,7 +121,8 @@
 
 > ⚠️ **Toate verificate personal la 2026-07-30**, nu preluate din documente. Vulnerabilitățile sunt **active în producție** până la execuție.
 
-- [ ] **S1 — `npm audit fix` (3 HIGH).** Verificat: `npm audit --omit=dev` → **5 vulnerabilități, 3 HIGH**: `next` (SSRF în rewrites, cache confusion, DoS Image Optimization), `postcss<=8.5.17` (XSS + path traversal), `sharp<0.35.0` (CVE-uri libvips), plus `dompurify<=3.4.11` și `katex<=0.16.20` — **ultimele două sunt exact pe calea prin care se randează conținutul venit din OCR/AI**. Toate au `fix available via npm audit fix`. Efort **mic**. Gate: `npm audit` curat + `tsc/jest/build` + smoke live (KaTeX randează, exportul merge — `katex` urcă de versiune!)
+- [ ] **S1 — `npm audit fix` (3 HIGH).** Verificat: `npm audit --omit=dev` → **5 vulnerabilități, 3 HIGH**: `next` (SSRF în rewrites, cache confusion, DoS Image Optimization), `postcss<=8.5.17` (XSS + path traversal), `sharp<0.35.0` (CVE-uri libvips), plus `dompurify<=3.4.11` și `katex<=0.16.20` — **ultimele două sunt exact pe calea prin care se randează conținutul venit din OCR/AI**. Toate au `fix available via npm audit fix`. Efort **mic**. Gate: `npm audit` curat + `tsc/jest/build` + smoke live (KaTeX randează, exportul merge).
+      **⚠️ CAPCANĂ pe `katex`:** `katex@0.16.11` a fost pinuit DELIBERAT ca să corespundă exact cu `@tiptap/extension-mathematics@3.28.0`. `npm audit fix` rupe acel match → **verifică întâi compatibilitatea versiunii rezultate cu extensia**, altfel S1 sparge randarea celor 334 de formule. Dacă nu sunt compatibile: fixează celelalte pachete individual și tratează `katex` separat (upgrade coordonat al ambelor, sau acceptă riscul documentat).
 - [ ] **S2 — XSS viu în istoric.** `frontend/src/components/history/HistoryDetail.tsx:65` face `win.document.write(entry.html)` cu HTML **NESANITIZAT**, deși `sanitizeHtml` e importat în același fișier (linia 4) și folosit corect la linia 136. Fix = o linie. Frate mai slab de verificat: `lib/editor-export.ts:179`. Efort **mic**
 - [ ] **S3 — `pypdf==4.3.1`** (`requirements.txt:1`) pe calea PDF-urilor încărcate de utilizator (`api/convert.py:38,58,357,389,403,419`) → urcă la `>=6.x`, rulează testele pytest. Efort **mic**
 - [ ] **S4 — timeout > maxDuration.** `api/lib/ocr_structured.py:116` are `timeout=180` în `retry_with_backoff(max_retries=2)` → până la ~540s, față de `maxDuration: 60` din `vercel.json` → utilizatorul primește **504 opac de platformă** în loc de eroare cu cod `E-OCR-*`. Idem `ocr_structured.py:232`, `translation_router.py:468,522`. Aliniază timeout-urile sub 60s. Efort **mic** — **atinge direct F9**
