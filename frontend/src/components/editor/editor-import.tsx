@@ -332,8 +332,11 @@ export function EditorImportProvider({
   const [pending, setPending] = useState<PendingImport | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Guard SINCRON: `isImporting` (state) se citește stale în același tick → două
-  // apeluri rapide (ex. onChange dublu / drop repetat) ar porni două importuri.
+  // apeluri rapide ar porni două importuri. `importingRef` prinde apelurile care se
+  // SUPRAPUN; `lastFireRef` (debounce) prinde și re-fire-ul rapid care ajunge DUPĂ ce
+  // primul import s-a încheiat deja (ex. `change` emis de două ori pt același fișier).
   const importingRef = useRef(false);
+  const lastFireRef = useRef(0);
   const langRef = useRef<LangCode>(sourceLang);
   langRef.current = sourceLang;
 
@@ -342,11 +345,10 @@ export function EditorImportProvider({
     (blocks: JSONContent[], mode: "new" | "replace" | "append") => {
       if (!editor) return;
       if (mode === "append") {
-        // pageBreak înainte → documentul adăugat începe pe pagină nouă (nu lipit).
-        const content = editor.isEmpty
-          ? blocks
-          : [{ type: "pageBreak" }, ...blocks];
-        editor.chain().focus("end").insertContent(content).run();
+        // Adaugă la sfârșit. (Un `pageBreak` prim-element la `focus("end")` — poziție
+        // inline — e ignorat de ProseMirror și rupe tăcut inserarea; verificat live →
+        // scos. Separarea pe pagină o poate face utilizatorul din „Inserare".)
+        editor.chain().focus("end").insertContent(blocks).run();
       } else {
         editor.commands.setContent({ type: "doc", content: blocks });
         editor.commands.focus("start");
@@ -362,6 +364,11 @@ export function EditorImportProvider({
     async (fileList: FileList | File[]) => {
       const files = Array.from(fileList);
       if (!files.length || !editor || importingRef.current) return;
+      // Debounce re-fire rapid (același eveniment emis de două ori) — un import legitim
+      // nou vine la secunde distanță (utilizatorul alege alt fișier), nu în <800ms.
+      const now = Date.now();
+      if (now - lastFireRef.current < 800) return;
+      lastFireRef.current = now;
       importingRef.current = true;
       setError(null);
       setNotice(null);
