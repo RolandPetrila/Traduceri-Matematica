@@ -1,6 +1,20 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-30 (F9 OCR drag&drop matematic — ✅ DEPLOYAT v19). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-30 (F9 DEPLOYAT v19 + **consolidare planuri → `docs/PLAN_MASTER.md`**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## 🧭 ÎNCEPE DE AICI (2026-07-30) — PLAN MASTER + prompt de reluare
+
+**`docs/PLAN_MASTER.md` = SURSA UNICĂ de adevăr** (creată prin audit în cod cu 5 agenți paraleli, dovezi `fișier:linie`). Înlocuiește 11 planuri vechi — care **încă există pe disc**; ștergerea lor = §11, primul pas al sesiunii următoare, după confirmarea lui Roland (intacte în git la `54fac8f`).
+
+**`docs/PROMPT_SESIUNE_NOUA.md`** = promptul direct executabil pentru sesiunea nouă (deciziile lui Roland deja confirmate, ordinea pașilor, regulile de gate).
+
+**Cerințele Roland (2026-07-30), în ordinea confirmată de el:** R1 meniu icon-rail colapsabil (ca Mosslein; bara de sus dispare) · R2 elimin selectorul global de limbi (F8 din editor RĂMÂNE) · R3 DOCX cu matematică prin parsare OMML→LaTeX · R4 OCR ales pe dovadă măsurată. **Securitatea (§2) DUPĂ cerințe** — decizia lui, asumată conștient.
+
+**⚠️ Descoperiri de audit verificate personal, ACTIVE în prod:** `npm audit --omit=dev` = 5 vulnerabilități, **3 HIGH** (`next`/`postcss`/`sharp`) + `dompurify` și `katex` **pe calea de randare a conținutului OCR/AI**, toate cu fix disponibil · **XSS viu** la `HistoryDetail.tsx:65` (`document.write` nesanitizat, deși `sanitizeHtml` e importat în același fișier) · `timeout=180`×3 în `ocr_structured.py:116` vs `maxDuration:60` → 504 opac · contor DeepL invizibil · `translation-cache.ts` orfan (cache-ul NU persistă) · modul **Planșe LIVE dar netracked** (2/8 faze; `sw.js` nu precache-uiește `/planse/*` deși F1 e bifat „offline").
+
+**⚠️ CORECȚIE a acestui handoff:** afirmația repetată mai jos că „meniul Matematică e desktop-only / pe mobil nu există math" este **FALSĂ**. Verificat: `MobileToolbar.tsx:128` randează `TiptapToolbar variant="sheet"`, iar `EditorMathMenu` la `TiptapToolbar.tsx:491` e **necondiționat** → toate cele 4 taburi (Construiește/Formule/Simboluri/Figuri) sunt accesibile din Sheet-ul mobil. Ignoră mențiunile contrare din secțiunile istorice.
 
 ---
 
