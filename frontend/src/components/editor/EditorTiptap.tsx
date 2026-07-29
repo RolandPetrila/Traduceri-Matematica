@@ -26,6 +26,8 @@ import {
 } from "./editor-find";
 import { MathEditDialog } from "./MathEditDialog";
 import { installMathAutoFit } from "./math-fit";
+import { EditorTranslateProvider } from "./editor-translate-state";
+import { LanguageSwitch } from "./LanguageSwitch";
 
 const INITIAL = `
 <h1>Document nou</h1>
@@ -53,9 +55,11 @@ export default function EditorTiptap() {
     <EditorDocumentProvider editor={editor}>
       <EditorPagesProvider editor={editor}>
         <EditorDictationProvider editor={editor}>
-          <EditorFindProvider editor={editor}>
-            <EditorShell editor={editor} />
-          </EditorFindProvider>
+          <EditorTranslateProvider editor={editor}>
+            <EditorFindProvider editor={editor}>
+              <EditorShell editor={editor} />
+            </EditorFindProvider>
+          </EditorTranslateProvider>
         </EditorDictationProvider>
       </EditorPagesProvider>
     </EditorDocumentProvider>
@@ -119,6 +123,11 @@ function EditorShell({ editor }: { editor: Editor | null }) {
       {/* Toolbar mobil (slim + Sheet) */}
       <div className="shrink-0 border-b border-border md:hidden">
         <MobileToolbar editor={editor} />
+      </div>
+
+      {/* Switch de limbi (F8) — traducere-în-editor, desktop + mobil */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-2 py-1">
+        <LanguageSwitch />
       </div>
 
       {/* Găsește & înlocuiește (G8) — montată doar cât e deschisă (primește focusul) */}
