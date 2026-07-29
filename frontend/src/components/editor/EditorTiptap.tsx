@@ -28,12 +28,9 @@ import { MathEditDialog } from "./MathEditDialog";
 import { installMathAutoFit } from "./math-fit";
 import { EditorTranslateProvider } from "./editor-translate-state";
 import { LanguageSwitch } from "./LanguageSwitch";
-
-const INITIAL = `
-<h1>Document nou</h1>
-<p>Scrie aici documentul (proces verbal, adresă, ofertă, orice)…</p>
-<p>Selectează text și folosește bara de sus. Pe telefon, apasă <strong>Format</strong> pentru toate uneltele.</p>
-`;
+import { EditorImportProvider } from "./editor-import";
+import { ImportDropZone, ImportStatus } from "./ImportUI";
+import { INITIAL } from "./editor-initial";
 
 /**
  * Editor NATIV (TipTap + shadcn) — înlocuiește editorul-iframe (retras în F6).
@@ -56,9 +53,13 @@ export default function EditorTiptap() {
       <EditorPagesProvider editor={editor}>
         <EditorDictationProvider editor={editor}>
           <EditorTranslateProvider editor={editor}>
-            <EditorFindProvider editor={editor}>
-              <EditorShell editor={editor} />
-            </EditorFindProvider>
+            {/* Import (F9) e ÎN interiorul Translate: după import cheamă `changeSource`
+                ca switch-ul de limbă să nu șteargă conținutul importat (R-EDIT). */}
+            <EditorImportProvider editor={editor}>
+              <EditorFindProvider editor={editor}>
+                <EditorShell editor={editor} />
+              </EditorFindProvider>
+            </EditorImportProvider>
           </EditorTranslateProvider>
         </EditorDictationProvider>
       </EditorPagesProvider>
@@ -132,6 +133,9 @@ function EditorShell({ editor }: { editor: Editor | null }) {
 
       {/* Găsește & înlocuiește (G8) — montată doar cât e deschisă (primește focusul) */}
       {isOpen && <EditorFindBar />}
+
+      {/* Import OCR (F9) — progres + eroare + banner rezultat + dialog destinație */}
+      <ImportStatus />
 
       {legacyImportedName && (
         <div className="flex shrink-0 items-start gap-2 border-b border-border bg-primary/10 px-3 py-2 text-xs">
@@ -211,13 +215,16 @@ function EditorShell({ editor }: { editor: Editor | null }) {
       </Dialog>
 
       {/* Zona de scris (foaia A4) — scrollabilă, primară.
-      Lățimea o dictează `.editor-sheet` (210mm pe desktop, fluid pe mobil). */}
-      <div className="flex-1 overflow-auto bg-muted p-2 sm:p-6">
-        <div className="editor-sheet mx-auto w-full">
-          <EditorContent editor={editor} />
-          <EditorPageGuides />
+      Lățimea o dictează `.editor-sheet` (210mm pe desktop, fluid pe mobil).
+      Învelită în ImportDropZone (F9): drag&drop de fișier → overlay + OCR. */}
+      <ImportDropZone>
+        <div className="h-full overflow-auto bg-muted p-2 sm:p-6">
+          <div className="editor-sheet mx-auto w-full">
+            <EditorContent editor={editor} />
+            <EditorPageGuides />
+          </div>
         </div>
-      </div>
+      </ImportDropZone>
 
       {/* Editarea unei formule existente (click pe formulă → math:edit). */}
       <MathEditDialog editor={editor} />

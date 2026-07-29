@@ -18,6 +18,7 @@ import {
   Heading,
   SeparatorHorizontal,
   PaintBucket,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CELL_COLORS } from "./table-extensions";
 import { trackEditor } from "./editor-telemetry";
+import { useEditorImport } from "./editor-import";
 
 /**
  * G4 Inserare (link/imagine/dată/linie) + G3 Tabele (Excel-like: inserare,
@@ -38,6 +40,8 @@ import { trackEditor } from "./editor-telemetry";
  */
 export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+  const { importFiles } = useEditorImport();
   // Meniu controlat: paleta de fundal nu e un DropdownMenuItem (e o grilă), deci
   // trebuie închis explicit după alegerea culorii.
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
@@ -73,6 +77,12 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
     e.target.value = "";
   };
 
+  const onImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length) importFiles(files);
+    e.target.value = "";
+  };
+
   const insertDate = () => {
     const d = new Date().toLocaleDateString("ro-RO", {
       day: "numeric",
@@ -90,6 +100,14 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
         type="file"
         accept="image/*"
         onChange={onFile}
+        className="hidden"
+      />
+      <input
+        ref={importRef}
+        type="file"
+        multiple
+        accept=".pdf,.docx,.txt,.md,.csv,.json,image/*"
+        onChange={onImportFile}
         className="hidden"
       />
 
@@ -111,6 +129,9 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => fileRef.current?.click()}>
             <ImageIcon className="mr-2 h-4 w-4" /> Imagine
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => importRef.current?.click()}>
+            <FileUp className="mr-2 h-4 w-4" /> Import fișier (OCR)
           </DropdownMenuItem>
           <DropdownMenuItem onClick={insertDate}>
             <Calendar className="mr-2 h-4 w-4" /> Data de azi
