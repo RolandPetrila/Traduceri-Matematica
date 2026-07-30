@@ -62,7 +62,7 @@
 - [x] R2.1 `git rm` LanguageToggle.tsx + language-context.tsx (2026-07-30, commit R2)
 - [x] R2.2 Curățat importurile + JSX din `layout.tsx` (scos `LanguageProvider`) + `TopBar.tsx` (scos `<LanguageToggle/>` + comentarii „limbă"). Verificat: `git grep` = 0 referințe rămase în `frontend`. Cheia `localStorage["translate_lang"]` era owned DOAR de `language-context` → orfanată benign, F8 nu o folosește
 - [x] R2.3 `metadata.description` actualizat: „…RO, SK, EN" → „…RO, SK, EN, DE" (adăugat DE, păstrat cadrul „Traducere" ca să nu contrazică titlul „Sistem Traduceri"; nu era chiar text mort — capacitatea de traducere există prin F8)
-- [~] R2.4 Gate: **`tsc 0 · jest 57/57 · next build OK (8 rute)` ✓**. Live F8 (RO→SK cu formulă + revenire) = **pending pe PROD** după deploy (Roland testează pe prod, §10.7); independența F8 dovedită static (0 importuri `language-context`)
+- [x] R2.4 Gate: **`tsc 0 · jest 57/57 · next build OK (8 rute)` ✓** + **LIVE pe prod verificat** (deploy `dpl_3ZdTuim2LS4GUbz56enS7hDQB91y`, CACHE v20, alias servește v20 Age:0): selectorul global de limbi ABSENT (DOM `globalFlagTogglePresent:false`), **F8 RO→SK→RO funcțional** (text real: „Lucrare de control"→„Kontrolná práca", revenire instant din cache), consolă fără erori, fără overflow orizontal. ⚠️ Viewport real 390px n-a putut fi forțat prin `resize_window` (a rămas 1254) → eyeball mobil final = Roland (scoaterea unui element din dreapta nu poate introduce overflow, doar eliberează spațiu)
 
 ### R3 — DOCX cu matematică: parsare OMML → LaTeX
 
