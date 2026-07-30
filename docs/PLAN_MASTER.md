@@ -11,7 +11,7 @@
 
 ## §0. STARE VERIFICATĂ (2026-07-30, în cod — nu pe bife)
 
-**LIVE pe `traduceri-frontend.vercel.app`** (`CACHE_VERSION v22-20260730d`, deployment `dpl_8dwQg6hMe4MWCFb99ivafyhikD3t` — R1/R2/R3/R5), branch `faza-g-editor`.
+**LIVE pe `traduceri-frontend.vercel.app`** (`CACHE_VERSION v23-20260731a`, deployment `traduceri-frontend-nzchoo4l9` — R1/R2/R3/R5/R6), branch `faza-g-editor`.
 
 | Zonă                     | Stare reală (cu dovadă)                                                                                                                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -30,9 +30,9 @@
 
 > Ordine confirmată de Roland: **cerințele întâi, securitatea (§2) după**. ⚠️ Cele 3 vulnerabilități HIGH din §2 rămân active în producție pe durata cerințelor (asumat conștient).
 >
-> **STARE:** R1 ✅ (v21) + R2 ✅ (v20) + **R3 ✅ + R5 ✅ — DEPLOYAT v22-20260730d (2026-07-30), verificat pe alias** (`traduceri-frontend.vercel.app` servește v22, deployment `dpl_8dwQg6hMe4MWCFb99ivafyhikD3t`, homepage 200 Age:0, editor-nou 200). Gate: `tsc 0 · jest 102/102 · build OK`. **Cerințe rămase:** R6 (search GLOBAL Ctrl+K). Plus R4 (OCR pe fișiere reale).
+> **STARE:** R1 ✅ (v21) + R2 ✅ (v20) + **R3 ✅ + R5 ✅ (v22) + R6 ✅ (v23) — TOATE DEPLOYATE + verificate pe alias.** R6: `CACHE_VERSION v23-20260731a`, deployment `traduceri-frontend-nzchoo4l9`, alias servește v23 (Age:0, homepage 200, editor-nou 200). Gate: `tsc 0 · jest 102/102 · build OK`. **Cerințe R1–R6 = TOATE LIVRATE + DEPLOYATE.**
 >
-> **➡️ URMĂTORUL: R6** (search GLOBAL Ctrl+K) — UI nou → **§17 mock + confirmarea Roland ÎNAINTE de cod**. Apoi R4 → §2 securitate. **RĂMAS pe R3+R5: eyeball Roland pe prod** (import un `.docx` real în Editor + F8 pe telefon).
+> **➡️ URMĂTORUL: R4** (OCR imagine/scan — alege provider pe DOVADĂ măsurată). Primul sub-pas: confirmă la sursă dacă Azure Document Intelligence extrage LaTeX (`[PROBABIL]`, neverificat). Apoi §2 securitate (S1 npm audit cu capcana katex@0.16.11, S2 XSS `HistoryDetail.tsx:65`) → §3/§4/§5/§6. **RĂMAS: eyeball Roland pe prod** (import `.docx`, F8 sus, Ctrl+K pe telefon).
 >
 > **⚙️ ORDINE DE EXECUȚIE (Roland: „alegi tu ordinea optimă") — aleasă de Claude, cu rațiune:**
 > **1. R3** (DOCX OMML→LaTeX) — bug VIZIBIL pe prod (matematica dispare din .docx), durere principală a lui Roland, are fixture-uri reale → prioritar. **2. R5** (mut F8 sus) — trivial, se grupează la deploy cu R3 (ambele editor). **3. R6** (Ctrl+K global) — feature UX nou (§17 mock). **4. R4** (OCR imagine/scan pe dovadă) — exploratoriu, consumă cote API. **5. §2 securitate** (S1–S8). Apoi §3/§4/§5/§6.
@@ -156,7 +156,7 @@
 
 **§17 — cere MOCK înainte de cod** (UI nou major).
 
-> ## ✅✅ R6 LIVRAT (2026-07-30) — mock §17 aprobat + gate verde + dovedit LIVE, NEDEPLOYAT
+> ## ✅✅ R6 LIVRAT (2026-07-30) — mock §17 aprobat + gate verde + dovedit LIVE + **DEPLOYAT v23** (alias verificat)
 >
 > **Fișiere NOI:** `lib/editor-commands.ts` (punte comenzi paletă↔editor), `components/command/CommandPalette.tsx` (paleta). **MODIFICATE:** `app/page.tsx` (state + listener Ctrl+K + render + prop Sidebar), `EditorTiptap.tsx` (EditorShell înregistrează handler-ul de comenzi), `Sidebar.tsx` (buton 🔍 + prop `onOpenSearch`).
 > **⚠️ `cmdk`/shadcn `Command` NU erau în proiect** (onboard-ul greșea) → construită FĂRĂ pachet nou (R-COST), pe `Dialog` + input/listă/navigare custom + fuzzy diacritic-insensitiv.
