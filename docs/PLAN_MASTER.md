@@ -156,10 +156,18 @@
 
 **§17 — cere MOCK înainte de cod** (UI nou major).
 
-- [ ] R6.1 Mock command-palette (Ctrl+K): input + rezultate grupate (Acțiuni editor / Module / Navigare) + confirmarea Roland
-- [ ] R6.2 Index de comenzi: din `TABS` (module) + comenzile toolbar-ului editorului (fiecare cu label + acțiune + icon) + fuzzy match. Iconițe: **`lucide-react` e DEJA dependință (`^0.363.0`)** + `shadcn/ui` (poți refolosi `Command`/`Dialog`) — NU adăuga pachete noi (R-COST)
-- [ ] R6.3 Declanșare globală `Ctrl+K` (la nivel `app/page.tsx` sau `layout.tsx`, nu doar în editor) + buton vizibil (ex. în Sidebar sau header modul); Escape închide, săgeți navighează
-- [ ] R6.4 Gate + live 390px+desktop: deschide cu Ctrl+K, „tabel"→inserează tabel, „planșe"→comută la modulul Planșe, „bold"→aplică. Atenție: nu intra în conflict cu Ctrl+F (find-ul editorului) sau Ctrl+K nativ
+> ## ✅✅ R6 LIVRAT (2026-07-30) — mock §17 aprobat + gate verde + dovedit LIVE, NEDEPLOYAT
+>
+> **Fișiere NOI:** `lib/editor-commands.ts` (punte comenzi paletă↔editor), `components/command/CommandPalette.tsx` (paleta). **MODIFICATE:** `app/page.tsx` (state + listener Ctrl+K + render + prop Sidebar), `EditorTiptap.tsx` (EditorShell înregistrează handler-ul de comenzi), `Sidebar.tsx` (buton 🔍 + prop `onOpenSearch`).
+> **⚠️ `cmdk`/shadcn `Command` NU erau în proiect** (onboard-ul greșea) → construită FĂRĂ pachet nou (R-COST), pe `Dialog` + input/listă/navigare custom + fuzzy diacritic-insensitiv.
+> **Gate: `tsc 0 · jest 102/102 · build OK`.** **DOVEDIT LIVE (Chrome MCP):** Ctrl+K deschide (3 grupuri, 15 comenzi, „Editor" marcat activ); filtrare „tabel"→1 comandă; comutare module (istoric/planșe); **comandă editor comută pe Editor + execută** (`tablesInEditor:1`); buton 🔍 Sidebar deschide; **Ctrl+F NU deschide paleta** (fără conflict); **centrat desktop + 390px, 0 overflow**.
+> **⚠️ BUG project-wide prins + reparat scoped:** animația `enter` (tailwindcss-animate) hijack-uiește `transform` la identity (dialog.tsx n-are `slide-in-from-*` să seteze enter-translate) → centrarea `translate-x-[-50%]` NU se aplică pe NICIUN `DialogContent`. Fix: `!translate-x/y-[-50%]` (author `!important` bate animația în cascadă). Aplicat DOAR pe paletă; celelalte dialoguri (mici) rămân neatinse — vezi [[finding_dialog_transform_animation_2026_07_30]].
+> **RĂMAS:** deploy + eyeball Roland pe prod (Ctrl+K pe telefon).
+
+- [x] R6.1 Mock command-palette aprobat de Roland (AskUserQuestion §17, 2026-07-30): input + grupuri Module / Acțiuni editor / Acțiuni + comportament (Ctrl+K global + buton 🔍, comenzile editor comută pe Editor întâi)
+- [x] R6.2 Index comenzi: 5 module din `TABS` + 9 acțiuni editor (bold/italic/tabel/formulă/import/traducere SK/EN/DE/găsește) + 1 globală (tot ecranul). `lucide-react` pt iconițe. Fuzzy match diacritic-insensitiv (NFD). Punte cross-tab prin `editor-commands.ts` (EditorShell înregistrează handler; e mereu montat, taburile `display:none`)
+- [x] R6.3 Ctrl+K global la nivel `page.tsx` (window keydown, preventDefault, toggle) + buton 🔍 „Caută… Ctrl K" în Sidebar. Escape închide (Dialog), ↑↓ navighează (index global peste grupuri), Enter execută
+- [x] R6.4 Gate + LIVE 390px+desktop: Ctrl+K deschide, „tabel"→inserează tabel (dovedit `tablesInEditor:1`), module comută, „bold" wired. **Fără conflict Ctrl+F** (verificat: Ctrl+F NU deschide paleta). Paletă centrată la 390px (0 overflow) după fix-ul de transform
 
 ---
 

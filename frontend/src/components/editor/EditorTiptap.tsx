@@ -26,11 +26,18 @@ import {
 } from "./editor-find";
 import { MathEditDialog } from "./MathEditDialog";
 import { installMathAutoFit } from "./math-fit";
-import { EditorTranslateProvider } from "./editor-translate-state";
+import {
+  EditorTranslateProvider,
+  useEditorTranslate,
+} from "./editor-translate-state";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { EditorImportProvider } from "./editor-import";
 import { ImportDropZone, ImportStatus } from "./ImportUI";
 import { INITIAL } from "./editor-initial";
+import {
+  setEditorCommandHandler,
+  type EditorCommandId,
+} from "@/lib/editor-commands";
 
 /**
  * Editor NATIV (TipTap + shadcn) — înlocuiește editorul-iframe (retras în F6).
@@ -72,7 +79,8 @@ export default function EditorTiptap() {
  * (un component nu-și poate folosi propriile providere).
  */
 function EditorShell({ editor }: { editor: Editor | null }) {
-  const { isOpen, onEditorKeyDown } = useEditorFind();
+  const { isOpen, openFind, onEditorKeyDown } = useEditorFind();
+  const { switchLanguage } = useEditorTranslate();
   const {
     legacyImportedName,
     dismissLegacyNotice,
@@ -81,6 +89,56 @@ function EditorShell({ editor }: { editor: Editor | null }) {
     dismissLegacyAvailable,
   } = useEditorDocument();
   const [confirmBring, setConfirmBring] = useState(false);
+
+  // R6 — comenzile paletei globale (Ctrl+K) ajung la editor prin acest handler.
+  // EditorShell e mereu montat (taburile `display:none`), deci handler-ul e mereu
+  // activ; paleta comută pe tabul Editor înainte să cheme comanda.
+  useEffect(() => {
+    const run: (id: EditorCommandId) => void = (id) => {
+      if (!editor) return;
+      switch (id) {
+        case "bold":
+          editor.chain().focus().toggleBold().run();
+          break;
+        case "italic":
+          editor.chain().focus().toggleItalic().run();
+          break;
+        case "table":
+          editor
+            .chain()
+            .focus()
+            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+            .run();
+          break;
+        case "math":
+          // Inserează o formulă-început editabilă (click → dialog de editare).
+          editor.chain().focus().insertInlineMath({ latex: "x" }).run();
+          break;
+        case "import": {
+          // Deschide selectorul de fișiere al importului (F9) — inputul e ascuns.
+          const inp = document.querySelector<HTMLInputElement>(
+            'input[type="file"][accept*="docx"]',
+          );
+          inp?.click();
+          break;
+        }
+        case "translate-sk":
+          switchLanguage("sk");
+          break;
+        case "translate-en":
+          switchLanguage("en");
+          break;
+        case "translate-de":
+          switchLanguage("de");
+          break;
+        case "find":
+          openFind();
+          break;
+      }
+    };
+    setEditorCommandHandler(run);
+    return () => setEditorCommandHandler(null);
+  }, [editor, switchLanguage, openFind]);
 
   // Auto-fit al formulelor lungi pe foaie (#2): le micșorează cât să încapă în
   // chenarul A4 (fără să spargă layout-ul). Se reaplică la re-randarea nodurilor.

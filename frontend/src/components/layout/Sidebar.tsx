@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { TABS, type TabId } from "@/lib/tab-config";
 import VersionBadge from "./VersionBadge";
 
@@ -14,9 +14,15 @@ const STORAGE_KEY = "mosslein:sidebar:collapsed";
 interface SidebarProps {
   activeTab: TabId;
   onTabChange: (tab: TabId) => void;
+  /** R6 — deschide command palette-ul global (Ctrl+K). */
+  onOpenSearch: () => void;
 }
 
-export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+export default function Sidebar({
+  activeTab,
+  onTabChange,
+  onOpenSearch,
+}: SidebarProps) {
   // Init DEFAULT (extins) = identic SSR ↔ prima randare client → FĂRĂ hydration
   // mismatch (capcana care rupea comutarea taburilor, cf. finding hydration).
   // Restaurăm preferința / aplicăm default-ul pe breakpoint DUPĂ hidratare.
@@ -98,6 +104,32 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           <ChevronRight className="h-4 w-4" />
         </button>
       )}
+
+      {/* R6 — căutare globală (Ctrl+K) */}
+      <div className="border-b border-chalk-white/20 p-2">
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          title="Caută (Ctrl+K)"
+          aria-label="Căutare globală (Ctrl+K)"
+          aria-keyshortcuts="Control+K"
+          className={`flex w-full items-center rounded-md border border-chalk-white/20 text-chalk-white/70 transition-colors hover:bg-white/5 hover:text-chalk-white ${
+            collapsed ? "justify-center px-2 py-2" : "gap-2 px-2.5 py-1.5"
+          }`}
+        >
+          <Search className="h-4 w-4 shrink-0" aria-hidden />
+          {!collapsed && (
+            <>
+              <span className="min-w-0 flex-1 truncate text-left text-sm">
+                Caută…
+              </span>
+              <span className="shrink-0 rounded border border-chalk-white/20 px-1 py-0.5 text-[10px] opacity-70">
+                Ctrl K
+              </span>
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Module (taburi) — comutare de stare, NU rute (păstrează montarea simultană) */}
       <nav

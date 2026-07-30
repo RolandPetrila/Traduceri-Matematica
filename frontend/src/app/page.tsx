@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/layout/Sidebar";
 import IframeModule from "@/components/layout/IframeModule";
+import { CommandPalette } from "@/components/command/CommandPalette";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
 
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
@@ -19,6 +20,8 @@ export default function Home() {
   // localStorage direct în initializer diferea de SSR → „hydration mismatch"
   // + uneori tabul afișat nu era cel salvat.
   const [activeTab, setActiveTab] = useState<TabId>(DEFAULT_TAB);
+  // R6 — command palette globală (Ctrl+K).
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -28,6 +31,19 @@ export default function Home() {
     } catch {
       /* localStorage indisponibil → rămânem pe DEFAULT */
     }
+  }, []);
+
+  // Ctrl+K / ⌘K deschide-închide paleta de oriunde. NU intră în conflict cu Ctrl+F
+  // (find-ul editorului, prins pe containerul editorului) — sunt taste diferite.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const handleTabChange = (tab: TabId) => {
@@ -41,7 +57,18 @@ export default function Home() {
 
   return (
     <div className="flex min-h-[100dvh]">
-      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onOpenSearch={() => setPaletteOpen(true)}
+      />
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        switchModule={handleTabChange}
+        activeTab={activeTab}
+      />
 
       <main className="min-w-0 flex-1 px-3 sm:px-4 py-2 sm:py-3">
         <div style={{ display: activeTab === "convertor" ? "block" : "none" }}>
