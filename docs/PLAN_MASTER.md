@@ -93,11 +93,13 @@
 - [ ] R3.1 Modul NOU `frontend/src/lib/omml-to-latex.ts` — funcție **pură** (primește XML string, întoarce segmente text+latex), **unit-testabilă fără DOM**
 - [ ] R3.2 Fixture de test REAL: extrage `word/document.xml` din `test.multimi2.docx` → `frontend/src/lib/__tests__/fixtures/` (trunchiat la ce trebuie). Teste pentru FIECARE structură din tabel + cazuri degenerate (OMML gol, nested, necunoscut→text literal)
 - [ ] R3.3 Integrare în `editor-import.tsx`: la `.docx`, în loc de `mammoth.extractRawText` → citește `word/document.xml` (zip, ex. `jszip`/`fflate`) + păstrează ORDINEA text↔formule + `**bold**` unde e simplu
-- [ ] R3.4 Reutilizează `parseInlineToNodes` din `ocr-map.ts` (deja tratat `$$…$$` înainte de `$…$` + latex-gol→literal) pentru a produce noduri `inlineMath`
+- [ ] R3.4 Reutilizează `parseInlineToNodes` din `ocr-map.ts` (deja tratat `$$…$$` înainte de `$…$` + latex-gol→literal) pentru a produce noduri `inlineMath`. ⚠️ **CAPCANĂ (advisor):** `parseInlineToNodes` interpretează `$` ca delimitator — dacă OMML→LaTeX emite `$` literal în text (preț, valută) sau `\{`/`\}` din `<m:d>` cu delimitatori, reuse-ul poate mângli output-ul. Emite LaTeX curat (fără `$` liber) SAU escape la `$` în textul non-matematic înainte de a-l trece prin parser
 - [ ] R3.5 **Onest (R3):** dacă un .docx are formule ca IMAGINE (nu OMML), ele NU se transcriu → semnalează în banner. Detectează și raportează câte OMML + câte imagini a găsit
 - [ ] R3.7 **`mammoth` devine dependință moartă** — a fost instalat ieri exact pentru calea `.docx` pe care R3 o înlocuiește. Scoate-l din `package.json` dacă nu mai e folosit; oricum ai nevoie de un cititor de zip (`fflate` sau `jszip`) → e un **schimb**, nu o dependință în plus
 - [ ] R3.6 Gate: unit tests + **eyeball obligatoriu pe `test.multimi2.docx`**: import → toate cele 20 de expresii apar la locul lor → export PDF → **compară cu `Downloads/test.multimi2.pdf` (varianta ruptă)** și cu .docx-ul original
-- [ ] R3.8 **FIXTURE-URI REALE EXTINSE (Roland, 2026-07-30 r2):** pe lângă `test.multimi2.docx`, folosește ca test set și `C:\Users\ALIENWARE\Desktop\Cristina\Fisiere_Word\test5nr.naturale2025.docx` + `2.Unghiuri. Bisectoare.docx`. **Dovadă a bug-ului:** `Downloads/test5nr.naturale2025.pdf` (output actual al app-ului) are matematica DISPĂRUTĂ complet — „Calculați: (1,5 p)" fără calcul, „Se știe că , aflati ." fără ecuații, „numerelor de forma ." fără forma. Eyeball pe toate 3, formulă-cu-formulă
+- [ ] R3.8 **FIXTURE-URI REALE EXTINSE (Roland, 2026-07-30 r2):** pe lângă `test.multimi2.docx`, folosește ca test set și `C:\Users\ALIENWARE\Desktop\Cristina\Fisiere_Word\test5nr.naturale2025.docx` + `2.Unghiuri. Bisectoare.docx`. **Dovadă a bug-ului:** `Downloads/test5nr.naturale2025.pdf` (output actual al app-ului) are matematica DISPĂRUTĂ complet — „Calculați: (1,5 p)" fără calcul, „Se știe că , aflati ." fără ecuații, „numerelor de forma ." fără forma. Eyeball pe toate 3, formulă-cu-formulă.
+      **✅ VERIFICAT LA SURSĂ (2026-07-30, `unzip -p … word/document.xml | grep m:oMath`):** `test.multimi2` = **20 OMML / 0 imagini** · `test5nr.naturale2025` = **9 OMML / 0 imagini** · `2.Unghiuri. Bisectoare` = **6 OMML / 1 IMAGINE** (`word/media/`). Toate au OMML → abordarea R3 e validă pe toate 3. ⚠️ `2.Unghiuri` are și 1 figură ca imagine → vezi R3.10
+- [ ] R3.10 **Imagini din .docx (`word/media/`):** `2.Unghiuri` are 1 figură ca imagine. Extrage și imaginile din zip, inserează-le ca noduri `ResizableImage` (F3c) la locul lor în text (parcurgi `document.xml` în ordine, mapezi `<w:drawing>`/`r:embed` → `word/media/imageN` prin `word/_rels/document.xml.rels`). Dacă e prea complex pt ETAPA A, măcar banner onest „N figuri ca imagine" (R3.5)
 - [ ] R3.9 **FIDELITATE (Roland r2 — „matematica + ordinea întâi, apoi vizual"):** ETAPA A (fermă, obligatorie) = formulele apar la locul lor (OMML→LaTeX, editabile) + text în ordine + bold/liste simple. ETAPA B (iterativ după A) = apropiere de layout-ul vizual (spațiere, aliniere, tabele). NU bloca A pe B. Declară onest ce nivel s-a atins pe fiecare fișier
 
 ### R4 — OCR: alege pe DOVADĂ cel mai calitativ provider
@@ -131,7 +133,7 @@
 
 **Unde e F8 azi:** randat separat (grep „scris în" / `EditorTranslate`/`editor-translate*`), sub `TiptapToolbar`. De integrat în `TiptapToolbar` (variant `bar`) compact, păstrat accesibil și în Sheet-ul mobil (variant `sheet`).
 
-- [ ] R5.1 Găsește randarea actuală a F8 (`grep -r "scris în"` / componenta de traducere)
+- [ ] R5.1 Găsește randarea actuală a F8 (`grep -r "scris în"` / componenta de traducere). **Selector confirmat live:** butoanele sunt `<button>` simple cu `textContent` = `RO`/`SK`/`EN`/`DE`, lângă label-ul „scris în:", pe un rând sub `TiptapToolbar` (NU în TiptapToolbar acum)
 - [ ] R5.2 Mut-o în `TiptapToolbar` după grupul culori/clear (compact, `flex-wrap`, să nu spargă layout-ul)
 - [ ] R5.3 Gate: `tsc·jest·build` + live: F8 pe rândul 1, funcțional (RO→SK cu o formulă + revenire), 390px + desktop. Deploy grupat cu R3
 
@@ -142,7 +144,7 @@
 **§17 — cere MOCK înainte de cod** (UI nou major).
 
 - [ ] R6.1 Mock command-palette (Ctrl+K): input + rezultate grupate (Acțiuni editor / Module / Navigare) + confirmarea Roland
-- [ ] R6.2 Index de comenzi: din `TABS` (module) + comenzile toolbar-ului editorului (fiecare cu label + acțiune + icon) + fuzzy match
+- [ ] R6.2 Index de comenzi: din `TABS` (module) + comenzile toolbar-ului editorului (fiecare cu label + acțiune + icon) + fuzzy match. Iconițe: **`lucide-react` e DEJA dependință (`^0.363.0`)** + `shadcn/ui` (poți refolosi `Command`/`Dialog`) — NU adăuga pachete noi (R-COST)
 - [ ] R6.3 Declanșare globală `Ctrl+K` (la nivel `app/page.tsx` sau `layout.tsx`, nu doar în editor) + buton vizibil (ex. în Sidebar sau header modul); Escape închide, săgeți navighează
 - [ ] R6.4 Gate + live 390px+desktop: deschide cu Ctrl+K, „tabel"→inserează tabel, „planșe"→comută la modulul Planșe, „bold"→aplică. Atenție: nu intra în conflict cu Ctrl+F (find-ul editorului) sau Ctrl+K nativ
 
