@@ -48,10 +48,10 @@
 
 **⚠️ Constrângere de arhitectură (NU o încălca):** taburile sunt **montate simultan** cu `display:none` (`app/page.tsx`) — asta păstrează starea editorului la comutare. Sidebar-ul schimbă doar CARE tab e vizibil; **NU** treci pe rute Next (ar reseta editorul). Vezi comentariul din `EditorTiptap.tsx` despre Ctrl+F prins pe container exact din acest motiv.
 
-- [ ] R1.1 Component `Sidebar.tsx` (extins/colapsat + persistență + item activ)
-- [ ] R1.2 `page.tsx` + `TopBar.tsx`: scot bara de sus, montez sidebar-ul lateral, modulul ocupă restul
-- [ ] R1.3 Titlul modulului (ex. „Editor Documente Matematic") — comasat în header-ul modulului, nu bară separată
-- [ ] R1.4 Gate: `tsc 0 · jest · next build` + probă live la **390px** și desktop, pe FIECARE tab (Convertor/Editor/Asistent/Istoric/Planșe — inclusiv cele `kind:iframe`)
+- [x] R1.1 `Sidebar.tsx` NOU — `<aside>` w-60↔w-14, `bg-chalkboard-dark`, brand+chevron, nav din `TABS` (comutare de stare NU rute), activ = `border-l-4 border-chalk-yellow bg-chalk-yellow/15`, footer ⚙+VersionBadge. Persistență `localStorage["mosslein:sidebar:collapsed"]`. **Init DEFAULT + `useEffect` (localStorage sau matchMedia<768) → 0 hydration mismatch** (cf. [[finding_hydration_tab_and_deploy_verify_2026_07_26]])
+- [x] R1.2 `page.tsx` rescris: `<div flex><Sidebar/><main flex-1>{divurile display:none EXACT}</main></div>`; bara de sus scoasă; `git rm TopBar.tsx` (0 importatori)
+- [x] R1.3 Titlul modulului rămâne în header-ul propriu al fiecărui modul (ex. editor „Editor Documente Matematic") — nu bară separată. Confirmat live
+- [x] R1.4 Gate: **`tsc 0 · jest 57/57 · next build OK` ✓** + **LIVE local (`next start` :3320, Chrome MCP):** DESKTOP — toate cele 5 taburi comută+randează (incl. iframe Asistent+Planșe), activ evidențiat, collapse/expand persistă (`ls 1↔0`), consolă curată, 0 hydration warning, bară de sus dispărută. MOBIL — **iframe-probe 390px real** (viewport 386, `mqMobile:true`): **sidebar default COLAPSAT** (56px, calea matchMedia), comutare prin iconițe OK, expand arată etichete, **0 overflow orizontal**, „Format" Sheet-ul editorului intact. Module umplu înălțimea (`gap:-52`, min-h)
 
 ### R2 — Eliminarea selectorului global de limbi (🇷🇴 RO / 🇸🇰 SK / 🇬🇧 EN, sus-dreapta)
 

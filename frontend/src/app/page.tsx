@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import TopBar from "@/components/layout/TopBar";
+import Sidebar from "@/components/layout/Sidebar";
 import IframeModule from "@/components/layout/IframeModule";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
 
@@ -40,10 +40,10 @@ export default function Home() {
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
-      <TopBar activeTab={activeTab} onTabChange={handleTabChange} />
+    <div className="flex min-h-[100dvh]">
+      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <div className="mt-2">
+      <main className="min-w-0 flex-1 px-3 sm:px-4 py-2 sm:py-3">
         <div style={{ display: activeTab === "convertor" ? "block" : "none" }}>
           <ConvertorPage />
         </div>
@@ -74,7 +74,7 @@ export default function Home() {
             />
           </div>
         ))}
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
