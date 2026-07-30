@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { logAction } from "@/lib/monitoring";
 import { TABS, type TabId } from "@/lib/tab-config";
-import LanguageToggle from "./LanguageToggle";
 import VersionBadge from "./VersionBadge";
 
 interface TopBarProps {
@@ -14,7 +13,7 @@ interface TopBarProps {
 /**
  * Bară slim unică (decizie Roland 2026-07-26) — înlocuiește vechiul antet mare
  * (titlu + subtitlu + rândul decorativ) + `TabNav` cu UN SINGUR rând subțire:
- * brand mic · taburi (iconițe; etichete pe desktop) · limbă · diagnostic · versiune.
+ * brand mic · taburi (iconițe; etichete pe desktop) · diagnostic · versiune.
  *
  * Scop: funcția activă primește tot spațiul vertical (~200px recuperați), la
  * FIECARE tab. Taburile rămân mereu la un click (scroll orizontal pe mobil).
@@ -57,7 +56,7 @@ export default function TopBar({ activeTab, onTabChange }: TopBarProps) {
         ))}
       </nav>
 
-      {/* Dreapta: diagnostic + limbă + versiune */}
+      {/* Dreapta: diagnostic + versiune */}
       <div className="flex shrink-0 items-center gap-2">
         <Link
           href="/diagnostics"
@@ -66,7 +65,6 @@ export default function TopBar({ activeTab, onTabChange }: TopBarProps) {
         >
           &#x2699;
         </Link>
-        <LanguageToggle />
         <span className="hidden sm:inline">
           <VersionBadge />
         </span>

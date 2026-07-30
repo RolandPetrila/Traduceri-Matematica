@@ -1,6 +1,17 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-30 (F9 DEPLOYAT v19 + **consolidare planuri → `docs/PLAN_MASTER.md`**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-07-30 seara (**PASUL 0 curățenie planuri + R2 elimin selector limbi** — vezi blocul de mai jos). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## ▶️ REIA DE AICI (2026-07-30 seara) — execuție PLAN_MASTER §1
+
+**Sesiune de execuție a `PROMPT_SESIUNE_NOUA.md` (cerințele R1–R4). Progres:**
+
+- ✅ **PASUL 0 — curățenie planuri vechi (§11 W1–W4).** Roland a confirmat. Șterse **11 planuri**: 9 tracked prin `git rm` (commit `2a93465`, recuperabile din git la `54fac8f`) + 2 gitignored prin `rm` (ireversibil, dar cu backup local de sesiune în `scratchpad/deleted_plans_backup/`). Referințe reparate în CLAUDE.md / README / HANDOFF / PLAN_MASTER §11 / cod (`tab-config.ts`, `IframeModule.tsx`) / `scratchpad/README_autorare_math.md`. **Descoperire onestă:** premisa planului „toate-s recuperabile din git" era falsă pt 2 fișiere (gitignored).
+- ✅ **PASUL 1 = R2 — eliminat selectorul global de limbi (§1 R2).** `git rm` `LanguageToggle.tsx` + `language-context.tsx`; curățat `layout.tsx` (scos `LanguageProvider` + actualizat `metadata.description`) + `TopBar.tsx` (scos `<LanguageToggle/>`). `git grep` = 0 referințe rămase. **Switch-ul F8 din editor NEATINS** (dovedit static: 0 importuri de `language-context` din editor; cheia `translate_lang` era owned doar de contextul șters). **Gate: `tsc 0 · jest 57/57 · next build OK (8 rute)`.**
+- ⏳ **RĂMAS pe R2:** verificare **live F8 pe PROD** (RO→SK cu o formulă + revenire) după deploy — Roland testează pe prod (§10.7). **Deploy R2 = pending confirmarea Roland** (bump `CACHE_VERSION` v19→v20). Intenția R2 (per prompt): validează ciclul complet gate+deploy pe risc mic, ÎNAINTE de R1.
+- ➡️ **URMĂTORUL PAS:** deploy R2 (cu confirmare) → verif live F8 pe prod → apoi **PASUL 2 = R1 (icon-rail Mosslein)**, care cere advisor + probă live pe TOATE taburile (inclusiv iframe) la 390px+desktop.
 
 ---
 
