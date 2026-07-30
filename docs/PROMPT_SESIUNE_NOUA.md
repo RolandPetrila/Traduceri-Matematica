@@ -1,7 +1,7 @@
 # PROMPT PENTRU SESIUNE NOUĂ — copiază tot blocul de mai jos ca PRIM mesaj
 
-> Generat 2026-07-30, după consolidarea tuturor planurilor în `docs/PLAN_MASTER.md` (audit în cod cu 5 agenți paraleli).
-> Deciziile din prompt sunt CONFIRMATE de Roland prin AskUserQuestion — sesiunea nouă NU le re-întreabă.
+> Regenerat 2026-07-30 (seara), după: PASUL 0 (curățenie 11 planuri) + R1 + R2 DONE & DEPLOYAT, și după stabilirea a 2 cerințe NOI (R5 + R6) prin AskUserQuestion.
+> Deciziile din prompt sunt CONFIRMATE de Roland — sesiunea nouă NU le re-întreabă.
 
 ---
 
@@ -11,52 +11,50 @@
 /effort xhigh
 
 CITEȘTE ÎNTÂI, INTEGRAL, ÎN ORDINE (înainte de orice acțiune):
-1. docs/PLAN_MASTER.md — SURSA UNICĂ de adevăr (creat 2026-07-30 prin audit în cod al TUTUROR planurilor vechi). Conține: §1 cerințele mele R1–R4, §2 securitate, §3 regresii, §4 curățenie, §5 restanțe math, §6 Planșe, §7 backlog, §8 verificări umane, §9 decizii moștenite, §10 reguli de execuție, §11 ștergerea planurilor vechi.
-2. docs/HANDOFF_SESIUNE.md — starea operațională curentă (deploy, capcane, ce e verificat vs nu).
+1. docs/HANDOFF_SESIUNE.md — blocul „▶️ REIA DE AICI (2026-07-30 seara)" din cap: starea reală + cerințele noi + ordinea. (Restul fișierului = jurnal istoric; nu-l reciti tot.)
+2. docs/PLAN_MASTER.md — SURSA UNICĂ de adevăr. §1 = cerințele mele R1–R6 (R1,R2 ✅; R3,R4,R5,R6 de făcut), §2 securitate, §3 regresii, §4 curățenie, §5 math, §6 Planșe, §10 reguli de execuție.
 3. .claude/rules/project_rules.md + CLAUDE.md — regulile proiectului.
 
-CONTEXT: PWA matematică pentru Cristina (profesoară, secția slovacă). LIVE pe traduceri-frontend.vercel.app, CACHE_VERSION v19-20260730a, branch faza-g-editor. Editor nativ TipTap cu 334 formule V–XII (KaTeX), traducere RO/SK/EN/DE în editor, import OCR drag&drop, export PDF/DOCX/HTML. Backend Python serverless pe Vercel + Supabase pentru loguri. Non-regresie curentă: tsc 0 · jest 57/57 · next build OK.
+CONTEXT: PWA matematică pentru Cristina (profesoară, secția slovacă). LIVE pe traduceri-frontend.vercel.app, branch faza-g-editor, CACHE_VERSION v21-20260730c. Editor nativ TipTap (334 formule KaTeX V–XII), traducere RO/SK/EN/DE în editor (F8), import OCR drag&drop, export PDF/DOCX/HTML. Backend Python serverless pe Vercel + Supabase. Non-regresie curentă: tsc 0 · jest 57/57 · next build OK (8 rute).
 
-DECIZII DEJA CONFIRMATE DE MINE — NU LE RE-ÎNTREBA:
-· Ordinea: cerințele mele R1→R4 ÎNTÂI, securitatea (§2) DUPĂ. Am acceptat conștient că cele 3 vulnerabilități HIGH rămân active în acest interval.
-· R1 meniu: icon-rail colapsabil ca în Mosslein (extins 240px ↔ colapsat 56px, persistat în localStorage, item activ cu bordură+fundal). Bara de module de sus DISPARE; modulul selectat ocupă tot restul. Mock DEJA aprobat — nu-l mai cere.
-· R2 limbi: se șterg DOAR LanguageToggle.tsx + language-context.tsx (selectorul global 🇷🇴🇸🇰🇬🇧 din dreapta sus, nefuncțional). Switch-ul de traducere din editor („scris în: RO ▾ | RO SK EN DE") RĂMÂNE — e funcțional, verificat live.
-· R3 DOCX: parsare OMML → LaTeX DIRECT din XML-ul .docx (fidelitate 100%, offline, gratuit). NU calea docx→PDF→OCR vizual. Formulele apar EXACT la locul lor în text, editabile — nu panou-listă, nu glosar.
-· R4 OCR: alegerea providerului se face pe DOVADĂ măsurată (test comparativ pe fișierele mele reale), nu pe reputație. Primul sub-pas obligatoriu: confirmă la sursă dacă Azure Document Intelligence are extragere de formule ca LaTeX — e [PROBABIL], nu verificat.
-· Overlay pixel-perfect: ABANDON confirmat → se șterge și backend-ul (api/overlay.py + api/lib/overlay.py + testul), fără PyMuPDF (ăla e folosit de OCR).
-· Modulele Chat AI / Calculator / Corectare-Generare teste: rămân în BACKLOG (§7), NU se implementează acum.
-· Planurile vechi: se șterg (§11), dar DOAR după ce confirm eu că PLAN_MASTER acoperă tot. Întreabă-mă la început: „confirmi ștergerea celor 11 planuri vechi?"
+CE E DEJA FĂCUT (NU relua): PASUL 0 = cele 11 planuri vechi ȘTERSE (consolidate în PLAN_MASTER). R1 ✅ = meniu icon-rail colapsabil (Sidebar înlocuiește bara de sus), DEPLOYAT v21, verificat live desktop+mobil. R2 ✅ = eliminat selectorul global de limbi (F8 din editor rămâne), DEPLOYAT v20.
 
-EXECUTĂ ÎN ACEASTĂ ORDINE:
-PASUL 0. Întreabă-mă dacă confirm ștergerea planurilor vechi (§11 W1). Dacă da, execută W2–W4 (e curățenie de 10 minute și scapi de confuzie).
-PASUL 1. R2 (§1) — eliminarea selectorului global de limbi. Cel mai mecanic, îl faci primul ca să validezi ciclul de gate. Verifică OBLIGATORIU că switch-ul F8 din editor funcționează după.
-PASUL 2. R1 (§1) — meniul icon-rail. Citește ÎNTÂI C:\Proiecte\Mosslein_Sistem_Gestiune - Copy\src\components\nav\Sidebar.tsx. ATENȚIE la constrângerea de arhitectură: taburile sunt montate simultan cu display:none — NU treci pe rute Next (ar reseta editorul). Probă live pe FIECARE tab, inclusiv cele iframe (Asistent, Planșe), la 390px și desktop.
-PASUL 3. R3 (§1) — OMML → LaTeX. Modul pur unit-testabil + fixture REAL extras din C:\Users\ALIENWARE\Desktop\Cristina\Fisiere_Word\test.multimi2.docx (are 20 ecuații OMML, 0 imagini). Eyeball OBLIGATORIU: importă acel .docx, verifică toate cele 20 de expresii la locul lor, exportă PDF și compară cu Downloads\test.multimi2.pdf (varianta ruptă de acum) și cu originalul Word.
-PASUL 4. R4 (§1) — comparația OCR + implementarea câștigătorului.
-PASUL 5. Securitate §2 (S1→S8). S1 (npm audit fix) și S2 (o linie în HistoryDetail.tsx:65) sunt sub o oră împreună.
-PASUL 6. §3 regresii (G1 contor DeepL, G2 cache persistent, G3 notificare, G4 verificare vizuală) și §4 curățenie (C1 overlay, C2 pdf-rasterize, C3–C6).
-PASUL 7. §5 M1 (teoreme lipsă: bisectoarei/Menelaus/Ceva) + §6 P1–P2 (Planșe: reintrodu în handoff + precache /planse/* în sw.js).
+DECIZII CONFIRMATE DE MINE — NU LE RE-ÎNTREBA:
+· R3 (DOCX): parsare OMML → LaTeX DIRECT din XML-ul .docx (fidelitate, offline, gratuit). Fidelitate: ETAPA A = formulele apar la locul lor + text în ordine + bold/liste simple (FERM, obligatoriu); ETAPA B = apropiere de layout vizual, iterativ DUPĂ A (nu bloca A pe B).
+· R3 fixture-uri REALE (test set): C:\Users\ALIENWARE\Desktop\Cristina\Fisiere_Word\test.multimi2.docx (20 OMML) + test5nr.naturale2025.docx + „2.Unghiuri. Bisectoare.docx". Dovada bug-ului: Downloads\test5nr.naturale2025.pdf (output actual al app-ului) are matematica DISPĂRUTĂ complet.
+· R4 (OCR imagine/scan): alegere provider pe DOVADĂ măsurată (nu reputație). Primul sub-pas: confirmă la sursă dacă Azure Document Intelligence extrage formule ca LaTeX (e [PROBABIL], neverificat). Testează pe mai multe tipuri (poză manual, PDF scanat, screenshot). ATENȚIE: .docx-urile mele merg prin R3 (OMML), NU prin OCR.
+· R5 (toolbar): PĂSTREAZĂ toolbar-ul cum e — mută DOAR butoanele de limbi (F8 „scris în RO SK EN DE", azi pe rând separat) în rândul de SUS, după evidențiere + „Șterge formatarea". Am RESPINS explicit redesign-ul în module-panel.
+· R6 (search global): pe lângă search-ul existent din meniul Matematică (rămâne), adaugă UN search GLOBAL stil Ctrl+K peste TOATĂ aplicația (funcții editor + comută între module + acțiuni). R6 e UI nou → §17 mock înainte de cod.
 
-REGULI OBLIGATORII (detaliate în §10):
-· Gate după FIECARE item: npx tsc --noEmit (0) · npx jest (toate verzi) · npx next build (OK) · probă live 390px + desktop.
-· §17: pentru orice element de UI NOU, mock + confirmarea mea ÎNAINTE de cod. (R1 are deja mock aprobat.)
-· R-MATH: 0% pierdere de notație matematică. R-COST: totul pe free tier. R-EDIT: tot ce se inserează e editabil și supraviețuiește în exporturi.
+EXECUTĂ ÎN ACEASTĂ ORDINE (am zis „alegi tu"; ordinea aleasă, motivată în PLAN_MASTER §1):
+PASUL 1. R3 (DOCX OMML→LaTeX) — bug VIZIBIL pe prod, prioritar. Modul pur frontend/src/lib/omml-to-latex.ts (unit-testabil fără DOM) + fixture real din word/document.xml + cititor zip (fflate/jszip, înlocuiește mammoth) + reuse parseInlineToNodes din ocr-map.ts. Eyeball pe cele 3 .docx: import → formule la locul lor → export PDF comparat cu varianta ruptă.
+PASUL 2. R5 (mut F8 sus) — trivial; grupează deploy-ul cu R3.
+PASUL 3. R6 (Ctrl+K global) — mock §17 întâi, apoi cod.
+PASUL 4. R4 (OCR imagine/scan pe dovadă).
+PASUL 5. §2 securitate (S1→S8; S1 npm audit fix cu capcana katex@0.16.11, S2 XSS o linie în HistoryDetail.tsx:65).
+PASUL 6. §3 regresii + §4 curățenie + §5 math + §6 Planșe.
+
+REGULI OBLIGATORII (detaliate în PLAN_MASTER §10):
+· Gate după FIECARE item: npx tsc --noEmit (0) · npx jest (57 verzi) · npx next build (OK) · probă live 390px + desktop.
+· §17: pentru orice UI NOU (R6), mock + confirmarea mea ÎNAINTE de cod. (R5 e doar relocare, nu UI nou — o mică probă vizuală ajunge.)
+· R-MATH: 0% pierdere de notație. R-COST: totul free tier. R-EDIT: tot ce se inserează e editabil și supraviețuiește în exporturi.
 · CORS: browser → API Python = text/plain sau multipart, NICIODATĂ application/json.
-· Dev local: pornește Next cu NEXT_PUBLIC_API_URL=http://localhost:8000 (proxy-ul dev are timeout 30s, OCR-ul durează ~21-31s). NU rula next build în paralel cu dev.
-· Eu testez pe PROD, nu local: după ce gate-ul e verde, propune-mi deploy, nu amâna pentru teste locale exhaustive.
-· R-HANDOFF: după fiecare fază → actualizează HANDOFF_SESIUNE.md + bifează în PLAN_MASTER + memoria + commit/push.
-· Deploy real DOAR cu confirmarea mea. Bump CACHE_VERSION în frontend/public/sw.js, deploy din frontend/, apoi verifică ALIASUL (nu doar URL-ul deployment-ului).
-· Onestitate (R3): ce n-ai rulat, declară-l nerulat. Marchează [CERT]/[PROBABIL]/[INCERT].
+· Dev local: pornește Next cu NEXT_PUBLIC_API_URL=http://localhost:8000 (proxy-ul dev are timeout 30s, OCR-ul durează ~21-31s). NU rula next build în paralel cu dev. Pt verificare de layout: `next start` pe build (evită stale-bundle-ul dev).
+· Testare mobilă: resize_window din Chrome MCP NU emulează viewport-ul (rămâne desktop). Metoda care merge: injectează un iframe de 390px same-origin cu pagina, via javascript_tool → citește DOM / screenshot.
+· Capcana hidratare: NU citi localStorage/width în useState initializer (rupe comutarea taburilor). Init DEFAULT + useEffect (ca Sidebar.tsx / EditorMathMenu / page.tsx).
+· Eu testez pe PROD: după gate verde, propune-mi deploy (bump CACHE_VERSION în frontend/public/sw.js, vercel deploy --prod --yes --token="$VERCEL_API_KEY" din frontend/, verifică ALIASUL nu doar deployment-ul). Deploy real DOAR cu confirmarea mea.
+· advisor înainte de lucru substanțial/riscant și înainte de „gata". R-HANDOFF: după fiecare fază → actualizează HANDOFF + bifează PLAN_MASTER + memoria + commit/push.
+· Onestitate (R3): ce n-ai rulat, declară-l nerulat. [CERT]/[PROBABIL]/[INCERT].
 
-Confirmă în 3–4 rânduri ce ai înțeles (fără să repeți planul), spune-mi dacă vezi vreo contradicție în PLAN_MASTER, apoi execută PASUL 0.
+Confirmă în 3–4 rânduri ce ai înțeles (fără să repeți planul), spune-mi dacă vezi vreo contradicție, apoi începe PASUL 1 (R3): mai întâi advisor + confirmă capabilitatea zip/OMML, apoi modulul pur + fixture + integrare, cu gate + eyeball pe cele 3 .docx.
 ```
 
 ---
 
 ## Note pentru Roland (nu fac parte din prompt)
 
-**De ce ordinea PASUL 1 = R2 (nu R1):** eliminarea limbilor e cea mai mecanică schimbare — validează ciclul complet (gate + deploy) pe un risc mic, înainte de refactorul de layout de la R1 care atinge toate modulele.
+**De ce ordinea R3 întâi:** e singurul bug VIZIBIL pe prod (matematica dispare din .docx-urile tale) și are fixture-uri reale — valoare mare, self-contained. R5 (mut F8) e trivial și se deployează cu R3. R6 (Ctrl+K) e feature nou cu mock. R4 (OCR imagine) e exploratoriu și consumă cote API.
 
-**Ce NU am pus în prompt intenționat:** modulele din backlog (§7) și restanțele mari (figuri parametrice, dark-mode, cele 5 generatoare de planșe). Sunt în plan, listate, dar nu în execuție — le alegi tu când vrei.
+**Cerințele tale noi, așa cum le-am înțeles final:** toolbar-ul rămâne cum e, muți doar butoanele de limbi sus (R5); search global Ctrl+K peste tot, pe lângă cel din Matematică (R6); OCR-ul din .docx reparat cu OMML→LaTeX pe fișierele tale reale (R3), plus OCR imagine/scan mai bun testat pe mai multe tipuri (R4).
 
-**Riscul cel mai mare din execuția asta:** R1 (meniul) atinge layout-ul TUTUROR modulelor, inclusiv cele două iframe-uri (Asistent, Planșe). Dacă ceva se rupe, se rupe acolo. De-aia proba live e cerută pe fiecare tab, nu doar pe editor.
+**Riscul cel mai mare:** R3 (parsarea OMML) — fidelitate parțială la layout-uri complexe; de-aia am separat ETAPA A (formule+ordine, ferm) de ETAPA B (vizual, iterativ).
