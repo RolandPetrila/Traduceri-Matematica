@@ -5,8 +5,7 @@ import { MonitoringInit } from "@/components/monitoring/MonitoringInit";
 
 export const metadata: Metadata = {
   title: "Sistem Traduceri",
-  description:
-    "Editor de documente matematice cu traducere AI (RO, SK, EN, DE)",
+  description: "Traducere documente matematica cu AI — RO, SK, EN, DE",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

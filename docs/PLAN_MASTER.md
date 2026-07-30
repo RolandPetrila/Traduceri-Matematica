@@ -61,7 +61,7 @@
 
 - [x] R2.1 `git rm` LanguageToggle.tsx + language-context.tsx (2026-07-30, commit R2)
 - [x] R2.2 Curățat importurile + JSX din `layout.tsx` (scos `LanguageProvider`) + `TopBar.tsx` (scos `<LanguageToggle/>` + comentarii „limbă"). Verificat: `git grep` = 0 referințe rămase în `frontend`. Cheia `localStorage["translate_lang"]` era owned DOAR de `language-context` → orfanată benign, F8 nu o folosește
-- [x] R2.3 `metadata.description` actualizat: „Traducere documente matematica cu AI — RO, SK, EN" → „Editor de documente matematice cu traducere AI (RO, SK, EN, DE)" (adăugat DE; nu era chiar text mort — capacitatea de traducere există prin F8)
+- [x] R2.3 `metadata.description` actualizat: „…RO, SK, EN" → „…RO, SK, EN, DE" (adăugat DE, păstrat cadrul „Traducere" ca să nu contrazică titlul „Sistem Traduceri"; nu era chiar text mort — capacitatea de traducere există prin F8)
 - [~] R2.4 Gate: **`tsc 0 · jest 57/57 · next build OK (8 rute)` ✓**. Live F8 (RO→SK cu formulă + revenire) = **pending pe PROD** după deploy (Roland testează pe prod, §10.7); independența F8 dovedită static (0 importuri `language-context`)
 
 ### R3 — DOCX cu matematică: parsare OMML → LaTeX
