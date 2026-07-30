@@ -28,7 +28,12 @@
 
 ## §1. CERINȚELE ROLAND (2026-07-30) — SE EXECUTĂ PRIMELE
 
-> Ordine confirmată de Roland: **cerințele R1→R4 întâi, securitatea (§2) după**. ⚠️ Consecință asumată conștient: cele 3 vulnerabilități HIGH din §2 rămân active în producție pe durata R1–R4.
+> Ordine confirmată de Roland: **cerințele întâi, securitatea (§2) după**. ⚠️ Cele 3 vulnerabilități HIGH din §2 rămân active în producție pe durata cerințelor (asumat conștient).
+>
+> **STARE:** R1 ✅ (icon-rail, v21) + R2 ✅ (elimin limbi, v20) — DONE + DEPLOYAT + verificat live. **Cerințe NOI (Roland, 2026-07-30 runda 2):** R5 (mut butoanele de limbi în rândul de sus) + R6 (search GLOBAL Ctrl+K). Plus upgrade OCR/DOCX pe fișiere reale (extinde R3+R4).
+>
+> **⚙️ ORDINE DE EXECUȚIE (Roland: „alegi tu ordinea optimă") — aleasă de Claude, cu rațiune:**
+> **1. R3** (DOCX OMML→LaTeX) — bug VIZIBIL pe prod (matematica dispare din .docx), durere principală a lui Roland, are fixture-uri reale → prioritar. **2. R5** (mut F8 sus) — trivial, se grupează la deploy cu R3 (ambele editor). **3. R6** (Ctrl+K global) — feature UX nou (§17 mock). **4. R4** (OCR imagine/scan pe dovadă) — exploratoriu, consumă cote API. **5. §2 securitate** (S1–S8). Apoi §3/§4/§5/§6.
 
 ### R1 — Meniu icon-rail colapsabil (înlocuiește bara de sus)
 
@@ -92,6 +97,8 @@
 - [ ] R3.5 **Onest (R3):** dacă un .docx are formule ca IMAGINE (nu OMML), ele NU se transcriu → semnalează în banner. Detectează și raportează câte OMML + câte imagini a găsit
 - [ ] R3.7 **`mammoth` devine dependință moartă** — a fost instalat ieri exact pentru calea `.docx` pe care R3 o înlocuiește. Scoate-l din `package.json` dacă nu mai e folosit; oricum ai nevoie de un cititor de zip (`fflate` sau `jszip`) → e un **schimb**, nu o dependință în plus
 - [ ] R3.6 Gate: unit tests + **eyeball obligatoriu pe `test.multimi2.docx`**: import → toate cele 20 de expresii apar la locul lor → export PDF → **compară cu `Downloads/test.multimi2.pdf` (varianta ruptă)** și cu .docx-ul original
+- [ ] R3.8 **FIXTURE-URI REALE EXTINSE (Roland, 2026-07-30 r2):** pe lângă `test.multimi2.docx`, folosește ca test set și `C:\Users\ALIENWARE\Desktop\Cristina\Fisiere_Word\test5nr.naturale2025.docx` + `2.Unghiuri. Bisectoare.docx`. **Dovadă a bug-ului:** `Downloads/test5nr.naturale2025.pdf` (output actual al app-ului) are matematica DISPĂRUTĂ complet — „Calculați: (1,5 p)" fără calcul, „Se știe că , aflati ." fără ecuații, „numerelor de forma ." fără forma. Eyeball pe toate 3, formulă-cu-formulă
+- [ ] R3.9 **FIDELITATE (Roland r2 — „matematica + ordinea întâi, apoi vizual"):** ETAPA A (fermă, obligatorie) = formulele apar la locul lor (OMML→LaTeX, editabile) + text în ordine + bold/liste simple. ETAPA B (iterativ după A) = apropiere de layout-ul vizual (spațiere, aliniere, tabele). NU bloca A pe B. Declară onest ce nivel s-a atins pe fiecare fișier
 
 ### R4 — OCR: alege pe DOVADĂ cel mai calitativ provider
 
@@ -114,6 +121,30 @@
 - [ ] R4.4 Raport `docs/OCR_COMPARATIE_2026-07-30.md` cu tabel + verdict motivat + **declară costul consumat** din cotele free
 - [ ] R4.5 Implementează câștigătorul ca primary în `api/lib/ocr_structured.py`, păstrând lanțul de fallback (nu rupe F9)
 - [ ] R4.6 Gate: F9 continuă să funcționeze end-to-end (non-regresie pe importul de imagine), + `MAX_PAGES=1` respectat
+- [ ] R4.7 **CONFIRMAT (Roland r2):** upgrade-ul OCR acoperă și calea IMAGINE/scan (nu doar .docx-ul care merge prin R3). Testează pe **mai multe tipuri de fișiere** (poză de manual, PDF scanat multi-pagină, screenshot). ⚠️ Distincție: fișierele-exemplu ale lui Roland (`test5nr…`, `2.Unghiuri…`) sunt **.docx → merg prin R3 (OMML), NU prin OCR**; R4 = pentru poze/scanuri reale. Dacă vrea aceeași materie pe ambele căi: printează un .docx și fotografiază-l
+
+---
+
+### R5 — Mut butoanele de limbi (F8) în rândul de sus al toolbar-ului
+
+**CONFIRMAT (Roland, 2026-07-30 runda 2), citat:** „păstrează cum e acum, doar mută butoanele lingvistice în partea superioară". Deci: **NU** redesign în module-panel (opțiunea respinsă explicit). Toolbar-ul rămâne cum e; se mută **DOAR** switch-ul de traducere („scris în: RO ▾ | RO SK EN DE", azi pe rând separat sub toolbar) în **rândul de sus**, imediat după grupul evidențiere + „Șterge formatarea" (`TiptapToolbar.tsx`, grupul culori/clear ~L306-371). Scop: bara să nu coboare și să nu acopere pagina.
+
+**Unde e F8 azi:** randat separat (grep „scris în" / `EditorTranslate`/`editor-translate*`), sub `TiptapToolbar`. De integrat în `TiptapToolbar` (variant `bar`) compact, păstrat accesibil și în Sheet-ul mobil (variant `sheet`).
+
+- [ ] R5.1 Găsește randarea actuală a F8 (`grep -r "scris în"` / componenta de traducere)
+- [ ] R5.2 Mut-o în `TiptapToolbar` după grupul culori/clear (compact, `flex-wrap`, să nu spargă layout-ul)
+- [ ] R5.3 Gate: `tsc·jest·build` + live: F8 pe rândul 1, funcțional (RO→SK cu o formulă + revenire), 390px + desktop. Deploy grupat cu R3
+
+### R6 — Search GLOBAL peste toată aplicația (Ctrl+K)
+
+**CONFIRMAT (Roland r2), citat:** „pe lângă search existent[e] în matematică, vreau să adaugi unu global peste toată aplicația". Deci: search-ul din meniul Matematică (`EditorMathMenu`, pe taburi) **RĂMÂNE**; se **ADAUGĂ** un search GLOBAL, stil **command-palette (Ctrl+K)**, care caută în TOT: funcțiile editorului (formatare/inserare/tabel/matematică/traducere) + comută între module (Convertor/Editor/Asistent/Istoric/Planșe) + acțiuni globale.
+
+**§17 — cere MOCK înainte de cod** (UI nou major).
+
+- [ ] R6.1 Mock command-palette (Ctrl+K): input + rezultate grupate (Acțiuni editor / Module / Navigare) + confirmarea Roland
+- [ ] R6.2 Index de comenzi: din `TABS` (module) + comenzile toolbar-ului editorului (fiecare cu label + acțiune + icon) + fuzzy match
+- [ ] R6.3 Declanșare globală `Ctrl+K` (la nivel `app/page.tsx` sau `layout.tsx`, nu doar în editor) + buton vizibil (ex. în Sidebar sau header modul); Escape închide, săgeți navighează
+- [ ] R6.4 Gate + live 390px+desktop: deschide cu Ctrl+K, „tabel"→inserează tabel, „planșe"→comută la modulul Planșe, „bold"→aplică. Atenție: nu intra în conflict cu Ctrl+F (find-ul editorului) sau Ctrl+K nativ
 
 ---
 
