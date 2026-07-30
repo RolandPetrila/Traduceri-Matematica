@@ -6,7 +6,7 @@
 
 ## 🧭 ÎNCEPE DE AICI (2026-07-30) — PLAN MASTER + prompt de reluare
 
-**`docs/PLAN_MASTER.md` = SURSA UNICĂ de adevăr** (creată prin audit în cod cu 5 agenți paraleli, dovezi `fișier:linie`). Înlocuiește 11 planuri vechi — care **încă există pe disc**; ștergerea lor = §11, primul pas al sesiunii următoare, după confirmarea lui Roland (intacte în git la `54fac8f`).
+**`docs/PLAN_MASTER.md` = SURSA UNICĂ de adevăr** (creată prin audit în cod cu 5 agenți paraleli, dovezi `fișier:linie`). A înlocuit 11 planuri vechi — **ȘTERSE 2026-07-30** (§11 executat, confirmat de Roland). Cele 9 tracked sunt recuperabile din git la `54fac8f`; 2 erau gitignored (backup local, în afara git-ului). Referințele istorice către `PLAN_*` din secțiunile datate de mai jos sunt lăsate ca jurnal (nu mai sunt navigabile).
 
 **`docs/PROMPT_SESIUNE_NOUA.md`** = promptul direct executabil pentru sesiunea nouă (deciziile lui Roland deja confirmate, ordinea pașilor, regulile de gate).
 

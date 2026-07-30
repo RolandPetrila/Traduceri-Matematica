@@ -12,7 +12,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 ## Status
 
 - **Faza curenta**: v4.0 — LIVE pe Vercel + Supabase (migrat integral de pe Render; fara cold-start/keep-alive)
-- **Progres**: Vezi `docs/PLAN_MASTER.md` — **SURSA UNICA de adevar** (din 2026-07-30, prin audit in cod). ⚠️ Planurile vechi (`99_Plan_vs_Audit/PLAN_v3.md` etc.) sunt STALE si se sterg la §11 din MASTER — NU te ghida dupa ele.
+- **Progres**: Vezi `docs/PLAN_MASTER.md` — **SURSA UNICA de adevar** (din 2026-07-30, prin audit in cod). Cele 11 planuri vechi au fost STERSE (2026-07-30, §11 din MASTER); cele 9 tracked sunt recuperabile din git la `54fac8f`.
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
   - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
   - Deploy real = confirmare explicita de la Roland (linkare conturi + env vars).
@@ -42,8 +42,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 ## Key Files
 
 - `docs/PLAN_MASTER.md` — **SURSA UNICA** de adevar (tracking [ ]/[x]) · `docs/PROMPT_SESIUNE_NOUA.md` — prompt de reluare direct executabil
-- `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice
-- `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md` — imbunatatiri planificate
+- `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice (backlog/imbunatatiri = acum in `docs/PLAN_MASTER.md` §7)
 - `vercel.json` — config functii Python (maxDuration 60s)
 - `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
 - `config/languages.json` — limbi suportate (RO/SK/EN/DE + extensibil)

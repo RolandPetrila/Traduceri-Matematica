@@ -2,7 +2,7 @@
 
 > **SURSA UNICĂ DE ADEVĂR.** Creat 2026-07-30 prin audit în cod (5 agenți paraleli, dovezi `fișier:linie`) al TUTUROR planurilor existente + cerințele Roland din `99_Roland_Work/cerinta_roland.md`.
 >
-> **Înlocuiește** (de șters — vezi §11): `99_Plan_vs_Audit/PLAN_v3.md`, `docs/PLAN_editor_tiptap_2026-07-23.md`, `docs/PLAN_math_academic_2026-07-26.md`, `docs/PLAN_math_curriculum_2026-07-27.md`, `docs/PLAN_modul_planse.md`, `docs/PROMPT_START_modul_planse.md`, `PLAN_OVERLAY_2026-07-10.md`, `deep_research_2026-03-24/ROADMAP_IMBUNATATIRI.md`, `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md`, `RESUME_DEPLOY_2026-07-09.md`, `99_Roland_Work/Arhiva_Proiect_Vechi/PLAN_PROIECT.md`.
+> **A înlocuit** (ȘTERSE 2026-07-30, §11 executat): `99_Plan_vs_Audit/PLAN_v3.md`, `docs/PLAN_editor_tiptap_2026-07-23.md`, `docs/PLAN_math_academic_2026-07-26.md`, `docs/PLAN_math_curriculum_2026-07-27.md`, `docs/PLAN_modul_planse.md`, `docs/PROMPT_START_modul_planse.md`, `PLAN_OVERLAY_2026-07-10.md`, `deep_research_2026-03-24/ROADMAP_IMBUNATATIRI.md`, `99_Plan_vs_Audit/RECOMANDARI_IMBUNATATIRI.md`, `RESUME_DEPLOY_2026-07-09.md`, `99_Roland_Work/Arhiva_Proiect_Vechi/PLAN_PROIECT.md`.
 > **SE PĂSTREAZĂ:** `99_Plan_vs_Audit/PLAN_DECISIONS.md` (log de decizii tehnice, nu plan) + `docs/HANDOFF_SESIUNE.md` (starea curentă).
 >
 > **Planurile vechi sunt intacte în git la commit `54fac8f`** — orice detaliu neacoperit aici se recuperează de acolo.
@@ -236,7 +236,7 @@
 
 > **De ce nu s-a făcut deja:** planurile au fost consolidate în aceeași sesiune în care au fost citite. Auditul a arătat că `PLAN_v3.md` e singurul loc unde trăiesc deciziile D1–D27 (migrate în §9) și că el conținea o contradicție nerezolvată despre figuri (§5 M6). Ștergerea rămâne primul pas executabil, **după ce Roland confirmă că acest MASTER acoperă tot** — comparația e mai ușoară cu ambele pe disc. Git are oricum totul la `54fac8f`.
 
-- [ ] **W1** — Roland confirmă că `PLAN_MASTER.md` acoperă tot ce-i trebuie
-- [ ] **W2** — `git rm` cele 11 fișiere din header (planuri + roadmap + recomandări + arhivă), PĂSTREAZĂ `PLAN_DECISIONS.md` + `HANDOFF_SESIUNE.md`
-- [ ] **W3** — Actualizează referințele: `CLAUDE.md` (secțiunea „PRIMA ACȚIUNE" + „Key Files" indică `PLAN_v3.md` ca sursă unică → schimbă în `docs/PLAN_MASTER.md`), `HANDOFF_SESIUNE.md`, `README.md`
-- [ ] **W4** — Commit: `docs: consolidare planuri in PLAN_MASTER (sterge 11 planuri vechi)`
+- [x] **W1** — Roland a confirmat (2026-07-30, AskUserQuestion) că `PLAN_MASTER.md` acoperă tot
+- [x] **W2** — `git rm` **9 fișiere tracked** (recuperabile din git la `54fac8f`); PĂSTRATE `PLAN_DECISIONS.md` + `HANDOFF_SESIUNE.md`. ⚠️ **2 erau gitignored** (`deep_research_2026-03-24/ROADMAP_IMBUNATATIRI.md`, `99_Roland_Work/Arhiva_Proiect_Vechi/PLAN_PROIECT.md`) → NU-s în git, ștergerea = ireversibilă; backup local făcut, ținute în așteptarea confirmării separate a lui Roland
+- [x] **W3** — Referințe actualizate: `CLAUDE.md` (§Progres + §Key Files), `README.md`, `HANDOFF_SESIUNE.md`, `scratchpad/README_autorare_math.md`, comentarii cod `tab-config.ts` + `IframeModule.tsx`. `PLAN_DECISIONS.md:21` lăsat ca log istoric; `Export_chat_sesiune_Carla.md` = transcript untracked, neatins
+- [x] **W4** — Commit: `docs: consolidare planuri in PLAN_MASTER (sterge 9 planuri vechi tracked)`

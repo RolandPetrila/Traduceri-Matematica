@@ -1,6 +1,6 @@
 # Autorare bibliotecă matematică (#4) — pattern repetabil + unelte
 
-Sursă de adevăr: `docs/PLAN_math_curriculum_2026-07-27.md` (taxonomie + goluri per clasă) și
+Sursă de adevăr: `docs/PLAN_MASTER.md` §5 (restanțe math; taxonomia din fostul PLAN_math_curriculum e în git la `54fac8f`) și
 `docs/HANDOFF_SESIUNE.md` (decizii + progres). Deciziile Roland (2026-07-27): TOATE
 profilurile, exhaustiv, ~65–95 formule noi + explicații la TOATE, ordine V→XII lot cu lot,
 interactiv A+C+B (B=figuri SVG, fază separată).

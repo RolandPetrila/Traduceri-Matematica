@@ -2,7 +2,7 @@
 
 /**
  * IframeModule — generic wrapper for static self-contained modules (the
- * "iframe-module" convention, PLAN_modul_planse §16.3).
+ * "iframe-module" convention; see docs/PLAN_MASTER.md).
  *
  * A module marked `"kind": "iframe"` in tabs.json is served from
  * public/<id>/index.html and embedded same-origin here. Adding such a module

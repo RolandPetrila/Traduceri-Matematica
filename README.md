@@ -59,7 +59,7 @@ frontend/             Next.js 15 app (Vercel)
   src/lib/            Utilitare (cache, monitoring, storage)
 config/               Configuratie (limbi, tab-uri, dictionar, coduri eroare)
 supabase/             schema.sql (referinta tabele logs + contoare)
-99_Plan_vs_Audit/     Planificare si tracking (PLAN_v3 = sursa unica)
+99_Plan_vs_Audit/     Log decizii tehnice (PLAN_DECISIONS). Sursa unica = docs/PLAN_MASTER.md
 vercel.json           Config functii Python (maxDuration 60s)
 ```
 

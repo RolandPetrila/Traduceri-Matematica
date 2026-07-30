@@ -11,7 +11,7 @@ export interface TabConfig {
   // "iframe" = static self-contained module served from public/<id>/index.html,
   // wired natively by the shell via <IframeModule> (drop folder + tabs.json
   // entry, zero shell edits). Absent/"react" = a native React panel wired
-  // explicitly in page.tsx. See PLAN_modul_planse §16.3.
+  // explicitly in page.tsx. See docs/PLAN_MASTER.md (iframe-module convention).
   kind?: "iframe" | "react";
   description?: string;
 }
