@@ -63,16 +63,21 @@ export function CommandPalette({
   activeTab: string;
 }) {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(0);
+  // -1 = nimic preselectat (deschidere cu query gol). Enter NU face nimic la -1 —
+  // altfel Ctrl+K în timpul scrisului + Enter ar comuta modulul (advisor). Devine 0
+  // (prima potrivire) când utilizatorul tastează sau apasă săgeata.
+  const [selected, setSelected] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Comenzi de editor: comută pe Editor, închide, apoi rulează pe tick-ul următor.
+  // Comenzi de editor: comută pe Editor, închide, apoi cheamă comanda. EditorShell
+  // așteaptă intern ca editorul să devină VIZIBIL înainte s-o execute (poll rAF pe
+  // `offsetParent`), deci NU e nevoie de un timing magic aici — robust chiar și când
+  // veneam de pe un modul iframe (planse/asistent) mai lent (advisor).
   const runEditor = (id: EditorCommandId) => {
     switchModule("editor");
     onClose();
-    // 30ms > un frame: lasă tabul să treacă din display:none în vizibil.
-    window.setTimeout(() => runEditorCommand(id), 30);
+    runEditorCommand(id);
   };
 
   const commands: Command[] = useMemo(() => {
@@ -195,20 +200,20 @@ export function CommandPalette({
     [commands, query],
   );
 
-  // La deschidere: focus pe input, resetează query + selecția.
+  // La deschidere: focus pe input, resetează query + selecția (NIMIC preselectat).
   useEffect(() => {
     if (open) {
       setQuery("");
-      setSelected(0);
+      setSelected(-1);
       // focus după ce Dialog-ul montează conținutul
       const t = window.setTimeout(() => inputRef.current?.focus(), 20);
       return () => window.clearTimeout(t);
     }
   }, [open]);
 
-  // Clamp selecția când lista filtrată se scurtează.
+  // Clamp selecția când lista filtrată se scurtează (păstrează -1 = nimic selectat).
   useEffect(() => {
-    setSelected((s) => Math.min(s, Math.max(0, filtered.length - 1)));
+    setSelected((s) => (s < 0 ? -1 : Math.min(s, filtered.length - 1)));
   }, [filtered.length]);
 
   // Scroll elementul selectat în vizor.
@@ -222,15 +227,19 @@ export function CommandPalette({
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelected((s) => (filtered.length ? (s + 1) % filtered.length : 0));
+      // -1 → 0; altfel ciclează.
+      setSelected((s) =>
+        !filtered.length ? -1 : s < 0 ? 0 : (s + 1) % filtered.length,
+      );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelected((s) =>
-        filtered.length ? (s - 1 + filtered.length) % filtered.length : 0,
+        !filtered.length ? -1 : s <= 0 ? filtered.length - 1 : s - 1,
       );
     } else if (e.key === "Enter") {
       e.preventDefault();
-      filtered[selected]?.run();
+      // Doar dacă e ceva selectat explicit (tastare sau săgeți) — NU la query gol.
+      if (selected >= 0) filtered[selected]?.run();
     }
   };
 
@@ -265,8 +274,11 @@ export function CommandPalette({
             ref={inputRef}
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
-              setSelected(0);
+              const v = e.target.value;
+              setQuery(v);
+              // Tastare → auto-selectează prima potrivire (Enter rulează top match);
+              // query golit → nimic preselectat (Enter = no-op).
+              setSelected(v ? 0 : -1);
             }}
             onKeyDown={onKeyDown}
             placeholder="Caută o comandă sau un modul…"

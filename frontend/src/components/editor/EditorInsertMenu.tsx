@@ -103,6 +103,9 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
         className="hidden"
       />
       <input
+        // id unic → command palette-ul (R6) deschide EXACT acest selector (nu prin
+        // querySelector pe accept, care ar putea prinde alt input al altui modul).
+        id="editor-ocr-import-input"
         ref={importRef}
         type="file"
         multiple

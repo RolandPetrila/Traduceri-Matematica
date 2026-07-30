@@ -94,31 +94,41 @@ function EditorShell({ editor }: { editor: Editor | null }) {
   // EditorShell e mereu montat (taburile `display:none`), deci handler-ul e mereu
   // activ; paleta comută pe tabul Editor înainte să cheme comanda.
   useEffect(() => {
-    const run: (id: EditorCommandId) => void = (id) => {
+    const exec = (id: EditorCommandId) => {
       if (!editor) return;
+      // Comenzi SEPARATE (nu `.chain()`): într-un chain, dacă `focus()` întoarce false
+      // (view ProseMirror neașezat imediat după display:none→block la comutarea de tab),
+      // chain-ul se ABANDONEAZĂ înainte de insert → tabelul/formula NU se inserează.
+      // Separate, `focus('end')` setează selecția la sfârșit (nivel de STARE, chiar dacă
+      // focus-ul DOM eșuează), iar `insertTable`/`insertInlineMath` rulează oricum.
       switch (id) {
         case "bold":
-          editor.chain().focus().toggleBold().run();
+          editor.commands.focus();
+          editor.commands.toggleBold();
           break;
         case "italic":
-          editor.chain().focus().toggleItalic().run();
+          editor.commands.focus();
+          editor.commands.toggleItalic();
           break;
         case "table":
-          editor
-            .chain()
-            .focus()
-            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-            .run();
+          editor.commands.focus("end");
+          editor.commands.insertTable({
+            rows: 3,
+            cols: 3,
+            withHeaderRow: true,
+          });
           break;
         case "math":
-          // Inserează o formulă-început editabilă (click → dialog de editare).
-          editor.chain().focus().insertInlineMath({ latex: "x" }).run();
+          // Formulă-început editabilă (click → dialog de editare).
+          editor.commands.focus("end");
+          editor.commands.insertInlineMath({ latex: "x" });
           break;
         case "import": {
-          // Deschide selectorul de fișiere al importului (F9) — inputul e ascuns.
-          const inp = document.querySelector<HTMLInputElement>(
-            'input[type="file"][accept*="docx"]',
-          );
+          // Deschide selectorul de fișiere al importului (F9) — input ascuns, țintit
+          // prin id UNIC (nu querySelector pe accept — robust dacă alt modul are input).
+          const inp = document.getElementById(
+            "editor-ocr-import-input",
+          ) as HTMLInputElement | null;
           inp?.click();
           break;
         }
@@ -135,6 +145,33 @@ function EditorShell({ editor }: { editor: Editor | null }) {
           openFind();
           break;
       }
+    };
+    // Comanda vine din paletă IMEDIAT după `switchModule('editor')`.
+    //  • Cazul COMUN (ești deja în editor → editorul e vizibil): rulează IMEDIAT (snappy).
+    //  • Cazul CROSS-MODUL (veneai de pe alt tab, editorul era `display:none`): `.focus()`
+    //    și `insertTable` NU se aplică pe un editor care tocmai a trecut din ascuns în
+    //    vizibil (ProseMirror trebuie să se re-așeze — dovedit: cu settle merge, fără nu).
+    //    Deci: așteaptă vizibilitatea (poll rAF) + un mic settle înainte de execuție.
+    const run: (id: EditorCommandId) => void = (id) => {
+      const dom0 = editor?.view?.dom as HTMLElement | undefined;
+      if (dom0 && dom0.offsetParent !== null) {
+        exec(id); // deja vizibil → fără întârziere
+        return;
+      }
+      let tries = 0;
+      const whenReady = () => {
+        const dom = editor?.view?.dom as HTMLElement | undefined;
+        if (dom && dom.offsetParent !== null) {
+          // Vizibil acum → lasă ProseMirror să se re-așeze după display:none→block.
+          window.setTimeout(() => exec(id), 150);
+        } else if (tries < 30) {
+          tries += 1;
+          requestAnimationFrame(whenReady);
+        } else {
+          exec(id); // fallback: încearcă oricum
+        }
+      };
+      whenReady();
     };
     setEditorCommandHandler(run);
     return () => setEditorCommandHandler(null);
