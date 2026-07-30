@@ -11,7 +11,7 @@
 
 ## §0. STARE VERIFICATĂ (2026-07-30, în cod — nu pe bife)
 
-**LIVE pe `traduceri-frontend.vercel.app`** (`CACHE_VERSION v19-20260730a`, deployment `dpl_6Qgs1YtxUNuxp3ZkUGsQpLtcuLJf`), branch `faza-g-editor`.
+**LIVE pe `traduceri-frontend.vercel.app`** (`CACHE_VERSION v22-20260730d`, deployment `dpl_8dwQg6hMe4MWCFb99ivafyhikD3t` — R1/R2/R3/R5), branch `faza-g-editor`.
 
 | Zonă                     | Stare reală (cu dovadă)                                                                                                                                                                          |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -30,9 +30,9 @@
 
 > Ordine confirmată de Roland: **cerințele întâi, securitatea (§2) după**. ⚠️ Cele 3 vulnerabilități HIGH din §2 rămân active în producție pe durata cerințelor (asumat conștient).
 >
-> **STARE:** R1 ✅ (v21) + R2 ✅ (v20) — DEPLOYAT. **R3 ✅ (DOCX OMML→LaTeX) + R5 ✅ (mut F8 sus) — cod complet + gate verde (`tsc 0 · jest 102/102 · build OK`) + dovedit LIVE local, NEDEPLOYATE** (vezi blocurile de mai jos). **Cerințe NOI rămase:** R6 (search GLOBAL Ctrl+K). Plus R4 (OCR pe fișiere reale).
+> **STARE:** R1 ✅ (v21) + R2 ✅ (v20) + **R3 ✅ + R5 ✅ — DEPLOYAT v22-20260730d (2026-07-30), verificat pe alias** (`traduceri-frontend.vercel.app` servește v22, deployment `dpl_8dwQg6hMe4MWCFb99ivafyhikD3t`, homepage 200 Age:0, editor-nou 200). Gate: `tsc 0 · jest 102/102 · build OK`. **Cerințe rămase:** R6 (search GLOBAL Ctrl+K). Plus R4 (OCR pe fișiere reale).
 >
-> **➡️ URMĂTORUL: DEPLOY grupat R3+R5** (aștept confirmarea Roland — bump `CACHE_VERSION`, `vercel deploy --prod`, verific aliasul). Apoi R6 (mock §17 înainte de cod) → R4 → §2 securitate.
+> **➡️ URMĂTORUL: R6** (search GLOBAL Ctrl+K) — UI nou → **§17 mock + confirmarea Roland ÎNAINTE de cod**. Apoi R4 → §2 securitate. **RĂMAS pe R3+R5: eyeball Roland pe prod** (import un `.docx` real în Editor + F8 pe telefon).
 >
 > **⚙️ ORDINE DE EXECUȚIE (Roland: „alegi tu ordinea optimă") — aleasă de Claude, cu rațiune:**
 > **1. R3** (DOCX OMML→LaTeX) — bug VIZIBIL pe prod (matematica dispare din .docx), durere principală a lui Roland, are fixture-uri reale → prioritar. **2. R5** (mut F8 sus) — trivial, se grupează la deploy cu R3 (ambele editor). **3. R6** (Ctrl+K global) — feature UX nou (§17 mock). **4. R4** (OCR imagine/scan pe dovadă) — exploratoriu, consumă cote API. **5. §2 securitate** (S1–S8). Apoi §3/§4/§5/§6.
@@ -92,7 +92,7 @@
 | `<m:m>` (matrice)                       | `\begin{matrix}`           | dacă apare                       |
 | `<m:acc>`, `<m:bar>`                    | `\vec{}`, `\overline{}`    | notații                          |
 
-> ## ✅✅ R3 LIVRAT (2026-07-30) — gate verde + dovedit LIVE, NEDEPLOYAT
+> ## ✅✅ R3 LIVRAT (2026-07-30) — gate verde + dovedit LIVE + **DEPLOYAT v22** (alias verificat)
 >
 > **Cod:** NOU `frontend/src/lib/omml-to-latex.ts` (parser OMML→LaTeX pur, recursiv) + `frontend/src/lib/docx-to-blocks.ts` (`docxXmlToBlocks` + `docxArrayBufferToBlocks`: unzip fflate + rels + media→base64) + integrat în `editor-import.tsx` (ramura `.docx` înlocuiește `mammoth`). **`mammoth` + shim `.d.ts` ȘTERSE** (schimb pt `fflate ^0.8.3`). **Gate: `tsc 0 · jest 102/102` (57→102, +45 suita OMML) · `next build OK`.**
 > **DOVEDIT LIVE (Chrome MCP, `next start` :3320, import prin `onChange` real cu binarul .docx REAL):**
