@@ -26,6 +26,7 @@ import type { JSONContent } from "@tiptap/core";
 import { API_URL } from "@/lib/api-url";
 import { fetchWithRetry } from "@/lib/fetch-retry";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
+import { docxArrayBufferToBlocks } from "@/lib/docx-to-blocks";
 import {
   structuredPagesToBlocks,
   rawTextToBlocks,
@@ -56,6 +57,11 @@ interface ImportMeta {
   failedPages: number;
   pageCapped: number; // 0 = nu s-a plafonat; altfel = nr. total de pagini
   bruteNoMath: boolean;
+  // R3 (DOCX OMML→LaTeX): semnale specifice căii .docx.
+  ommlFound: number; // formule matematice native extrase din .docx
+  imagesFound: number; // imagini din word/media inserate
+  unresolvedImages: number; // imagini în format nesuportat (EMF/WMF…)
+  unknownOmml: string[]; // construcții OMML rare aproximate (ETAPA B)
 }
 
 interface ProcessResult extends Omit<ImportMeta, "filename" | "count"> {
@@ -160,6 +166,10 @@ async function processFile(
     failedPages: 0,
     pageCapped: 0,
     bruteNoMath: false,
+    ommlFound: 0,
+    imagesFound: 0,
+    unresolvedImages: 0,
+    unknownOmml: [],
   };
 
   // --- Imagine → OCR (o singură pagină) ---
@@ -182,13 +192,19 @@ async function processFile(
     return { ...base, blocks: rawTextToBlocks(text) };
   }
 
-  // --- DOCX → text brut (fără matematică) ---
+  // --- DOCX → matematică nativă (OMML→LaTeX) + text + imagini, la locul lor (R3) ---
   if (e === "docx") {
-    const mod = await import("mammoth/mammoth.browser");
-    const { value } = await mod.extractRawText({
-      arrayBuffer: await file.arrayBuffer(),
-    });
-    return { ...base, blocks: rawTextToBlocks(value), bruteNoMath: true };
+    onProgress({ current: 1, total: 1, label: `Se citește ${file.name}…` });
+    const r = docxArrayBufferToBlocks(await file.arrayBuffer());
+    return {
+      ...base,
+      blocks: r.blocks,
+      // bruteNoMath rămâne false: OMML-ul E transcris (nu mai e „text brut").
+      ommlFound: r.ommlCount,
+      imagesFound: r.imageCount,
+      unresolvedImages: r.unresolvedImages,
+      unknownOmml: r.unknown,
+    };
   }
 
   // --- PDF → text dacă are strat-text; altfel scanat → OCR pe pagini ---
@@ -279,6 +295,10 @@ async function processFiles(
     failedPages: 0,
     pageCapped: 0,
     bruteNoMath: false,
+    ommlFound: 0,
+    imagesFound: 0,
+    unresolvedImages: 0,
+    unknownOmml: [] as string[],
   };
   for (const file of files) {
     if (signal.aborted) break;
@@ -290,6 +310,11 @@ async function processFiles(
     acc.failedPages += r.failedPages;
     acc.pageCapped = Math.max(acc.pageCapped, r.pageCapped);
     acc.bruteNoMath ||= r.bruteNoMath;
+    acc.ommlFound += r.ommlFound;
+    acc.imagesFound += r.imagesFound;
+    acc.unresolvedImages += r.unresolvedImages;
+    for (const u of r.unknownOmml)
+      if (!acc.unknownOmml.includes(u)) acc.unknownOmml.push(u);
   }
   return { ...acc, blocks };
 }
@@ -304,6 +329,23 @@ function buildNotice(
   let msg = `${verb} „${meta.filename}"${many}.`;
   if (meta.usedOcr && meta.failedPages === 0)
     msg += " Verifică formulele și figurile — OCR-ul poate greși.";
+  // DOCX (R3): matematica OMML A fost transcrisă → raport onest cu numere.
+  if (meta.ommlFound > 0 || meta.imagesFound > 0) {
+    const parts: string[] = [];
+    if (meta.ommlFound > 0)
+      parts.push(
+        `${meta.ommlFound} ${meta.ommlFound === 1 ? "formulă" : "formule"}`,
+      );
+    if (meta.imagesFound > 0)
+      parts.push(
+        `${meta.imagesFound} ${meta.imagesFound === 1 ? "figură" : "figuri"}`,
+      );
+    msg += ` Am păstrat ${parts.join(" + ")} la locul lor. Verifică-le.`;
+    if (meta.unresolvedImages > 0)
+      msg += ` ${meta.unresolvedImages} figură(i) în format nesuportat (EMF/WMF) — needate.`;
+    if (meta.unknownOmml.length > 0)
+      msg += " Unele construcții rare pot fi aproximate.";
+  }
   if (meta.bruteNoMath)
     msg +=
       " Text brut — matematica din imagini NU a fost transcrisă (doar OCR-ul pe poze/PDF-scanat extrage formule).";
@@ -392,6 +434,10 @@ export function EditorImportProvider({
           failedPages: r.failedPages,
           pageCapped: r.pageCapped,
           bruteNoMath: r.bruteNoMath,
+          ommlFound: r.ommlFound,
+          imagesFound: r.imagesFound,
+          unresolvedImages: r.unresolvedImages,
+          unknownOmml: r.unknownOmml,
         };
         trackEditor("ocr_import", {
           files: files.length,
