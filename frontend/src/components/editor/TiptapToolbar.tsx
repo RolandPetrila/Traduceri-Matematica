@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { EditorInsertMenu } from "./EditorInsertMenu";
 import { EditorMathMenu } from "./EditorMathMenu";
+import { LanguageSwitch } from "./LanguageSwitch";
 import { EditorFileMenu } from "./EditorFileMenu";
 import { EditorPageCount } from "./editor-pages";
 import { EditorDictateButton } from "./editor-dictation";
@@ -369,6 +370,18 @@ export function TiptapToolbar({
           <RemoveFormatting className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Traducere (F8) — limba documentului, în rândul de sus pe desktop (R5).
+          DOAR în varianta `bar`: pe mobil rămâne în rândul propriu (EditorShell,
+          `md:hidden`) ca să nu se ascundă în Sheet și să nu se dubleze. */}
+      {!isSheet && (
+        <>
+          <Separator orientation="vertical" className="h-6" />
+          <div className={groupCls}>
+            <LanguageSwitch compact />
+          </div>
+        </>
+      )}
 
       {!isSheet && <Separator orientation="vertical" className="h-6" />}
 

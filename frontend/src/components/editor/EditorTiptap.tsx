@@ -126,8 +126,10 @@ function EditorShell({ editor }: { editor: Editor | null }) {
         <MobileToolbar editor={editor} />
       </div>
 
-      {/* Switch de limbi (F8) — traducere-în-editor, desktop + mobil */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-2 py-1">
+      {/* Switch de limbi (F8) — pe DESKTOP e mutat în rândul de sus al TiptapToolbar
+          (R5, ca bara să nu coboare). Aici rămâne DOAR pentru mobil (always-visible,
+          fără regresie de descoperire — nu-l ascundem în Sheet). */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-2 py-1 md:hidden">
         <LanguageSwitch />
       </div>
 

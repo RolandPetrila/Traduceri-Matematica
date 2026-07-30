@@ -30,9 +30,9 @@
 
 > Ordine confirmată de Roland: **cerințele întâi, securitatea (§2) după**. ⚠️ Cele 3 vulnerabilități HIGH din §2 rămân active în producție pe durata cerințelor (asumat conștient).
 >
-> **STARE:** R1 ✅ (icon-rail, v21) + R2 ✅ (elimin limbi, v20) — DONE + DEPLOYAT + verificat live. **R3 ✅ (DOCX OMML→LaTeX) — cod complet + gate verde + dovedit LIVE local, NEDEPLOYAT** (vezi blocul „✅✅ R3 LIVRAT" de mai jos). **Cerințe NOI (Roland, 2026-07-30 runda 2):** R5 (mut butoanele de limbi în rândul de sus) + R6 (search GLOBAL Ctrl+K). Plus upgrade OCR/DOCX pe fișiere reale (extinde R3+R4).
+> **STARE:** R1 ✅ (v21) + R2 ✅ (v20) — DEPLOYAT. **R3 ✅ (DOCX OMML→LaTeX) + R5 ✅ (mut F8 sus) — cod complet + gate verde (`tsc 0 · jest 102/102 · build OK`) + dovedit LIVE local, NEDEPLOYATE** (vezi blocurile de mai jos). **Cerințe NOI rămase:** R6 (search GLOBAL Ctrl+K). Plus R4 (OCR pe fișiere reale).
 >
-> **➡️ URMĂTORUL: R5** (mut F8 sus, trivial) → grupez deploy R3+R5 → propun deploy lui Roland. Apoi R6 (mock §17) → R4 → §2.
+> **➡️ URMĂTORUL: DEPLOY grupat R3+R5** (aștept confirmarea Roland — bump `CACHE_VERSION`, `vercel deploy --prod`, verific aliasul). Apoi R6 (mock §17 înainte de cod) → R4 → §2 securitate.
 >
 > **⚙️ ORDINE DE EXECUȚIE (Roland: „alegi tu ordinea optimă") — aleasă de Claude, cu rațiune:**
 > **1. R3** (DOCX OMML→LaTeX) — bug VIZIBIL pe prod (matematica dispare din .docx), durere principală a lui Roland, are fixture-uri reale → prioritar. **2. R5** (mut F8 sus) — trivial, se grupează la deploy cu R3 (ambele editor). **3. R6** (Ctrl+K global) — feature UX nou (§17 mock). **4. R4** (OCR imagine/scan pe dovadă) — exploratoriu, consumă cote API. **5. §2 securitate** (S1–S8). Apoi §3/§4/§5/§6.
@@ -146,9 +146,9 @@
 
 **Unde e F8 azi:** randat separat (grep „scris în" / `EditorTranslate`/`editor-translate*`), sub `TiptapToolbar`. De integrat în `TiptapToolbar` (variant `bar`) compact, păstrat accesibil și în Sheet-ul mobil (variant `sheet`).
 
-- [ ] R5.1 Găsește randarea actuală a F8 (`grep -r "scris în"` / componenta de traducere). **Selector confirmat live:** butoanele sunt `<button>` simple cu `textContent` = `RO`/`SK`/`EN`/`DE`, lângă label-ul „scris în:", pe un rând sub `TiptapToolbar` (NU în TiptapToolbar acum)
-- [ ] R5.2 Mut-o în `TiptapToolbar` după grupul culori/clear (compact, `flex-wrap`, să nu spargă layout-ul)
-- [ ] R5.3 Gate: `tsc·jest·build` + live: F8 pe rândul 1, funcțional (RO→SK cu o formulă + revenire), 390px + desktop. Deploy grupat cu R3
+- [x] R5.1 Găsit: F8 = componenta `LanguageSwitch.tsx` (nu `<button>` brute — `ToggleGroup` RO/SK/EN/DE + dropdown „scris în"), randată în `EditorTiptap.tsx` (`EditorShell` L129-132) pe un rând propriu sub toolbar, vizibil desktop+mobil
+- [x] R5.2 Mutat în `TiptapToolbar` după grupul culori/clear, `<LanguageSwitch compact />` într-un grup nou, **DOAR varianta `bar`** (`!isSheet`). **Decizie fără regresie mobilă (Option B):** rândul separat din `EditorShell` devine `md:hidden` (rămâne always-visible pe mobil, NU se ascunde în Sheet, NU se dublează). Pe desktop: F8 urcă în toolbar, rândul separat dispare → un rând vertical eliberat
+- [x] R5.3 Gate: **`tsc 0 · jest 102/102 · build OK`** + **LIVE (Chrome MCP):** DOM = 2 grupuri limbi (1 vizibil în toolbar `inMdHidden:false` + 1 `md:hidden` ascuns pe desktop); screenshot = „scris în: RO ▾ RO SK EN DE" pe rândul 2 al toolbar-ului, rândul separat dispărut; click SK → spinner „traduc…" (wiring `switchLanguage` OK; F8 deja prod-verificat 2026-07-29). RĂMAS: eyeball 390px Roland (mobilul = rândul separat neschimbat). **Deploy grupat cu R3**
 
 ### R6 — Search GLOBAL peste toată aplicația (Ctrl+K)
 
