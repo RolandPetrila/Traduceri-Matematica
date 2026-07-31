@@ -1,0 +1,14 @@
+# API project (traduceri-api) = Python serverless din api/*.py.
+# Vercel urcă WORKING-DIR (nu HEAD) → excludem tot ce nu-i necesar funcției,
+# altfel bundle-ul depășește 225 MB (ex. 99_Roland_Work = 314 MB manuale gitignored).
+99_Roland_Work/
+99_Plan_vs_Audit/
+frontend/
+scratchpad/
+docs/
+supabase/
+node_modules/
+.next/
+Teste_Input/
+Teste_Output/
+*.md
