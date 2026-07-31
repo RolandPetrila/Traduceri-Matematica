@@ -32,7 +32,7 @@
 >
 > **STARE:** R1 ✅ (v21) + R2 ✅ (v20) + **R3 ✅ + R5 ✅ (v22) + R6 ✅ (v23) — TOATE DEPLOYATE + verificate pe alias.** R6: `CACHE_VERSION v23-20260731a`, deployment `traduceri-frontend-nzchoo4l9`, alias servește v23 (Age:0, homepage 200, editor-nou 200). Gate: `tsc 0 · jest 102/102 · build OK`. **Cerințe R1–R6 = TOATE LIVRATE + DEPLOYATE.**
 >
-> **➡️ URMĂTORUL: R4** (OCR imagine/scan — alege provider pe DOVADĂ măsurată). Primul sub-pas: confirmă la sursă dacă Azure Document Intelligence extrage LaTeX (`[PROBABIL]`, neverificat). Apoi §2 securitate (S1 npm audit cu capcana katex@0.16.11, S2 XSS `HistoryDetail.tsx:65`) → §3/§4/§5/§6. **RĂMAS: eyeball Roland pe prod** (import `.docx`, F8 sus, Ctrl+K pe telefon).
+> **➡️ URMĂTORUL: R7** (upgrade calitate OCR — cerință NOUĂ Roland 2026-07-31, pe dovada a 3 fișiere reale testate; **înglobează + execută R4**). 4 goluri confirmate (tabele / forțează-OCR-pe-PDF-text-prost / ordine multi-coloană / figuri-pe-toate-căile) + provider Azure(docs)+Gemini(math) rutat pe tip. Vezi secțiunea **R7** de mai jos. Apoi §2 securitate (S1 npm audit cu capcana katex@0.16.11, S2 XSS `HistoryDetail.tsx:65`) → §3/§4/§5/§6. **RĂMAS: eyeball Roland pe prod** (import `.docx`, F8 sus, Ctrl+K pe telefon).
 >
 > **⚙️ ORDINE DE EXECUȚIE (Roland: „alegi tu ordinea optimă") — aleasă de Claude, cu rațiune:**
 > **1. R3** (DOCX OMML→LaTeX) — bug VIZIBIL pe prod (matematica dispare din .docx), durere principală a lui Roland, are fixture-uri reale → prioritar. **2. R5** (mut F8 sus) — trivial, se grupează la deploy cu R3 (ambele editor). **3. R6** (Ctrl+K global) — feature UX nou (§17 mock). **4. R4** (OCR imagine/scan pe dovadă) — exploratoriu, consumă cote API. **5. §2 securitate** (S1–S8). Apoi §3/§4/§5/§6.
@@ -115,7 +115,9 @@
 - [x] R3.10 **Imagini din .docx LIVRAT:** `<w:drawing>`/`<w:pict>`→`a:blip r:embed`/`v:imagedata r:id` mapat prin `word/_rels/document.xml.rels`→`word/media`→data-URI base64, inserat ca nod `image` (ResizableImage F3c) block-level la locul lui. **DOVEDIT LIVE:** `2.Unghiuri` → figura JPEG reală (512×244) randată la locul ei. EMF/WMF/TIFF → null → placeholder onest + contorizat (`unresolvedImages`), nu `<img>` gol (advisor)
 - [x] R3.9 **FIDELITATE — ETAPA A ATINSĂ pe toate 3** (formule la locul lor editabile + text în ordine + bold + imagini la locul lor). **ETAPA B rămas (neblocant, iterativ):** liste numerotate native (azi = paragrafe), tabele (azi = aplatizate paragraf/celulă), spațiere/aliniere fină (ex. 2 paragrafe goale în jurul imaginii din `flush→image` — verificat: NU inflează nr. de pagini, unghiuri=2 pag ca originalul). Cosmetic declarat onest: `și`→`si` (italic în math; `\text{}` nu randează diacritice RO — cf. finding_katex_authoring_pitfalls); double-struck „bleed" pe cuvânt când OMML-ul profesoarei taguiește tot runul (fidel cu sursa, randează)
 
-### R4 — OCR: alege pe DOVADĂ cel mai calitativ provider
+### R4 — OCR: alege pe DOVADĂ cel mai calitativ provider ⟹ **ÎNGLOBAT în R7 (2026-07-31)**
+
+> **⚠️ R4 se execută PRIN R7.** Roland a testat 3 fișiere reale (2026-07-31) = dovada măsurată cerută de R4; decizia de provider e luată (**Azure docs + Gemini math, rutat pe tip**) + 4 goluri de calitate identificate. Vezi **R7** în §1. Detaliile R4 de mai jos rămân ca referință (candidați, cote, sub-pași).
 
 **Abordare CONFIRMATĂ de Roland:** testare comparativă pe fișiere reale, decizie pe măsurătoare (nu pe reputație).
 
@@ -170,6 +172,27 @@
 - [x] R6.2 Index comenzi: 5 module din `TABS` + 9 acțiuni editor (bold/italic/tabel/formulă/import/traducere SK/EN/DE/găsește) + 1 globală (tot ecranul). `lucide-react` pt iconițe. Fuzzy match diacritic-insensitiv (NFD). Punte cross-tab prin `editor-commands.ts` (EditorShell înregistrează handler; e mereu montat, taburile `display:none`)
 - [x] R6.3 Ctrl+K global la nivel `page.tsx` (window keydown, preventDefault, toggle) + buton 🔍 „Caută… Ctrl K" în Sidebar. Escape închide (Dialog), ↑↓ navighează (index global peste grupuri), Enter execută
 - [x] R6.4 Gate + LIVE 390px+desktop: Ctrl+K deschide, „tabel"→inserează tabel (dovedit `tablesInEditor:1`), module comută, „bold" wired. **Fără conflict Ctrl+F** (verificat: Ctrl+F NU deschide paleta). Paletă centrată la 390px (0 overflow) după fix-ul de transform
+
+### R7 — Upgrade calitate OCR/conversie (cerință NOUĂ Roland, 2026-07-31; ÎNGLOBEAZĂ + EXECUTĂ R4)
+
+> **De unde vine:** Roland a testat 3 fișiere reale prin OCR (`99_Roland_Work/Teste_Input` → `Teste_Output`, 2026-07-31). Verificate vizual input↔output de Claude. **Decizii stabilite prin AskUserQuestion (2026-07-31):** toate 4 golurile de mai jos = cerințe; provider = **Azure Document Intelligence pt documente + Gemini pt math, rutat pe tip de conținut**. Aceste teste = și dovada măsurată cerută de R4 → **R7 execută R4** (decizia de provider e luată pe dovadă, nu pe reputație).
+
+**📊 SCORECARD teste (dovadă, verificat vizual):**
+
+| Fișier                           | Tip                | Scor        | Constatare                                                                                                                                                                        |
+| -------------------------------- | ------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `limite_matematica.jpeg`         | imagine math       | **10/10**   | Toate 9 limitele (fracții cu radicali, `∛`, `sin13x`, `∞`) capturate + randate perfect. **Math OCR (Gemini) = excelent, NU-l atinge.**                                            |
+| `IMG-20250914-WA0001.jpg`        | poză rotită manual | **~8.5/10** | Tot conținutul (fracții+text) capturat din poză rotită/mototolită. **Cusur:** ordine multi-coloană greșită (`a,d,b,c,e,f` în loc de `a,b,c,d,e,f`).                               |
+| `1.1_Analyse Filtrasan 2026.pdf` | PDF lab (Mösslein) | **~3/10**   | **Tabelul PIERDUT** (→ text-run); logo/semnătură/sigiliu absente; erori text din sursă. Cauza: PDF cu **strat-text prost** → app-ul a extras text-brut (garbaj) în loc de re-OCR. |
+
+**Cele 4 goluri = cerințe (toate confirmate de Roland):**
+
+- [ ] **R7.1 — Reconstrucție TABELE.** Golul cel mai mare (Filtrasan). Structura tabelară trebuie păstrată (noduri `table`/`tableRow`/`tableCell` TipTap — extensia deja există în editor). Provider: Azure `prebuilt-layout` extrage tabele nativ. Eyeball pe Filtrasan: tabelul de rezultate (Parameter|Einheit|Ergebnis|Verfahren, 6 rânduri) reconstruit.
+- [ ] **R7.2 — PDF cu strat-text prost → forțează OCR.** Euristica actuală (`editor-import.tsx` ~L214: `compact >= numPages*10` → text-brut) e prea permisivă: PDF-uri scanate cu strat-text-OCR prost trec pe calea text-brut și dau garbaj. FIX: euristică de calitate (ex. raport caractere-non-alfanumerice / cuvinte-dicționar) SAU buton explicit **„Forțează OCR"** în UI-ul de import. Eyeball pe Filtrasan: să re-OCR-eze, nu să dumpe textul-sursă.
+- [ ] **R7.3 — Ordine corectă multi-coloană.** `two_column`/flatten-ul din `ocr-map.ts` (`sectionToBlocks` two_column: stânga apoi dreapta) produce ordine greșită pe grile a/b/c cu 2-3 coloane (IMG-WA0001: `a,d,b,c` în loc de `a,b,c,d`). FIX: ordine naturală de citire (rând-cu-rând, nu coloană-cu-coloană) — depinde de cum returnează providerul coloanele. Azure `prebuilt-layout` dă reading-order + bounding boxes → folosește-le.
+- [ ] **R7.4 — Figuri/logo-uri pe TOATE căile.** Calea text-PDF (`rawTextToBlocks`) NU extrage imagini (logo Institut Dr. Nuss, sigiliu DAkkS, semnătura din Filtrasan lipsesc). FIX: extrage imaginile și pe calea PDF-cu-text (pdf.js `getOperatorList`/`OPS.paintImageXObject` sau rasterizare + crop), inserează-le ca `ResizableImage` la locul lor.
+- [ ] **R7.5 — Provider: Azure Doc Intelligence (docs) + Gemini (math), rutat pe tip.** **Sub-pas 1 OBLIGATORIU (R3-onestitate):** confirmă la sursă (docs oficiale Azure) că `prebuilt-layout`/`features=formulas` extrage formule ca LaTeX (`[PROBABIL]`, NEverificat). Dacă DA → Azure pt tabele+layout+formule pe documente; dacă NU → Azure DOAR tabele/layout, math tot Gemini. Cheie: `AZURE_DOC_INTEL_KEY`+`AZURE_DOC_INTEL_ENDPOINT` (catalog, free F0 500 pag/lună — R-COST). **Rutare pe tip de conținut** (math-heavy → Gemini; tabele/business → Azure). Păstrează lanțul de fallback (nu rupe F9). Declară costul consumat din cote.
+- [ ] **R7.6 — Gate + eyeball pe cele 3 fișiere REALE ale lui Roland:** re-rulează → `limite_matematica` rămâne 10/10; `IMG-WA0001` ordine corectă a,b,c,d; `Filtrasan` tabel reconstruit + logo-uri prezente. Raport `docs/OCR_COMPARATIE_2026-07-31.md` cu scor înainte/după. Non-regresie F9 (import imagine end-to-end).
 
 ---
 
