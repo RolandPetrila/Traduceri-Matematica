@@ -78,11 +78,31 @@ function parseMarkdownMarks(text: string): JSONContent[] {
 }
 
 /**
+ * Repară literele matematice TRUNCHIATE dintr-un strat-text de PDF stricat.
+ * Unele exportatoare Word→PDF trunchiază caracterele din planul suplimentar
+ * (Mathematical Alphanumeric Symbols, U+1D400–U+1D7FF) la 16 biți → devin silabe
+ * Hangul (U+D400–U+D7FF), care apoi se randează ca garbaj CJK în export/PDF
+ * (ex. `∢푀푂푃` în loc de `∢MOP`). Reconstrucție: +0x10000 → NFKC → literă ASCII.
+ * Aplicat DOAR când rezultatul e o literă/cifră ASCII (altfel păstrăm caracterul).
+ * (Coreeana reală ar fi afectată, dar e imposibilă într-o aplicație RO/SK/EN/DE.)
+ */
+export function fixTruncatedMathAlnum(text: string): string {
+  return text.replace(/[퐀-퟿]/g, (ch) => {
+    const cp = ch.codePointAt(0);
+    if (cp === undefined) return ch;
+    const restored = String.fromCodePoint(cp + 0x10000).normalize("NFKC");
+    return /^[A-Za-z0-9]$/.test(restored) ? restored : ch;
+  });
+}
+
+/**
  * Conținut inline (text cu `$latex$`/`$$latex$$` + `**bold**`) → noduri inline TipTap.
  * `$$…$$` prioritar (display-math); `latex` golit → text literal; `$` neîmperecheat → text.
+ * Repară întâi literele-math trunchiate (PDF-uri stricate) — vezi `fixTruncatedMathAlnum`.
  */
 export function parseInlineToNodes(text: string): JSONContent[] {
   if (!text) return [];
+  text = fixTruncatedMathAlnum(text);
   const out: JSONContent[] = [];
   // Grupa 1 = display `$$…$$`; grupa 2 = inline `$…$` (fără `$`/newline înăuntru).
   const re = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
@@ -113,11 +133,17 @@ function makeParagraph(text: string): JSONContent {
 
 /** Text cu `\n` → mai multe paragrafe (list are `\n`; Mistral = o pagină/paragraf). */
 function textToParagraphs(text: string): JSONContent[] {
-  return text
-    .split(/\n+/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .map(makeParagraph);
+  return (
+    text
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      // Elimină cifrele-zgomot izolate (o singură cifră pe rând) — OCR-ul le produce
+      // uneori din marcaje de rând/coloană (ex. limite: 9 rânduri „1" fantomă înainte
+      // de limitele reale a)–i)). Un paragraf care e DOAR o cifră nu e conținut real.
+      .filter((line) => !/^\d$/.test(line))
+      .map(makeParagraph)
+  );
 }
 
 function clampLevel(level: unknown): number {
@@ -224,12 +250,15 @@ export function sectionToBlocks(section: OcrSection): JSONContent[] {
         },
       });
       if (caption) {
-        blocks.push({
-          type: "paragraph",
-          content: [
-            { type: "text", text: caption, marks: [{ type: "italic" }] },
-          ],
-        });
+        // Caption-ul poate conține `$latex$` (dovadă: „Unghi MNY cu $m(\angle…)$")
+        // → îl trecem prin parseInlineToNodes ca formulele să se randeze, nu să apară
+        // ca text brut cu `$`. Porțiunile de text rămân italice.
+        const capNodes = parseInlineToNodes(caption).map((n) =>
+          n.type === "text" && !n.marks
+            ? { ...n, marks: [{ type: "italic" }] }
+            : n,
+        );
+        blocks.push({ type: "paragraph", content: capNodes });
       }
     } else {
       // Fără crop (bbox invalid/prea mic) → marcaj onest, nu <img> rupt.

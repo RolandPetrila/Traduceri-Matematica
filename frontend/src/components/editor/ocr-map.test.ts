@@ -3,6 +3,7 @@ import {
   sectionToBlocks,
   structuredPagesToBlocks,
   rawTextToBlocks,
+  fixTruncatedMathAlnum,
   type OcrPage,
 } from "./ocr-map";
 
@@ -312,5 +313,60 @@ describe("sectionToBlocks — ordine multi-coloană (R7.3)", () => {
     // Stânga întâi (P1) apoi dreapta (P2) — neschimbat.
     expect(mathOf(blocks[0].content)).toEqual(["P_1", "[AB]"]);
     expect(blocks.filter((b) => b.type === "image")).toHaveLength(2);
+  });
+});
+
+describe("fixTruncatedMathAlnum — litere-math trunchiate din PDF stricat (SEV1)", () => {
+  it("Math-Italic trunchiat la Hangul → ASCII (∢푀푂푃 → ∢MOP)", () => {
+    expect(fixTruncatedMathAlnum("∢푀푂푃.")).toBe("∢MOP.");
+    // 푥 (U+D465) → x ; 푖 (U+D456) → i
+    expect(fixTruncatedMathAlnum("2푥° - 40° ș푖")).toBe("2x° - 40° și");
+  });
+
+  it("text normal (diacritice, ℕℝ, ², °, cifre) rămâne NEATINS", () => {
+    const s = "Text cu ș ț â î ă, ℕ ℝ ∢ 90° x² și 123";
+    expect(fixTruncatedMathAlnum(s)).toBe(s);
+  });
+
+  it("parseInlineToNodes aplică reparația (garbaj → text lizibil)", () => {
+    const nodes = parseInlineToNodes("Unghiul ∢푀푂푃 este drept");
+    expect(textOf(nodes)).toBe("Unghiul ∢MOP este drept");
+  });
+});
+
+describe("figure caption cu $latex$ (SEV2)", () => {
+  it("caption cu formulă → nod math, NU text brut cu `$`", () => {
+    const blocks = sectionToBlocks({
+      type: "figure",
+      img_b64: "AAA",
+      caption: "Unghi MNY cu $m(\\angle MNy) = 60^\\circ$",
+    });
+    // blocks[0] = imaginea, blocks[1] = caption-ul parsat
+    const cap = blocks[1];
+    expect(cap.type).toBe("paragraph");
+    expect(mathOf(cap.content)).toEqual(["m(\\angle MNy) = 60^\\circ"]);
+    // NU mai apare `$` brut în text
+    expect(textOf(cap.content)).not.toContain("$");
+  });
+});
+
+describe("filtru zgomot — cifre izolate (randuri 1 fantoma, limite)", () => {
+  it("paragrafe care sunt DOAR o cifră → eliminate; restul păstrat", () => {
+    const blocks = sectionToBlocks({
+      type: "paragraph",
+      content: "1\n1\na) $\\lim_{x\\to\\infty} x$\n1\nb) $\\lim x$",
+    });
+    // cele 3 „1" dispar; rămân a) și b)
+    expect(blocks).toHaveLength(2);
+    expect(mathOf(blocks[0].content)).toEqual(["\\lim_{x\\to\\infty} x"]);
+    expect(textOf(blocks[0].content)).toContain("a)");
+  });
+
+  it("NU elimina cifre in context (90 grade sau 12 puncte)", () => {
+    const blocks = sectionToBlocks({
+      type: "paragraph",
+      content: "90°\n12 puncte",
+    });
+    expect(blocks).toHaveLength(2);
   });
 });
