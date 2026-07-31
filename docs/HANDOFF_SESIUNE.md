@@ -1,12 +1,24 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-01 (**R7 UPGRADE OCR — LIVRAT + gate verde, NEDEPLOYAT**; R1–R6 deployate v23). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-01 (**R7 UPGRADE OCR — DEPLOYAT v24 + verificat pe prod la sursă**; R1–R6 deployate v23). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
-## ▶️ REIA DE AICI (2026-08-01) — R7 UPGRADE CALITATE OCR = LIVRAT, aștept deploy
+## ▶️ REIA DE AICI (2026-08-01) — R7 UPGRADE CALITATE OCR = DEPLOYAT + PROD-VERIFICAT
 
-**R7 (Azure Doc Intelligence pt documente + Gemini pt math) COMPLET pe cod + gate + dovadă la sursă. NEDEPLOYAT.**
+**R7 (Azure Doc Intelligence pt documente + Gemini pt math) COMPLET + DEPLOYAT. RĂMAS doar eyeball CLIENT Roland pe prod.**
+
+**✅ DEPLOY (2026-08-01), confirmat de Roland (AskUserQuestion):**
+
+- **DOUĂ proiecte Vercel** (capcană — vezi mai jos): frontend `traduceri-frontend` (Next) + API `traduceri-api` (Python, unde rulează `azure_layout`). Backendul R7 = pe `traduceri-api`, NU pe frontend!
+- **Env Azure** (`AZURE_DOC_INTEL_KEY`+`ENDPOINT`) adăugate pe **`traduceri-api`** (proiectul corect). Scoase din frontend (unde le pusesem greșit inițial).
+- **Frontend v24** (`CACHE_VERSION v23→v24`, dpl_AdoBQ…) — alias servește v24 (verificat curl), homepage 200.
+- **API `traduceri-api`** (dpl_8G6WYzYF…) — după fix `.vercelignore` (prima încercare a picat: bundle 374MB>225MB, urca `99_Roland_Work`=314MB manuale gitignored). Alias `/api/ocr` OPTIONS 200.
+- **✅ SMOKE PROD la sursă (Filtrasan real, engine=azure):** HTTP 200 în 6.2s, `source=azure-layout`, **5 tabele + 2 figuri**, tabelul rezultate **7×4** reconstruit. Env-urile Azure funcționează pe prod (nu fallback Gemini).
+
+**⚠️ CAPCANĂ DEPLOY (pt sesiuni viitoare):** proiectul API `traduceri-api` NU e linkat în tree (root `.vercel` gol) → `vercel link --project traduceri-api` din root ÎNAINTE de env/deploy. Root `vercel deploy` urcă WORKING-DIR → `.vercelignore` OBLIGATORIU (exclude 99_Roland_Work/frontend/scratchpad/docs). Env backend = pe `traduceri-api`, NU pe `traduceri-frontend`.
+
+**R7 COMPLET pe cod + gate + dovadă la sursă:**
 
 - ✅ **PASUL 1 confirmat la sursă:** Azure `prebuilt-layout` dă tabele/figuri/reading-order **gratis pe F0**; `features=formulas` dă LaTeX dar e **add-on PLĂTIT** → exclus prin R-COST, **math rămâne Gemini** (10/10 neatins). Limite F0 [CERT]: 2 pag/doc, 4MB, 500/lună. Decizii Roland (AskUserQuestion): rutare pe FORMA fișierului + gardă R-MATH; euristică auto + buton „Forțează OCR" (§17 mock aprobat).
 - ✅ **R7.1 tabele** — `azure_layout.py` → tip secțiune `table` → noduri TipTap (`ocr-map.ts`). Filtrasan real → **tabel 7×4 reconstruit**.
@@ -16,12 +28,10 @@
 - ✅ **R7.5 rutare** — `api/ocr.py` `engine` param (imagine→Gemini / PDF→Azure) + gardă `_has_table`→Gemini + error→Gemini.
 - ✅ **Gate:** `tsc 0 · jest 116/116 · next build OK · pytest 49`. Raport: `docs/OCR_COMPARATIE_2026-07-31.md`.
 
-**➡️ URMĂTORUL (pt deploy, cu confirmarea Roland):**
+**➡️ URMĂTORUL:**
 
-1. **Adaugă în Vercel prod env:** `AZURE_DOC_INTEL_KEY` + `AZURE_DOC_INTEL_ENDPOINT` (SET local, LIPSESC în prod → altfel Azure dă 500, dar gardă face fallback Gemini). Cu `vercel env` / dashboard.
-2. **Bump `CACHE_VERSION` v23→v24** în `frontend/public/sw.js` + `vercel deploy --prod`.
-3. **Eyeball prod (Roland):** import Filtrasan → vezi tabelul + logo-uri; import poză math → rămâne 10/10; export PDF/DOCX cu tabel.
-4. Apoi **§2 SECURITATE** (S1 npm audit — capcană katex@0.16.11; S2 XSS HistoryDetail.tsx:65).
+1. **EYEBALL CLIENT Roland pe prod** (singurul rămas din R7): pe `traduceri-frontend.vercel.app`, Editor → Inserare → Import fișier (OCR) → un PDF business (Filtrasan) → **vezi tabelul + logo-urile randate**; import poză math → rămâne 10/10; export PDF/DOCX cu tabel. Backendul e deja dovedit pe prod (smoke `azure-layout`, 5 tabele).
+2. Apoi **§2 SECURITATE** (S1 npm audit — capcană `katex@0.16.11` pinuit; S2 XSS `HistoryDetail.tsx:65`) → §3/§4/§5/§6.
 
 **⚠️ Trade-off documentat (Roland a ales „0 tabele→Gemini"):** un PDF business FĂRĂ tabel (scrisoare simplă) → Azure rulează, găsește 0 tabele → fallback Gemini (dublu-work minor + Gemini poate rata un logo). Filtrasan/CettaClear AU tabel → rămân pe Azure. Refinabil dacă deranjează.
 
