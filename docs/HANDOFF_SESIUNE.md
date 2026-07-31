@@ -1,6 +1,31 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-07-31 (**R3 DOCX OMML→LaTeX + R5 F8-sus + R6 Ctrl+K — TOATE DEPLOYATE (v22+v23) pe prod**; cerințele R1–R6 = toate livrate. Next = R4 OCR pe dovadă → §2 securitate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-01 (**R7 UPGRADE OCR — LIVRAT + gate verde, NEDEPLOYAT**; R1–R6 deployate v23). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-01) — R7 UPGRADE CALITATE OCR = LIVRAT, aștept deploy
+
+**R7 (Azure Doc Intelligence pt documente + Gemini pt math) COMPLET pe cod + gate + dovadă la sursă. NEDEPLOYAT.**
+
+- ✅ **PASUL 1 confirmat la sursă:** Azure `prebuilt-layout` dă tabele/figuri/reading-order **gratis pe F0**; `features=formulas` dă LaTeX dar e **add-on PLĂTIT** → exclus prin R-COST, **math rămâne Gemini** (10/10 neatins). Limite F0 [CERT]: 2 pag/doc, 4MB, 500/lună. Decizii Roland (AskUserQuestion): rutare pe FORMA fișierului + gardă R-MATH; euristică auto + buton „Forțează OCR" (§17 mock aprobat).
+- ✅ **R7.1 tabele** — `azure_layout.py` → tip secțiune `table` → noduri TipTap (`ocr-map.ts`). Filtrasan real → **tabel 7×4 reconstruit**.
+- ✅ **R7.2 forțează-OCR** — `pdf-text-quality.ts` (`cleanWordRatio`, prag 0.55 măsurat pe fișiere reale, ambii poli unit-testați) + buton „Forțează OCR" în `EditorInsertMenu`.
+- ✅ **R7.3 ordine multi-coloană** — diagnostic real (cauza = aplatizarea, nu promptul) → `orderReadingSequence` în `ocr-map.ts` → `a,b,c,d,e,f`.
+- ✅ **R7.4 figuri business PDF** — polygon Azure → bbox → `figure_crop` cu `snap=False`. Filtrasan → **logo + sigiliu decupate curat** (PNG verificate vizual).
+- ✅ **R7.5 rutare** — `api/ocr.py` `engine` param (imagine→Gemini / PDF→Azure) + gardă `_has_table`→Gemini + error→Gemini.
+- ✅ **Gate:** `tsc 0 · jest 116/116 · next build OK · pytest 49`. Raport: `docs/OCR_COMPARATIE_2026-07-31.md`.
+
+**➡️ URMĂTORUL (pt deploy, cu confirmarea Roland):**
+
+1. **Adaugă în Vercel prod env:** `AZURE_DOC_INTEL_KEY` + `AZURE_DOC_INTEL_ENDPOINT` (SET local, LIPSESC în prod → altfel Azure dă 500, dar gardă face fallback Gemini). Cu `vercel env` / dashboard.
+2. **Bump `CACHE_VERSION` v23→v24** în `frontend/public/sw.js` + `vercel deploy --prod`.
+3. **Eyeball prod (Roland):** import Filtrasan → vezi tabelul + logo-uri; import poză math → rămâne 10/10; export PDF/DOCX cu tabel.
+4. Apoi **§2 SECURITATE** (S1 npm audit — capcană katex@0.16.11; S2 XSS HistoryDetail.tsx:65).
+
+**⚠️ Trade-off documentat (Roland a ales „0 tabele→Gemini"):** un PDF business FĂRĂ tabel (scrisoare simplă) → Azure rulează, găsește 0 tabele → fallback Gemini (dublu-work minor + Gemini poate rata un logo). Filtrasan/CettaClear AU tabel → rămân pe Azure. Refinabil dacă deranjează.
+
+---
 
 ---
 

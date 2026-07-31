@@ -196,3 +196,121 @@ describe("rawTextToBlocks — text brut", () => {
     expect(rawTextToBlocks("   ").length).toBeGreaterThan(0);
   });
 });
+
+describe("sectionToBlocks — tabel (R7.1, Azure prebuilt-layout)", () => {
+  type TNode = {
+    type: string;
+    content?: TNode[];
+    attrs?: Record<string, unknown>;
+    text?: string;
+  };
+  const cellText = (cell: TNode): string =>
+    textOf((cell.content?.[0]?.content ?? []) as unknown);
+
+  it("grilă cu antet → table > tableRow > tableHeader/tableCell", () => {
+    const blocks = sectionToBlocks({
+      type: "table",
+      headerRows: 1,
+      rows: [
+        ["Parameter", "Einheit", "Ergebnis", "Verfahren"],
+        ["pH", "-", "7.2", "DIN 38404"],
+        ["Chlor", "mg/l", "0.05", "DIN EN ISO"],
+      ],
+    }) as TNode[];
+    expect(blocks).toHaveLength(1);
+    const table = blocks[0];
+    expect(table.type).toBe("table");
+    expect(table.content).toHaveLength(3); // 3 rânduri
+    const headerCells = table.content![0].content!;
+    expect(headerCells.every((c) => c.type === "tableHeader")).toBe(true);
+    expect(headerCells).toHaveLength(4);
+    expect(cellText(headerCells[0])).toBe("Parameter");
+    const bodyCells = table.content![1].content!;
+    expect(bodyCells.every((c) => c.type === "tableCell")).toBe(true);
+    expect(cellText(bodyCells[2])).toBe("7.2");
+  });
+
+  it("rânduri neuniforme → grilă dreptunghiulară (celule goale valide)", () => {
+    const blocks = sectionToBlocks({
+      type: "table",
+      rows: [["a", "b", "c"], ["x"]],
+    }) as TNode[];
+    const table = blocks[0];
+    expect(table.content![1].content).toHaveLength(3); // completat la 3 coloane
+    // Celula lipsă = paragraf gol valid (block+), nu undefined.
+    const filler = table.content![1].content![2];
+    expect(filler.content?.[0]?.type).toBe("paragraph");
+  });
+
+  it("fără headerRows → toate celulele = tableCell", () => {
+    const blocks = sectionToBlocks({
+      type: "table",
+      rows: [["1", "2"]],
+    }) as TNode[];
+    expect(
+      blocks[0].content![0].content!.every((c) => c.type === "tableCell"),
+    ).toBe(true);
+  });
+
+  it("tabel gol → marcaj onest, nu nod de tabel invalid", () => {
+    const blocks = sectionToBlocks({ type: "table", rows: [] }) as TNode[];
+    expect(blocks[0].type).toBe("paragraph");
+  });
+});
+
+describe("sectionToBlocks — ordine multi-coloană (R7.3)", () => {
+  // Structura REALĂ din IMG-WA0001 (diagnostic Gemini): itemii a-f împărțiți pe
+  // coloane vizuale — a,d stânga; b,c,e,f dreapta. Aplatizarea naivă = a,d,b,c,e,f.
+  it("itemi a)-f) pe coloane → ordine naturală a,b,c,d,e,f", () => {
+    const blocks = sectionToBlocks({
+      type: "two_column",
+      left: [
+        { type: "paragraph", content: "a) $\\frac{7}{2n-1}$" },
+        { type: "paragraph", content: "d) $\\frac{11}{n-2}$" },
+      ],
+      right: [
+        { type: "paragraph", content: "b) $\\frac{5}{n}$" },
+        { type: "paragraph", content: "c) $\\frac{9}{n+1}$" },
+        { type: "paragraph", content: "e) $\\frac{17}{3n+1}$" },
+        { type: "paragraph", content: "f) $\\frac{12}{n+11}$" },
+      ],
+    });
+    const letters = blocks
+      .map((b) => textOf(b.content).trim().charAt(0))
+      .filter((ch) => /[a-f]/.test(ch));
+    expect(letters).toEqual(["a", "b", "c", "d", "e", "f"]);
+  });
+
+  it("itemi numerici 1./2./3. pe coloane → ordine 1,2,3", () => {
+    const blocks = sectionToBlocks({
+      type: "two_column",
+      left: [{ type: "paragraph", content: "1. unu" }],
+      right: [
+        { type: "paragraph", content: "2. doi" },
+        { type: "paragraph", content: "3. trei" },
+      ],
+    });
+    expect(blocks.map((b) => textOf(b.content).trim())).toEqual([
+      "1. unu",
+      "2. doi",
+      "3. trei",
+    ]);
+  });
+
+  it("REGRESIE: pași de construcție ($P_1$/figuri) NU se reordonează (ordine vizuală)", () => {
+    const blocks = sectionToBlocks({
+      type: "two_column",
+      left: [
+        { type: "step", content: "$P_1$: Construim $[AB]$" },
+        { type: "figure", img_b64: "AAA", caption: "AB" },
+      ],
+      right: [
+        { type: "step", content: "$P_2$: Arc din $A$" },
+        { type: "figure", img_b64: "BBB", caption: "arc" },
+      ],
+    });
+    // Stânga întâi (P1) apoi dreapta (P2) — neschimbat.
+    expect(mathOf(blocks[0].content)).toEqual(["P_1", "[AB]"]);
+    expect(blocks.filter((b) => b.type === "image")).toHaveLength(2);
+  });
+});

@@ -85,6 +85,7 @@ def crop_figure(
     bbox: dict,
     target_bg: tuple[int, int, int] = (255, 255, 255),
     tolerance: int = 40,
+    snap: bool = True,
 ) -> str:
     """Crop a figure from an image and return as base64 PNG.
 
@@ -93,6 +94,9 @@ def crop_figure(
         bbox: {"x": float, "y": float, "w": float, "h": float} — fractions 0.0-1.0
         target_bg: Target background color (default white)
         tolerance: Color tolerance for background detection
+        snap: content-aware snap onto the drawing (for Gemini's IMPRECISE math bboxes).
+              Disable for Azure — its boundingRegions already cover only the core
+              content, and the "tallest ink run" snap would clip logos/seals (R7.4).
 
     Returns:
         Base64-encoded PNG string (without data: prefix), or placeholder on failure.
@@ -131,23 +135,26 @@ def crop_figure(
     # Content-aware snap: expand the box (Gemini frequently clips the figure or
     # captures an adjacent formula/caption) then lock onto the actual drawing so
     # the crop is tight and complete for ANY figure. Falls back to Gemini's box.
-    bw_px, bh_px = x2 - x1, y2 - y1
-    sx1 = max(0, int(x1 - 0.15 * bw_px))
-    sy1 = max(0, int(y1 - 0.35 * bh_px))
-    sx2 = min(w, int(x2 + 0.15 * bw_px))
-    sy2 = min(h, int(y2 + 0.35 * bh_px))
-    try:
-        snapped = _snap_to_content(img.convert("L").crop((sx1, sy1, sx2, sy2)))
-    except Exception as snap_err:
-        print(f"[CROP] snap failed, using raw bbox: {snap_err}", file=sys.stderr)
-        snapped = None
-    if snapped:
-        rx0, ry0, rx1, ry1 = snapped
-        p = 12  # breathing room around the drawing
-        x1 = max(0, sx1 + rx0 - p)
-        y1 = max(0, sy1 + ry0 - p)
-        x2 = min(w, sx1 + rx1 + p)
-        y2 = min(h, sy1 + ry1 + p)
+    # Skipped for Azure (snap=False): its boundingRegions are already tight, and the
+    # "tallest ink run" heuristic would clip a logo/seal to just its densest strip.
+    if snap:
+        bw_px, bh_px = x2 - x1, y2 - y1
+        sx1 = max(0, int(x1 - 0.15 * bw_px))
+        sy1 = max(0, int(y1 - 0.35 * bh_px))
+        sx2 = min(w, int(x2 + 0.15 * bw_px))
+        sy2 = min(h, int(y2 + 0.35 * bh_px))
+        try:
+            snapped = _snap_to_content(img.convert("L").crop((sx1, sy1, sx2, sy2)))
+        except Exception as snap_err:
+            print(f"[CROP] snap failed, using raw bbox: {snap_err}", file=sys.stderr)
+            snapped = None
+        if snapped:
+            rx0, ry0, rx1, ry1 = snapped
+            p = 12  # breathing room around the drawing
+            x1 = max(0, sx1 + rx0 - p)
+            y1 = max(0, sy1 + ry0 - p)
+            x2 = min(w, sx1 + rx1 + p)
+            y2 = min(h, sy1 + ry1 + p)
 
     # Crop region
     cropped = img.crop((x1, y1, x2, y2)).convert("RGBA")
@@ -191,7 +198,9 @@ def crop_figure(
     return b64
 
 
-def embed_crops_in_sections(image_bytes: bytes, sections: list[dict]) -> list[dict]:
+def embed_crops_in_sections(
+    image_bytes: bytes, sections: list[dict], snap: bool = True
+) -> list[dict]:
     """Recursively embed cropped figure images into sections.
 
     For every 'figure' section with a 'bbox' field, crops the region from
@@ -200,6 +209,8 @@ def embed_crops_in_sections(image_bytes: bytes, sections: list[dict]) -> list[di
     Args:
         image_bytes: Original page image bytes
         sections: List of OCR structured sections
+        snap: content-aware snap (True for Gemini's imprecise bboxes; False for
+              Azure's tight boundingRegions — see crop_figure).
 
     Returns:
         New list of sections with 'img_b64' added to figure sections.
@@ -210,7 +221,7 @@ def embed_crops_in_sections(image_bytes: bytes, sections: list[dict]) -> list[di
         if s.get("type") == "figure":
             bbox = s.get("bbox")
             if bbox and isinstance(bbox, dict):
-                b64 = crop_figure(image_bytes, bbox)
+                b64 = crop_figure(image_bytes, bbox, snap=snap)
                 s["img_b64"] = b64
                 s.pop("bbox", None)
             else:
@@ -222,8 +233,8 @@ def embed_crops_in_sections(image_bytes: bytes, sections: list[dict]) -> list[di
                 s.pop("bbox", None)
                 print("[CROP] Figure has no bbox, using placeholder", file=sys.stderr)
         elif s.get("type") == "two_column":
-            s["left"] = embed_crops_in_sections(image_bytes, s.get("left", []))
-            s["right"] = embed_crops_in_sections(image_bytes, s.get("right", []))
+            s["left"] = embed_crops_in_sections(image_bytes, s.get("left", []), snap)
+            s["right"] = embed_crops_in_sections(image_bytes, s.get("right", []), snap)
         result.append(s)
     return result
 

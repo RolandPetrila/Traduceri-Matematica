@@ -1,0 +1,28 @@
+Lucare de control
+1. Două unghiuri se numesc adiacente dacă:
+a) sunt egale
+b) au aceeași măsură
+c) au o latură comună și vârf comun
+d) sunt opuse la vârf
+2. Două unghiuri sunt suplimentare dacă suma măsurilor lor este:
+a) 90° b) 120° c) 180° d) 360°
+3. Bisectoarea unui unghi:
+a) împarte unghiul în două unghiuri egale
+b) dublează unghiul
+c) formează un unghi drept
+d) nu are nicio proprietate special
+4. Două unghiuri opuse la vârf sunt întotdeauna:
+a) complementare  b) congruente  c) adiacente  d) drepte
+5. Se dă unghiul ∢MON=74°. Știind că OP este bisectoarea unghiului MON , aflați măsura 
+unghiului  ∢푀푂푃.  
+6. Unghiurile 푂1, 푂2 ș푖 푂3 sunt unghiuri în jurul punctului O. Aflați măsurile celor 3 
+unghiuri, stiind că ∢O1 = 푥°, ∢O2 = 2푥° - 40° ș푖 ∢O3 = 푥° + 40°.
+7. În figura alăturată punctele A, O, B și respective C, O, D sunt coliniare. Calculați măsurile 
+unghiurilor. 
+8. Se consideră două unghiuri adiacente suplementare AOB și BOC cu ∢퐴푂퐵= 푥° - 11° și 
+∢BOC = 2x° + 11.
+a. Calculați măsurile unghiurilor AOB și BOC.
+b. Notați cu OM bisectoarea unghiului AOB și cu ON bisectoarea unghiului BOC. 
+Calculați măsura unghiului MON.
+
+

@@ -32,6 +32,7 @@ import {
   rawTextToBlocks,
   type OcrPage,
 } from "./ocr-map";
+import { assessPdfText } from "./pdf-text-quality";
 import { isPristineEditor } from "./editor-initial";
 import { useEditorTranslate, type LangCode } from "./editor-translate-state";
 import { useEditorDocument } from "./editor-document";
@@ -80,6 +81,9 @@ type ImportCtx = {
   notice: string | null;
   /** Import în așteptare de decizie (editorul avea deja conținut). */
   pending: PendingImport | null;
+  /** „Forțează OCR": sare peste evaluarea stratului-text la PDF-uri (R7.2). */
+  forceOcr: boolean;
+  setForceOcr: (v: boolean) => void;
   /** Pornește importul (drag&drop sau buton). */
   importFiles: (files: FileList | File[]) => void;
   /** Anulează importul în curs (oprește lanțul OCR secvențial). */
@@ -100,9 +104,13 @@ async function ocrRequest(
   filename: string,
   sourceLang: string,
   signal: AbortSignal,
+  engine: "gemini" | "azure" = "gemini",
 ): Promise<OcrPage[]> {
   const fd = new FormData();
   fd.append("source_lang", sourceLang);
+  // R7.5 — rutare pe tip: imagini (math, Cristina) → Gemini; PDF business (Mösslein,
+  // tabele/layout) → Azure. Serverul are gardă R-MATH (0 tabele → revine la Gemini).
+  fd.append("engine", engine);
   fd.append("files", blob, filename);
   // FĂRĂ header Content-Type: browserul pune `multipart/form-data; boundary=…`
   // (valoare safelisted → NU declanșează preflight-ul care dă 503 la edge Vercel).
@@ -156,6 +164,7 @@ async function processFile(
   sourceLang: string,
   signal: AbortSignal,
   onProgress: (p: ImportProgress) => void,
+  forceOcr = false,
 ): Promise<ProcessResult> {
   const e = ext(file.name);
   const isImage = IMAGE_EXT.has(e) || (file.type || "").startsWith("image/");
@@ -224,10 +233,13 @@ async function processFile(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           content.items.map((it: any) => it.str || "").join(" ") + "\n\n";
       }
-      const compact = extracted.replace(/\s/g, "").length;
-
-      // PDF cu text real → extragere brută (onest: matematica-imagine NU se transcrie).
-      if (compact >= doc.numPages * 10) {
+      // R7.2 — decid pe CALITATEA stratului-text, nu doar pe volum: un PDF cu
+      // strat-text OCR-prost (Filtrasan) trecea pe calea text-brut și dădea garbaj.
+      // `forceOcr` (butonul din UI) sare peste evaluare și forțează re-OCR pe pixeli.
+      const quality = assessPdfText(extracted, doc.numPages);
+      if (!forceOcr && quality.reliable) {
+        // PDF cu strat-text FIABIL → extragere brută (onest: matematica-imagine
+        // NU se transcrie; pentru asta forțează OCR).
         return {
           ...base,
           blocks: rawTextToBlocks(extracted),
@@ -235,7 +247,8 @@ async function processFile(
         };
       }
 
-      // PDF scanat → rasterizez fiecare pagină → OCR (1 pagină/cerere, Vercel 60s).
+      // Strat-text slab/absent SAU „Forțează OCR" → rasterizez fiecare pagină → OCR
+      // (1 pagină/cerere, Vercel 60s). PDF business → Azure (R7.5, Slice 2).
       const total = Math.min(doc.numPages, MAX_OCR_PAGES);
       const pageCapped = doc.numPages > MAX_OCR_PAGES ? doc.numPages : 0;
       const pages: OcrPage[] = [];
@@ -252,6 +265,7 @@ async function processFile(
             `${file.name}_p${i}.png`,
             sourceLang,
             signal,
+            "azure", // PDF → OCR = document business → Azure (tabele/layout/figuri, R7.5)
           );
           pages.push(...pp);
         } catch (err) {
@@ -287,6 +301,7 @@ async function processFiles(
   sourceLang: string,
   signal: AbortSignal,
   onProgress: (p: ImportProgress) => void,
+  forceOcr = false,
 ): Promise<ProcessResult> {
   const blocks: JSONContent[] = [];
   const acc = {
@@ -302,7 +317,7 @@ async function processFiles(
   };
   for (const file of files) {
     if (signal.aborted) break;
-    const r = await processFile(file, sourceLang, signal, onProgress);
+    const r = await processFile(file, sourceLang, signal, onProgress, forceOcr);
     if (blocks.length && r.blocks.length) blocks.push({ type: "pageBreak" });
     blocks.push(...r.blocks);
     acc.usedOcr ||= r.usedOcr;
@@ -372,7 +387,12 @@ export function EditorImportProvider({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingImport | null>(null);
+  const [forceOcr, setForceOcr] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  // Ref sincron pt forceOcr → `importFiles` citește mereu valoarea curentă fără să
+  // se re-creeze la fiecare toggle (la fel ca `langRef`).
+  const forceOcrRef = useRef(false);
+  forceOcrRef.current = forceOcr;
   // Guard SINCRON: `isImporting` (state) se citește stale în același tick → două
   // apeluri rapide ar porni două importuri. `importingRef` prinde apelurile care se
   // SUPRAPUN; `lastFireRef` (debounce) prinde și re-fire-ul rapid care ajunge DUPĂ ce
@@ -420,7 +440,13 @@ export function EditorImportProvider({
       abortRef.current = ac;
       const usedLang = langRef.current;
       try {
-        const r = await processFiles(files, usedLang, ac.signal, setProgress);
+        const r = await processFiles(
+          files,
+          usedLang,
+          ac.signal,
+          setProgress,
+          forceOcrRef.current,
+        );
         if (ac.signal.aborted) return;
         if (!r.blocks.length) {
           setError("Nu am putut extrage conținut din fișier.");
@@ -490,6 +516,8 @@ export function EditorImportProvider({
         error,
         notice,
         pending,
+        forceOcr,
+        setForceOcr,
         importFiles,
         cancelImport,
         applyPending,

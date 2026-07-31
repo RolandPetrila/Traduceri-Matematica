@@ -25,8 +25,38 @@ if _api_dir not in sys.path:
 
 from lib.html_builder import build_html_structured
 from lib.ocr_structured import ocr_structured
+from lib.azure_layout import azure_layout
 from lib.figure_crop import embed_crops_in_sections
 from lib.multipart import parse_boundary, log_to_file
+
+
+def _has_table(sections: list) -> bool:
+    """True if any section (incl. nested two_column) is a table."""
+    for s in sections:
+        if s.get("type") == "table":
+            return True
+        if s.get("type") == "two_column":
+            if _has_table(s.get("left", []) or []) or _has_table(s.get("right", []) or []):
+                return True
+    return False
+
+
+def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str) -> dict:
+    """OCR one page. engine='azure' → Azure layout (business docs) with a Gemini
+    fallback when Azure finds NO table (R-MATH: never lose math) or errors out.
+    engine='gemini' (default) → Gemini math OCR unchanged.
+    """
+    if engine == "azure":
+        try:
+            page_data = azure_layout(image_bytes, mime_type, source_lang)
+            if not _has_table(page_data.get("sections", [])):
+                print("[OCR] Azure found no table -> Gemini fallback (R-MATH)", file=sys.stderr)
+                page_data = ocr_structured(image_bytes, mime_type, source_lang)
+            return page_data
+        except Exception as e:
+            print(f"[OCR] Azure failed ({e}) -> Gemini fallback", file=sys.stderr)
+            return ocr_structured(image_bytes, mime_type, source_lang)
+    return ocr_structured(image_bytes, mime_type, source_lang)
 
 
 def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150, max_pages: int = 1) -> list[tuple[bytes, str]]:
@@ -100,6 +130,7 @@ class handler(BaseHTTPRequestHandler):
                 parts = json.loads(body)
 
             source_lang = parts.get("source_lang", "ro")
+            engine = parts.get("engine", "gemini")
             files = parts.get("files", [])
 
             if not files:
@@ -145,9 +176,11 @@ class handler(BaseHTTPRequestHandler):
             for idx, file_info in enumerate(expanded_files):
                 print(f"[OCR] Processing page {idx+1}/{len(expanded_files)}", file=sys.stderr)
                 try:
-                    page_data = ocr_structured(file_info["data"], file_info.get("mime_type", "image/jpeg"), source_lang)
-                    # Embed cropped figures from original image (Option C)
-                    page_data["sections"] = embed_crops_in_sections(file_info["data"], page_data.get("sections", []))
+                    page_data = _ocr_page(file_info["data"], file_info.get("mime_type", "image/jpeg"), source_lang, engine)
+                    # Embed cropped figures from original image (Option C). Azure bboxes
+                    # are tight → skip the Gemini content-snap (would clip logos/seals).
+                    use_snap = page_data.get("source") != "azure-layout"
+                    page_data["sections"] = embed_crops_in_sections(file_info["data"], page_data.get("sections", []), snap=use_snap)
                     all_structured_pages.append(page_data)
                 except Exception as e:
                     print(f"[OCR] Page {idx+1} failed: {e}", file=sys.stderr)
@@ -201,7 +234,7 @@ class handler(BaseHTTPRequestHandler):
             if not name_match:
                 continue
             name = name_match.group(1)
-            if name == "source_lang":
+            if name in ("source_lang", "engine"):
                 parts_data[name] = content.decode("utf-8").strip()
             elif name == "files" or "filename" in header:
                 ct_match = re.search(r"Content-Type:\s*(\S+)", header)

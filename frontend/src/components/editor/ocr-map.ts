@@ -32,6 +32,10 @@ export interface OcrSection {
   // two_column
   left?: OcrSection[];
   right?: OcrSection[];
+  // table (R7.1 — Azure prebuilt-layout: grilă dreptunghiulară de celule-text)
+  rows?: string[][];
+  /** Câte rânduri de la început sunt antet (tableHeader). Default 0. */
+  headerRows?: number;
 }
 
 export interface OcrPage {
@@ -121,10 +125,79 @@ function clampLevel(level: unknown): number {
   return Math.min(6, Math.max(1, Math.round(n)));
 }
 
+/**
+ * O secțiune `table` (grilă dreptunghiulară de celule-text, R7.1) → nod TipTap
+ * `table` > `tableRow` > `tableHeader|tableCell` > `paragraph`. Fiecare celulă e
+ * un paragraf (schema TipTap cere block+ în celulă; paragraf gol e valid).
+ * Textul celulei trece prin `parseInlineToNodes` (Azure dă text simplu, dar
+ * păstrează `$latex$`/bold dacă apar). Grila e făcută dreptunghiulară aici
+ * (defensiv) — rânduri mai scurte se completează cu celule goale.
+ */
+function tableToBlocks(section: OcrSection): JSONContent[] {
+  const rows = section.rows || [];
+  const cols = rows.reduce((mx, r) => Math.max(mx, r.length), 0);
+  if (rows.length === 0 || cols === 0) {
+    // Tabel fără celule → marcaj onest, nu nod de tabel invalid (l-ar respinge schema).
+    return [makeParagraph("[Tabel gol]")];
+  }
+  const headerRows = Math.min(
+    Math.max(0, Math.round(section.headerRows ?? 0)),
+    rows.length,
+  );
+  const tableRows: JSONContent[] = rows.map((row, r) => {
+    const cells: JSONContent[] = [];
+    for (let c = 0; c < cols; c++) {
+      const cellType = r < headerRows ? "tableHeader" : "tableCell";
+      cells.push({ type: cellType, content: [makeParagraph(row[c] ?? "")] });
+    }
+    return { type: "tableRow", content: cells };
+  });
+  return [{ type: "table", content: tableRows }];
+}
+
+/**
+ * R7.3 — eticheta de item a unei secțiuni: `a)`/`b)`/… (alfabetic) sau `1.`/`2.`/…
+ * (numeric). `null` dacă nu începe cu o etichetă (pas `$P_1$…`, figură, proză).
+ */
+function itemLabelKey(
+  section: OcrSection,
+): { kind: "alpha" | "num"; key: number } | null {
+  const c = (section.content || "").replace(/^[\s*]+/, "");
+  const alpha = /^([a-zA-Z])[)\.]/.exec(c);
+  if (alpha)
+    return { kind: "alpha", key: alpha[1].toLowerCase().charCodeAt(0) };
+  const num = /^(\d{1,3})[)\.]/.exec(c);
+  if (num) return { kind: "num", key: parseInt(num[1], 10) };
+  return null;
+}
+
+/**
+ * R7.3 — reordonează în ordine naturală de citire itemii etichetați dintr-un
+ * `two_column`. OCR-ul îi așează pe coloane vizuale (ex. `a,d` stânga; `b,c,e,f`
+ * dreapta) → aplatizarea stânga-apoi-dreapta ar da `a,d,b,c,e,f`. Reordonăm DOAR
+ * dacă TOȚI copiii sunt itemi etichetați de ACELAȘI fel; altfel păstrăm ordinea
+ * vizuală (pași de construcție, figuri, proză — unde etichetele lipsesc).
+ */
+function orderReadingSequence(sections: OcrSection[]): OcrSection[] {
+  if (sections.length < 2) return sections;
+  const keys = sections.map(itemLabelKey);
+  if (keys.some((k) => k === null)) return sections;
+  const kind = keys[0]!.kind;
+  if (keys.some((k) => k!.kind !== kind)) return sections;
+  return sections
+    .map((s, i) => ({ s, key: keys[i]!.key, i }))
+    .sort((a, b) => a.key - b.key || a.i - b.i)
+    .map((x) => x.s);
+}
+
 /** O secțiune OCR → 0..N noduri-bloc TipTap. Recursiv pentru `two_column`. */
 export function sectionToBlocks(section: OcrSection): JSONContent[] {
   const type = section.type || "paragraph";
   const content = section.content || "";
+
+  if (type === "table") {
+    return tableToBlocks(section);
+  }
 
   if (type === "heading") {
     // OCR clasifică uneori un paragraf lung drept „heading" → îl retrogradăm (ca html_builder).
@@ -175,12 +248,11 @@ export function sectionToBlocks(section: OcrSection): JSONContent[] {
   }
 
   if (type === "two_column") {
-    // Fără extensie de coloane în editor → aplatizăm (stânga apoi dreapta).
-    // Figurile REALE stau aici (dovedit pe fixture) → recursăm obligatoriu.
-    return [
-      ...(section.left || []).flatMap(sectionToBlocks),
-      ...(section.right || []).flatMap(sectionToBlocks),
-    ];
+    // Fără extensie de coloane în editor → aplatizăm. Itemii etichetați (a) b) c)…)
+    // se reordonează în ordine naturală de citire (R7.3); pașii/figurile/proza rămân
+    // în ordinea vizuală. Figurile REALE stau aici (dovedit pe fixture) → recursăm.
+    const combined = [...(section.left || []), ...(section.right || [])];
+    return orderReadingSequence(combined).flatMap(sectionToBlocks);
   }
 
   // paragraph / step / observation / list / necunoscut → paragraf(e).

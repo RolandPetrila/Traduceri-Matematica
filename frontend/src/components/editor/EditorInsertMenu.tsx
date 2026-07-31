@@ -19,6 +19,7 @@ import {
   SeparatorHorizontal,
   PaintBucket,
   FileUp,
+  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +42,7 @@ import { useEditorImport } from "./editor-import";
 export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
-  const { importFiles } = useEditorImport();
+  const { importFiles, forceOcr, setForceOcr } = useEditorImport();
   // Meniu controlat: paleta de fundal nu e un DropdownMenuItem (e o grilă), deci
   // trebuie închis explicit după alegerea culorii.
   const [tableMenuOpen, setTableMenuOpen] = useState(false);
@@ -135,6 +136,19 @@ export function EditorInsertMenu({ editor }: { editor: Editor | null }) {
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => importRef.current?.click()}>
             <FileUp className="mr-2 h-4 w-4" /> Import fișier (OCR)
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            // Toggle „Forțează OCR" (R7.2): re-scanează pixelii pt PDF cu strat-text
+            // prost/scanat. preventDefault → meniul rămâne deschis ca să vezi bifa
+            // schimbată, apoi apeși „Import fișier (OCR)". Aplică DOAR la .pdf.
+            onSelect={(e) => {
+              e.preventDefault();
+              setForceOcr(!forceOcr);
+            }}
+            title="Pentru PDF-uri scanate sau cu strat-text prost — re-scanează imaginea în loc să folosească textul încorporat"
+          >
+            <ScanLine className="mr-2 h-4 w-4" /> Forțează OCR (PDF scanat)
+            {forceOcr && <span className="ml-auto pl-2">✓</span>}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={insertDate}>
             <Calendar className="mr-2 h-4 w-4" /> Data de azi
