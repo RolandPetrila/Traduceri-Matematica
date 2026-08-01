@@ -8,9 +8,17 @@
 
 **Ordine execuție rămasă:** §2 SECURITATE (S1–S8) → §3 REGRESII (G1–G4) → R8.4+R8.5 → §4 CURĂȚENIE (C1–C7) → §5 EDITOR (M1–M6) → §6 PLANȘE (P1–P4). §7 backlog = NU. §8 = doar semnalez.
 
-- ✅ **S1 — `npm audit fix` (non-force) LIVRAT (NEDEPLOYAT).** 5 vulnerabilități → **3**. FIXATE: `dompurify`→3.4.12, `katex`→**0.16.47** (peer `@tiptap/extension-mathematics@3.28.0` = `^0.16.4 || ^0.17.0` → satisfăcut; capcana „pin 0.16.11" era supra-precaută), `next`→15.5.22. **Residuu onest (3 HIGH):** `sharp 0.34.5` + `postcss 8.4.31` nested + `next` = transitive-under-next, fix doar via Next 16 (backlog) sau downgrade absurd → [NEGĂSIT fix non-breaking], documentat. Doar `package-lock.json` schimbat (package.json neatins). **Dovadă katex OK:** `gate_check.js` 334/334 + export CSS compat verificat (12 font-families prezente). Gate: `tsc 0 · jest 123/123 · build OK`. Commit: (vezi git).
-- ➡️ **URMĂTORUL: S2** — XSS viu `HistoryDetail.tsx:65` (`document.write` nesanitizat, `sanitizeHtml` deja importat linia 4) → fix 1 linie.
-- **Deploy §2:** propus GRUPAT la finalul §2 (frontend `traduceri-frontend`: S1 lockfile + S2/S5/S8; backend `traduceri-api`: S3/S4/S6/S7) — cu confirmarea Roland.
+- ✅ **S1** `npm audit fix` non-force: 5 vuln→3 (dompurify→3.4.12, katex→0.16.47 [peer `^0.16.4` satisfăcut, gate_check 334/334], next→15.5.22). 3 HIGH residual = transitive-under-next (fix doar Next 16/backlog). Doar `package-lock.json`.
+- ✅ **S2** XSS `HistoryDetail.tsx:65` → `sanitizeHtml(entry.html)`. `editor-export.ts:179` verificat = risc scăzut (getHTML schema-constrained), lăsat.
+- ✅ **S3** `pypdf 4.3.1→6.14.2`; 5 căi reale convert.py testate pe PDF real (pytest nu atinge pypdf).
+- ✅ **S4** timeout-uri OCR/traducere < 60s (Gemini 180→45+retries0 = F9 bounded; Claude/NLLB capate; gap Azure+Gemini stack închis cu buget rămas). Residuu onest: gemini_request/ocr_with_mistral 55×3 (partajate cu OCR legacy).
+- ✅ **S5** `/api/logs`: rate-limit per-IP (120/min) + body cap 32KB + caps câmpuri.
+- ✅ **S6** `error_response`: mesaj generic pt non-AppError (nu scurge corpul providerului), error_code păstrat.
+- ✅ **S8** corectat comentariul fals „CI runs lint" (nu există CI; lint are 12 erori pre-existente).
+- ⏳ **S7 — BLOCAT pe Roland** (AskUserQuestion): `ALLOWED_ORIGIN` default `"*"` fail-open. NU se poate schimba autonom — riscă ruperea CORS live (app-ul e cross-origin frontend↔api) + poate cere env var pe prod. Vezi întrebarea.
+- **Gate §2:** `tsc 0 · jest 123/123 · next build OK · pytest 50/50`. Commits `75fa1ee`(S2)…`21e280c`(S3), pushed.
+- **Deploy §2:** propus GRUPAT — frontend `traduceri-frontend` (S1 lockfile + S2 + S5 + S8) + backend `traduceri-api` (S3 + S4 + S6) — cu confirmarea Roland. S7 se rezolvă separat după răspunsul lui.
+- ➡️ **URMĂTORUL după S7/deploy: §3 REGRESII (G1–G4).**
 
 ---
 
