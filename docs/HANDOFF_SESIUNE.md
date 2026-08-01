@@ -1,6 +1,16 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-01 (**R7 UPGRADE OCR — DEPLOYAT v24 + verificat pe prod la sursă**; R1–R6 deployate v23). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-01 (**SESIUNE EXECUȚIE §2 SECURITATE în curs**; R1–R8.3 deployate v25). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-01, sesiune execuție autonomă) — §2 SECURITATE în curs
+
+**Ordine execuție rămasă:** §2 SECURITATE (S1–S8) → §3 REGRESII (G1–G4) → R8.4+R8.5 → §4 CURĂȚENIE (C1–C7) → §5 EDITOR (M1–M6) → §6 PLANȘE (P1–P4). §7 backlog = NU. §8 = doar semnalez.
+
+- ✅ **S1 — `npm audit fix` (non-force) LIVRAT (NEDEPLOYAT).** 5 vulnerabilități → **3**. FIXATE: `dompurify`→3.4.12, `katex`→**0.16.47** (peer `@tiptap/extension-mathematics@3.28.0` = `^0.16.4 || ^0.17.0` → satisfăcut; capcana „pin 0.16.11" era supra-precaută), `next`→15.5.22. **Residuu onest (3 HIGH):** `sharp 0.34.5` + `postcss 8.4.31` nested + `next` = transitive-under-next, fix doar via Next 16 (backlog) sau downgrade absurd → [NEGĂSIT fix non-breaking], documentat. Doar `package-lock.json` schimbat (package.json neatins). **Dovadă katex OK:** `gate_check.js` 334/334 + export CSS compat verificat (12 font-families prezente). Gate: `tsc 0 · jest 123/123 · build OK`. Commit: (vezi git).
+- ➡️ **URMĂTORUL: S2** — XSS viu `HistoryDetail.tsx:65` (`document.write` nesanitizat, `sanitizeHtml` deja importat linia 4) → fix 1 linie.
+- **Deploy §2:** propus GRUPAT la finalul §2 (frontend `traduceri-frontend`: S1 lockfile + S2/S5/S8; backend `traduceri-api`: S3/S4/S6/S7) — cu confirmarea Roland.
 
 ---
 
