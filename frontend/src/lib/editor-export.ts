@@ -88,12 +88,19 @@ const DOCUMENT_CSS = `
     width: 100%;
     margin: 0.5em 0;
     table-layout: fixed;
+    /* R8.5: tabelul se poate rupe ÎNTRE rânduri (nu împins pe pagină nouă → gol). */
+    page-break-inside: auto;
+    break-inside: auto;
   }
   .doc th, .doc td {
     border: 1px solid #cbd5e1;
-    padding: 6px 8px;
+    padding: 4px 7px;
     vertical-align: top;
+    /* R8.5: rânduri mai compacte (evită „umflarea" 1 pag → 3 la export). */
+    line-height: 1.3;
   }
+  /* R8.5: un RÂND nu se rupe peste page-break (jumătate sus, jumătate jos). */
+  .doc tr { page-break-inside: avoid; break-inside: avoid; }
   .doc th { background: #f1f5f9; font-weight: 700; }
   .doc img { max-width: 100%; height: auto; }
   .doc hr { border: none; border-top: 2px solid #cbd5e1; margin: 1em 0; }
