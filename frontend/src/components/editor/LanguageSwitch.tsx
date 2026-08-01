@@ -20,6 +20,7 @@ import {
   useEditorTranslate,
   type LangCode,
 } from "./editor-translate-state";
+import { DeepLQuotaBadge } from "./DeepLQuotaBadge";
 
 export function LanguageSwitch({ compact = false }: { compact?: boolean }) {
   const {
@@ -103,6 +104,9 @@ export function LanguageSwitch({ compact = false }: { compact?: boolean }) {
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> traduc…
         </span>
       )}
+
+      {/* G1 — cotă DeepL discretă, reîmprospătată când o traducere se termină */}
+      <DeepLQuotaBadge refreshSignal={isTranslating} />
 
       {error && (
         <span className="inline-flex items-center gap-1 rounded bg-destructive/15 px-1.5 py-0.5 text-xs text-destructive">
