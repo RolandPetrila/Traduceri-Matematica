@@ -17,6 +17,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
   type ReactNode,
@@ -68,6 +69,9 @@ interface ImportMeta {
 
 interface ProcessResult extends Omit<ImportMeta, "filename" | "count"> {
   blocks: JSONContent[];
+  // G4 — imaginile-SURSĂ trimise la OCR (poză / pagini PDF rasterizate) pt
+  // verificarea vizuală original↔rezultat (R-MATH). Gol pt DOCX/TXT (fără poză).
+  sourceBlobs: Blob[];
 }
 
 interface PendingImport {
@@ -95,6 +99,8 @@ type ImportCtx = {
   cancelPending: () => void;
   clearError: () => void;
   dismissNotice: () => void;
+  /** G4 — URL-uri (object) ale imaginilor-sursă pt comparație vizuală (thumbnail + lightbox). */
+  sourcePreviews: string[];
 };
 
 const Ctx = createContext<ImportCtx | null>(null);
@@ -180,6 +186,7 @@ async function processFile(
     imagesFound: 0,
     unresolvedImages: 0,
     unknownOmml: [],
+    sourceBlobs: [],
   };
 
   // --- Imagine → OCR (o singură pagină) ---
@@ -193,6 +200,7 @@ async function processFile(
       blocks: mapped.blocks,
       usedOcr: true,
       mistralFallback: mapped.mistralFallback,
+      sourceBlobs: [blob], // G4 — poza-sursă pt comparație
     };
   }
 
@@ -253,6 +261,7 @@ async function processFile(
       const total = Math.min(doc.numPages, MAX_OCR_PAGES);
       const pageCapped = doc.numPages > MAX_OCR_PAGES ? doc.numPages : 0;
       const pages: OcrPage[] = [];
+      const srcBlobs: Blob[] = []; // G4 — paginile rasterizate, pt comparație
       let failedPages = 0;
       for (let i = 1; i <= total; i++) {
         if (signal.aborted) break;
@@ -261,6 +270,7 @@ async function processFile(
           const page = await doc.getPage(i);
           const png = await renderPdfPage(page);
           const blob = await ensureImageUnderCap(png);
+          srcBlobs.push(blob);
           const pp = await ocrRequest(
             blob,
             `${file.name}_p${i}.png`,
@@ -287,6 +297,7 @@ async function processFile(
         mistralFallback: mapped.mistralFallback,
         failedPages,
         pageCapped,
+        sourceBlobs: srcBlobs,
       };
     } finally {
       await doc.destroy();
@@ -315,7 +326,9 @@ async function processFiles(
     imagesFound: 0,
     unresolvedImages: 0,
     unknownOmml: [] as string[],
+    sourceBlobs: [] as Blob[],
   };
+  const MAX_PREVIEWS = 12; // plafon memorie pt previzualizări (G4)
   for (const file of files) {
     if (signal.aborted) break;
     const r = await processFile(file, sourceLang, signal, onProgress, forceOcr);
@@ -331,6 +344,8 @@ async function processFiles(
     acc.unresolvedImages += r.unresolvedImages;
     for (const u of r.unknownOmml)
       if (!acc.unknownOmml.includes(u)) acc.unknownOmml.push(u);
+    for (const b of r.sourceBlobs)
+      if (acc.sourceBlobs.length < MAX_PREVIEWS) acc.sourceBlobs.push(b);
   }
   return { ...acc, blocks };
 }
@@ -389,6 +404,16 @@ export function EditorImportProvider({
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingImport | null>(null);
   const [forceOcr, setForceOcr] = useState(false);
+  // G4 — previzualizări sursă (object URL-uri). `previewUrlsRef` ține URL-urile
+  // curente ca să le revoc (memorie) la un import nou / la închiderea bannerului.
+  const [sourcePreviews, setSourcePreviews] = useState<string[]>([]);
+  const previewUrlsRef = useRef<string[]>([]);
+  const setPreviews = useCallback((blobs: Blob[]) => {
+    previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    const urls = blobs.map((b) => URL.createObjectURL(b));
+    previewUrlsRef.current = urls;
+    setSourcePreviews(urls);
+  }, []);
   const abortRef = useRef<AbortController | null>(null);
   // Ref sincron pt forceOcr → `importFiles` citește mereu valoarea curentă fără să
   // se re-creeze la fiecare toggle (la fel ca `langRef`).
@@ -475,6 +500,9 @@ export function EditorImportProvider({
           ocr: r.usedOcr,
           failed: r.failedPages,
         });
+        // G4 — previzualizări sursă (poză/pagini) pt comparație vizuală, indiferent
+        // de destinație (afișate în banner + dialog).
+        setPreviews(r.sourceBlobs);
         if (isPristineEditor(editor)) {
           applyBlocks(r.blocks, "new");
           rename(meta.filename.replace(/\.[^.]+$/, ""));
@@ -508,11 +536,24 @@ export function EditorImportProvider({
         abortRef.current = null;
       }
     },
-    [editor, applyBlocks, rename],
+    [editor, applyBlocks, rename, setPreviews],
   );
 
   const cancelImport = useCallback(() => {
     abortRef.current?.abort();
+  }, []);
+
+  // G4 — la închiderea bannerului, eliberez object URL-urile previzualizărilor.
+  const clearPreviews = useCallback(() => {
+    previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    previewUrlsRef.current = [];
+    setSourcePreviews([]);
+  }, []);
+  useEffect(() => {
+    // Cleanup la unmount (nu lăsăm URL-uri scurse).
+    return () => {
+      previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+    };
   }, []);
 
   const applyPending = useCallback(
@@ -542,7 +583,11 @@ export function EditorImportProvider({
         applyPending,
         cancelPending: () => setPending(null),
         clearError: () => setError(null),
-        dismissNotice: () => setNotice(null),
+        dismissNotice: () => {
+          setNotice(null);
+          clearPreviews();
+        },
+        sourcePreviews,
       }}
     >
       {children}
