@@ -202,7 +202,7 @@
 - [x] **R8.2 — `$latex$` brut în caption figură → REPARAT v25** (parsat prin `parseInlineToNodes`).
 - [x] **R8.3 — Cifre-zgomot izolate (limite „1" fantomă) → REPARAT v25** (filtru `^\d$` în `textToParagraphs`).
 - [ ] **R8.4 — Figuri Gemini SUPRA-decupate (duplicare poză+text)** pe pagini de construcție: `_snap_to_content` (snap=True, `figure_crop.py`) extinde bbox-ul mic al Gemini (+35% sy) → înghite textul tipărit ce e ȘI transcris. FIX candidat: limitează expansiunea snap SAU cap pe dimensiunea crop-ului. ⚠️ **snap e partajat cu figurile math F9** → re-verifică F9 (fixture 6 figuri) după orice schimbare. Efort **mediu**.
-- [ ] **R8.5 — Layout „umflat" la export** (1 pag lab → 3 pag; rânduri tabel înalte; tabele rupte peste page-break). E la EXPORT (`editor-export.ts` `buildDocumentHtml` — CSS de print/turbodocx), nu la extragere. FIX: CSS tabel mai compact + `page-break-inside: avoid` pe rânduri. ⚠️ greu de verificat headless (fără LibreOffice/Word) → eyeball Roland. Efort **mediu**.
+- [x] **R8.5 — Layout „umflat" la export → REPARAT (2026-08-01, NEDEPLOYAT).** CSS în `editor-export.ts DOCUMENT_CSS`: `.doc tr { page-break-inside: avoid }` (un rând nu se rupe peste pagină), `.doc table { page-break-inside: auto }` (tabelul se rupe ÎNTRE rânduri, nu împins gol pe pagină nouă), padding celule `6→4px` + `line-height 1.3` (compactare, evită 1 pag→3). Gate: `gate_check PASS · tsc 0 · jest 126/126 · build OK`. ⚠️ Onest: greu de verificat headless (fără LibreOffice/Word) → **eyeball export = Roland pe prod**. Frontend (grup cu §3).
 
 ---
 
