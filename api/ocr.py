@@ -47,15 +47,23 @@ def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str)
     engine='gemini' (default) → Gemini math OCR unchanged.
     """
     if engine == "azure":
+        # S4: bugetul rămas pt fallback-ul Gemini, ca Azure(≤35s) + Gemini să nu
+        # stea peste 60s (maxDuration). Azure normal ~6s → Gemini primește ~45s;
+        # dacă Azure a mâncat tot, Gemini primește minim 10s (eroare curată, nu 504).
+        t_start = time.time()
+
+        def _gemini_budget() -> int:
+            return min(45, max(10, 48 - int(time.time() - t_start)))
+
         try:
             page_data = azure_layout(image_bytes, mime_type, source_lang)
             if not _has_table(page_data.get("sections", [])):
                 print("[OCR] Azure found no table -> Gemini fallback (R-MATH)", file=sys.stderr)
-                page_data = ocr_structured(image_bytes, mime_type, source_lang)
+                page_data = ocr_structured(image_bytes, mime_type, source_lang, timeout_s=_gemini_budget())
             return page_data
         except Exception as e:
             print(f"[OCR] Azure failed ({e}) -> Gemini fallback", file=sys.stderr)
-            return ocr_structured(image_bytes, mime_type, source_lang)
+            return ocr_structured(image_bytes, mime_type, source_lang, timeout_s=_gemini_budget())
     return ocr_structured(image_bytes, mime_type, source_lang)
 
 

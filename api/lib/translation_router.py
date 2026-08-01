@@ -310,11 +310,14 @@ def translate_with_nllb(text: str, source_lang: str, target_lang: str, dict_term
     )
 
     def _call():
-        with urllib.request.urlopen(req, timeout=90) as resp:
+        # S4: timeout < maxDuration 60s. NLLB warm = <10s; 503 (cold-start) revine
+        # imediat (nu prin timeout) → o singură reîncercare prinde modelul cald.
+        # 25 + 3 (backoff) + 25 = 53s < 60s (era 90×3 + backoff → mult peste 60).
+        with urllib.request.urlopen(req, timeout=25) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     try:
-        data = retry_with_backoff(_call, max_retries=2, base_delay=3.0)
+        data = retry_with_backoff(_call, max_retries=1, base_delay=3.0)
         if isinstance(data, list) and data:
             return data[0].get("translation_text", "")
         raise RuntimeError(f"NLLB unexpected response format: {str(data)[:200]}")
@@ -465,7 +468,7 @@ def claude_ocr_and_translate(image_bytes: bytes, mime_type: str, source_lang: st
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=55) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         result = data["content"][0]["text"]
         # Strip code fences if present
@@ -519,7 +522,7 @@ def claude_translate_text(text: str, source_lang: str, target_lang: str) -> str:
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=55) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         result = data["content"][0]["text"]
         result = re.sub(r"^```(?:markdown|html)?\s*\n?", "", result, flags=re.MULTILINE)

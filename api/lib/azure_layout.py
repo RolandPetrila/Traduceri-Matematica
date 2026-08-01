@@ -30,10 +30,11 @@ import urllib.error
 
 # v4.0 GA REST API (2024-11-30) — base layout, NO paid add-on features.
 _API_VERSION = "2024-11-30"
-_ANALYZE_TIMEOUT = 30       # POST submit
-_POLL_TIMEOUT = 20          # each GET poll
+_ANALYZE_TIMEOUT = 20       # POST submit (revine în ~1-2s; 20 = ceiling generos)
+_POLL_TIMEOUT = 15          # each GET poll
 _POLL_INTERVAL = 1.2        # seconds between polls
-_TOTAL_DEADLINE = 45        # hard cap < Vercel maxDuration 60s (avoids opaque 504, §2 S4)
+_TOTAL_DEADLINE = 35        # hard cap < 60s ȘI lasă buget pt fallback-ul Gemini (§2 S4)
+                            # Azure real ~6s pe Filtrasan → 35 = 5.8× headroom
 
 
 def azure_layout(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:

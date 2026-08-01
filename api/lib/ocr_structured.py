@@ -22,12 +22,19 @@ except ImportError:
     from lib.gemini_counter import increment_gemini_counter
 
 
-def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:
+def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
+                   *, timeout_s: int = 45, max_retries: int = 0) -> dict:
     """Extract structured content from an image using Gemini JSON mode.
 
     Returns dict with "title" and "sections" list.
     Section types: heading, paragraph, step, observation, list, figure, two_column.
     Figure sections have "svg" field with inline SVG code (school geometry conventions).
+
+    S4 (§2 securitate): ``timeout_s`` < Vercel maxDuration 60s (era 180s în
+    retry(max_retries=2) → până la 540s → 504 opac). ``max_retries=0`` implicit:
+    un timeout ridică imediat (nu multiplică fereastra); doar 429 cascadează pe
+    modele (rapid). Apelantul (``api/ocr.py`` fallback Azure→Gemini) trece un
+    ``timeout_s`` redus = bugetul rămas, ca requestul total să stea sub 60s.
     """
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:
@@ -113,10 +120,10 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         })
         try:
             def _call(r=req):
-                with urllib.request.urlopen(r, timeout=180) as resp:
+                with urllib.request.urlopen(r, timeout=timeout_s) as resp:
                     return json.loads(resp.read().decode("utf-8"))
 
-            data = retry_with_backoff(_call, max_retries=2, base_delay=1.0)
+            data = retry_with_backoff(_call, max_retries=max_retries, base_delay=1.0)
             increment_gemini_counter(model_name)
             print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
             break
@@ -129,7 +136,7 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
             if model_name == MODELS[-1]:
                 # All Gemini tiers exhausted — try Mistral OCR as last resort
                 print("[OCR-STRUCT] All Gemini tiers exhausted, trying Mistral OCR fallback", file=sys.stderr)
-                return _ocr_with_mistral_structured(image_bytes, mime_type, src)
+                return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
             raise
         except Exception as e:
             if "429" in str(e) and model_name != MODELS[-1]:
@@ -138,7 +145,7 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
             print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
             if model_name == MODELS[-1]:
                 print("[OCR-STRUCT] All Gemini tiers failed, trying Mistral OCR fallback", file=sys.stderr)
-                return _ocr_with_mistral_structured(image_bytes, mime_type, src)
+                return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
             raise
 
     if data is None:
@@ -198,7 +205,8 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro") 
         raise
 
 
-def _ocr_with_mistral_structured(image_bytes: bytes, mime_type: str, src_lang_name: str) -> dict:
+def _ocr_with_mistral_structured(image_bytes: bytes, mime_type: str, src_lang_name: str,
+                                 *, timeout_s: int = 45) -> dict:
     """G2 — Mistral OCR fallback when all Gemini tiers are exhausted.
 
     Uses Mistral OCR API (1B tokens/month free, EU servers).
@@ -229,7 +237,7 @@ def _ocr_with_mistral_structured(image_bytes: bytes, mime_type: str, src_lang_na
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
             result = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")[:300]
