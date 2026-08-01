@@ -47,7 +47,20 @@ def test_error_response_plain_exception_falls_back_to_default():
     status, body = error_response(ValueError("x"), default_code="E-OCR-001")
     assert status == 500
     assert body["error_code"] == "E-OCR-001"
-    assert body["error"] == "x"
+    # S6: mesajul brut al excepției NU se scurge la client (ar putea conține
+    # corpul erorii providerului); se întoarce un mesaj generic, codul rămâne.
+    assert "x" not in body["error"]
+    assert body["error"] and isinstance(body["error"], str)
+
+
+def test_error_response_does_not_leak_provider_body():
+    # S6: o eroare care încapsulează corpul providerului (cheie/URL/detaliu) NU
+    # trebuie să ajungă textual la client.
+    leaky = RuntimeError("Mistral OCR error 401: {\"message\":\"invalid api key sk-SECRET\"}")
+    status, body = error_response(leaky, default_code="E-OCR-001")
+    assert "SECRET" not in body["error"]
+    assert "invalid api key" not in body["error"]
+    assert body["error_code"] == "E-OCR-001"
 
 
 def test_all_typed_errors_are_apperror_subclasses():

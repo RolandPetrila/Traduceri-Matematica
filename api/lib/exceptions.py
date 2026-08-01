@@ -93,8 +93,14 @@ def error_response(
     """
     if isinstance(exc, AppError):
         return exc.to_response()
+    # S6 (§2 securitate): NU expune ``str(exc)`` clientului — pt excepțiile
+    # ne-AppError, mesajul poate conține corpul erorii providerului (ex.
+    # ``RuntimeError(f"Mistral OCR error {code}: {error_body[:200]}")``) sau
+    # detalii interne. Întoarce un mesaj GENERIC + codul de arie; detaliul real
+    # rămâne în logurile server-side (handler-ul face print/traceback + Supabase
+    # ``log_error(code, str(e))``). Clientul afișează codul → raportabil.
     return default_status, {
-        "error": str(exc),
+        "error": "Eroare internă a serverului. Reîncearcă; dacă persistă, raportează codul de mai jos.",
         "error_code": default_code,
         "status": "error",
     }
