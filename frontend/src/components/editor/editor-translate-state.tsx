@@ -7,8 +7,11 @@
  *
  * Persistență (v1): rețin DOAR limba conținutului curent (`editor_nou_lang_v1`, default
  * `ro` pt salvări vechi). Conținutul îl salvează `editor-document` (neatins). La reload:
- * conținutul restaurat = sursă în limba reținută → sursă=afișat=acea limbă, cache resetat.
- * (Cache-ul multi-limbă NU se persistă cross-reload — onest, se poate adăuga ulterior.)
+ * conținutul restaurat = sursă în limba reținută → sursă=afișat=acea limbă.
+ * G2: cache-ul de TRADUCERE se persistă acum cross-reload prin `translation-cache.ts`
+ * (cheie SHA-256 pe conținutul-sursă + perechea de limbi) → după reload, comutarea într-o
+ * limbă deja tradusă e instant și NU reconsumă cota DeepL. (Editările per-limbă rămân
+ * doar în-sesiune + în limba salvată de `editor-document`; cache-ul persistă traducerea-mașină.)
  */
 
 import {
@@ -23,6 +26,10 @@ import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { translateEditorDoc } from "./editor-translate";
 import { trackEditor } from "./editor-telemetry";
+import {
+  getCachedDocTranslation,
+  cacheDocTranslation,
+} from "@/lib/translation-cache";
 
 export type LangCode = "ro" | "sk" | "en" | "de";
 export const LANGS: { code: LangCode; label: string; name: string }[] = [
@@ -116,6 +123,28 @@ export function EditorTranslateProvider({
       }
 
       const sourceDoc = cacheRef.current.get(sourceLang) ?? editor.getJSON();
+      // G2 — cache PERSISTENT (cross-reload): dacă am tradus deja ACEST conținut
+      // în ACEASTĂ pereche de limbi, îl refolosesc → instant + NU reconsumă DeepL.
+      const sourceKey = JSON.stringify(sourceDoc);
+      try {
+        const persisted = await getCachedDocTranslation(
+          sourceKey,
+          sourceLang,
+          target,
+        );
+        if (persisted) {
+          const doc = JSON.parse(persisted) as JSONContent;
+          cacheRef.current.set(target, doc);
+          editor.commands.setContent(doc);
+          setDisplayLang(target);
+          writeLang(target);
+          trackEditor("translate", { from: sourceLang, to: target, cached: 1 });
+          return;
+        }
+      } catch {
+        /* cache miss / indisponibil → traducem normal */
+      }
+
       setIsTranslating(true);
       setError(null);
       abortRef.current?.abort();
@@ -132,6 +161,13 @@ export function EditorTranslateProvider({
         editor.commands.setContent(translated);
         setDisplayLang(target);
         writeLang(target);
+        // Persist pt reload-uri viitoare (fail-open, nu așteptăm).
+        void cacheDocTranslation(
+          sourceKey,
+          sourceLang,
+          target,
+          JSON.stringify(translated),
+        );
         trackEditor("translate", { from: sourceLang, to: target });
       } catch (e) {
         if ((e as Error)?.name !== "AbortError") {

@@ -3,6 +3,8 @@ import {
   cacheTranslation,
   clearTranslationCache,
   getCacheStats,
+  getCachedDocTranslation,
+  cacheDocTranslation,
 } from "@/lib/translation-cache";
 
 function file(name: string, content: string): File {
@@ -41,5 +43,31 @@ describe("translation-cache", () => {
     expect(getCacheStats().entries).toBe(1);
     clearTranslationCache();
     expect(getCacheStats().entries).toBe(0);
+  });
+});
+
+describe("translation-cache (G2 content-based / editor F8)", () => {
+  const SRC = JSON.stringify({ type: "doc", content: [{ text: "salut" }] });
+
+  it("miss then hit round-trips the translated JSON", async () => {
+    expect(await getCachedDocTranslation(SRC, "ro", "sk")).toBeNull();
+    await cacheDocTranslation(SRC, "ro", "sk", '{"t":"ahoj"}');
+    expect(await getCachedDocTranslation(SRC, "ro", "sk")).toBe('{"t":"ahoj"}');
+  });
+
+  it("different source content = cache miss (SHA-256 auto-invalidare la editare)", async () => {
+    await cacheDocTranslation(SRC, "ro", "sk", '{"t":"ahoj"}');
+    const edited = JSON.stringify({
+      type: "doc",
+      content: [{ text: "salutt" }],
+    });
+    expect(await getCachedDocTranslation(edited, "ro", "sk")).toBeNull();
+    expect(await getCachedDocTranslation(SRC, "ro", "sk")).toBe('{"t":"ahoj"}');
+  });
+
+  it("keys scoped per language pair", async () => {
+    await cacheDocTranslation(SRC, "ro", "sk", '{"t":"sk"}');
+    expect(await getCachedDocTranslation(SRC, "ro", "en")).toBeNull();
+    expect(await getCachedDocTranslation(SRC, "ro", "sk")).toBe('{"t":"sk"}');
   });
 });

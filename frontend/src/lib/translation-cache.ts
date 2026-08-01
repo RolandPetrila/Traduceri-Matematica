@@ -135,6 +135,92 @@ export async function cacheTranslation(
 }
 
 /**
+ * G2 — Cache CONTENT-based pentru traducerea din editor (F8). Spre deosebire de
+ * API-ul File-based de mai sus (import Traduceri, retras), editorul traduce
+ * CONȚINUTUL HTML/JSON al documentului, nu un fișier. Cheia = SHA-256 pe
+ * conținutul-SURSĂ (auto-invalidare la editarea sursei) + perechea de limbi.
+ * Refolosește loadStore/saveStore/evictOldest (versionare + evicție identice).
+ */
+/** UTF-8 encode fără a depinde de `TextEncoder` (lipsește în jsdom/jest). Întoarce
+ *  `Uint8Array<ArrayBuffer>` CONCRET (copie) ca să fie `BufferSource` valid (TS 5.7:
+ *  `Uint8Array<ArrayBufferLike>` de la `TextEncoder` nu se potrivește la `digest`). */
+function utf8Bytes(str: string): Uint8Array<ArrayBuffer> {
+  if (typeof TextEncoder !== "undefined")
+    return new Uint8Array(new TextEncoder().encode(str));
+  const out: number[] = [];
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    if (c < 0x80) out.push(c);
+    else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+    else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+      const c2 = str.charCodeAt(++i);
+      c = 0x10000 + ((c & 0x3ff) << 10) + (c2 & 0x3ff);
+      out.push(
+        0xf0 | (c >> 18),
+        0x80 | ((c >> 12) & 0x3f),
+        0x80 | ((c >> 6) & 0x3f),
+        0x80 | (c & 0x3f),
+      );
+    } else
+      out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+  }
+  return new Uint8Array(out);
+}
+
+async function sha256Text(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", utf8Bytes(text));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function docKey(hash: string, sourceLang: string, targetLang: string): string {
+  return `doc:${hash}::${sourceLang}::${targetLang}`;
+}
+
+/** Traducerea persistată (JSON serializat al documentului tradus) sau null. */
+export async function getCachedDocTranslation(
+  sourceContent: string,
+  sourceLang: string,
+  targetLang: string,
+): Promise<string | null> {
+  try {
+    const store = loadStore();
+    const key = docKey(await sha256Text(sourceContent), sourceLang, targetLang);
+    const entry = store.entries[key];
+    return entry && entry.version === CACHE_VERSION ? entry.html : null;
+  } catch {
+    return null; // crypto/localStorage indisponibil → fail-open (re-traduce)
+  }
+}
+
+/** Salvează traducerea documentului (JSON serializat), cheiată pe conținutul-sursă. */
+export async function cacheDocTranslation(
+  sourceContent: string,
+  sourceLang: string,
+  targetLang: string,
+  translatedJson: string,
+): Promise<void> {
+  try {
+    const store = loadStore();
+    const entryCount = Object.keys(store.entries).length;
+    if (entryCount >= MAX_ENTRIES) {
+      evictOldest(store, entryCount - MAX_ENTRIES + 5);
+    }
+    const key = docKey(await sha256Text(sourceContent), sourceLang, targetLang);
+    store.entries[key] = {
+      html: translatedJson,
+      targetLang,
+      timestamp: Date.now(),
+      version: CACHE_VERSION,
+    };
+    saveStore(store);
+  } catch {
+    /* fail-open: cache-ul e o optimizare, nu blocăm traducerea */
+  }
+}
+
+/**
  * Clear all cached translations.
  */
 export function clearTranslationCache(): void {
