@@ -14,9 +14,13 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "",
   },
-  // Lint runs as its own step (`npm run lint` → eslint CLI), NOT during
-  // `next build`. This keeps the production/deploy build green even if a lint
-  // rule trips, so a style nit can never block a deploy. CI/pre-push runs lint.
+  // Lint does NOT run during `next build` (a style nit never blocks a deploy).
+  // ⚠️ HONEST (S8, verificat 2026-08-01): NU există CI/pre-push hook — `.git/hooks`
+  // are doar `*.sample`, fără `.husky`, fără `.github/workflows`; iar `npm run lint`
+  // are 12 erori pre-existente (unescaped-entities + no-explicit-any în dictare).
+  // Lint = pas MANUAL/advisory (`npm run lint`). Gate-ul REAL impus per-schimbare =
+  // `tsc --noEmit` + `jest` + `next build` (vezi PLAN_MASTER §10). Un CI care rulează
+  // tsc+jest+lint = backlog (cere întâi curățarea celor 12 erori).
   eslint: {
     ignoreDuringBuilds: true,
   },
