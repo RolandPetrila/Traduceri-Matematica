@@ -18,7 +18,10 @@ async function downloadAsDocx(html: string, filename: string) {
   formData.append("target_format", "docx");
 
   try {
-    const res = await fetch(`${API_URL}/api/convert`, { method: "POST", body: formData });
+    const res = await fetch(`${API_URL}/api/convert`, {
+      method: "POST",
+      body: formData,
+    });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -62,7 +65,10 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
     if (!entry.html) return;
     const win = window.open("", "_blank");
     if (win) {
-      win.document.write(entry.html);
+      // S2: NU scrie HTML nesanitizat în fereastra nouă (XSS). Același
+      // `sanitizeHtml` folosit la preview (linia ~136) — DOMPurify scoate
+      // <script>/on*/javascript:, păstrează conținutul + SVG figurilor.
+      win.document.write(sanitizeHtml(entry.html));
       win.document.close();
       setTimeout(() => win.print(), 1500);
     }
@@ -106,24 +112,33 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
           </div>
           <div>
             <span className="opacity-50">Limbi:</span>{" "}
-            {entry.source_lang.toUpperCase()} &rarr; {entry.target_lang.toUpperCase()}
+            {entry.source_lang.toUpperCase()} &rarr;{" "}
+            {entry.target_lang.toUpperCase()}
           </div>
           <div>
             <span className="opacity-50">Pagini:</span> {entry.pages}
           </div>
           <div>
             <span className="opacity-50">Status:</span>{" "}
-            <span className={
-              entry.status === "success" ? "text-chalk-green" :
-              entry.status === "partial" ? "text-chalk-yellow" : "text-chalk-red"
-            }>
-              {entry.status === "success" ? "Succes" : entry.status === "partial" ? "Partial" : "Eroare"}
+            <span
+              className={
+                entry.status === "success"
+                  ? "text-chalk-green"
+                  : entry.status === "partial"
+                    ? "text-chalk-yellow"
+                    : "text-chalk-red"
+              }
+            >
+              {entry.status === "success"
+                ? "Succes"
+                : entry.status === "partial"
+                  ? "Partial"
+                  : "Eroare"}
             </span>
           </div>
         </div>
         <div className="text-sm">
-          <span className="opacity-50">Fisiere:</span>{" "}
-          {entry.files.join(", ")}
+          <span className="opacity-50">Fisiere:</span> {entry.files.join(", ")}
         </div>
       </div>
 
