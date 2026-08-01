@@ -28,10 +28,33 @@
 - ✅ **R7.5 rutare** — `api/ocr.py` `engine` param (imagine→Gemini / PDF→Azure) + gardă `_has_table`→Gemini + error→Gemini.
 - ✅ **Gate:** `tsc 0 · jest 116/116 · next build OK · pytest 49`. Raport: `docs/OCR_COMPARATIE_2026-07-31.md`.
 
-**➡️ URMĂTORUL:**
+---
 
-1. **EYEBALL CLIENT Roland pe prod** (singurul rămas din R7): pe `traduceri-frontend.vercel.app`, Editor → Inserare → Import fișier (OCR) → un PDF business (Filtrasan) → **vezi tabelul + logo-urile randate**; import poză math → rămâne 10/10; export PDF/DOCX cu tabel. Backendul e deja dovedit pe prod (smoke `azure-layout`, 5 tabele).
-2. Apoi **§2 SECURITATE** (S1 npm audit — capcană `katex@0.16.11` pinuit; S2 XSS `HistoryDetail.tsx:65`) → §3/§4/§5/§6.
+## ▶️ RUNDĂ FIDELITATE EXPORT (2026-08-01 seara) — 3 fix-uri DEPLOYATE v25
+
+Roland a testat pe prod (import merge Teste_Input → export PDF, 14 pagini). Claude a verificat **exhaustiv toate 14 paginile**.
+
+**✅ R7 confirmat vizual în export:** ambele lab-uri (CettaClear+Filtrasan) → logo-uri randate + **tabele reconstruite** (rezultate Parameter/Einheit/Ergebnis/Verfahren cu valori corecte) + text curat. Fracții 9–13 → math + ordine a–f corectă.
+
+**✅ 3 BUG-uri găsite + reparate + DEPLOYATE v25 (`traduceri-frontend`, alias verificat):**
+
+- **SEV1 garbaj Hangul în loc de formule** (`∢피뭐푓`↔`∢MOP`): litere Math-Alphanumeric (U+1D400+) **TRUNCHIATE la 16 biți → Hangul (U+D400)** _în stratul-text al PDF sursă_ (exportator Word→PDF stricat; `1.2_Unghiuri.pdf`). Fix `fixTruncatedMathAlnum` (+0x10000 NFKC) în `ocr-map.ts`. Vezi memoria `finding_truncated_math_unicode_2026_08_01`.
+- **SEV2 `$latex$` brut în caption figură** → parsat prin `parseInlineToNodes` (se randează).
+- **SEV3 cifre-zgomot izolate** (limite: 9 rânduri „1" fantomă) → filtru `^\d$` în `textToParagraphs`.
+- Gate `tsc 0 · jest 123/123 · build OK`. Commits `a4b4801`+`7a4cff2`. Frontend-only (backend Azure neatins).
+
+**⚠️ DEFERAT ONEST (SEV3, NErezolvat — candidate pt sesiunea nouă):**
+
+- **Figuri Gemini SUPRA-decupate** pe pagini de construcție: `_snap_to_content` (snap=True) extinde bbox-ul mic al Gemini (+35%) → înghite textul tipărit ce e ȘI transcris → **duplicare** (poză + text). Risc: schimbarea snap-ului regresează figurile math F9 → cere re-verificare atentă.
+- **Layout „umflat" la export**: 1 pag lab → 3 pag (rânduri tabel înalte, tabele rupte peste page-break). Cosmetic, la EXPORT (turbodocx/print CSS din `editor-export.ts`), nu la extragere.
+
+---
+
+**➡️ URMĂTORUL (transfer sesiune nouă 2026-08-01):**
+
+1. **Cerințe NOI Roland** (de stabilit prin AskUserQuestion la începutul sesiunii — vezi lista în PLAN_MASTER §1 după ce le confirmă).
+2. **Deferat fidelitate:** figuri supra-decupate (risc F9) + densitate layout export.
+3. **§2 SECURITATE** (S1 npm audit — capcană `katex@0.16.11` pinuit; S2 XSS `HistoryDetail.tsx:65`) → §3/§4/§5/§6.
 
 **⚠️ Trade-off documentat (Roland a ales „0 tabele→Gemini"):** un PDF business FĂRĂ tabel (scrisoare simplă) → Azure rulează, găsește 0 tabele → fallback Gemini (dublu-work minor + Gemini poate rata un logo). Filtrasan/CettaClear AU tabel → rămân pe Azure. Refinabil dacă deranjează.
 

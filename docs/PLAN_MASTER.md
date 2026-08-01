@@ -194,6 +194,16 @@
 - [x] **R7.5 — Provider rutat pe tip — LIVRAT.** **Sub-pas 1 confirmat LA SURSĂ (docs Microsoft Learn):** Azure `features=formulas` DĂ LaTeX [CERT] DAR e add-on PLĂTIT (nu free F0) → **exclus prin R-COST, nu prin absență**; math rămâne Gemini. Azure base (gratis F0): tabele+figuri+reading-order. NOU `api/lib/azure_layout.py` (async submit→poll, deadline 45s < 60s Vercel, span-offset reading order, polygon→bbox). Rutare `api/ocr.py` (`engine` param): imagine→Gemini, PDF→Azure. **Gardă R-MATH:** 0 tabele SAU eroare Azure → revin la Gemini (pagina nu se pierde). Env SET local; ⚠️ **de adăugat în Vercel prod înainte de deploy.** Cost: ~3 pag F0 în dev.
 - [~] **R7.6 — Gate + eyeball — LIVRAT (server + mapare + figuri), RĂMAS eyeball prod.** Gate: `tsc 0 · jest 116/116 · next build OK · pytest 49`. **Dovedit la SURSĂ pe fișiere reale:** Filtrasan → tabel 7×4 + logo+sigiliu decupate (PNG verificate vizual) + text curat; IMG-WA0001 → ordine `a,b,c,d,e,f` (structura reală); limite_matematica → 10/10 neatins. Raport `docs/OCR_COMPARATIE_2026-07-31.md` (scoruri înainte/după + onestitate). **✅ DEPLOYAT (2026-08-01):** frontend v24 (`traduceri-frontend`, alias verificat) + API Python (`traduceri-api`, env Azure adăugat + `.vercelignore` fix bundle). **SMOKE PROD la sursă:** POST Filtrasan `engine=azure` → 200/6.2s, `source=azure-layout`, **5 tabele + tabel rezultate 7×4**. **RĂMAS:** eyeball CLIENT Roland pe prod (render tabel + export vizual).
 
+### R8 — Fidelitate export (rundă 2026-08-01; ✅ 3 fix-uri DEPLOYATE v25 + 2 DEFERATE)
+
+> **Context:** Roland a testat pe prod (merge Teste_Input → export PDF 14 pag). Claude a verificat exhaustiv toate paginile. R7 (tabele/logo-uri lab) confirmat vizual OK. Vezi memoria `finding_truncated_math_unicode_2026_08_01` + `docs/HANDOFF_SESIUNE.md` „RUNDĂ FIDELITATE EXPORT".
+
+- [x] **R8.1 — Garbaj Hangul în loc de formule → REPARAT + DEPLOYAT v25.** Litere Math-Alphanumeric (U+1D400+) trunchiate la 16 biți → Hangul (U+D400) în stratul-text al PDF sursă. `fixTruncatedMathAlnum` (+0x10000 NFKC) în `ocr-map.ts`.
+- [x] **R8.2 — `$latex$` brut în caption figură → REPARAT v25** (parsat prin `parseInlineToNodes`).
+- [x] **R8.3 — Cifre-zgomot izolate (limite „1" fantomă) → REPARAT v25** (filtru `^\d$` în `textToParagraphs`).
+- [ ] **R8.4 — Figuri Gemini SUPRA-decupate (duplicare poză+text)** pe pagini de construcție: `_snap_to_content` (snap=True, `figure_crop.py`) extinde bbox-ul mic al Gemini (+35% sy) → înghite textul tipărit ce e ȘI transcris. FIX candidat: limitează expansiunea snap SAU cap pe dimensiunea crop-ului. ⚠️ **snap e partajat cu figurile math F9** → re-verifică F9 (fixture 6 figuri) după orice schimbare. Efort **mediu**.
+- [ ] **R8.5 — Layout „umflat" la export** (1 pag lab → 3 pag; rânduri tabel înalte; tabele rupte peste page-break). E la EXPORT (`editor-export.ts` `buildDocumentHtml` — CSS de print/turbodocx), nu la extragere. FIX: CSS tabel mai compact + `page-break-inside: avoid` pe rânduri. ⚠️ greu de verificat headless (fără LibreOffice/Word) → eyeball Roland. Efort **mediu**.
+
 ---
 
 ## §2. SECURITATE — se face DUPĂ §1 (decizia Roland)
