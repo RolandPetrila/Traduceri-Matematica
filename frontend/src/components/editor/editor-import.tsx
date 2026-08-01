@@ -34,6 +34,7 @@ import {
 } from "./ocr-map";
 import { assessPdfText } from "./pdf-text-quality";
 import { isPristineEditor } from "./editor-initial";
+import { requestNotifyPermission, notifyIfHidden } from "@/lib/import-notify";
 import { useEditorTranslate, type LangCode } from "./editor-translate-state";
 import { useEditorDocument } from "./editor-document";
 import { trackEditor } from "./editor-telemetry";
@@ -436,6 +437,10 @@ export function EditorImportProvider({
       setNotice(null);
       setIsImporting(true);
       setProgress({ current: 0, total: 0, label: "Se pregătește…" });
+      // G3: cere permisiunea AICI (în gestul utilizatorului) ca să putem notifica
+      // la finalul unui import lung dacă a comutat pe alt tab.
+      requestNotifyPermission();
+      const startedAt = now;
       const ac = new AbortController();
       abortRef.current = ac;
       const usedLang = langRef.current;
@@ -477,10 +482,24 @@ export function EditorImportProvider({
         } else {
           setPending({ blocks: r.blocks, meta });
         }
+        // G3: notifică DOAR importurile lente (OCR sau >8s) când tabul e ascuns.
+        if (r.usedOcr || Date.now() - startedAt > 8000) {
+          notifyIfHidden(
+            "Import finalizat",
+            `${meta.filename}: ${r.blocks.length} blocuri` +
+              (r.failedPages ? ` (${r.failedPages} pagini eșuate)` : ""),
+          );
+        }
       } catch (err) {
         if ((err as Error)?.name !== "AbortError") {
           setError((err as Error)?.message || "Importul a eșuat.");
           trackEditor("ocr_import_error", {});
+          if (Date.now() - startedAt > 8000) {
+            notifyIfHidden(
+              "Import eșuat",
+              (err as Error)?.message || "Eroare la import",
+            );
+          }
         }
       } finally {
         importingRef.current = false;
