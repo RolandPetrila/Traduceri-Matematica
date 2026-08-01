@@ -16,9 +16,10 @@
 - ✅ **S6** `error_response`: mesaj generic pt non-AppError (nu scurge corpul providerului), error_code păstrat.
 - ✅ **S8** corectat comentariul fals „CI runs lint" (nu există CI; lint are 12 erori pre-existente).
 - ⏳ **S7 — BLOCAT pe Roland** (AskUserQuestion): `ALLOWED_ORIGIN` default `"*"` fail-open. NU se poate schimba autonom — riscă ruperea CORS live (app-ul e cross-origin frontend↔api) + poate cere env var pe prod. Vezi întrebarea.
-- **Gate §2:** `tsc 0 · jest 123/123 · next build OK · pytest 50/50`. Commits `75fa1ee`(S2)…`21e280c`(S3), pushed.
-- **Deploy §2:** propus GRUPAT — frontend `traduceri-frontend` (S1 lockfile + S2 + S5 + S8) + backend `traduceri-api` (S3 + S4 + S6) — cu confirmarea Roland. S7 se rezolvă separat după răspunsul lui.
-- ➡️ **URMĂTORUL după S7/deploy: §3 REGRESII (G1–G4).**
+- ✅ **S7 — DECIS: risc acceptat** (Roland, AskUserQuestion). `ALLOWED_ORIGIN="*"` rămâne (fără auth/cookies → nu expune date; rate-limited). NU „fixa" autonom.
+- **Gate §2:** `tsc 0 · jest 123/123 · next build OK · pytest 50/50`. Commits `75fa1ee`(S2)…`9b80468`(bump).
+- ✅✅ **DEPLOYAT §2 v26 (2026-08-01, confirmat Roland „deploy acum grupat"):** frontend `traduceri-frontend` (dpl `traduceri-frontend-9bmut5zvi`) + backend `traduceri-api` (dpl `traduceri-i7e7ww0ul`). **Aliasuri VERIFICATE:** `traduceri-frontend.vercel.app/sw.js`=`v26-20260801c`, homepage+/editor-nou=200; `traduceri-api.vercel.app/api/ocr` OPTIONS=200, `/api/health`=200. **SMOKE OCR REAL pe prod (multipart, engine=gemini, `limite_matematica.jpeg`):** 200 în **10.8s** (< 60s = S4 OK), 10 secțiuni, 9 formule LaTeX — F9 NEATINS de §2. ⚠️ **Descoperire onestă (pre-existent, out-of-scope):** calea JSON din `ocr.py` NU decodează base64 (`data` rămâne str → TypeError); clientul real folosește multipart → nefolosită, dar latentă.
+- ➡️ **URMĂTORUL: §3 REGRESII (G1–G4).**
 
 ---
 
