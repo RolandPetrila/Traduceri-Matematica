@@ -19,7 +19,13 @@
 - ✅ **S7 — DECIS: risc acceptat** (Roland, AskUserQuestion). `ALLOWED_ORIGIN="*"` rămâne (fără auth/cookies → nu expune date; rate-limited). NU „fixa" autonom.
 - **Gate §2:** `tsc 0 · jest 123/123 · next build OK · pytest 50/50`. Commits `75fa1ee`(S2)…`9b80468`(bump).
 - ✅✅ **DEPLOYAT §2 v26 (2026-08-01, confirmat Roland „deploy acum grupat"):** frontend `traduceri-frontend` (dpl `traduceri-frontend-9bmut5zvi`) + backend `traduceri-api` (dpl `traduceri-i7e7ww0ul`). **Aliasuri VERIFICATE:** `traduceri-frontend.vercel.app/sw.js`=`v26-20260801c`, homepage+/editor-nou=200; `traduceri-api.vercel.app/api/ocr` OPTIONS=200, `/api/health`=200. **SMOKE OCR REAL pe prod (multipart, engine=gemini, `limite_matematica.jpeg`):** 200 în **10.8s** (< 60s = S4 OK), 10 secțiuni, 9 formule LaTeX — F9 NEATINS de §2. ⚠️ **Descoperire onestă (pre-existent, out-of-scope):** calea JSON din `ocr.py` NU decodează base64 (`data` rămâne str → TypeError); clientul real folosește multipart → nefolosită, dar latentă.
-- ➡️ **URMĂTORUL: §3 REGRESII (G1–G4).**
+- ✅✅ **§3 REGRESII (G1–G4) COMPLET (2026-08-01, NEDEPLOYAT — toate frontend):**
+  - **G1** contor DeepL discret reintrodus lângă F8 (`DeepLQuotaBadge`, verificat pe endpoint live).
+  - **G2** cache traduceri PERSISTENT cablat (decizia Roland; content-based SHA-256; reopen+switch = fără reconsum DeepL). 3 teste noi.
+  - **G3** notificare browser la import lung (tab ascuns) — `import-notify.ts`.
+  - **G4** verificare vizuală original↔rezultat (mock §17 aprobat: thumbnail+lightbox sursă în banner + dialog).
+  - Gate §3: `tsc 0 · jest 126/126 · next build OK`. Commits `4c97834`(G3)…`1fa1d86`(G4).
+- ➡️ **URMĂTORUL: R8.4 (figuri supra-decupate, FORK abordare + atinge F9) + R8.5 (layout export).** Deploy §3 = propus GRUPAT cu R8.5 (ambele frontend) — întreb la R8.4.
 
 ---
 
