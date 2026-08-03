@@ -234,7 +234,7 @@
 
 ## §4. CURĂȚENIE — cod mort verificat (0 importatori)
 
-- [ ] **C1 — Overlay (abandon confirmat):** `git rm api/overlay.py api/lib/overlay.py api/tests/test_overlay.py` + ruta din `dev_server.py:50,64` + rewrite-ul din `vercel.json` dacă există. ⚠️ **NU** scoate PyMuPDF din `requirements.txt` — e folosit de `api/ocr.py:42-49` pentru rasterizarea PDF server-side
+- [x] **C1 — Overlay ȘTERS (2026-08-03, abandon confirmat G5):** `git rm api/overlay.py api/lib/overlay.py api/tests/test_overlay.py` + curățat rutele din `dev_server.py` (import + ROUTES). Fără rewrite overlay în `vercel.json`. **PyMuPDF PĂSTRAT** (folosit de `api/ocr.py` pt rasterizare PDF). Gate: `pytest 46/46 · dev_server parsează`. ⚠️ Endpoint-ul `/api/overlay` (live pe prod) va da 404 după deploy-ul backend — OK (G5 abandon + clientul curent NU-l cheamă).
 - [x] **C2 — `pdf-rasterize.ts` ȘTERS (2026-08-03):** `git rm` — 0 importatori (`editor-import.tsx` re-implementează rasterizarea inline). Fără test. Gate: `tsc 0 · jest 115 · build OK`.
 - [x] **C3 — Orfani ȘTERȘI (2026-08-03):** `git rm` `figure-payloads.ts`(+test), `export-naming.ts`(+test), `config/languages.json`, `config/math_terms_ro_sk.json`, `config/math_terms_ro_en.json` — toate 0 importatori (verificat repo-wide). **⚠️ `translation-cache.ts` EXCLUS** — acum e FOLOSIT de G2 (cablat la F8). `config/error_codes.json` PĂSTRAT (referință pt codurile `E-*` din `/diagnostics`+S6). CLAUDE.md Key Files actualizat. Gate: `tsc 0 · jest 115/115 · build OK`.
 - [ ] **C4 — `api/translate.py`** (pipeline-ul vechi, 395 linii): singurul apelant e `dev_server.py:62`; **verificat: `api/convert.py` NU importă din el**. Șterge dacă R4 nu-l refolosește
