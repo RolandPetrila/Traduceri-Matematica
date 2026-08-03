@@ -1,6 +1,21 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-01 (**SESIUNE EXECUȚIE §2 SECURITATE în curs**; R1–R8.3 deployate v25). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-04 (**RUNDĂ MODULE în curs** — vezi `docs/PLAN_RUNDA_MODULE_2026-08-04.md`). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-04, RUNDĂ MODULE — execuție autonomă)
+
+**Plan activ: `docs/PLAN_RUNDA_MODULE_2026-08-04.md`** (stabilit integral cu Roland prin AskUserQuestion). Scope: M2+M5+P3+P4+Calculator+Corectare/Teste+Chat AI nativ + V5 + merge→main. Ritm: secvențial, gate după fiecare item, **deploy grupat cu confirmarea Roland**.
+
+- ✅ **G0** merge `faza-g-editor`→`main` (ff, `9926ae1`), main = prod v28. Lucrez pe faza-g-editor, sincronizez main la deploy.
+- ✅ **V5** funcția liniară VIII = `a≠0` — **0 modificări** (biblioteca deja o definește așa; nuanță denumire = Cristina).
+- ✅ **M2** constructor matematic RECURSIV (`math-builder-tree.ts` + rescris `EditorMathBuilder.tsx`) — √-în-fracție etc., 0 cod per combinație. Commit `e503028`. Gate tsc0/jest129/build. Dovedit LIVE desktop.
+- ✅ **M5** figuri parametrice (etichete+laturi, editabile după inserare via `figure:edit`, EXPORT-SAFE `<img>` SVG). Commit `9a720e8`. Gate tsc0/jest136/build. Dovedit LIVE (A→M, latură=5).
+- **M3** dark-mode = **RESPINS DEFINITIV** (de marcat în PLAN_MASTER §5 la FIN).
+- ⏸️ **CHECKPOINT DEPLOY 1 (V5+M2+M5, frontend-only)** — pending confirmarea Roland (deploy v29 sau amânat).
+- ➡️ **URMĂTORUL:** Etapa 2 = **Calculator** (necesită mock §17 înainte de cod), apoi Corectare/Teste, Chat AI (Gemini→Groq→OpenRouter, cheile SET local; de adăugat pe Vercel `traduceri-api` la deploy), P3, P4, FIN.
+- **Gate curent global:** `tsc 0 · jest 136/136 · next build OK`. 390 real + eyeball module = Roland pe prod.
 
 ---
 
