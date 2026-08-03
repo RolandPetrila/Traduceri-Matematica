@@ -25,7 +25,9 @@
   - **G3** notificare browser la import lung (tab ascuns) — `import-notify.ts`.
   - **G4** verificare vizuală original↔rezultat (mock §17 aprobat: thumbnail+lightbox sursă în banner + dialog).
   - Gate §3: `tsc 0 · jest 126/126 · next build OK`. Commits `4c97834`(G3)…`1fa1d86`(G4).
-- ➡️ **URMĂTORUL: R8.4 (figuri supra-decupate, FORK abordare + atinge F9) + R8.5 (layout export).** Deploy §3 = propus GRUPAT cu R8.5 (ambele frontend) — întreb la R8.4.
+- ✅✅ **R8.4 + R8.5 LIVRATE (2026-08-01):** R8.4 (figuri supra-decupate) = ATENUAT (expansiune snap 0.35→0.15 + cap creștere; decizia Roland; F9-safe dovedit prin fixture + 1 test nou; pytest 51). R8.5 (layout export) = CSS page-break + compactare. 
+- ✅✅✅ **DEPLOYAT v27 (2026-08-03, confirmat Roland „deploy acum grupat"):** frontend `traduceri-frontend` (§3 G1–G4 + R8.5, `CACHE_VERSION v26→v27-20260803a`) + backend `traduceri-api` (R8.4 figure_crop). **Aliasuri VERIFICATE:** FE sw.js=v27, homepage 200; BE `/api/ocr` OPTIONS 200, `/api/health` 200. **SMOKE OCR prod (2.0_test_page figuri, engine=gemini):** 200/23.9s, **6 figuri crop-uite** (R8.4 nu a rupt cropping-ul). **RĂMAS eyeball Roland pe prod:** badge DeepL, cache reopen, notificări, preview thumbnail+lightbox, export tabel compact, duplicare figuri construcție.
+- ➡️ **URMĂTORUL: §4 CURĂȚENIE (C1–C7)** → §5 EDITOR (M1–M6) → §6 PLANȘE (P1–P4). ⚠️ C7 capcană (figure_crop/html_builder/ocr_structured/math_protect = VII, NU curăța). C1 overlay = abandon confirmat (git rm).
 
 ---
 
