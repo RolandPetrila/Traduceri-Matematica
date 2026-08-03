@@ -42,7 +42,6 @@ if _env_file.exists():
 # Pre-import all handlers at startup
 from api.health import handler as HealthHandler
 from api.ocr import handler as OcrHandler
-from api.translate import handler as TranslateHandler
 from api.translate_text import handler as TranslateTextHandler
 from api.convert import handler as ConvertHandler
 from api.deepl_usage import handler as DeeplUsageHandler
@@ -58,7 +57,6 @@ ROUTES = {
     "/api/gemini-usage": GeminiUsageHandler,
     "/api/ocr": OcrHandler,
     "/api/translate-text": TranslateTextHandler,
-    "/api/translate": TranslateHandler,
     "/api/convert": ConvertHandler,
 }
 
