@@ -79,3 +79,5 @@ dev_server_log.txt
 scratchpad/toc_*.txt
 scratchpad/editor_dump.txt
 scratchpad/pdf_inventory_out.txt
+
+.env*
