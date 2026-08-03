@@ -25,7 +25,12 @@ import {
 import { trackEditor } from "./editor-telemetry";
 import { EditorMathBuilder } from "./EditorMathBuilder";
 import { AutoFitKatex } from "./AutoFitKatex";
-import { FIGURES, figureDataUri } from "./editor-figures";
+import {
+  FIGURES,
+  figureDataUri,
+  defaultLabels,
+  emptySides,
+} from "./editor-figures";
 import katex from "katex";
 
 /** `latex` = randare academică KaTeX (M4); `html` = fallback vechi (sup/sub inline);
@@ -212,10 +217,24 @@ export function EditorMathMenu({ editor }: { editor: Editor | null }) {
     editor.chain().focus().insertContent(content).run();
   // B: inserează figura ca imagine (data-URI SVG) prin extensia Image.
   const insertFigure = (f: (typeof FIGURES)[number]) => {
+    // M5: inserăm cu figKey + figParams (defaults) → figura devine RE-EDITABILĂ
+    // (click pe ea → FigureEditDialog). Rămâne <img> cu SVG → export neatins.
     editor
       .chain()
       .focus()
-      .setImage({ src: figureDataUri(f.svg), alt: f.title, title: f.title })
+      .insertContent({
+        type: "image",
+        attrs: {
+          src: figureDataUri(f.svg),
+          alt: f.title,
+          title: f.title,
+          figKey: f.key,
+          figParams: JSON.stringify({
+            labels: defaultLabels(f),
+            sides: emptySides(f),
+          }),
+        },
+      })
       .run();
     trackEditor("math_insert", { kind: "figure", figure: f.key });
   };

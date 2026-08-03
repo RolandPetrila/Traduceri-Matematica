@@ -25,6 +25,7 @@ import {
   useEditorFind,
 } from "./editor-find";
 import { MathEditDialog } from "./MathEditDialog";
+import { FigureEditDialog } from "./FigureEditDialog";
 import { installMathAutoFit } from "./math-fit";
 import {
   EditorTranslateProvider,
@@ -325,6 +326,8 @@ function EditorShell({ editor }: { editor: Editor | null }) {
 
       {/* Editarea unei formule existente (click pe formulă → math:edit). */}
       <MathEditDialog editor={editor} />
+      {/* Editarea unei figuri existente (click pe figură → figure:edit, M5). */}
+      <FigureEditDialog editor={editor} />
     </div>
   );
 }

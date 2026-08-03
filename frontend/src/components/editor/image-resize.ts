@@ -43,6 +43,28 @@ export const ResizableImage = Image.extend({
         renderHTML: (attributes: Record<string, unknown>) =>
           attributes.height ? { height: String(attributes.height) } : {},
       },
+      // M5: figuri parametrice. `figKey` = tipul figurii; `figParams` = JSON cu
+      // {labels, sides}. Emise ca data-* pe <img> → export-safe (PDF/print/DOCX le
+      // ignoră, src-ul SVG rămâne sursa). Prezente DOAR pe figuri; imaginile OCR/
+      // încărcate au null → click-ul de editare le ignoră (fără regresie).
+      figKey: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          element.getAttribute("data-fig-key") || null,
+        renderHTML: (attributes: Record<string, unknown>) =>
+          attributes.figKey
+            ? { "data-fig-key": String(attributes.figKey) }
+            : {},
+      },
+      figParams: {
+        default: null,
+        parseHTML: (element: HTMLElement) =>
+          element.getAttribute("data-fig-params") || null,
+        renderHTML: (attributes: Record<string, unknown>) =>
+          attributes.figParams
+            ? { "data-fig-params": String(attributes.figParams) }
+            : {},
+      },
     };
   },
 
@@ -124,9 +146,36 @@ export const ResizableImage = Image.extend({
         window.addEventListener("pointercancel", stop);
       });
 
+      // Click SIMPLU pe o FIGURĂ (are figKey) → deschide dialogul de re-editare
+      // (event `figure:edit`, oglindește `math:edit`). Debounce 220ms ca să NU se
+      // declanșeze pe primul click al unui dublu-click (care resetează mărimea).
+      // Imaginile non-figură (figKey null) nu declanșează nimic.
+      let clickTimer: ReturnType<typeof setTimeout> | null = null;
+      img.addEventListener("click", () => {
+        if (clickTimer) return;
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          const pos = typeof getPos === "function" ? getPos() : null;
+          if (pos == null) return;
+          const n = editor.view.state.doc.nodeAt(pos);
+          const figKey = n?.attrs.figKey as string | null | undefined;
+          if (!figKey) return;
+          window.dispatchEvent(
+            new CustomEvent("figure:edit", {
+              detail: { figKey, figParams: n?.attrs.figParams ?? null, pos },
+            }),
+          );
+        }, 220);
+      });
+
       // Dublu-click pe imagine → revine la mărimea naturală (șterge width/height).
+      // Anulează click-ul de editare în așteptare.
       img.addEventListener("dblclick", (e) => {
         e.preventDefault();
+        if (clickTimer) {
+          clearTimeout(clickTimer);
+          clickTimer = null;
+        }
         const pos = typeof getPos === "function" ? getPos() : null;
         if (pos == null) return;
         const attrs = editor.view.state.doc.nodeAt(pos)?.attrs ?? {};
