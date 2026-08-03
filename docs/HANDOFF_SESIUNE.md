@@ -45,7 +45,8 @@
 - **M2** (constructor nested radical-în-fracție): rework UX MEDIU-MARE (compoziție recursivă de câmpuri). NU e bug — constructorul mono-segment MERGE. De decis dacă merită efortul.
 - **M3** (dark-mode): ⚠️ CONFLICT cu R-THEME (tema fixă „tablă verde + cretă"). `next-themes` absent, 0 clase `dark:`. NU implementez autonom — **cere decizia ta** (vrei dark-mode peste identitatea chalkboard?).
 - **M5** (figuri PARAMETRICE): explicit „efort MARE — candidat backlog". Amânat conștient de 3× deja.
-- ➡️ **URMĂTORUL: DEPLOY grupat §4+§5+§6** (frontend `traduceri-frontend` v27→v28: M1/M4/M6/P2/cleanup FE; backend `traduceri-api`: §4 C1/C4 removals) — cu confirmarea Roland. Apoi M2/M3 (decizii) + eyeball Cristina.
+- ✅✅✅ **DEPLOYAT v28 (2026-08-03, confirmat Roland „frontend + backend cu translate"):** frontend `traduceri-frontend` (`CACHE_VERSION v27→v28-20260803b`: M1 teoreme + M4 a11y + P2 planse-offline + cleanup FE) + backend `traduceri-api` (§4 C1 overlay + C4 translate removals). **VERIFICAT pe alias:** FE sw.js=v28, homepage+/editor 200; **toate 7 `/planse/*` = 200** (precache offline funcțional, non-fatal); BE `/api/overlay`+`/api/translate` = **404** (scoase curat), `/api/translate-text`+`/api/ocr`+`/api/health(GET)` = 200 (clientul curent neatins). (`/api/health` OPTIONS=501 = doar OPTIONS-neimplementat, GET=200, NU regresie.)
+- ➡️ **URMĂTORUL (sesiune nouă / Roland):** decizii **M2** (constructor nested — merită?) + **M3** (dark-mode — vrei peste R-THEME?); backlog M5/P3/P4; **§8 eyeball Cristina** (corectitudine+plasare teoreme M1, badge DeepL, cache reopen, preview import, export tabel, duplicare figuri construcție).
 
 ---
 
