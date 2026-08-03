@@ -139,10 +139,16 @@ def crop_figure(
     # "tallest ink run" heuristic would clip a logo/seal to just its densest strip.
     if snap:
         bw_px, bh_px = x2 - x1, y2 - y1
+        ox1, oy1, ox2, oy2 = x1, y1, x2, y2  # bbox-ul Gemini (referință pt cap R8.4)
+        # R8.4: expansiune verticală redusă 0.35→0.15. Pe pagini de construcție,
+        # bbox-ul mic al Gemini + expansiunea de 0.35 înghițea textul tipărit
+        # adiacent (care e ȘI transcris) → duplicare poză+text. 0.15 recuperează
+        # încă baza clipată a figurii (dovedit de fixture-ul F9) fără a prinde o
+        # linie întreagă de text.
         sx1 = max(0, int(x1 - 0.15 * bw_px))
-        sy1 = max(0, int(y1 - 0.35 * bh_px))
+        sy1 = max(0, int(y1 - 0.15 * bh_px))
         sx2 = min(w, int(x2 + 0.15 * bw_px))
-        sy2 = min(h, int(y2 + 0.35 * bh_px))
+        sy2 = min(h, int(y2 + 0.15 * bh_px))
         try:
             snapped = _snap_to_content(img.convert("L").crop((sx1, sy1, sx2, sy2)))
         except Exception as snap_err:
@@ -151,10 +157,16 @@ def crop_figure(
         if snapped:
             rx0, ry0, rx1, ry1 = snapped
             p = 12  # breathing room around the drawing
-            x1 = max(0, sx1 + rx0 - p)
-            y1 = max(0, sy1 + ry0 - p)
-            x2 = min(w, sx1 + rx1 + p)
-            y2 = min(h, sy1 + ry1 + p)
+            # R8.4 cap: crop-ul final NU depășește bbox-ul Gemini cu mai mult de o
+            # marjă modestă (recuperare a bazei clipate, DAR nu o linie de text
+            # întreagă). `max`/`min` păstrează tightening-ul snap-ului când e mai
+            # strâns decât bbox-ul; clamp doar când snap-ul s-a extins în text.
+            grow_x = int(0.12 * bw_px) + p
+            grow_y = int(0.12 * bh_px) + p
+            x1 = max(0, max(sx1 + rx0 - p, ox1 - grow_x))
+            y1 = max(0, max(sy1 + ry0 - p, oy1 - grow_y))
+            x2 = min(w, min(sx1 + rx1 + p, ox2 + grow_x))
+            y2 = min(h, min(sy1 + ry1 + p, oy2 + grow_y))
 
     # Crop region
     cropped = img.crop((x1, y1, x2, y2)).convert("RGBA")

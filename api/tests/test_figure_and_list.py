@@ -43,6 +43,35 @@ def test_snap_returns_none_on_blank():
     assert _snap_to_content(Image.new("L", (200, 200), 255)) is None
 
 
+def test_r8_4_tight_bbox_does_not_grab_text_block_above():
+    # R8.4: expansiune redusă 0.35→0.15 + cap. Un bbox STRÂNS pe figură (cazul
+    # paginilor de construcție) NU trebuie să înghită un bloc de text din amonte.
+    page = Image.new("RGB", (400, 1000), "white")
+    px = page.load()
+    for x in range(60, 340):            # bloc de text/formulă sus (y 200-300)
+        for y in range(200, 300):
+            if (y % 12) < 6:            # câteva "linii" de text
+                px[x, y] = (0, 0, 0)
+    for x in range(80, 320):            # figura (triunghi-ish), y 520-760
+        for y in range(520, 760):
+            if x in (80, 319) or y in (520, 759):
+                px[x, y] = (0, 0, 0)
+    buf = io.BytesIO()
+    page.save(buf, format="PNG")
+    # bbox STRÂNS pe figură (fără să atingă textul de sus).
+    tight = {"x": 0.20, "y": 0.52, "w": 0.60, "h": 0.24}
+    b64 = crop_figure(buf.getvalue(), tight)
+    crop = Image.open(io.BytesIO(base64.b64decode(b64))).convert("L")
+    cw, ch = crop.size
+    # Invariantul R8.4: crop-ul rămâne pe figură, textul din amonte nu intră.
+    # (Onest: cazul real de duplicare — text CONTIGUU cu figura — e o atenuare,
+    # nu o eliminare; verificarea perceptuală pe pagini de construcție = eyeball.)
+    top_strip = list(crop.crop((0, 0, cw, 8)).getdata())
+    assert min(top_strip) > 200, "textul din amonte a intrat în crop (R8.4)"
+    # Crop-ul recuperează figura (~240px) fără să se extindă (cap) la tot amonte-le.
+    assert 150 < ch < 340, f"crop nemărginit / prea scurt: {ch}"
+
+
 def test_crop_figure_snaps_and_excludes_text_line():
     # Full page: text line at top, figure block lower. A deliberately BAD bbox
     # (starts on the text line, too short) must still yield the figure only.
