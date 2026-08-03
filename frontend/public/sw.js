@@ -6,9 +6,14 @@ const STATIC_ASSETS = [
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  // P2 (§6): modulul Planșe = static self-contained → precache ca să meargă
-  // OFFLINE imediat după instalare (F1 promitea „offline"; înainte doar
-  // network-first le cacha DUPĂ prima vizită online). selftest.html exclus.
+];
+// P2 (§6): modulul Planșe = static self-contained → precache ca să meargă OFFLINE
+// imediat după instalare (F1 promitea „offline"; înainte doar network-first le
+// cacha DUPĂ prima vizită). selftest.html exclus. ⚠️ Precache-uit SEPARAT, NON-FATAL
+// (`.catch`): `cache.addAll` e ATOMIC → dacă un `/planse/*` dă 404/3xx la install,
+// ar rupe TOT precache-ul core (manifest+icons). Un miss aici = „P2 n-a ajutat",
+// niciodată „P2 a rupt instalarea PWA".
+const PLANSE_ASSETS = [
   "/planse/index.html",
   "/planse/app.js",
   "/planse/style.css",
@@ -26,7 +31,14 @@ self.addEventListener("message", (event) => {
 // Install: cache static assets, skip waiting to activate immediately
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
+    caches.open(CACHE_NAME).then((cache) =>
+      // CORE atomic (dacă pică, install eșuează — corect). PLANȘE non-fatal.
+      cache.addAll(STATIC_ASSETS).then(() =>
+        cache.addAll(PLANSE_ASSETS).catch((e) => {
+          console.warn("[SW] precache Planșe eșuat (non-fatal):", e);
+        }),
+      ),
+    ),
   );
   self.skipWaiting();
 });
