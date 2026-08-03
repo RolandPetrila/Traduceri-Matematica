@@ -32,7 +32,20 @@
   - **CORECȚII plan:** `import re as _re` = VIU (S6), `translation-cache` = folosit acum (G2) — ambele NEATINSE.
   - Gate: `tsc 0 · jest 115/115 · next build OK · pytest 46/46`. Commits `6dcd1a9`…`975cbba`.
   - ⚠️ **DEPLOY §4 pending:** endpoint-urile `/api/overlay` + `/api/translate` (live) → 404 după deploy backend. Fără urgență (cleanup, 0 impact user, client curent nu le cheamă) → batch cu §5. Frontend cleanup = bundle mai mic, batch cu §5.
-- ➡️ **URMĂTORUL: §5 EDITOR (M1–M6)** → §6 PLANȘE (P1–P4). §7 backlog = NU. §8 = verificări Cristina.
+- ✅ **§5 EDITOR (parțial 2026-08-03):** M1 (teoreme bisectoarei/Menelaus/Ceva la VII, 334→337) · M4 (a11y role/aria-live bare import) · M6 (decizie crop consemnată §9) = LIVRATE. **M2/M3/M5 = de decis/backlog (vezi mai jos).**
+- ✅ **§6 PLANȘE (parțial 2026-08-03):** P1 (secțiune Planșe reintrodusă, vezi mai jos) · P2 (offline reparat: precache `/planse/*` în `sw.js`) = LIVRATE. **P3/P4 = backlog.**
+
+### 🧩 MODUL PLANȘE (P1 — reintrodus 2026-08-03)
+
+**Stare reală:** 2/8 faze — F0 (schelet) + F1 (generator labirint). **1 generator din 6.** Cod: `frontend/public/planse/` (index.html, app.js, style.css, generators/labirint.js, lib/{prng,render,signature}.js) + tab în `config/tabs.json` (iframe). Absent din handoff 8+ zile → acum documentat. **P2 fix:** cele 7 fișiere prod sunt precache-uite în `sw.js` → offline imediat după instalare.
+**Backlog (P3/P4, decizia Roland NU acum):** 5 generatoare rămase (numere/integramă/unește/dictare/căutare) + `lib/history.js` (coș→PDF unic).
+
+### ⏳ RĂMAS de decis/backlog (§5) — pt Roland / sesiune nouă
+
+- **M2** (constructor nested radical-în-fracție): rework UX MEDIU-MARE (compoziție recursivă de câmpuri). NU e bug — constructorul mono-segment MERGE. De decis dacă merită efortul.
+- **M3** (dark-mode): ⚠️ CONFLICT cu R-THEME (tema fixă „tablă verde + cretă"). `next-themes` absent, 0 clase `dark:`. NU implementez autonom — **cere decizia ta** (vrei dark-mode peste identitatea chalkboard?).
+- **M5** (figuri PARAMETRICE): explicit „efort MARE — candidat backlog". Amânat conștient de 3× deja.
+- ➡️ **URMĂTORUL: DEPLOY grupat §4+§5+§6** (frontend `traduceri-frontend` v27→v28: M1/M4/M6/P2/cleanup FE; backend `traduceri-api`: §4 C1/C4 removals) — cu confirmarea Roland. Apoi M2/M3 (decizii) + eyeball Cristina.
 
 ---
 

@@ -247,10 +247,10 @@
 ## §5. RESTANȚE editor / matematică
 
 - [x] **M1 — Teoreme lipsă AUTORATE (2026-08-03):** adăugate la VII (grup nou „Teoreme"): **Teorema bisectoarei** (`BD/DC = AB/AC`), **Teorema lui Menelaus** (coliniaritate), **Teorema lui Ceva** (concurență) — fiecare cu `latex`+`explicatie`. (Teorema înălțimii + catetei EXISTAU deja la VII — planul le lista greșit ca lipsă.) `scratchpad/m1_theorems.js` via `lot_engine`. Bibliotecă **334→337**. Gate: `gate_check 337/337 KaTeX_OK · tsc 0 · jest 115 · build OK`. ⚠️ **Onest (R3):** gate-ul garantează DOAR KaTeX + curățenie; **corectitudinea matematică + plasarea pe clasă = verificare de domeniu Cristina** (ca cele 62 formule anterioare). Frontend, batch cu §5.
-- [ ] **M2 — Constructor: nested radical-în-fracție.** Constructorul e mono-segment (`EditorMathBuilder.tsx:84`, un singur `kind`) → nu poți compune „radical în fracție" fluid. Restul (matrice/sistem/Σ/∫ + editare la click) **e făcut** — planul vechi era stale. Efort **mediu**
-- [ ] **M3 — Dark-mode opțional** (F5 polish): `next-themes` absent, 0 clase `dark:`. Efort **mediu**
+- [~] **M2 — Constructor nested = DEFERAT (2026-08-03).** Constructorul e mono-segment (`EditorMathBuilder.tsx`, un singur `kind`). „Radical în fracție" fluid cere o compoziție RECURSIVĂ de câmpuri (UX rework MEDIU-MARE). **NU e bug** — restul (matrice/sistem/Σ/∫ + editare la click) merge; un utilizator poate tasta `\sqrt{}` într-un câmp. Amânat: efort mare pt un nice-to-have; de decis cu Roland dacă merită.
+- [~] **M3 — Dark-mode = DECIZIE ROLAND (2026-08-03, NU implementat autonom).** ⚠️ CONFLICT cu **R-THEME** (tema fixă „tablă verde + cretă" = identitatea vizuală). `next-themes` absent, 0 clase `dark:`. Dark-mode peste chalkboard e o decizie de design, nu un fix → cere confirmarea lui Roland dacă chiar îl vrea (și cum arată vs. tema cretă). Semnalat, neatins.
 - [x] **M4 — a11y bare de stare (2026-08-03):** adăugat `role="status" aria-live="polite"` pe bara de progres + bannerul de rezultat și `role="alert" aria-live="assertive"` pe eroarea de import (`ImportUI.tsx`) → screen-reader anunță „Import în curs (2/5)", rezultatul și erorile. Bara „Găsește" avea DEJA `aria-live="polite"` pe contor (`editor-find.tsx:223`). Gate: `tsc 0 · jest 115 · build OK`. ⚠️ **Rămas (deferat):** test a11y automat (jest-axe = dependință nouă) — opțional, nu-l adaug fără nevoie.
-- [ ] **M5 — Figuri PARAMETRICE** (amânat conștient de 2 ori): `editor-figures.ts:11-14` = SVG-uri hardcodate → nu poți schimba etichetele A/B/C sau laturile. (Redimensionarea = LIVRATĂ la F3c.) Efort **mare** — candidat de backlog
+- [~] **M5 — Figuri PARAMETRICE = BACKLOG (amânat conștient de 3×).** `editor-figures.ts` = SVG-uri hardcodate → nu poți schimba etichetele A/B/C sau laturile. Efort **MARE** (NodeView parametric). Explicit candidat de backlog în plan; NU se implementează în această rundă (redimensionarea figurilor = deja livrată la F3c).
 - [x] **M6 — Contradicție SVG-vs-crop DECISĂ (2026-08-03, doc):** decizia practică = **crop bbox cu Pillow** (nu SVG generat). E deja consemnată în **§9 punct 9** („Figuri = crop bbox cu Pillow, decizia practică"). Afirmația contrară „SVG definitivă" trăia doar în planurile vechi (ȘTERSE la §11). Codul e coerent: `ocr_structured.py` cere „Return ONLY the bounding box", `figure_crop.py` decupează. Nimic de șters în cod. Rezolvat.
 
 ---
@@ -259,10 +259,10 @@
 
 **Stare reală:** 2/8 faze (F0 schelet + F1 labirint), **1 generator din 6**; `frontend/public/planse/` + tab în `config/tabs.json`. Absent din `HANDOFF_SESIUNE.md` → nicio sesiune nu-l mai preia de la `af34d07` (22.07).
 
-- [ ] **P1 — Reintrodu modulul în `HANDOFF_SESIUNE.md`** (o secțiune scurtă cu starea reală). Efort **mic**
-- [ ] **P2 — Repară promisiunea „offline" a unei faze DEJA BIFATE:** `frontend/public/sw.js:5-9` are `STATIC_ASSETS` doar `[manifest, icon-192, icon-512]` — **`/planse/*` NU e precache-uit**, deci singurul generator livrat nu merge fără rețea, deși F1 e bifat „instant, offline". Adaugă în precache. Efort **mic**
-- [ ] P3 — (backlog) Cele 5 generatoare rămase (numere/integramă/unește/dictare/căutare) + `data/*.json`. Efort **mare**
-- [ ] P4 — (backlog) `lib/history.js` (istoric + coș → un singur PDF) + unicitate persistentă între sesiuni (azi doar în-lot, `app.js:213-227`). Efort **mediu**
+- [x] **P1 — Modul Planșe reintrodus în `HANDOFF_SESIUNE.md`** (2026-08-03, secțiune „MODUL PLANȘE" cu starea reală: 2/8 faze, 1 generator/6).
+- [x] **P2 — Promisiunea „offline" REPARATĂ (2026-08-03):** `sw.js STATIC_ASSETS` += cele 7 fișiere prod din `/planse/` (index/app/style + generators/labirint + lib/prng/render/signature; `selftest.html` exclus) → precache la install ⇒ modulul merge OFFLINE imediat după instalare (înainte doar network-first le cacha DUPĂ prima vizită). + regulă cache-first pe `/planse/`. `sw.js` parsează. ⚠️ Bump `CACHE_VERSION` la deploy.
+- [ ] P3 — (backlog, decizia Roland: NU acum) Cele 5 generatoare rămase (numere/integramă/unește/dictare/căutare) + `data/*.json`. Efort **mare**
+- [ ] P4 — (backlog, decizia Roland: NU acum) `lib/history.js` (istoric + coș → un singur PDF) + unicitate persistentă între sesiuni. Efort **mediu**
 
 ---
 

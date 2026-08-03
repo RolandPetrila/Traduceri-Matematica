@@ -6,6 +6,16 @@ const STATIC_ASSETS = [
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  // P2 (§6): modulul Planșe = static self-contained → precache ca să meargă
+  // OFFLINE imediat după instalare (F1 promitea „offline"; înainte doar
+  // network-first le cacha DUPĂ prima vizită online). selftest.html exclus.
+  "/planse/index.html",
+  "/planse/app.js",
+  "/planse/style.css",
+  "/planse/generators/labirint.js",
+  "/planse/lib/prng.js",
+  "/planse/lib/render.js",
+  "/planse/lib/signature.js",
 ];
 
 // Allow the page to force an immediately-installed worker to take over.
@@ -70,10 +80,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first only for static assets (icons, manifest, fonts)
+  // Cache-first only for static assets (icons, manifest, fonts, Planșe subtree)
   if (
     STATIC_ASSETS.some((a) => url.pathname === a) ||
-    url.pathname.startsWith("/icons/")
+    url.pathname.startsWith("/icons/") ||
+    url.pathname.startsWith("/planse/")
   ) {
     event.respondWith(
       caches
