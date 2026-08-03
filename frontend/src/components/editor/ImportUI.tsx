@@ -191,7 +191,11 @@ export function ImportStatus() {
     <>
       {/* Bară de progres (import în curs) — sticky sus, cu anulare */}
       {isImporting && (
-        <div className="flex shrink-0 items-center gap-2 border-b border-border bg-primary/10 px-3 py-1.5 text-xs">
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex shrink-0 items-center gap-2 border-b border-border bg-primary/10 px-3 py-1.5 text-xs"
+        >
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
           <span className="flex-1">
             {progress?.label || "Import în curs…"}
@@ -212,7 +216,11 @@ export function ImportStatus() {
 
       {/* Eroare */}
       {error && (
-        <div className="flex shrink-0 items-start gap-2 border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex shrink-0 items-start gap-2 border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
           <span className="flex-1">{error}</span>
           <Button
             variant="ghost"
@@ -229,7 +237,11 @@ export function ImportStatus() {
 
       {/* Banner rezultat (onest R3) */}
       {notice && (
-        <div className="flex shrink-0 items-start gap-2 border-b border-border bg-primary/10 px-3 py-2 text-xs">
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex shrink-0 items-start gap-2 border-b border-border bg-primary/10 px-3 py-2 text-xs"
+        >
           <FileDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="flex-1">{notice}</span>
           {/* G4 — miniatură + lightbox al sursei pt comparație vizuală (R-MATH) */}
