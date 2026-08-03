@@ -246,12 +246,12 @@
 
 ## §5. RESTANȚE editor / matematică
 
-- [ ] **M1 — Teoreme lipsă din bibliotecă** (`math-data.json`, verificat): **teorema bisectoarei = 0 intrări**, Menelaus = 0, Ceva = 0, teorema catetei = 1. Plus: nu există grup „Teoreme" per clasă (cerut de planul de curriculum §3). Autorează cu `latex` + `explicatie`, R3 la manuale, apoi `scratchpad/gate_check.js` + eyeball. Efort **mic-mediu**
+- [x] **M1 — Teoreme lipsă AUTORATE (2026-08-03):** adăugate la VII (grup nou „Teoreme"): **Teorema bisectoarei** (`BD/DC = AB/AC`), **Teorema lui Menelaus** (coliniaritate), **Teorema lui Ceva** (concurență) — fiecare cu `latex`+`explicatie`. (Teorema înălțimii + catetei EXISTAU deja la VII — planul le lista greșit ca lipsă.) `scratchpad/m1_theorems.js` via `lot_engine`. Bibliotecă **334→337**. Gate: `gate_check 337/337 KaTeX_OK · tsc 0 · jest 115 · build OK`. ⚠️ **Onest (R3):** gate-ul garantează DOAR KaTeX + curățenie; **corectitudinea matematică + plasarea pe clasă = verificare de domeniu Cristina** (ca cele 62 formule anterioare). Frontend, batch cu §5.
 - [ ] **M2 — Constructor: nested radical-în-fracție.** Constructorul e mono-segment (`EditorMathBuilder.tsx:84`, un singur `kind`) → nu poți compune „radical în fracție" fluid. Restul (matrice/sistem/Σ/∫ + editare la click) **e făcut** — planul vechi era stale. Efort **mediu**
 - [ ] **M3 — Dark-mode opțional** (F5 polish): `next-themes` absent, 0 clase `dark:`. Efort **mediu**
 - [ ] **M4 — a11y aprofundat:** 54 `aria-label` în `components/editor` (bază bună), dar zero `role`/`aria-live` pe barele Găsește/Import/status; niciun test a11y. Efort **mic-mediu**
 - [ ] **M5 — Figuri PARAMETRICE** (amânat conștient de 2 ori): `editor-figures.ts:11-14` = SVG-uri hardcodate → nu poți schimba etichetele A/B/C sau laturile. (Redimensionarea = LIVRATĂ la F3c.) Efort **mare** — candidat de backlog
-- [ ] **M6 — Contradicție NEDECISĂ figuri: SVG vs crop.** Planul vechi declara SVG-ul generat de Gemini „metodă definitivă" și crop-ul „abandonat (bbox imprecis)", dar codul face **opusul**: `api/lib/ocr_structured.py:74` conține textual `"Do NOT generate SVG. Return ONLY the bounding box."`, iar figurile se decupează cu Pillow. Codul funcționează (6 figuri corecte pe poza de test) → **decizia practică e crop-ul**; de consemnat explicit ca decizie și de șters afirmația contrară. Efort **mic** (doc)
+- [x] **M6 — Contradicție SVG-vs-crop DECISĂ (2026-08-03, doc):** decizia practică = **crop bbox cu Pillow** (nu SVG generat). E deja consemnată în **§9 punct 9** („Figuri = crop bbox cu Pillow, decizia practică"). Afirmația contrară „SVG definitivă" trăia doar în planurile vechi (ȘTERSE la §11). Codul e coerent: `ocr_structured.py` cere „Return ONLY the bounding box", `figure_crop.py` decupează. Nimic de șters în cod. Rezolvat.
 
 ---
 
