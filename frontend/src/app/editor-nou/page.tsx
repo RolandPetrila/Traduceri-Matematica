@@ -13,9 +13,12 @@ const EditorTiptap = dynamic(() => import("@/components/editor/EditorTiptap"), {
 });
 
 /**
- * Rută de PREVIEW pentru editorul nou (TipTap + shadcn), în dezvoltare (F1+).
- * NU e în bara de taburi — tabul „Editor" rămâne pe versiunea veche (iframe)
- * până la paritate completă (F6). Aici verificăm progresul, inclusiv pe mobil.
+ * Rută FULL-SCREEN a editorului nativ (TipTap + shadcn) — aceeași componentă
+ * `EditorTiptap` ca tabul „Editor" (`/editor`), dar pe toată pagina. Deschisă din
+ * tabul Editor prin butonul „Tot ecranul" (fereastră separată). NU e o rută moartă
+ * și NU e duplicat de unificat cu `/editor` — cele două sunt intenționate: `/editor`
+ * = embedded în taburi (cu antet), `/editor-nou` = vederea maximizată. (C6 clarificat
+ * 2026-08-03; comentariul vechi „preview în dezvoltare până la F6" era stale — F6 gata.)
  */
 export default function EditorNouPage() {
   return (
