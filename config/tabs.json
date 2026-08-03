@@ -3,6 +3,12 @@
     { "id": "convertor", "label": "Convertor", "icon": "🔄" },
     { "id": "editor", "label": "Editor", "icon": "✏️", "default": true },
     { "id": "asistent", "label": "Asistent AI", "icon": "🤖" },
+    {
+      "id": "calculator",
+      "label": "Calculator",
+      "icon": "🧮",
+      "kind": "react"
+    },
     { "id": "istoric", "label": "Istoric", "icon": "📋" },
     {
       "id": "planse",

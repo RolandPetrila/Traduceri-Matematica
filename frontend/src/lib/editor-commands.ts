@@ -32,3 +32,20 @@ export function setEditorCommandHandler(h: Handler | null): void {
 export function runEditorCommand(id: EditorCommandId): void {
   handler?.(id);
 }
+
+/**
+ * Punte separată pentru inserarea unei IMAGINI în editor din alt modul (ex.
+ * Calculatorul trimite un grafic ca SVG → figură în document). EditorShell
+ * înregistrează inserter-ul; apelantul comută pe tabul Editor, apoi cheamă
+ * `insertEditorImage`. No-op dacă editorul nu e montat.
+ */
+type ImageInserter = (src: string, alt?: string) => void;
+let imageInserter: ImageInserter | null = null;
+
+export function setEditorImageInserter(fn: ImageInserter | null): void {
+  imageInserter = fn;
+}
+
+export function insertEditorImage(src: string, alt?: string): void {
+  imageInserter?.(src, alt);
+}

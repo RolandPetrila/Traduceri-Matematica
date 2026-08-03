@@ -37,6 +37,7 @@ import { ImportDropZone, ImportStatus } from "./ImportUI";
 import { INITIAL } from "./editor-initial";
 import {
   setEditorCommandHandler,
+  setEditorImageInserter,
   type EditorCommandId,
 } from "@/lib/editor-commands";
 
@@ -177,6 +178,35 @@ function EditorShell({ editor }: { editor: Editor | null }) {
     setEditorCommandHandler(run);
     return () => setEditorCommandHandler(null);
   }, [editor, switchLanguage, openFind]);
+
+  // Punte imagine (Calculator → grafic ca figură în editor). Poate veni cross-tab
+  // → așteaptă vizibilitatea editorului (poll rAF + settle), apoi inserează ca <img>.
+  useEffect(() => {
+    if (!editor) return;
+    const insertImg = (src: string, alt?: string) => {
+      const doInsert = () =>
+        editor
+          .chain()
+          .focus()
+          .insertContent({ type: "image", attrs: { src, alt: alt ?? "" } })
+          .run();
+      const dom0 = editor.view?.dom as HTMLElement | undefined;
+      if (dom0 && dom0.offsetParent !== null) {
+        doInsert();
+        return;
+      }
+      let tries = 0;
+      const whenReady = () => {
+        const dom = editor.view?.dom as HTMLElement | undefined;
+        if (dom && dom.offsetParent !== null) window.setTimeout(doInsert, 150);
+        else if (tries++ < 30) requestAnimationFrame(whenReady);
+        else doInsert();
+      };
+      whenReady();
+    };
+    setEditorImageInserter(insertImg);
+    return () => setEditorImageInserter(null);
+  }, [editor]);
 
   // Auto-fit al formulelor lungi pe foaie (#2): le micșorează cât să încapă în
   // chenarul A4 (fără să spargă layout-ul). Se reaplică la re-randarea nodurilor.

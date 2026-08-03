@@ -6,10 +6,20 @@ import Sidebar from "@/components/layout/Sidebar";
 import IframeModule from "@/components/layout/IframeModule";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
+import { insertEditorImage } from "@/lib/editor-commands";
 
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
 const AsistentPage = dynamic(() => import("./asistent/page"), { ssr: false });
+// Calculatorul e un COMPONENT (nu rută App-Router) fiindcă primește props
+// (`onInsertToEditor`) — o pagină `app/*/page.tsx` acceptă doar PageProps.
+const CalculatorPanel = dynamic(
+  () =>
+    import("@/components/calculator/CalculatorPanel").then((m) => ({
+      default: m.CalculatorPanel,
+    })),
+  { ssr: false },
+);
 const HistoryList = dynamic(() => import("@/components/history/HistoryList"), {
   ssr: false,
 });
@@ -79,6 +89,15 @@ export default function Home() {
         </div>
         <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
           <AsistentPage />
+        </div>
+        <div style={{ display: activeTab === "calculator" ? "block" : "none" }}>
+          <CalculatorPanel
+            onInsertToEditor={(src, alt) => {
+              // Comută pe Editor, apoi inserează graficul ca figură (settle cross-tab).
+              handleTabChange("editor");
+              setTimeout(() => insertEditorImage(src, alt), 150);
+            }}
+          />
         </div>
         <div style={{ display: activeTab === "istoric" ? "block" : "none" }}>
           <HistoryList />

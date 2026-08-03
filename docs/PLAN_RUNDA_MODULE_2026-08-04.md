@@ -56,7 +56,7 @@ _(Checkpoint deploy 1: V5+M2+M5, cu confirmare.)_
 
 ### Etapa 2 — Module noi (self-contained)
 
-- [ ] **CALC. Modul Calculator (complet)** — nou `app/calculator` + `CalculatorPanel` + `GraphPlot` + `math.js` (MIT, gratis). Științific + evaluare expresii + grafic funcții (canvas/SVG) + matrice/sisteme + simbolic ușor + **integrare editor** (grafic → figură în document). Tab în `config/tabs.json`, temă verde. Mock §17. 100% client, fără backend. Efort: MARE.
+- [x] **CALC. Modul Calculator (complet)** — DONE 2026-08-04. Mock §17 aprobat. `lib/calculator-eval.ts` (math.js: `normalizeExpr` notație școlară √/π/ln/tg, `evaluateExpr`, `samplePoints`, `plotToSvg` SVG export-safe) + `components/calculator/CalculatorPanel.tsx` (3 sub-taburi Științific/Grafic/Matrice-Sisteme, temă verde) + tab în `config/tabs.json` ×2 (kind:"react") + wiring `page.tsx` (component dinamic, NU rută App-Router — capcană PageProps) + punte `editor-commands.ts` `insertEditorImage` + inserter în `EditorTiptap`. `mathjs ^15.2.0`. Gate: **tsc 0 · jest 145/145 (+9) · build OK**. **LIVE:** `2^10+√16+sin(π/6)=1028.5` · grafic x²−3 (parabolă+axe) · **grafic→editor** (comută tab + inserează figura SVG). Matrice = teste (det=−2/inv). ⚠️ Capcană: `app/*/page.tsx` cu props custom rupe build-ul (PageProps) → import component, nu rută.
 
 _(Checkpoint deploy 2: Calculator, cu confirmare.)_
 
