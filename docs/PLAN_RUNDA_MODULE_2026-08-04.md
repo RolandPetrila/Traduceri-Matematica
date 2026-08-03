@@ -44,12 +44,12 @@
 
 ### Etapa 0 — Baseline git
 
-- [ ] **G0. Merge `faza-g-editor` → `main`** (fast-forward), continui lucrul pe `main` ca să nu re-divergem. ⚠️ Confirmare Roland la momentul merge-ului (outward-facing pe repo). _(Prod se deployează manual, nu e legat auto de branch → merge = igienă git.)_
+- [x] **G0. Merge `faza-g-editor` → `main`** (fast-forward) — DONE 2026-08-04, commit `9926ae1`. main local+remote = starea prod v28. Continui lucrul pe `faza-g-editor`, sincronizez `main` la fiecare checkpoint de deploy verificat (refinare: tooling/handoff referă faza-g-editor). Reversibil (`git reset`).
 
 ### Etapa 1 — Câștiguri mici + editor (frontend, self-contained)
 
-- [ ] **V5. Funcția liniară VIII = `a≠0`** — ajustez definiția în `math-data.json` (via `lot_engine`), gate `gate_check` + KaTeX. Efort: mic.
-- [ ] **M2. Constructor recursiv** — refac `EditorMathBuilder.tsx`: un câmp poate conține un sub-constructor (compoziție recursivă), la orice adâncime. Persistență schiță + editare la click păstrate. Efort: mediu-mare. Risc: regresie pe constructorul mono-segment care merge → teste + probă live atentă.
+- [x] **V5. Funcția liniară VIII = `a≠0`** — DONE 2026-08-04, **0 modificări**: biblioteca definește deja `f(x)=ax+b, (a≠0)` „Funcția de gradul I" în `math-data.json` clasa 8. Alegerea = status quo. (Nuanță denumire „liniară" vs „gradul I" = domeniu Cristina.)
+- [x] **M2. Constructor recursiv** — DONE 2026-08-04. NOU `math-builder-tree.ts` (model recursiv pur `BNode` + `nodeToLatex`, 0 cod per combinație) + `math-builder-tree.test.ts` (14 teste, incl. √-în-fracție/fracție-în-fracție/Σ-cu-fracție/√-în-sistem/nesting adânc, toate KaTeX-valide) + rescris `EditorMathBuilder.tsx` (SlotEditor recursiv: butoane „a/b √ Σ ∫ lim" per câmp → convertesc textul în structură; „×" revine la text; persistă arborele per tip). `math-input.ts` NEATINS (norm+MATH_CONSTRUCTIONS). Matricea = celule text ca înainte (curat). Gate: **tsc 0 · jest 129/129 (+14) · build OK**. **LIVE desktop:** √-în-fracție → preview `\dfrac{\sqrt{6x+3}}{\square}` → inserat în doc (data-latex corect), 0 erori consolă, 0 overflow. 390 real = eyeball Roland (resize_window nu forțează viewport).
 - [ ] **M5. Figuri parametrice** — NodeView parametric în `editor-figures.ts` (etichete A/B/C + laturi editabile, export-safe PDF/HTML/DOCX). Mock §17 scurt. Efort: MARE. Risc: export.
 
 _(Checkpoint deploy 1: V5+M2+M5, cu confirmare.)_
