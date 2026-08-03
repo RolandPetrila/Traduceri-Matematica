@@ -43,13 +43,6 @@ export interface DictEntry {
   domain: string;
 }
 
-export interface ConversionRequest {
-  files: File[];
-  operation: "convert" | "merge" | "split" | "compress" | "edit-pdf";
-  target_format?: string;
-  options?: Record<string, unknown>;
-}
-
 export interface ConversionHistoryEntry {
   id: string;
   date: string;

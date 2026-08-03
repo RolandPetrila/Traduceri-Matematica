@@ -36,10 +36,6 @@ export function addToHistory(entry: HistoryEntry): void {
   }
 }
 
-export function getHistoryEntry(id: string): HistoryEntry | undefined {
-  return getHistory().find((e) => e.id === id);
-}
-
 export function clearHistory(): void {
   localStorage.removeItem(HISTORY_KEY);
 }

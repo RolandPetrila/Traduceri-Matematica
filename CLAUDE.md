@@ -45,9 +45,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice (backlog/imbunatatiri = acum in `docs/PLAN_MASTER.md` §7)
 - `vercel.json` — config functii Python (maxDuration 60s)
 - `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
-- `config/languages.json` — limbi suportate (RO/SK/EN/DE + extensibil)
 - `config/error_codes.json` — coduri de eroare (`E-<ARIE>-<NNN>`)
-- `config/math_terms_ro_sk.json` — dictionar RO-SK
 - `api/ocr.py` — OCR o pagina (Gemini JSON, Pro→Flash fallback)
 - `api/translate_text.py` — traducere text on-demand (switch limba)
 - `api/lib/ocr_structured.py` — OCR Gemini JSON mode
