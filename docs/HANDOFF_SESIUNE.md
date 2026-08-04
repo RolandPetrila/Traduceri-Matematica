@@ -1,10 +1,20 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-05 (**PRIORITATE #1 Chat AI = REPARAT + DEPLOYAT v33**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-05 (**Chat AI: robustețe + răspunsuri complete + UI = DEPLOYAT v33→v35**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ---
 
-## ▶️ REIA DE AICI (2026-08-05) — Chat AI robustețe = REZOLVAT + DEPLOYAT v33
+## ▶️ REIA DE AICI (2026-08-05) — Chat AI robustețe + completitudine + UI = DEPLOYAT v35
+
+**Sesiune Chat AI (Prioritate #1 + cerințe noi din capturi Roland). Tot LIVE pe prod, verificat.**
+
+- **v33** — robustețe lanț (vezi mai jos).
+- **v34** — răspunsuri COMPLETE + „➕ În editor" + full-width (vezi mai jos).
+- **v35** — randare formule provideri fallback (`\(..\)`/`\[..\]`) + markdown + RL_MAX 30→60. **main = v35 (`293d8fc`).**
+
+**Verificat LIVE pe prod v35:** conversație reală (limite + derivate) → răspuns **complet** (a,b,c), math randat, markdown bold, **fallback dovedit LIVE** (Cerebras 120B a răspuns o dată), **„➕ În editor" funcțional** (comută pe Editor + inserează cu formule randate editabile). Full-width pe Chat/Calculator/Teste. Gate final: `tsc 0 · jest 169/169 · build OK`.
+
+### ▶️ v33 — robustețe lanț (Prioritate #1)
 
 **Prioritatea #1 din `PROMPT_SESIUNE_NOUA_2026-08-05.md` (Chat AI moare după ~10 mesaje) = ÎNCHISĂ.** Diagnostic pe DOVADĂ (nu extindere oarbă), fix confirmat de Roland, deployat + verificat live.
 
@@ -14,6 +24,17 @@
 - ✅✅ **DEPLOYAT v33-20260805a** (`traduceri-frontend`, `dpl_CX4uYEuPMPy41BwQnEdyYuqNpth7`, READY/production). **Alias verificat:** `sw.js`=v33, homepage 200. **SMOKE LIVE pe prod:** conversație **12/12 mesaje OK, 0 eșuate** (istoric crescând, ca la user real) → **NU mai moare** la ~10 mesaje. `main` ff la `a52628d` (=prod).
 - ⚠️ **Onest (R3):** cele 12 mesaje au mers toate pe Gemini (RPM neatins în rulare) → **fallback-ul nu a fost declanșat LIVE** acum, dar e dovedit prin cele 6 probe 200 individuale + testele unitare. Dacă Gemini/Groq pică, cele 4 plase vii (gemini2/cerebras/mistral/mistral2) preiau.
 - 📝 **Notat pt viitor (advisor, neblocant):** proxy-ul (`proxy.js:261`) nu are AbortController pe fetch-ul UPSTREAM → în worst-case un mesaj = 3×60s server-side; relevant la „durată maximă" dacă apare. Upstash e comentat (RL in-memory per-instanță) — OK pt single-user.
+
+### ▶️ v34 + v35 — răspunsuri complete + UI (cerințe capturi Roland)
+
+Roland (capturi TEST XI): AI răspundea doar a-c+partial d (tăiat la 2048 tok); chenar chat prea mic; voia să adauge răspunsul în editor.
+
+- ✅ **v34 — completitudine + „În editor" + full-width** (commit `405af0a`): `maxOutputTokens/max_tokens` 2048→8192; `isTruncated()` (finishReason MAX_TOKENS / finish_reason length) → buton **„Continuă răspunsul"** (garanție complet la orice lungime); system-prompt „răspunde COMPLET la TOATE punctele". Buton **„➕ În editor"** per mesaj AI (`onSendToEditor`→`insertEditorText`). Full-width: Chat/Calculator/Teste `max-w-3xl`→`w-full` (Editor/Istoric erau deja full). Mobilul neafectat.
+- ✅ **v35 — randare formule fallback** (commit `94ceddf`): **descoperit la eyeball v34** — Cerebras/Groq/Mistral scriu `\(..\)`/`\[..\]`+markdown, pe care `renderMathText` (doar `$..$`) NU le randa → math brut când răspunde un fallback. Fix: `normalizeMathDelimiters()` partajat (`\[..\]`→`$$`, `\(..\)`→`$`) + markdown minim, folosit ȘI la chat ȘI la inserarea în editor (`EditorTiptap.textToContent`). `math-html.test.ts` nou.
+- ⚠️ **Onest (R3):** pe v35 Gemini a răspuns la re-test (randat perfect); randarea `\[..\]` a unui fallback nu a fost RE-declanșată live pe v35 (dar: defectul văzut direct pe v34 + unit-teste 7/7 + cod deployat). Butonul „Continuă" (trunchiere) — logică unit-testată, nedeclanșat live (răspunsurile au încăput în 8192).
+
+### ▶️ RĂMAS
+
 - ➡️ **URMĂTORUL:** Prioritatea #2 = **P3** (5 generatoare planșe, numere/integramă cu solver soluție-unică) + **P4** (istoric→PDF). Vezi `PLAN_RUNDA_MODULE_2026-08-04.md` §Etapa 4 + `PROMPT_SESIUNE_NOUA_2026-08-05.md` §Prioritate #2. + acțiune manuală Roland: oprește emailurile Render (Delete Service).
 
 ---
