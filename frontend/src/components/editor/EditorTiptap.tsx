@@ -41,6 +41,7 @@ import {
   setEditorTextInserter,
   type EditorCommandId,
 } from "@/lib/editor-commands";
+import { normalizeMathDelimiters } from "@/lib/math-html";
 
 /**
  * Editor NATIV (TipTap + shadcn) — înlocuiește editorul-iframe (retras în F6).
@@ -207,25 +208,39 @@ function EditorShell({ editor }: { editor: Editor | null }) {
     };
     setEditorImageInserter(insertImg);
 
-    // Text (ex. test generat) → paragrafe, cu $...$ transformat în inlineMath.
+    // Text (test generat / răspuns AI) → paragrafe. Normalizez întâi
+    // delimitatorii LaTeX (`\(..\)`→`$..$`, `\[..\]`→`$$..$$`) ca formulele
+    // providerilor de tip Cerebras/Mistral să devină inlineMath (nu text brut);
+    // apoi curăț markerii markdown (**, #, liste) → text curat.
+    const stripMd = (line: string) =>
+      line
+        .replace(/^\s*#{1,6}\s+/, "")
+        .replace(/^\s*[*-]\s+/, "• ")
+        .replace(/\*\*([^*]+?)\*\*/g, "$1");
     const textToContent = (text: string) =>
-      text.split(/\r?\n/).map((line) => {
-        const content: Record<string, unknown>[] = [];
-        const re = /\$([^$]+)\$/g;
-        let last = 0;
-        let mm: RegExpExecArray | null;
-        while ((mm = re.exec(line)) !== null) {
-          if (mm.index > last)
-            content.push({ type: "text", text: line.slice(last, mm.index) });
-          content.push({ type: "inlineMath", attrs: { latex: mm[1] } });
-          last = re.lastIndex;
-        }
-        if (last < line.length)
-          content.push({ type: "text", text: line.slice(last) });
-        return content.length
-          ? { type: "paragraph", content }
-          : { type: "paragraph" };
-      });
+      normalizeMathDelimiters(text)
+        .split(/\r?\n/)
+        .map((rawLine) => {
+          const line = stripMd(rawLine);
+          const content: Record<string, unknown>[] = [];
+          const re = /\$\$([^$]+)\$\$|\$([^$]+)\$/g;
+          let last = 0;
+          let mm: RegExpExecArray | null;
+          while ((mm = re.exec(line)) !== null) {
+            if (mm.index > last)
+              content.push({ type: "text", text: line.slice(last, mm.index) });
+            content.push({
+              type: "inlineMath",
+              attrs: { latex: mm[1] ?? mm[2] },
+            });
+            last = re.lastIndex;
+          }
+          if (last < line.length)
+            content.push({ type: "text", text: line.slice(last) });
+          return content.length
+            ? { type: "paragraph", content }
+            : { type: "paragraph" };
+        });
     const insertTxt = (text: string) => {
       const doInsert = () =>
         editor.chain().focus().insertContent(textToContent(text)).run();
