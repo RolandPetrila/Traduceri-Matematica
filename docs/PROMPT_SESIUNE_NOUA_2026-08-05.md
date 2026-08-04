@@ -19,15 +19,29 @@ Branch `faza-g-editor` = `main` (sincronizate). Prod: `traduceri-frontend.vercel
 
 ## ⭐ PRIORITATE #1 — Repară robustețea Chat AI (calitate + durată)
 
-**Bug LIVE:** după ~10 mesaje, Chat AI dă „Niciun provider AI n-a răspuns (OpenRouter: Failed to fetch)" — lanțul actual (Gemini→Groq→OpenRouter) e pe free-tier cu RPM/cotă mici. Roland: **nu integra AI-uri cu limită mică**; maximizează calitatea + durata.
+**Simptom (screenshot Roland):** după ~10 mesaje, Chat AI dă „Niciun provider AI n-a răspuns (**OpenRouter: Failed to fetch**)". Roland: **nu integra AI-uri cu limită mică**; maximizează calitatea + durata.
 
-**Soluție confirmată (Roland):** extinde lanțul în `frontend/src/lib/chat-providers.ts` (`CHAIN`) + `frontend/src/pages/api/proxy.js` (`MODEL_ALLOW`) cu:
+### ⚠️ VERIFICĂ ÎNTÂI cauza (NU sări direct la fix — dovada e ambiguă)
+
+Cauza NU e confirmată; extinderea oarbă a lanțului poate AGRAVA (vezi mai jos). Diagnostichează:
+
+1. **Reproduce pe PROD (`traduceri-frontend.vercel.app`), NU pe localhost.** Screenshot-ul era pe `localhost:3399`, iar în sesiunea de build am omorât `next start` de mai multe ori → „Failed to fetch" pe local poate fi doar serverul dev căzut, nu prod.
+2. **Citește string-ul EXACT** (în `sendChat`, non-ok = `"<label>: HTTP <status>"`, iar fetch aruncat = `"<label>: Failed to fetch"`):
+   - `HTTP 429` / `HTTP 4xx` ⇒ **cotă/RPM provider** → extinderea lanțului (mai jos) E fix-ul corect.
+   - **`Failed to fetch`** ⇒ transport/server/**rate-limiter same-origin**, NU cotă provider.
+3. **Capcana `RL_MAX` (proxy.js):** limită in-memory **30 cereri/min/IP**. Azi: ~10 mesaje × ≤3 provideri = ~30 apeluri → atinge plafonul pe la mesajul 10. **Dacă extinzi lanțul la 5–6 provideri, fiecare mesaj = 5–6 apeluri → plafonul vine la ~5 mesaje (MAI RĂU).** Deci: dacă e implicat rate-limiter-ul, întâi **ridică `RL_MAX`** (ex. 120) SAU **plafonează nr. de provideri încercați per mesaj** (nu-i lovi pe toți dacă primul răspunde) ÎNAINTE de a lărgi lanțul.
+
+### Fix (după ce cauza e clară) — extinde lanțul pt calitate + durată
+
+`frontend/src/lib/chat-providers.ts` (`CHAIN`) + `frontend/src/pages/api/proxy.js` (`MODEL_ALLOW`), lanț confirmat de Roland:
 **Gemini 2.5 Flash (GOOGLE_API_KEY) → Gemini key2 (GOOGLE_API_KEY_2) → Cerebras (1M tokens/zi, 30 RPM, permanent) → Groq 70B (GROQ_API_KEY) → Mistral (1 miliard tokens/lună; +MISTRAL_API_KEY_2) → OpenRouter.**
 
-- Provideri OpenAI-compatibili (Cerebras/Groq/Mistral/OpenRouter) refolosesc `buildOpenAiPayload`; Gemini are formatul lui. Cerebras e deja în `proxy.js` PROVIDERS (`gpt-oss-120b` în MODEL_ALLOW — verifică un model bun de math; Cerebras servește și Llama). Mistral e în PROVIDERS (`mistral-large-latest`).
-- Adaugă cheile lipsă în env Vercel `traduceri-frontend` la deploy (GOOGLE_API_KEY/GROQ/OPENROUTER sunt deja; verifică CEREBRAS_API_KEY, MISTRAL_API_KEY, MISTRAL_API_KEY_2, GOOGLE_API_KEY_2 — toate SET local, `.api-keys/verify.ps1`).
-- Failover pe 429/eroare (lanțul deja continuă la non-ok). Indicatorul arată providerul activ.
-- Catalog complet chei: `~/.api-keys/catalog.md` (Cerebras 1M/zi, Mistral 1mld/lună, XAI/Grok $150/lună cu data-sharing, SambaNova, NVIDIA 5000 credite, Fireworks, GitHub Models — TOATE candidați de fallback pt „durată maximă"). NU cere valorile; cod pe `process.env.X` (proxy le citește server-side).
+- ajustează `RL_MAX`/attempts-per-message conform diagnosticului de mai sus.
+
+* Provideri OpenAI-compatibili (Cerebras/Groq/Mistral/OpenRouter) refolosesc `buildOpenAiPayload`; Gemini are formatul lui. Cerebras e deja în `proxy.js` PROVIDERS (`gpt-oss-120b` în MODEL_ALLOW — verifică un model bun de math; Cerebras servește și Llama). Mistral e în PROVIDERS (`mistral-large-latest`).
+* Adaugă cheile lipsă în env Vercel `traduceri-frontend` la deploy (GOOGLE_API_KEY/GROQ/OPENROUTER sunt deja; verifică CEREBRAS_API_KEY, MISTRAL_API_KEY, MISTRAL_API_KEY_2, GOOGLE_API_KEY_2 — toate SET local, `.api-keys/verify.ps1`).
+* Failover pe 429/eroare (lanțul deja continuă la non-ok). Indicatorul arată providerul activ.
+* Catalog complet chei: `~/.api-keys/catalog.md` (Cerebras 1M/zi, Mistral 1mld/lună, XAI/Grok $150/lună cu data-sharing, SambaNova, NVIDIA 5000 credite, Fireworks, GitHub Models — TOATE candidați de fallback pt „durată maximă"). NU cere valorile; cod pe `process.env.X` (proxy le citește server-side).
 
 ## PRIORITATE #2 — P3 + P4 (modulul Planșe, `frontend/public/planse/`, vanilla-JS)
 

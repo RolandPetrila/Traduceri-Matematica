@@ -1,3 +1,5 @@
+> ⛔ SUPERSEDAT (2026-08-04) → folosește **`docs/PROMPT_SESIUNE_NOUA_2026-08-05.md`**. Conținutul de mai jos e ISTORIC (R1–R6, 2026-07-30) — nu acționa pe el.
+
 # PROMPT PENTRU SESIUNE NOUĂ — copiază tot blocul de mai jos ca PRIM mesaj
 
 > Regenerat 2026-07-30 (seara), după: PASUL 0 (curățenie 11 planuri) + R1 + R2 DONE & DEPLOYAT, și după stabilirea a 2 cerințe NOI (R5 + R6) prin AskUserQuestion.
