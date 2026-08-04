@@ -1,30 +1,71 @@
 /**
- * Lanț AI cu fallback pentru Chat (2026-08-04). Reutilizează ruta same-origin
- * securizată `/api/proxy` (chei server-side, rate-limit, cost-cap). Încearcă
- * providerii ÎN ORDINE: Gemini Flash → Groq 70B → OpenRouter (70B free). Primul
- * care răspunde câștigă; `provider` (eticheta) alimentează indicatorul de stare.
+ * Lanț AI cu fallback pentru Chat (2026-08-05, extins pe dovadă). Reutilizează
+ * ruta same-origin securizată `/api/proxy` (chei server-side, rate-limit, cost-cap).
+ * Încearcă providerii ÎN ORDINE; primul care răspunde câștigă; `provider` (eticheta)
+ * alimentează indicatorul de stare.
+ *
+ * Ordine (toate GRATIS, toate dovedite 200 pe prod 2026-08-05):
+ *   Gemini Flash → Gemini Flash (2) → Cerebras 120B → Groq 70B → Mistral Large → Mistral Large (2)
+ * OpenRouter a fost SCOS din lanț: modelul `:free` a fost retras de OpenRouter
+ * (404 „unavailable for free") — era un fallback mort care nu putea salva mesajul.
+ * Cerebras (1M tokeni/zi) + Mistral (1 mld/lună) + a doua cheie Gemini acoperă
+ * „durata maximă" complet gratis, fără slug volatil de întreținut.
  *
  * `buildGeminiPayload`/`buildOpenAiPayload`/`parseReply` sunt PURE (testabile);
- * `sendChat` face fetch-ul (chain).
+ * `sendChat` face fetch-ul (chain, cu timeout per provider + colectare erori).
  */
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export type ChatResult =
-  { ok: true; reply: string; provider: string } | { ok: false; error: string };
+  | { ok: true; reply: string; provider: string }
+  | { ok: false; error: string; errors: string[] };
 
-export type ProviderStep = { id: string; label: string; model?: string };
+/** Formatul payload-ului upstream: Gemini (contents/parts) vs OpenAI (messages). */
+export type ProviderFormat = "gemini" | "openai";
+export type ProviderStep = {
+  id: string;
+  label: string;
+  model?: string;
+  format: ProviderFormat;
+};
 
-/** Lanțul confirmat de Roland. OpenRouter = modelul FREE 70B (0 cost; fallback rar). */
+/**
+ * Lanțul confirmat de Roland (2026-08-05). Toți providerii sunt free-tier și au
+ * cheile deja setate pe `traduceri-frontend` (verificat: 200 pe prod). Modelele
+ * OpenAI-compatibile trebuie să fie în `MODEL_ALLOW` din `pages/api/proxy.js`.
+ */
 export const CHAIN: ProviderStep[] = [
-  { id: "gemini", label: "Gemini Flash" },
-  { id: "groq", label: "Groq 70B", model: "llama-3.3-70b-versatile" },
+  { id: "gemini", label: "Gemini Flash", format: "gemini" },
+  { id: "gemini2", label: "Gemini Flash (2)", format: "gemini" },
   {
-    id: "openrouter",
-    label: "OpenRouter",
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+    id: "cerebras",
+    label: "Cerebras 120B",
+    model: "gpt-oss-120b",
+    format: "openai",
+  },
+  {
+    id: "groq",
+    label: "Groq 70B",
+    model: "llama-3.3-70b-versatile",
+    format: "openai",
+  },
+  {
+    id: "mistral",
+    label: "Mistral Large",
+    model: "mistral-large-latest",
+    format: "openai",
+  },
+  {
+    id: "mistral2",
+    label: "Mistral Large (2)",
+    model: "mistral-large-latest",
+    format: "openai",
   },
 ];
+
+/** Timeout per provider — un provider blocat nu mai mănâncă bugetul întregului lanț. */
+export const PROVIDER_TIMEOUT_MS = 20000;
 
 /** Payload pentru Gemini (`contents` + `systemInstruction`, roluri user/model). */
 export function buildGeminiPayload(system: string, messages: ChatMessage[]) {
@@ -38,7 +79,7 @@ export function buildGeminiPayload(system: string, messages: ChatMessage[]) {
   };
 }
 
-/** Payload OpenAI-compatible (Groq / OpenRouter). */
+/** Payload OpenAI-compatible (Groq / Cerebras / Mistral). */
 export function buildOpenAiPayload(
   model: string,
   system: string,
@@ -55,10 +96,10 @@ export function buildOpenAiPayload(
   };
 }
 
-/** Extrage textul răspunsului din JSON-ul provider-ului. */
+/** Extrage textul răspunsului din JSON-ul provider-ului (Gemini vs OpenAI). */
 export function parseReply(providerId: string, json: unknown): string {
   const j = json as Record<string, unknown>;
-  if (providerId === "gemini") {
+  if (providerId === "gemini" || providerId === "gemini2") {
     const cand = (
       j?.candidates as { content?: { parts?: { text?: string }[] } }[]
     )?.[0];
@@ -73,38 +114,53 @@ export function parseReply(providerId: string, json: unknown): string {
 
 /**
  * Trimite conversația prin lanț. Se oprește la primul provider care întoarce un
- * răspuns nevid. Returnează eticheta provider-ului pentru indicator.
+ * răspuns nevid. Colectează TOATE erorile (nu doar ultima) — la eșec total,
+ * mesajul le enumeră pe toate, ca următoarea pică să fie auto-diagnosticabilă.
+ * Fiecare apel are timeout propriu (AbortController): un provider care atârnă nu
+ * blochează restul lanțului.
  */
 export async function sendChat(
   messages: ChatMessage[],
   system: string,
 ): Promise<ChatResult> {
-  let lastError = "necunoscut";
+  const errors: string[] = [];
   for (const step of CHAIN) {
     try {
       const body =
-        step.id === "gemini"
+        step.format === "gemini"
           ? buildGeminiPayload(system, messages)
           : buildOpenAiPayload(step.model || "", system, messages);
-      const res = await fetch(`/api/proxy?provider=${step.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS);
+      let res: Response;
+      try {
+        res = await fetch(`/api/proxy?provider=${step.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
       if (!res.ok) {
-        lastError = `${step.label}: HTTP ${res.status}`;
+        errors.push(`${step.label}: HTTP ${res.status}`);
         continue;
       }
       const json = await res.json();
       const reply = parseReply(step.id, json);
       if (reply) return { ok: true, reply, provider: step.label };
-      lastError = `${step.label}: răspuns gol`;
+      errors.push(`${step.label}: răspuns gol`);
     } catch (e) {
-      lastError = `${step.label}: ${(e as Error).message || "eroare rețea"}`;
+      const err = e as Error;
+      const msg =
+        err?.name === "AbortError" ? "timeout" : err?.message || "eroare rețea";
+      errors.push(`${step.label}: ${msg}`);
     }
   }
   return {
     ok: false,
-    error: `Niciun provider AI n-a răspuns (${lastError}).`,
+    error: `Niciun provider AI n-a răspuns. Detalii: ${errors.join(" · ")}`,
+    errors,
   };
 }

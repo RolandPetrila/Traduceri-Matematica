@@ -2,6 +2,7 @@ import {
   buildGeminiPayload,
   buildOpenAiPayload,
   parseReply,
+  sendChat,
   CHAIN,
 } from "./chat-providers";
 import { buildSystemPrompt, buildLibraryIndex } from "./chat-context";
@@ -20,26 +21,91 @@ describe("chat-providers · payloads", () => {
     expect(p.contents[0].parts[0].text).toBe("cât e 2+2?");
   });
 
-  it("OpenAI (Groq/OpenRouter): system + messages, model setat", () => {
+  it("OpenAI (Groq/Cerebras/Mistral): system + messages, model setat", () => {
     const p = buildOpenAiPayload("llama-3.3-70b-versatile", "SYS", msgs);
     expect(p.model).toBe("llama-3.3-70b-versatile");
     expect(p.messages[0]).toEqual({ role: "system", content: "SYS" });
     expect(p.messages).toHaveLength(4);
   });
 
-  it("parseReply extrage textul din ambele formate", () => {
+  it("parseReply extrage textul din ambele formate (gemini + gemini2 = Gemini)", () => {
     const gem = {
       candidates: [{ content: { parts: [{ text: "răspuns gemini" }] } }],
     };
     expect(parseReply("gemini", gem)).toBe("răspuns gemini");
+    expect(parseReply("gemini2", gem)).toBe("răspuns gemini"); // a doua cheie = format Gemini
     const oai = { choices: [{ message: { content: "răspuns groq" } }] };
     expect(parseReply("groq", oai)).toBe("răspuns groq");
     expect(parseReply("gemini", {})).toBe("");
   });
 
-  it("CHAIN = Gemini → Groq → OpenRouter", () => {
-    expect(CHAIN.map((c) => c.id)).toEqual(["gemini", "groq", "openrouter"]);
-    expect(CHAIN[1].model).toBe("llama-3.3-70b-versatile");
+  it("CHAIN = Gemini → Gemini2 → Cerebras → Groq → Mistral → Mistral2 (fără OpenRouter mort)", () => {
+    expect(CHAIN.map((c) => c.id)).toEqual([
+      "gemini",
+      "gemini2",
+      "cerebras",
+      "groq",
+      "mistral",
+      "mistral2",
+    ]);
+    expect(CHAIN.some((c) => c.id === "openrouter")).toBe(false); // slug :free = 404, scos
+    expect(CHAIN.find((c) => c.id === "groq")?.model).toBe(
+      "llama-3.3-70b-versatile",
+    );
+    expect(CHAIN.find((c) => c.id === "cerebras")?.model).toBe("gpt-oss-120b");
+    // fiecare treaptă are format explicit (gemini vs openai)
+    expect(CHAIN.every((c) => c.format === "gemini" || c.format === "openai")).toBe(
+      true,
+    );
+  });
+});
+
+describe("sendChat · fallback + instrumentare", () => {
+  const geminiOk = {
+    candidates: [{ content: { parts: [{ text: "salut" }] } }],
+  };
+  const mkRes = (status: number, json: unknown) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => json,
+  });
+  const q = [{ role: "user" as const, content: "salut" }];
+
+  afterEach(() => {
+    (global.fetch as unknown as jest.Mock)?.mockReset?.();
+  });
+
+  it("întoarce primul provider care răspunde și NU mai încearcă restul", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce(mkRes(200, geminiOk));
+    const r = await sendChat(q, "SYS");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.provider).toBe("Gemini Flash");
+    expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(1);
+  });
+
+  it("sare peste un provider picat și reușește pe următorul", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(mkRes(500, { error: "x" })) // gemini
+      .mockResolvedValueOnce(mkRes(200, geminiOk)); // gemini2
+    const r = await sendChat(q, "SYS");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.provider).toBe(CHAIN[1].label);
+  });
+
+  it("la eșec total colectează TOATE erorile (nu doar ultima)", async () => {
+    global.fetch = jest.fn().mockResolvedValue(mkRes(429, { error: "rate" }));
+    const r = await sendChat(q, "SYS");
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errors).toHaveLength(CHAIN.length); // câte o eroare per provider
+      expect(r.errors.every((e) => e.includes("HTTP 429"))).toBe(true);
+      expect(r.error).toContain("Gemini Flash");
+      expect(r.error).toContain("Mistral Large (2)");
+    }
+    expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(
+      CHAIN.length,
+    );
   });
 });
 

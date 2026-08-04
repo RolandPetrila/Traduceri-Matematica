@@ -68,7 +68,10 @@ function hostOf(u) {
 }
 const RL_WINDOW_MS = 60 * 1000;
 const RL_WINDOW_S = 60;
-const RL_MAX = 30; // 30 cereri / minut / IP
+// 120 cereri / minut / IP. Ridicat de la 30 (2026-08-05): lanțul Chat are acum 6
+// provideri, iar un mesaj cu fallback poate face pana la 6 apeluri; 30 se atingea
+// prematur. In-memory per-instanta (Upstash comentat) + single-user => sigur.
+const RL_MAX = 120;
 const RL_PREFIX = "asistent-text-ai:rl:"; // namespacing — DB Upstash poate fi partajat cu alte proiecte
 
 // Fallback best-effort in-memory (per instanta serverless) — folosit cand Upstash lipseste/cade.
