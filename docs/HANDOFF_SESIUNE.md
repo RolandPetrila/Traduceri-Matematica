@@ -16,8 +16,13 @@
 - ✅✅ **DEPLOYAT + VERIFICAT pe alias:** v29 (V5+M2+M5), v30 (Calculator), v31 (Chat AI), v32 (Teste). main = v32 (`338b99e`).
 - ✅ **CALC** Calculator (științific+grafic+matrice, math.js, grafic→editor). ✅ **CHAT** Chat AI nativ (Gemini→Groq→OpenRouter prin `/api/proxy`, KaTeX, OCR-attach, înlocuiește iframe Asistent — cheile deja pe traduceri-frontend). ✅ **TESTE** (Generează AI→editor + Corectează OCR). Toate dovedite LIVE local + gate verde.
 - **M3** dark-mode = RESPINS DEFINITIV (de marcat în PLAN_MASTER §5 la FIN).
-- ➡️ **RĂMAS:** **P3** (5 generatoare planșe — efort MARE, vanilla-JS în `public/planse/`, contract buildOne/render/selftest) + **P4** (istoric→PDF) + **FIN** (docs/memorie). §8 eyeball Roland pe prod (Calc/Chat/Teste + OCR-attach netestat local).
-- **Gate curent global:** `tsc 0 · jest 157/157 · next build OK`.
+- ➡️ **RĂMAS → SESIUNE NOUĂ** (Roland a ales să amâne, cu prompt complet): vezi **`docs/PROMPT_SESIUNE_NOUA_2026-08-05.md`**. Mod de lucru: AskUserQuestion → confirmare Roland → execuție. Ordine:
+  1. **PRIORITATE #1 — repară Chat AI** (moare după ~10 mesaje: „OpenRouter: Failed to fetch"; free-tier RPM/cotă mici). Extinde lanțul: **Gemini(+key2)→Cerebras(1M/zi)→Groq70B→Mistral(1mld/lună)→OpenRouter**. Roland: nu integra AI cu limită mică; maximizează calitate+durată.
+  2. **P3** (5 generatoare planșe, unul câte unul; numere+integramă cer solver soluție-unică) + **P4** (istoric→PDF).
+  3. §8 eyeball Roland (Calc/Chat/Teste + OCR-attach netestat local) + Cristina (formule/teoreme).
+- **ACȚIUNE ROLAND (manuală):** emailuri `no-reply@render.com` „build failed for Traduceri-Matematica" la fiecare push = serviciu **Render vechi** rămas conectat la repo (post-migrare Vercel). Fix: dashboard Render → serviciul → **Delete** (sau Auto-Deploy=No). Nu e cod. (Confirmat: 5+ emailuri în Gmail, 03–04.08.)
+- **M3 dark-mode = RESPINS DEFINITIV** (marcat în PLAN_MASTER §5).
+- **Gate curent global:** `tsc 0 · jest 157/157 · next build OK`. main=v32.
 
 ---
 
