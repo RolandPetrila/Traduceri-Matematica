@@ -66,15 +66,9 @@ _(Checkpoint deploy 3: Teste, cu confirmare.)_
 
 ### Etapa 3 — Chat AI nativ (înlocuiește Asistentul)
 
-- [ ] **CHAT.1** Mock §17 UI — unde stă (panou în tab Matematică vs tab dedicat), cum arată chat + atașare fișier + indicator provideri.
-- [ ] **CHAT.2** Backend lanț same-origin (reuse/extind `pages/api/proxy.js` sau endpoint nou): **Gemini 2.5 Flash → Groq Llama 3.3 70B → OpenRouter** (ID-uri confirmate la sursă). Fallback automat la eroare/quota. `text/plain`.
-- [ ] **CHAT.3** Punte de context aplicație: injectez biblioteca (337 formule) + lista module + docuri + documentul curent din editor → răspunde „din aplicație".
-- [ ] **CHAT.4** OCR corectare: atașezi fișier → `/api/ocr` (Gemini) → text+formule → LLM analizează/corectează.
-- [ ] **CHAT.5** **Indicator de stare** per provider (badge tip DeepL: provider activ + punct verde/roșu, health-check).
-- [ ] **CHAT.6** System-prompt specializat mate RO/SK + notă „asistent, nu autoritate" + cuplare opțională cu Calculatorul pt calcul exact.
-- [ ] **CHAT.7** Retrag iframe-ul **Asistent AI** vechi (păstrez `proxy.js` dacă e reutil). Env Groq+OpenRouter pe Vercel `traduceri-api`.
+- [x] **CHAT.1–CHAT.7 DONE (2026-08-04).** Mock §17 aprobat (înlocuiește tab Asistent). Reuse `pages/api/proxy.js` (securizat) + lanț CLIENT `lib/chat-providers.ts` (**Gemini Flash → Groq 70B → OpenRouter free 70B**, fallback la eroare, `parseReply` per format); extins `MODEL_ALLOW.groq` → 70b. `lib/chat-context.ts` (system-prompt mate RO/SK + index bibliotecă/clase + module + notă „verifică cu Calculatorul"). `components/chat/ChatPanel.tsx` (mesaje KaTeX, **indicator provider+stare 🟢/🔴** + buton „Testează", 📎 atașare→OCR corectare). `page.tsx`: tab „Asistent AI" randează `ChatPanel` (iframe retras; `/asistent`+`public/asistent` rămân, curățare la FIN). Gate: **tsc 0 · jest 152/152 (+7) · build OK**. **LIVE:** `/api/proxy?provider=gemini` → 200; UI: „2x+3=11" → **x=4** cu KaTeX, indicator „Gemini Flash". ⚠️ OCR-attach netestat local (backend absent) → eyeball prod. Env Groq/OpenRouter/Google pe **traduceri-frontend** (verific la deploy — Asistentul vechi le folosea deja).
 
-_(Checkpoint deploy 4: Chat AI + retragere Asistent, cu confirmare.)_
+_(Checkpoint deploy 3: Calculator+Chat, cu confirmare + env keys.)_
 
 ### Etapa 4 — Planșe
 

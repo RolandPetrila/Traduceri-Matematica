@@ -10,7 +10,15 @@ import { insertEditorImage } from "@/lib/editor-commands";
 
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
-const AsistentPage = dynamic(() => import("./asistent/page"), { ssr: false });
+// CHAT: Asistentul iframe vechi înlocuit de Chat AI nativ (matematică). Ruta
+// /asistent + public/asistent rămân nefolosite (curățare la FIN).
+const ChatPanel = dynamic(
+  () =>
+    import("@/components/chat/ChatPanel").then((m) => ({
+      default: m.ChatPanel,
+    })),
+  { ssr: false },
+);
 // Calculatorul e un COMPONENT (nu rută App-Router) fiindcă primește props
 // (`onInsertToEditor`) — o pagină `app/*/page.tsx` acceptă doar PageProps.
 const CalculatorPanel = dynamic(
@@ -88,7 +96,7 @@ export default function Home() {
           <EditorPage />
         </div>
         <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
-          <AsistentPage />
+          <ChatPanel />
         </div>
         <div style={{ display: activeTab === "calculator" ? "block" : "none" }}>
           <CalculatorPanel

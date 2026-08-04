@@ -131,7 +131,8 @@ async function rateLimited(ip) {
 // Modele permise per provider (orice altceva e fortat la primul). Plafoane aplicate
 // DOAR daca clientul trimite explicit campul (traficul legit al app-ului nu-l trimite).
 const MODEL_ALLOW = {
-  groq: ["llama-3.1-8b-instant"],
+  // 70b = default pt Chat AI matematică (calitate); 8b păstrat pt compat Asistent. Ambele free pe Groq.
+  groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
   mistral: ["mistral-large-latest"],
   mistral2: ["mistral-large-latest"],
   cerebras: ["gpt-oss-120b"],
