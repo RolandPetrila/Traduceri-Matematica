@@ -198,6 +198,20 @@ body {
   background: rgba(255, 255, 255, 0.06);
   color: var(--chalk-white);
 }
+.chalk-select {
+  min-width: 220px;
+  max-width: 100%;
+  padding: 8px 10px;
+  font-size: 1.05rem;
+  border-radius: 8px;
+  border: 1px solid var(--chalk-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--chalk-white);
+  font-family: inherit;
+}
+.chalk-select option {
+  color: #111;
+}
 .chalk-mini {
   width: 36px;
   height: 36px;

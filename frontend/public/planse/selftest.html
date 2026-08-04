@@ -71,6 +71,7 @@
     <script src="./lib/signature.js"></script>
     <script src="./lib/render.js"></script>
     <script src="./generators/labirint.js"></script>
+    <script src="./generators/cautare.js"></script>
     <script>
       (function () {
         "use strict";
@@ -195,6 +196,17 @@
               " semnături identice byte-cu-byte cu Python",
             okCount === total,
           );
+        })();
+
+        // 4) Căutare cuvinte — selftest invarianți (Stratul 1)
+        (function () {
+          var g = group(
+            "4) Căutare cuvinte — invarianți (cuvinte lizibile + grilă plină)",
+          );
+          var res = window.PlanseGen.cautare.selftest();
+          res.detalii.forEach(function (d) {
+            line(g, d, d.indexOf("[FAIL]") === -1);
+          });
         })();
 
         var v = document.getElementById("verdict");
