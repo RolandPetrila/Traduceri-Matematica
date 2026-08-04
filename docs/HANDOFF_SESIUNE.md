@@ -37,8 +37,9 @@ Roland (capturi TEST XI): AI răspundea doar a-c+partial d (tăiat la 2048 tok);
 
 Modul `frontend/public/planse/` (vanilla-JS, iframe). Contract generator (ca `labirint.js`): `buildOne/render/renderPages/selftest/signature` pe `window.PlanseGen.<id>`. Wiring nou = `index.html` (script) + `app.js` (subtab `ready` + `mount<Name>` + `injectCss` + `renderPanel`) + `sw.js` precache + `selftest.html`. Gate = **selftest** (Node + `selftest.html` in-app, `__SELFTEST_OK__`), NU tsc/jest (static). Ordine: căutare→unește→dictare→numere→integramă→P4.
 
-- ✅ **Căutare** (word-search, `cautare.js`) — commit `0f897ae`. 5 teme × 3 dif, selftest 60 planșe verde, dovedit LIVE. **NEDEPLOYAT.**
-- ✅ **Unește** (connect-the-dots, `uneste.js`) — commit `32f4360`. 7 forme × 3 dif (SVG), selftest verde, dovedit LIVE (stea 20 pct). **NEDEPLOYAT.**
+- ✅✅ **Căutare** (word-search, `cautare.js`) — commit `0f897ae`. 5 teme × 3 dif, selftest 60 planșe verde, dovedit LIVE. **DEPLOYAT v36.**
+- ✅✅ **Unește** (connect-the-dots, `uneste.js`) — commit `32f4360`. 7 forme × 3 dif (SVG), selftest verde, dovedit LIVE (stea 20 pct). **DEPLOYAT v36.**
+- ✅✅ **DEPLOYAT v36-20260805d** (`b07b7d5`): alias `traduceri-frontend.vercel.app` sw.js=v36, `/planse/generators/{cautare,uneste}.js`=200 (precache offline). **RĂMAS eyeball Roland pe telefon** (print PDF real + offline). main=b07b7d5.
 - ⏭️ **RĂMAS P3:** **dictare** (dictare grafică pe grilă) · **numere** (careu 3×3 multi-crossing — **SOLVER soluție-unică**) · **integramă** (aritmetică — **SOLVER soluție-unică**). Cele 2 cu solver = cele mai grele (atenție corectitudine). + **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage).
 - **Deploy P3/P4:** grupat, cu confirmarea Roland; bump `CACHE_VERSION`; noile fișiere sunt DEJA în `sw.js` precache. Uneltele: `scratchpad/planse_*.js` (harness Node selftest).
 
