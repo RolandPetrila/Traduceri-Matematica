@@ -72,6 +72,7 @@
     <script src="./lib/render.js"></script>
     <script src="./generators/labirint.js"></script>
     <script src="./generators/cautare.js"></script>
+    <script src="./generators/uneste.js"></script>
     <script>
       (function () {
         "use strict";
@@ -204,6 +205,17 @@
             "4) Căutare cuvinte — invarianți (cuvinte lizibile + grilă plină)",
           );
           var res = window.PlanseGen.cautare.selftest();
+          res.detalii.forEach(function (d) {
+            line(g, d, d.indexOf("[FAIL]") === -1);
+          });
+        })();
+
+        // 5) Unește punctele — selftest invarianți (Stratul 1)
+        (function () {
+          var g = group(
+            "5) Unește punctele — invarianți (puncte în ordine, în cadru, determinist)",
+          );
+          var res = window.PlanseGen.uneste.selftest();
           res.detalii.forEach(function (d) {
             line(g, d, d.indexOf("[FAIL]") === -1);
           });
