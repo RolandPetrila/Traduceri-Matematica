@@ -68,10 +68,13 @@ function hostOf(u) {
 }
 const RL_WINDOW_MS = 60 * 1000;
 const RL_WINDOW_S = 60;
-// 120 cereri / minut / IP. Ridicat de la 30 (2026-08-05): lanțul Chat are acum 6
+// 60 cereri / minut / IP. Ridicat de la 30 (2026-08-05): lanțul Chat are acum 6
 // provideri, iar un mesaj cu fallback poate face pana la 6 apeluri; 30 se atingea
-// prematur. In-memory per-instanta (Upstash comentat) + single-user => sigur.
-const RL_MAX = 120;
+// prematur. 60 => ~10 mesaje complet-cascadate/min (60/6), mult peste ritmul uman,
+// pastrand premisa S7 (endpoint rate-limited, fara auth/cookies). In-memory
+// per-instanta (Upstash comentat) + single-user. NU ridica orbeste: e singura
+// frana contra epuizarii cotei free (origin allowlist e doar host-match, spoofabil).
+const RL_MAX = 60;
 const RL_PREFIX = "asistent-text-ai:rl:"; // namespacing — DB Upstash poate fi partajat cu alte proiecte
 
 // Fallback best-effort in-memory (per instanta serverless) — folosit cand Upstash lipseste/cade.
