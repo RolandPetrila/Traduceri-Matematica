@@ -13,9 +13,11 @@
 - ✅ **M2** constructor matematic RECURSIV (`math-builder-tree.ts` + rescris `EditorMathBuilder.tsx`) — √-în-fracție etc., 0 cod per combinație. Commit `e503028`. Gate tsc0/jest129/build. Dovedit LIVE desktop.
 - ✅ **M5** figuri parametrice (etichete+laturi, editabile după inserare via `figure:edit`, EXPORT-SAFE `<img>` SVG). Commit `9a720e8`. Gate tsc0/jest136/build. Dovedit LIVE (A→M, latură=5).
 - **M3** dark-mode = **RESPINS DEFINITIV** (de marcat în PLAN_MASTER §5 la FIN).
-- ⏸️ **CHECKPOINT DEPLOY 1 (V5+M2+M5, frontend-only)** — pending confirmarea Roland (deploy v29 sau amânat).
-- ➡️ **URMĂTORUL:** Etapa 2 = **Calculator** (necesită mock §17 înainte de cod), apoi Corectare/Teste, Chat AI (Gemini→Groq→OpenRouter, cheile SET local; de adăugat pe Vercel `traduceri-api` la deploy), P3, P4, FIN.
-- **Gate curent global:** `tsc 0 · jest 136/136 · next build OK`. 390 real + eyeball module = Roland pe prod.
+- ✅✅ **DEPLOYAT + VERIFICAT pe alias:** v29 (V5+M2+M5), v30 (Calculator), v31 (Chat AI), v32 (Teste). main = v32 (`338b99e`).
+- ✅ **CALC** Calculator (științific+grafic+matrice, math.js, grafic→editor). ✅ **CHAT** Chat AI nativ (Gemini→Groq→OpenRouter prin `/api/proxy`, KaTeX, OCR-attach, înlocuiește iframe Asistent — cheile deja pe traduceri-frontend). ✅ **TESTE** (Generează AI→editor + Corectează OCR). Toate dovedite LIVE local + gate verde.
+- **M3** dark-mode = RESPINS DEFINITIV (de marcat în PLAN_MASTER §5 la FIN).
+- ➡️ **RĂMAS:** **P3** (5 generatoare planșe — efort MARE, vanilla-JS în `public/planse/`, contract buildOne/render/selftest) + **P4** (istoric→PDF) + **FIN** (docs/memorie). §8 eyeball Roland pe prod (Calc/Chat/Teste + OCR-attach netestat local).
+- **Gate curent global:** `tsc 0 · jest 157/157 · next build OK`.
 
 ---
 
