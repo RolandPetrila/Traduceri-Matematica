@@ -103,7 +103,13 @@ export default function Home() {
           <EditorPage />
         </div>
         <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
-          <ChatPanel />
+          <ChatPanel
+            onSendToEditor={(text) => {
+              // Comută pe Editor, apoi inserează răspunsul (settle cross-tab).
+              handleTabChange("editor");
+              setTimeout(() => insertEditorText(text), 150);
+            }}
+          />
         </div>
         <div style={{ display: activeTab === "calculator" ? "block" : "none" }}>
           <CalculatorPanel

@@ -18,7 +18,7 @@
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export type ChatResult =
-  | { ok: true; reply: string; provider: string }
+  | { ok: true; reply: string; provider: string; truncated: boolean }
   | { ok: false; error: string; errors: string[] };
 
 /** Formatul payload-ului upstream: Gemini (contents/parts) vs OpenAI (messages). */
@@ -75,7 +75,10 @@ export function buildGeminiPayload(system: string, messages: ChatMessage[]) {
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     })),
-    generationConfig: { maxOutputTokens: 2048, temperature: 0.3 },
+    // 8192 (plafonul proxy MAX_TOKENS_CAP) — raspunsuri lungi (ex. 9 limite
+    // pas-cu-pas) nu se mai taie la ~2048. Backstop pt orice lungime = butonul
+    // „Continua" (vezi isTruncated). Modelele suporta 8192 (Gemini 2.5 Flash 65k).
+    generationConfig: { maxOutputTokens: 8192, temperature: 0.3 },
   };
 }
 
@@ -91,7 +94,7 @@ export function buildOpenAiPayload(
       { role: "system", content: system },
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ],
-    max_tokens: 2048,
+    max_tokens: 8192, // plafonul proxy; vezi nota din buildGeminiPayload
     temperature: 0.3,
   };
 }
@@ -110,6 +113,22 @@ export function parseReply(providerId: string, json: unknown): string {
   }
   const choice = (j?.choices as { message?: { content?: string } }[])?.[0];
   return (choice?.message?.content || "").trim();
+}
+
+/**
+ * True dacă providerul a TĂIAT răspunsul la limita de tokeni (nu a terminat).
+ * Gemini: `finishReason:"MAX_TOKENS"`. OpenAI-compatibili: `finish_reason:"length"`.
+ * UI-ul arată atunci butonul „Continuă răspunsul".
+ */
+export function isTruncated(providerId: string, json: unknown): boolean {
+  const j = json as Record<string, unknown>;
+  if (providerId === "gemini" || providerId === "gemini2") {
+    const fr = (j?.candidates as { finishReason?: string }[])?.[0]
+      ?.finishReason;
+    return fr === "MAX_TOKENS";
+  }
+  const fr = (j?.choices as { finish_reason?: string }[])?.[0]?.finish_reason;
+  return fr === "length";
 }
 
 /**
@@ -149,7 +168,13 @@ export async function sendChat(
       }
       const json = await res.json();
       const reply = parseReply(step.id, json);
-      if (reply) return { ok: true, reply, provider: step.label };
+      if (reply)
+        return {
+          ok: true,
+          reply,
+          provider: step.label,
+          truncated: isTruncated(step.id, json),
+        };
       errors.push(`${step.label}: răspuns gol`);
     } catch (e) {
       const err = e as Error;

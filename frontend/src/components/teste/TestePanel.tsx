@@ -30,7 +30,7 @@ export function TestePanel({
   onSendToEditor?: (text: string) => void;
 }) {
   return (
-    <div className="mx-auto max-w-3xl rounded-lg border border-border bg-card p-3 text-card-foreground shadow-sm">
+    <div className="w-full rounded-lg border border-border bg-card p-3 text-card-foreground shadow-sm">
       <Tabs defaultValue="genereaza" className="w-full">
         <TabsList className="mb-3 grid w-full grid-cols-2">
           <TabsTrigger value="genereaza">Generează</TabsTrigger>

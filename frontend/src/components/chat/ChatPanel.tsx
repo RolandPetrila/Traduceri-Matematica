@@ -47,12 +47,18 @@ function pagesToText(pages: OcrPageLite[]): string {
 
 type Status = "idle" | "loading" | "ok" | "error";
 
-export function ChatPanel() {
+export function ChatPanel({
+  onSendToEditor,
+}: {
+  onSendToEditor?: (text: string) => void;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [provider, setProvider] = useState<string | null>(null);
   const [note, setNote] = useState<string>("");
+  // Ultimul răspuns a fost tăiat la limita de tokeni? → arată butonul „Continuă".
+  const [truncated, setTruncated] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -67,7 +73,34 @@ export function ChatPanel() {
     if (r.ok) {
       setProvider(r.provider);
       setStatus("ok");
+      setTruncated(r.truncated);
       setMessages([...history, { role: "assistant", content: r.reply }]);
+    } else {
+      setStatus("error");
+      setNote(r.error);
+    }
+  };
+
+  // Continuă un răspuns tăiat: cere restul și-l adaugă. Mesajul-prompt „Continuă"
+  // NU se afișează (merge doar în payload) ca să nu aglomerez conversația.
+  const continueAnswer = async () => {
+    if (status === "loading") return;
+    setStatus("loading");
+    setNote("");
+    const apiHistory: ChatMessage[] = [
+      ...messages,
+      {
+        role: "user",
+        content:
+          "Continuă exact de unde ai rămas, fără să reiei ce ai scris deja.",
+      },
+    ];
+    const r = await sendChat(apiHistory, buildSystemPrompt());
+    if (r.ok) {
+      setProvider(r.provider);
+      setStatus("ok");
+      setTruncated(r.truncated);
+      setMessages([...messages, { role: "assistant", content: r.reply }]);
     } else {
       setStatus("error");
       setNote(r.error);
@@ -139,7 +172,7 @@ export function ChatPanel() {
           : "bg-muted-foreground/40";
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-8rem)] max-w-3xl flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm">
+    <div className="flex h-[calc(100dvh-8rem)] w-full flex-col rounded-lg border border-border bg-card text-card-foreground shadow-sm">
       {/* Indicator de stare providers */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 text-xs">
         <span className={`h-2.5 w-2.5 rounded-full ${dotColor}`} aria-hidden />
@@ -178,7 +211,7 @@ export function ChatPanel() {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
           >
             <div
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
@@ -188,8 +221,35 @@ export function ChatPanel() {
               }`}
               dangerouslySetInnerHTML={{ __html: renderMathText(m.content) }}
             />
+            {m.role === "assistant" && onSendToEditor && (
+              <button
+                type="button"
+                onClick={() => onSendToEditor(m.content)}
+                className="mt-1 text-xs text-chalk-yellow/80 hover:text-chalk-yellow hover:underline"
+                title="Adaugă acest răspuns în Editor (formulele devin editabile)"
+              >
+                ➕ În editor
+              </button>
+            )}
           </div>
         ))}
+        {/* Răspuns tăiat la limita de tokeni → oferă continuarea (garanție „complet"). */}
+        {truncated &&
+          status !== "loading" &&
+          messages.length > 0 &&
+          messages[messages.length - 1].role === "assistant" && (
+            <div className="flex justify-start">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={continueAnswer}
+              >
+                Continuă răspunsul ▸
+              </Button>
+            </div>
+          )}
         {note && (
           <p className="text-center text-xs text-muted-foreground">{note}</p>
         )}

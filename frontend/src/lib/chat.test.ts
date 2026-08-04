@@ -2,6 +2,7 @@ import {
   buildGeminiPayload,
   buildOpenAiPayload,
   parseReply,
+  isTruncated,
   sendChat,
   CHAIN,
 } from "./chat-providers";
@@ -39,6 +40,27 @@ describe("chat-providers · payloads", () => {
     expect(parseReply("gemini", {})).toBe("");
   });
 
+  it("isTruncated detectează tăierea la limita de tokeni (ambele formate)", () => {
+    // Gemini: finishReason MAX_TOKENS = tăiat; STOP = complet
+    expect(
+      isTruncated("gemini", { candidates: [{ finishReason: "MAX_TOKENS" }] }),
+    ).toBe(true);
+    expect(
+      isTruncated("gemini2", { candidates: [{ finishReason: "MAX_TOKENS" }] }),
+    ).toBe(true);
+    expect(
+      isTruncated("gemini", { candidates: [{ finishReason: "STOP" }] }),
+    ).toBe(false);
+    // OpenAI: finish_reason length = tăiat; stop = complet
+    expect(
+      isTruncated("groq", { choices: [{ finish_reason: "length" }] }),
+    ).toBe(true);
+    expect(isTruncated("groq", { choices: [{ finish_reason: "stop" }] })).toBe(
+      false,
+    );
+    expect(isTruncated("groq", {})).toBe(false);
+  });
+
   it("CHAIN = Gemini → Gemini2 → Cerebras → Groq → Mistral → Mistral2 (fără OpenRouter mort)", () => {
     expect(CHAIN.map((c) => c.id)).toEqual([
       "gemini",
@@ -54,9 +76,9 @@ describe("chat-providers · payloads", () => {
     );
     expect(CHAIN.find((c) => c.id === "cerebras")?.model).toBe("gpt-oss-120b");
     // fiecare treaptă are format explicit (gemini vs openai)
-    expect(CHAIN.every((c) => c.format === "gemini" || c.format === "openai")).toBe(
-      true,
-    );
+    expect(
+      CHAIN.every((c) => c.format === "gemini" || c.format === "openai"),
+    ).toBe(true);
   });
 });
 
@@ -81,6 +103,22 @@ describe("sendChat · fallback + instrumentare", () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.provider).toBe("Gemini Flash");
     expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(1);
+    if (r.ok) expect(r.truncated).toBe(false); // STOP implicit = complet
+  });
+
+  it("marchează truncated=true când răspunsul e tăiat (MAX_TOKENS)", async () => {
+    const cut = {
+      candidates: [
+        {
+          content: { parts: [{ text: "a) ..." }] },
+          finishReason: "MAX_TOKENS",
+        },
+      ],
+    };
+    global.fetch = jest.fn().mockResolvedValueOnce(mkRes(200, cut));
+    const r = await sendChat(q, "SYS");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.truncated).toBe(true);
   });
 
   it("sare peste un provider picat și reușește pe următorul", async () => {
