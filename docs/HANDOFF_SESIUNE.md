@@ -33,7 +33,16 @@ Roland (capturi TEST XI): AI răspundea doar a-c+partial d (tăiat la 2048 tok);
 - ✅ **v35 — randare formule fallback** (commit `94ceddf`): **descoperit la eyeball v34** — Cerebras/Groq/Mistral scriu `\(..\)`/`\[..\]`+markdown, pe care `renderMathText` (doar `$..$`) NU le randa → math brut când răspunde un fallback. Fix: `normalizeMathDelimiters()` partajat (`\[..\]`→`$$`, `\(..\)`→`$`) + markdown minim, folosit ȘI la chat ȘI la inserarea în editor (`EditorTiptap.textToContent`). `math-html.test.ts` nou.
 - ⚠️ **Onest (R3):** pe v35 Gemini a răspuns la re-test (randat perfect); randarea `\[..\]` a unui fallback nu a fost RE-declanșată live pe v35 (dar: defectul văzut direct pe v34 + unit-teste 7/7 + cod deployat). Butonul „Continuă" (trunchiere) — logică unit-testată, nedeclanșat live (răspunsurile au încăput în 8192).
 
-### ▶️ RĂMAS
+### ▶️ P3/P4 PLANȘE — în curs (2026-08-05)
+
+Modul `frontend/public/planse/` (vanilla-JS, iframe). Contract generator (ca `labirint.js`): `buildOne/render/renderPages/selftest/signature` pe `window.PlanseGen.<id>`. Wiring nou = `index.html` (script) + `app.js` (subtab `ready` + `mount<Name>` + `injectCss` + `renderPanel`) + `sw.js` precache + `selftest.html`. Gate = **selftest** (Node + `selftest.html` in-app, `__SELFTEST_OK__`), NU tsc/jest (static). Ordine: căutare→unește→dictare→numere→integramă→P4.
+
+- ✅ **Căutare** (word-search, `cautare.js`) — commit `0f897ae`. 5 teme × 3 dif, selftest 60 planșe verde, dovedit LIVE. **NEDEPLOYAT.**
+- ✅ **Unește** (connect-the-dots, `uneste.js`) — commit `32f4360`. 7 forme × 3 dif (SVG), selftest verde, dovedit LIVE (stea 20 pct). **NEDEPLOYAT.**
+- ⏭️ **RĂMAS P3:** **dictare** (dictare grafică pe grilă) · **numere** (careu 3×3 multi-crossing — **SOLVER soluție-unică**) · **integramă** (aritmetică — **SOLVER soluție-unică**). Cele 2 cu solver = cele mai grele (atenție corectitudine). + **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage).
+- **Deploy P3/P4:** grupat, cu confirmarea Roland; bump `CACHE_VERSION`; noile fișiere sunt DEJA în `sw.js` precache. Uneltele: `scratchpad/planse_*.js` (harness Node selftest).
+
+### ▶️ RĂMAS (Chat AI)
 
 - 🔧 **Gol cunoscut (neblocant, advisor):** `TestePanel` (căile Generează `:79` + Corectează `:263`) folosește `sendChat` dar **ignoră `truncated`** — un test lung (10 itemi + barem) care atinge 8192 tok s-ar tăia MUT (aceeași clasă de defect ca la Chat, dar fără buton „Continuă"). Beneficiază deja de 8192 + `normalizeMathDelimiters`. De adăugat handling trunchiere când se atinge modulul (nu merită deploy separat acum).
 - ➡️ **URMĂTORUL:** Prioritatea #2 = **P3** (5 generatoare planșe, numere/integramă cu solver soluție-unică) + **P4** (istoric→PDF). Vezi `PLAN_RUNDA_MODULE_2026-08-04.md` §Etapa 4 + `PROMPT_SESIUNE_NOUA_2026-08-05.md` §Prioritate #2. + acțiune manuală Roland: oprește emailurile Render (Delete Service).
