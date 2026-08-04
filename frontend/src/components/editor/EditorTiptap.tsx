@@ -38,6 +38,7 @@ import { INITIAL } from "./editor-initial";
 import {
   setEditorCommandHandler,
   setEditorImageInserter,
+  setEditorTextInserter,
   type EditorCommandId,
 } from "@/lib/editor-commands";
 
@@ -205,7 +206,48 @@ function EditorShell({ editor }: { editor: Editor | null }) {
       whenReady();
     };
     setEditorImageInserter(insertImg);
-    return () => setEditorImageInserter(null);
+
+    // Text (ex. test generat) → paragrafe, cu $...$ transformat în inlineMath.
+    const textToContent = (text: string) =>
+      text.split(/\r?\n/).map((line) => {
+        const content: Record<string, unknown>[] = [];
+        const re = /\$([^$]+)\$/g;
+        let last = 0;
+        let mm: RegExpExecArray | null;
+        while ((mm = re.exec(line)) !== null) {
+          if (mm.index > last)
+            content.push({ type: "text", text: line.slice(last, mm.index) });
+          content.push({ type: "inlineMath", attrs: { latex: mm[1] } });
+          last = re.lastIndex;
+        }
+        if (last < line.length)
+          content.push({ type: "text", text: line.slice(last) });
+        return content.length
+          ? { type: "paragraph", content }
+          : { type: "paragraph" };
+      });
+    const insertTxt = (text: string) => {
+      const doInsert = () =>
+        editor.chain().focus().insertContent(textToContent(text)).run();
+      const dom0 = editor.view?.dom as HTMLElement | undefined;
+      if (dom0 && dom0.offsetParent !== null) {
+        doInsert();
+        return;
+      }
+      let tries = 0;
+      const whenReady = () => {
+        const dom = editor.view?.dom as HTMLElement | undefined;
+        if (dom && dom.offsetParent !== null) window.setTimeout(doInsert, 150);
+        else if (tries++ < 30) requestAnimationFrame(whenReady);
+        else doInsert();
+      };
+      whenReady();
+    };
+    setEditorTextInserter(insertTxt);
+    return () => {
+      setEditorImageInserter(null);
+      setEditorTextInserter(null);
+    };
   }, [editor]);
 
   // Auto-fit al formulelor lungi pe foaie (#2): le micșorează cât să încapă în

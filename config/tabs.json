@@ -9,6 +9,7 @@
       "icon": "🧮",
       "kind": "react"
     },
+    { "id": "teste", "label": "Teste", "icon": "🧪", "kind": "react" },
     { "id": "istoric", "label": "Istoric", "icon": "📋" },
     {
       "id": "planse",

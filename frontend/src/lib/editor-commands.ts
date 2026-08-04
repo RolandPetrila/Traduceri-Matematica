@@ -49,3 +49,15 @@ export function setEditorImageInserter(fn: ImageInserter | null): void {
 export function insertEditorImage(src: string, alt?: string): void {
   imageInserter?.(src, alt);
 }
+
+/** Punte pentru inserarea de TEXT în editor din alt modul (ex. testul generat). */
+type TextInserter = (text: string) => void;
+let textInserter: TextInserter | null = null;
+
+export function setEditorTextInserter(fn: TextInserter | null): void {
+  textInserter = fn;
+}
+
+export function insertEditorText(text: string): void {
+  textInserter?.(text);
+}

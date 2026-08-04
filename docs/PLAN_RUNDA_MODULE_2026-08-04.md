@@ -60,7 +60,7 @@ _(Checkpoint deploy 1: V5+M2+M5, cu confirmare.)_
 
 _(Checkpoint deploy 2: Calculator, cu confirmare.)_
 
-- [ ] **TESTE. Modul Corectare/Generare teste** — nou de la zero. Generare fișe/teste (pe clase + teme din biblioteca math) + corectare (poate reutiliza OCR + Chat AI pt analiză). Mock §17 (definire scope exact la start: ce generează, ce corectează). Efort: MARE.
+- [x] **TESTE. Modul Corectare/Generare teste** — DONE 2026-08-04. Mock §17 aprobat. `lib/test-generator.ts` (teme din bibliotecă per clasă + `buildGeneratePrompt`/`buildCorrectPrompt`) + `components/teste/TestePanel.tsx` (2 sub-taburi: **Generează** AI pe clasă+temă+dificultate+barem → „Trimite în Editor"; **Corectează** poză→OCR→AI greșeli+notă) + `lib/math-html.ts` (renderMathText partajat, refactorizat și `ChatPanel`) + punte `editor-commands.insertEditorText` (+ `EditorTiptap`: `$...$`→inlineMath) + tab „Teste" ×2 tabs.json + wiring page.tsx. Reuse lanț AI + OCR + editor. Gate: **tsc 0 · jest 157/157 (+6) · build OK**. **LIVE:** generat test Radicali VII (Gemini) → „Trimite în Editor" = √12/27/75 + „Raționalizați/Comparați" ca formule în editor. ⚠️ Corectează-OCR = eyeball prod (backend OCR absent local). Efort: MARE.
 
 _(Checkpoint deploy 3: Teste, cu confirmare.)_
 

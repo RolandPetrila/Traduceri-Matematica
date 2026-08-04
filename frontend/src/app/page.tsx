@@ -6,7 +6,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import IframeModule from "@/components/layout/IframeModule";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
-import { insertEditorImage } from "@/lib/editor-commands";
+import { insertEditorImage, insertEditorText } from "@/lib/editor-commands";
 
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
@@ -25,6 +25,13 @@ const CalculatorPanel = dynamic(
   () =>
     import("@/components/calculator/CalculatorPanel").then((m) => ({
       default: m.CalculatorPanel,
+    })),
+  { ssr: false },
+);
+const TestePanel = dynamic(
+  () =>
+    import("@/components/teste/TestePanel").then((m) => ({
+      default: m.TestePanel,
     })),
   { ssr: false },
 );
@@ -104,6 +111,14 @@ export default function Home() {
               // Comută pe Editor, apoi inserează graficul ca figură (settle cross-tab).
               handleTabChange("editor");
               setTimeout(() => insertEditorImage(src, alt), 150);
+            }}
+          />
+        </div>
+        <div style={{ display: activeTab === "teste" ? "block" : "none" }}>
+          <TestePanel
+            onSendToEditor={(text) => {
+              handleTabChange("editor");
+              setTimeout(() => insertEditorText(text), 150);
             }}
           />
         </div>

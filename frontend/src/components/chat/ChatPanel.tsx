@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import katex from "katex";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sendChat, CHAIN, type ChatMessage } from "@/lib/chat-providers";
 import { buildSystemPrompt } from "@/lib/chat-context";
+import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
 
@@ -15,37 +15,6 @@ import { API_URL } from "@/lib/api-url";
  * răspunsuri randate KaTeX, cunoașterea aplicației (system-prompt) și atașare de
  * imagini cu OCR (pozezi tema → analiză/corectare). Temă verde (tablă+cretă).
  */
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-/** Text cu $...$ / $$...$$ → HTML cu KaTeX (restul escape-uit; \n → <br>). */
-function renderMathText(text: string): string {
-  const re = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
-  const out: string[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  const plain = (t: string) => escapeHtml(t).replace(/\n/g, "<br>");
-  while ((m = re.exec(text)) !== null) {
-    out.push(plain(text.slice(last, m.index)));
-    const tex = m[1] ?? m[2] ?? "";
-    try {
-      out.push(
-        katex.renderToString(tex, {
-          throwOnError: false,
-          strict: false,
-          displayMode: m[1] != null,
-        }),
-      );
-    } catch {
-      out.push(escapeHtml(m[0]));
-    }
-    last = re.lastIndex;
-  }
-  out.push(plain(text.slice(last)));
-  return out.join("");
-}
 
 type OcrSectionLite = {
   content?: string;
