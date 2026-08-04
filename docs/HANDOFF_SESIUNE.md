@@ -35,6 +35,7 @@ Roland (capturi TEST XI): AI răspundea doar a-c+partial d (tăiat la 2048 tok);
 
 ### ▶️ RĂMAS
 
+- 🔧 **Gol cunoscut (neblocant, advisor):** `TestePanel` (căile Generează `:79` + Corectează `:263`) folosește `sendChat` dar **ignoră `truncated`** — un test lung (10 itemi + barem) care atinge 8192 tok s-ar tăia MUT (aceeași clasă de defect ca la Chat, dar fără buton „Continuă"). Beneficiază deja de 8192 + `normalizeMathDelimiters`. De adăugat handling trunchiere când se atinge modulul (nu merită deploy separat acum).
 - ➡️ **URMĂTORUL:** Prioritatea #2 = **P3** (5 generatoare planșe, numere/integramă cu solver soluție-unică) + **P4** (istoric→PDF). Vezi `PLAN_RUNDA_MODULE_2026-08-04.md` §Etapa 4 + `PROMPT_SESIUNE_NOUA_2026-08-05.md` §Prioritate #2. + acțiune manuală Roland: oprește emailurile Render (Delete Service).
 
 ---
