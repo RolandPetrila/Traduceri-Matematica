@@ -70,6 +70,8 @@ _(Checkpoint deploy 3: Teste, cu confirmare.)_
 
 _(Checkpoint deploy 3: Calculator+Chat, cu confirmare + env keys.)_
 
+> **🔧 FOLLOW-UP ROBUSTEȚE CHAT (2026-08-05, DEPLOYAT v33)** — Prioritatea #1 din `PROMPT_SESIUNE_NOUA_2026-08-05.md`. Diagnostic pe prod: OpenRouter `:free` = 404 (retras) = ultimul fallback mort; ceilalți 6 provideri = 200. Fix: `CHAIN` extins la 6 free (Gemini→Gemini2→Cerebras→Groq→Mistral→Mistral2, OpenRouter scos), `sendChat` colectează toate erorile + timeout/provider, `RL_MAX` 30→120. Gate `tsc0·jest160·build`. Commit `a52628d`, deploy `dpl_CX4uYEuPMPy41BwQnEdyYuqNpth7`, smoke live **12/12 OK**. Detalii: `HANDOFF_SESIUNE.md` §2026-08-05 + memoria `finding_chat_openrouter_free_404_2026_08_05`.
+
 ### Etapa 4 — Planșe
 
 - [ ] **P3. 5 generatoare** (numere/integramă/unește/dictare/căutare) + `data/*.json`, reutilizând scheletul `frontend/public/planse/lib/` (prng/render/signature). Precache în `sw.js` (offline). Efort: MARE.

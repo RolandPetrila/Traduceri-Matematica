@@ -1,6 +1,20 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-04 (**RUNDĂ MODULE în curs** — vezi `docs/PLAN_RUNDA_MODULE_2026-08-04.md`). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-05 (**PRIORITATE #1 Chat AI = REPARAT + DEPLOYAT v33**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-05) — Chat AI robustețe = REZOLVAT + DEPLOYAT v33
+
+**Prioritatea #1 din `PROMPT_SESIUNE_NOUA_2026-08-05.md` (Chat AI moare după ~10 mesaje) = ÎNCHISĂ.** Diagnostic pe DOVADĂ (nu extindere oarbă), fix confirmat de Roland, deployat + verificat live.
+
+- 🔬 **DIAGNOSTIC pe prod (7 probe `/api/proxy`, read-only):** 6 provideri = **200** (gemini/gemini2/groq/cerebras/mistral/mistral2 — env-ul e SĂNĂTOS, 0 chei lipsă). **OpenRouter `meta-llama/llama-3.3-70b-instruct:free` = 404 „unavailable for free"** — slug-ul `:free` a fost retras → ultimul fallback era MORT. „Failed to fetch" din screenshot = artefact **localhost** (`next start` omorât), NU problemă prod (pe prod fiecare apel dă status HTTP curat; SW passthrough nu fabrică „Failed to fetch"). RL_MAX=30 nu era cauza (Gemini sănătos = 1 apel/mesaj, nu 3).
+- ✅ **FIX (Roland: „Fix complet" + „Scoate OpenRouter din lanț"):** `chat-providers.ts` — `CHAIN` = **Gemini→Gemini2→Cerebras→Groq70B→Mistral→Mistral2** (6 free, 0 OpenRouter, **0 chei noi**); `sendChat` colectează **TOATE** erorile (nu doar ultima) → următoarea pică e auto-diagnosticabilă; `AbortController` timeout 20s/provider; `parseReply` recunoaște `gemini2`. `proxy.js` — **RL_MAX 30→120**. 3 teste noi `sendChat`.
+- ✅ **Gate:** `tsc 0 · jest 160/160 (+3) · next build OK`. Commit `a52628d`. Doar frontend (`traduceri-api` NEATINS).
+- ✅✅ **DEPLOYAT v33-20260805a** (`traduceri-frontend`, `dpl_CX4uYEuPMPy41BwQnEdyYuqNpth7`, READY/production). **Alias verificat:** `sw.js`=v33, homepage 200. **SMOKE LIVE pe prod:** conversație **12/12 mesaje OK, 0 eșuate** (istoric crescând, ca la user real) → **NU mai moare** la ~10 mesaje. `main` ff la `a52628d` (=prod).
+- ⚠️ **Onest (R3):** cele 12 mesaje au mers toate pe Gemini (RPM neatins în rulare) → **fallback-ul nu a fost declanșat LIVE** acum, dar e dovedit prin cele 6 probe 200 individuale + testele unitare. Dacă Gemini/Groq pică, cele 4 plase vii (gemini2/cerebras/mistral/mistral2) preiau.
+- 📝 **Notat pt viitor (advisor, neblocant):** proxy-ul (`proxy.js:261`) nu are AbortController pe fetch-ul UPSTREAM → în worst-case un mesaj = 3×60s server-side; relevant la „durată maximă" dacă apare. Upstash e comentat (RL in-memory per-instanță) — OK pt single-user.
+- ➡️ **URMĂTORUL:** Prioritatea #2 = **P3** (5 generatoare planșe, numere/integramă cu solver soluție-unică) + **P4** (istoric→PDF). Vezi `PLAN_RUNDA_MODULE_2026-08-04.md` §Etapa 4 + `PROMPT_SESIUNE_NOUA_2026-08-05.md` §Prioritate #2. + acțiune manuală Roland: oprește emailurile Render (Delete Service).
 
 ---
 
