@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { sendChat } from "@/lib/chat-providers";
 import { buildSystemPrompt } from "@/lib/chat-context";
@@ -12,10 +11,12 @@ import { API_URL } from "@/lib/api-url";
 import {
   CLASSES,
   DIFFICULTIES,
+  ITEM_TYPES,
   classGroups,
   buildGeneratePrompt,
   buildCorrectPrompt,
   type Difficulty,
+  type ItemTypeKey,
 } from "@/lib/test-generator";
 
 /**
@@ -49,6 +50,49 @@ export function TestePanel({
 
 /* ──────────────────────────────── Generează ──────────────────────────────── */
 
+const DEFAULT_COUNTS: Record<ItemTypeKey, number> = {
+  grila: 5,
+  completare: 3,
+  probleme: 2,
+  adevfals: 0,
+  corespondenta: 0,
+};
+
+/** Stepper compact − N + pentru numărul de itemi dintr-un tip (0..15). */
+function Stepper({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const btn =
+    "flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background text-base leading-none disabled:opacity-40";
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        aria-label="scade"
+        className={btn}
+        disabled={value <= 0}
+        onClick={() => onChange(value - 1)}
+      >
+        −
+      </button>
+      <span className="w-6 text-center tabular-nums">{value}</span>
+      <button
+        type="button"
+        aria-label="crește"
+        className={btn}
+        disabled={value >= 15}
+        onClick={() => onChange(value + 1)}
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
 function GenerateTab({
   onSendToEditor,
 }: {
@@ -57,7 +101,8 @@ function GenerateTab({
   const [clasa, setClasa] = useState("VII");
   const groups = useMemo(() => classGroups(clasa), [clasa]);
   const [tema, setTema] = useState("");
-  const [count, setCount] = useState("10");
+  const [counts, setCounts] =
+    useState<Record<ItemTypeKey, number>>(DEFAULT_COUNTS);
   const [diff, setDiff] = useState<Difficulty>("mediu");
   const [answers, setAnswers] = useState(false);
   const [result, setResult] = useState("");
@@ -65,16 +110,24 @@ function GenerateTab({
   const [note, setNote] = useState("");
 
   const effectiveTema = tema || groups[0] || "diverse";
+  const total = ITEM_TYPES.reduce((s, t) => s + (counts[t.key] || 0), 0);
+
+  const setCount = (key: ItemTypeKey, n: number) =>
+    setCounts((c) => ({ ...c, [key]: Math.max(0, Math.min(15, n)) }));
 
   const generate = async () => {
     setStatus("loading");
     setNote("Generez testul…");
+    const typeCounts = ITEM_TYPES.map((t) => ({
+      key: t.key,
+      n: counts[t.key] || 0,
+    })).filter((x) => x.n > 0);
     const prompt = buildGeneratePrompt(
       clasa,
       effectiveTema,
-      parseInt(count, 10) || 5,
       diff,
       answers,
+      typeCounts,
     );
     const r = await sendChat(
       [{ role: "user", content: prompt }],
@@ -92,7 +145,7 @@ function GenerateTab({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2">
         <label className="flex flex-col gap-1 text-xs">
           Clasa
           <select
@@ -110,7 +163,7 @@ function GenerateTab({
             ))}
           </select>
         </label>
-        <label className="col-span-1 flex flex-col gap-1 text-xs sm:col-span-2">
+        <label className="col-span-2 flex flex-col gap-1 text-xs">
           Temă
           <select
             value={effectiveTema}
@@ -125,16 +178,29 @@ function GenerateTab({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs">
-          Nr. itemi
-          <Input
-            value={count}
-            onChange={(e) => setCount(e.target.value)}
-            inputMode="numeric"
-            className="h-9 text-sm"
-          />
-        </label>
       </div>
+      <fieldset className="rounded-md border border-border p-2">
+        <legend className="px-1 text-xs text-muted-foreground">
+          Tipuri de item — alege câți din fiecare
+        </legend>
+        <div className="flex flex-col gap-1.5">
+          {ITEM_TYPES.map((t) => (
+            <div
+              key={t.key}
+              className="flex items-center justify-between gap-2 text-sm"
+            >
+              <span>{t.label}</span>
+              <Stepper
+                value={counts[t.key] || 0}
+                onChange={(n) => setCount(t.key, n)}
+              />
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-right text-xs font-medium">
+          Total: {total} {total === 1 ? "item" : "itemi"}
+        </p>
+      </fieldset>
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="text-muted-foreground">Dificultate:</span>
         {DIFFICULTIES.map((d) => (
@@ -162,9 +228,13 @@ function GenerateTab({
         size="sm"
         className="h-9"
         onClick={generate}
-        disabled={status === "loading"}
+        disabled={status === "loading" || total === 0}
       >
-        {status === "loading" ? "Generez…" : "Generează testul"}
+        {status === "loading"
+          ? "Generez…"
+          : total === 0
+            ? "Alege cel puțin un tip de item"
+            : "Generează testul"}
       </Button>
       {note && (
         <p

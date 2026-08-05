@@ -5,6 +5,17 @@
 
 ---
 
+## ▶️ REIA DE AICI (2026-08-06, cerință nouă Roland) — Teste: selecție tipuri de item (NEDEPLOYAT)
+
+**Cerință:** la „Teste → Generează" să pot alege tipurile de item incluse (alegere multiplă, completare, rezolvare de probleme). Decizii Roland (AskUserQuestion): **număr per tip** (stepper, total = suma; înlocuiește câmpul unic „Nr. itemi") + **5 tipuri** (cele 3 + Adevărat/Fals + Corespondență).
+
+- ✅ `lib/test-generator.ts`: export `ITEM_TYPES` (5 tipuri, fiecare cu `instr` = descrierea de format pt promptul AI) + `TypeCount`. `buildGeneratePrompt` **semnătură nouă** `(clasa, tema, difficulty, withAnswers, typeCounts[])` — construiește promptul cu breakdown per tip (secțiuni + numerotare continuă + barem per tip); doar tipurile cu n>0 incluse; fallback 5 probleme dacă nimic; clamp 0..15/tip.
+- ✅ `components/teste/TestePanel.tsx` (GenerateTab): steppere per tip + total live + buton dezactivat la total 0 („Alege cel puțin un tip de item"); scos câmpul unic + importul `Input`. Output-ul AI rămâne text liber (fără parsare nouă) → randare/„trimite în editor" neatinse.
+- ✅ **Gate:** `tsc 0 · jest 172/172 (+3, test-generator rescris pt semnătura nouă) · next build OK`. **Dovedit LIVE local** (next start :3330 + Chrome MCP): 5 steppere, total live (10→3→0), buton dezactivat la 0, temă corectă.
+- ⚠️ **NEVERIFICAT (onest, R3):** că AI-ul **onorează** tipurile cerute — necesită apel real (fără chei local; `.env` doar pe Vercel). Promptul e unit-testat că CONȚINE instrucțiunile corecte; onorarea = eyeball pe PROD după deploy. **NEDEPLOYAT** (aștept „deploy").
+
+---
+
 ## ▶️ REIA DE AICI (2026-08-06 seara) — P3 Planșe 4/5: Numere (crossmath SOLVER) LIVRAT + DEPLOY GRUPAT
 
 **Generatorul `numere` (careu crossmath 3×3 multi-crossing, primul cu SOLVER soluție-unică) = livrat + gate verde + dovedit LIVE local.** Deployat GRUPAT cu dictare (v37) — vezi statusul deploy la finalul acestui bloc.
