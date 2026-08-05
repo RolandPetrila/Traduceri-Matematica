@@ -21,7 +21,7 @@
 - 🔧 **Harness gate (UNTRACKED):** `scratchpad/planse_numere.js`. Rulează: `node scratchpad/planse_numere.js`.
 - ⏭️ **RĂMAS P3/P4:** **integramă** (aritmetică — **SOLVER soluție-unică**, aceeași disciplină: generator↔verificator independent) · **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage).
 
-**DEPLOY GRUPAT v37 (dictare + numere):** _(status completat după verificarea aliasului mai jos)_
+**✅✅ DEPLOYAT GRUPAT v37 (dictare + numere) — VERIFICAT pe alias (2026-08-06).** `cd frontend && vercel deploy --prod` (frontend-only `traduceri-frontend`, `dpl_FHa4AaoCtczMfcQ3V86FDey3qCnQ`, READY/production). **Aliasul `traduceri-frontend.vercel.app` servește v37:** `sw.js`=`v37-20260806a`; homepage / `/planse/index.html` / `/planse/generators/{numere,dictare}.js` / `/planse/app.js` / `/editor-nou` = toate **200**; `numere.js` conține solverul. **GATE PE PROD VERDE:** `selftest.html` pe alias → `__SELFTEST_OK__===true`, 7/7 secțiuni (incl. §6 dictare + §7 numere), 0 fail, oracolul labirint Python neatins. Backend `traduceri-api` NEATINS (planșe = static frontend). **RĂMAS: eyeball Roland pe telefon** (print PDF real + offline pentru dictare/numere).
 
 ---
 
