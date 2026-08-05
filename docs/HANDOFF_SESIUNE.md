@@ -1,6 +1,7 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-05 (**Chat AI: robustețe + răspunsuri complete + UI = DEPLOYAT v33→v35**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-05 (**Chat AI v33→v35 + P3 Planșe 2/5 = DEPLOYAT v36**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-06.md`** (continuă P3/P4: dictare→numere→integramă→P4).
 
 ---
 
