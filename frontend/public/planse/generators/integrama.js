@@ -1,19 +1,33 @@
-/* integrama.js — generator „Integramă" (lanț de „mori de vânt": ecuații scurte
- * `a op b = c` care se ÎNCRUCIȘEAZĂ într-o celulă centrală comună, toate 4
- * operațiile +,−,×,÷ prezente per moară). Contract §5 (ca numere.js/dictare.js):
- *   buildOne(params, seed) -> item
+/* integrama.js — generator „Integramă" (ecuații scurte `a op b = c` care se
+ * ÎNCRUCIȘEAZĂ într-o celulă centrală comună — o „moară" — toate 4 operațiile
+ * +,−,×,÷ prezente per moară). Contract §5 (ca numere.js/dictare.js):
+ *   buildOne(params, seed) -> item   // params = {forma, dificultate}
  *   render(item, mm?) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
  *   renderPages(item, nr, total, mm?) -> { puzzle, answer }
  *   selftest() -> { ok, detalii }
  *   signature(item) -> string
  *
- * FORMA (confirmată de Roland via mock, 2026-08-07): un lanț de N „mori de
- * vânt". Fiecare moară are un centru X_i atins de 4 ecuații scurte (fiecare cu
- * O SINGURĂ operație): SUS (p op q = X_i), JOS (X_i op r = s), STÂNGA (link cu
- * moara anterioară / frunze proprii dacă e prima), DREAPTA (link cu moara
- * următoare / frunze proprii dacă e ultima). Morile Ușor/Standard/Greu = 1/2/3
- * (4/7/10 ecuații). Coloana STÂNGA-DREAPTA formează o „coloană vertebrală"
- * orizontală unică: a0 op0 b0 = X1 op1 b1 = X2 op2 b2 = ... = X_n opN bFinal = rFinal.
+ * MOTOR (comun tuturor formelor, topologie-agnostic — verificat 2026-08-08):
+ * `buildRaw` construiește un LANȚ ABSTRACT de n mori (X[1..n], link-uri,
+ * brațe U/D) folosind DOAR rolurile abstracte {L,R,U,D} per moară — NU știe
+ * nimic despre poziții pe grilă. `countSolutions`/`canForcePropagate`/`evalOp`
+ * la fel: iau `structure.equations` ca DATE, nu topologie hardcodată.
+ * SINGURUL lucru care diferă între forme e EMBEDDING-UL (row,col) al acestui
+ * lanț abstract — funcțiile `cellsFromRaw*`/`equationLayout*` per formă.
+ *
+ * FORME (catalog, ca la dictare.js/uneste.js — selector „Formă" paralel cu
+ * „Dificultate"; per dificultate se alege o formă din DIFF[forma]):
+ *  - „moara" — lanț DREPT (confirmată de Roland via mock, 2026-08-07). Fiecare
+ *    moară: SUS (p op q = X_i), JOS (X_i op r = s), STÂNGA/DREAPTA = link cu
+ *    moara vecină (sau frunze proprii la capete). Coloană vertebrală
+ *    orizontală: a0 op0 b0 = X1 op1 b1 = X2 ... = X_n opN bFinal = rFinal.
+ *  - „zigzag" — ACELAȘI lanț abstract, dar coloana vertebrală face 1-2 coturi
+ *    de 90° (dreapta→jos, posibil →dreapta din nou la Greu) în loc să rămână
+ *    dreaptă (confirmată de Roland via mock, 2026-08-08). La fiecare moară,
+ *    cele 4 roluri L/R/U/D ocupă cele 4 direcții cardinale N/E/S/V — L/R
+ *    "ocupă" direcția de intrare/ieșire a coloanei vertebrale LOCALE (poate
+ *    diferi de E/V dacă moara e pivot), iar U/D ocupă cele 2 direcții
+ *    RĂMASE. Vezi `DIR_ZZ` + `cellsFromRawZigzag` pt algoritmul complet.
  *
  * CORECTITUDINE = SOLUȚIE UNICĂ:
  *  - Domeniul e TIPĂRIT („toate numerele din desen sunt de la 1 la N", inclusiv
@@ -52,11 +66,35 @@
   REV_OP[DIV] = "/";
   var ALL_OPS = ["+", "-", "*", "/"];
 
-  // Dificultate: n mori înlănțuite, domeniu 1..N, nr celule ascunse, lățime col (mm).
+  // ---------- direcții cardinale (folosite de geometria „zigzag") ----------
+  var DIRV = { N: [-1, 0], E: [0, 1], S: [1, 0], W: [0, -1] };
+  var DIR_ORDER = ["N", "E", "S", "W"]; // ordine canonică -> asignare deterministă U/D
+  function oppositeDir(d) {
+    return { N: "S", S: "N", E: "W", W: "E" }[d];
+  }
+
+  // Dificultate per FORMĂ: n mori (înlănțuite/pivotate), domeniu 1..N, nr
+  // celule ascunse, lățime col (mm, DOAR la „moara" — „zigzag" își calculează
+  // dinamic dimensiunile grilei, vezi gridHtmlZigzag).
   var DIFF = {
-    Usor: { n: 1, N: 12, hide: 3, cellMM: 16, opMM: 9 },
-    Standard: { n: 2, N: 16, hide: 5, cellMM: 13, opMM: 8 },
-    Greu: { n: 3, N: 20, hide: 7, cellMM: 10, opMM: 7 },
+    moara: {
+      Usor: { n: 1, N: 12, hide: 3, cellMM: 16, opMM: 9 },
+      Standard: { n: 2, N: 16, hide: 5, cellMM: 13, opMM: 8 },
+      Greu: { n: 3, N: 20, hide: 7, cellMM: 10, opMM: 7 },
+    },
+    // dirOut[i] = direcția în care pleacă legătura DIN moara i (spre moara
+    // i+1, sau spre blocul final la ultima). dirOut[1] pornește mereu E
+    // (blocul inițial e mereu la vest de moara 1, ca la „moara").
+    zigzag: {
+      Usor: { n: 2, N: 12, hide: 3, dirOut: ["E", "S"] },
+      Standard: { n: 3, N: 16, hide: 5, dirOut: ["E", "S", "S"] },
+      Greu: { n: 4, N: 20, hide: 7, dirOut: ["E", "S", "S", "E"] },
+    },
+  };
+  var FORME = Object.keys(DIFF);
+  var FORM_LABELS = {
+    moara: "Moară de vânt (lanț drept)",
+    zigzag: "Zigzag (coloană cotită)",
   };
 
   // ---------- aritmetică (regula puzzle-ului; testată cu oracol în selftest) ----------
@@ -277,14 +315,17 @@
     };
   }
 
-  // Construiește harta de celule + lista de ecuații din structura brută.
-  // Coordonate: coloana centrului morii i = 4*i. Rând spine = 4. Braț SUS =
-  // rândurile 0-3 (p,op,q,=) pe coloana centrului. Braț JOS = rândurile 5-8
-  // (op,r,=,s). Coloana 0-3 = blocul inițial (a0,op0,b0,=).
-  function cellsFromRaw(raw) {
+  // Construiește harta de celule + lista de ecuații din structura brută
+  // (forma „moara" — lanț DREPT). Coordonate: coloana centrului morii i =
+  // 4*i. Rând spine = 4. Braț SUS = rândurile 0-3 (p,op,q,=) pe coloana
+  // centrului. Braț JOS = rândurile 5-8 (op,r,=,s). Coloana 0-3 = blocul
+  // inițial (a0,op0,b0,=). `armCells[i]` = {L,R,U,D: opCellKey} — folosit
+  // GENERIC de checkItem (nu hardcodează poziții per formă).
+  function cellsFromRawMoara(raw) {
     var n = raw.n;
     var cells = {}; // key -> {kind:'num'|'op', value, op}
     var equations = [];
+    var armCells = {};
 
     function setNum(r, c, v) {
       cells[key(r, c)] = { kind: "num", value: v };
@@ -306,16 +347,20 @@
 
     for (var i = 1; i <= n; i++) {
       var c = 4 * i;
+      armCells[i] = {};
+      armCells[i].L = key(4, c - 3); // = op-ul link-ului DINSPRE moara i-1 (sau bloc inițial)
       // SUS: rând0=p, rând1=op, rând2=q, rând3="=" , rând4=X_i (deja setat)
       setNum(0, c, raw.upLeaf1[i]);
       setOp(1, c, armOps(raw.perm, i).U);
       setNum(2, c, raw.upLeaf2[i]);
       eq(key(0, c), key(2, c), key(4, c), armOps(raw.perm, i).U);
+      armCells[i].U = key(1, c);
       // JOS: rând4=X_i, rând5=op, rând6=r, rând7="=", rând8=s
       setOp(5, c, armOps(raw.perm, i).D);
       setNum(6, c, raw.downLeaf1[i]);
       setNum(8, c, raw.downLeaf2[i]);
       eq(key(4, c), key(6, c), key(8, c), armOps(raw.perm, i).D);
+      armCells[i].D = key(5, c);
 
       if (i < n) {
         var cNext = 4 * (i + 1);
@@ -329,11 +374,197 @@
         setNum(4, c + 4, raw.rFinal);
         eq(key(4, c), key(4, c + 2), key(4, c + 4), raw.linkOp(n));
       }
+      armCells[i].R = key(4, c + 1);
     }
 
     var cols = 4 * n + 5;
-    return { cells: cells, equations: equations, rows: 9, cols: cols };
+    return {
+      cells: cells,
+      equations: equations,
+      rows: 9,
+      cols: cols,
+      armCells: armCells,
+    };
   }
+
+  // Construiește harta de celule + lista de ecuații din structura brută
+  // (forma „zigzag" — ACELAȘI lanț abstract ca „moara", doar EMBEDDING-UL
+  // (row,col) diferă). Pentru fiecare moară i: direcția de INTRARE dirIn[i]
+  // (=dirOut[i-2] din DIFF, sau E fix la i=1) și de IEȘIRE dirOut[i-1] (index
+  // 0-based în array-ul din DIFF) ocupă 2 din cele 4 direcții cardinale;
+  // celelalte 2 RĂMASE (ordine canonică N,E,S,V) devin U/D. Fiecare "braț" =
+  // 5 poziții (2 operanzi+op+"="+rezultat) plasate de-a lungul direcției
+  // sale, pas de 1 celulă — identic geometric cu „moara", doar rotit.
+  function cellsFromRawZigzag(raw, dirOut) {
+    var n = raw.n;
+    var cells = {},
+      equations = [],
+      markers = {},
+      armCells = {};
+
+    function setNum(r, c, v) {
+      if (r < 0 || c < 0)
+        throw new Error("zigzag: coordonată negativă (" + r + "," + c + ")");
+      cells[key(r, c)] = { kind: "num", value: v };
+    }
+    function setOp(r, c, op) {
+      if (r < 0 || c < 0)
+        throw new Error("zigzag: coordonată negativă (" + r + "," + c + ")");
+      cells[key(r, c)] = { kind: "op", op: op };
+    }
+    function setMarker(r, c) {
+      markers[key(r, c)] = true;
+    }
+    function eq(cellA, cellB, cellC, op) {
+      equations.push({ cells: [cellA, cellB, cellC], op: op });
+    }
+    // pattern A ("depărtare→centru"): [operand1,op,operand2,"=",centru=rezultat]
+    function placeA(center, dir, leaf1, opGlyph, leaf2) {
+      var d = DIRV[dir];
+      var far = [center[0] + 4 * d[0], center[1] + 4 * d[1]];
+      function slot(k) {
+        return [far[0] - k * d[0], far[1] - k * d[1]];
+      }
+      var p0 = slot(0),
+        p1 = slot(1),
+        p2 = slot(2),
+        p3 = slot(3);
+      setNum(p0[0], p0[1], leaf1);
+      setOp(p1[0], p1[1], opGlyph);
+      setNum(p2[0], p2[1], leaf2);
+      setMarker(p3[0], p3[1]);
+      eq(
+        key(p0[0], p0[1]),
+        key(p2[0], p2[1]),
+        key(center[0], center[1]),
+        opGlyph,
+      );
+      return key(p1[0], p1[1]);
+    }
+    // pattern B ("centru→depărtare"): [centru=operand1,op,operand2,"=",rezultat]
+    function placeB(center, dir, leaf, opGlyph, result) {
+      var d = DIRV[dir];
+      function slot(k) {
+        return [center[0] + k * d[0], center[1] + k * d[1]];
+      }
+      var p1 = slot(1),
+        p2 = slot(2),
+        p3 = slot(3),
+        p4 = slot(4);
+      setOp(p1[0], p1[1], opGlyph);
+      setNum(p2[0], p2[1], leaf);
+      setMarker(p3[0], p3[1]);
+      setNum(p4[0], p4[1], result);
+      eq(
+        key(center[0], center[1]),
+        key(p2[0], p2[1]),
+        key(p4[0], p4[1]),
+        opGlyph,
+      );
+      return key(p1[0], p1[1]);
+    }
+
+    // centrele X[1..n] + direcția de INTRARE per moară (geometrie pură)
+    var centers = { 1: [4, 4] };
+    var dirIn = { 1: "E" };
+    for (var i = 2; i <= n; i++) {
+      var din = dirOut[i - 2];
+      dirIn[i] = din;
+      var v = DIRV[din];
+      centers[i] = [centers[i - 1][0] + 4 * v[0], centers[i - 1][1] + 4 * v[1]];
+    }
+
+    // per-moară: centru + brațe U/D (rolurile RĂMASE după L/R)
+    for (var m = 1; m <= n; m++) {
+      var C = centers[m];
+      setNum(C[0], C[1], raw.X[m]);
+      var occIn = oppositeDir(dirIn[m]); // direcția ocupată de link-ul de INTRARE
+      var occOut = dirOut[m - 1]; // direcția ocupată de link-ul de IEȘIRE
+      var free = DIR_ORDER.filter(function (d) {
+        return d !== occIn && d !== occOut;
+      });
+      if (free.length !== 2)
+        throw new Error(
+          "zigzag: moara " + m + " nu are exact 2 direcții libere",
+        );
+      armCells[m] = {};
+      armCells[m].U = placeA(
+        C,
+        free[0],
+        raw.upLeaf1[m],
+        armOps(raw.perm, m).U,
+        raw.upLeaf2[m],
+      );
+      armCells[m].D = placeB(
+        C,
+        free[1],
+        raw.downLeaf1[m],
+        armOps(raw.perm, m).D,
+        raw.downLeaf2[m],
+      );
+    }
+
+    // legăturile L/R (coloana vertebrală, cu coturile din `dirOut`)
+    armCells[1].L = placeA(
+      centers[1],
+      oppositeDir(dirIn[1]),
+      raw.a0,
+      raw.linkOp(0),
+      raw.b0,
+    );
+    for (var j = 1; j <= n; j++) {
+      var outDir = dirOut[j - 1];
+      if (j < n) {
+        armCells[j].R = placeB(
+          centers[j],
+          outDir,
+          raw.innerB[j],
+          raw.linkOp(j),
+          raw.X[j + 1],
+        );
+      } else {
+        armCells[j].R = placeB(
+          centers[j],
+          outDir,
+          raw.bFinal,
+          raw.linkOp(n),
+          raw.rFinal,
+        );
+      }
+    }
+    for (var k = 2; k <= n; k++) armCells[k].L = armCells[k - 1].R;
+
+    var maxR = 0,
+      maxC = 0;
+    Object.keys(cells).forEach(function (kk) {
+      var parts = kk.split(",");
+      maxR = Math.max(maxR, parseInt(parts[0], 10));
+      maxC = Math.max(maxC, parseInt(parts[1], 10));
+    });
+    Object.keys(markers).forEach(function (kk) {
+      var parts = kk.split(",");
+      maxR = Math.max(maxR, parseInt(parts[0], 10));
+      maxC = Math.max(maxC, parseInt(parts[1], 10));
+    });
+
+    return {
+      cells: cells,
+      equations: equations,
+      markers: markers,
+      armCells: armCells,
+      rows: maxR + 1,
+      cols: maxC + 1,
+    };
+  }
+
+  var GEOM = {
+    moara: { cellsFromRaw: cellsFromRawMoara },
+    zigzag: {
+      cellsFromRaw: function (raw, band) {
+        return cellsFromRawZigzag(raw, band.dirOut);
+      },
+    },
+  };
 
   // ---------- euristică de PROPAGARE (construcție hidden-set, NU acceptare) ----------
   function solveUnknown(op, vals, idx) {
@@ -460,15 +691,19 @@
   }
 
   function buildOne(params, seed) {
-    var dif = params.dificultate;
-    if (!(dif in DIFF)) throw new Error("dificultate necunoscută: " + dif);
-    var band = DIFF[dif];
     var rng = new PyRandom(seed);
+    var forma = params.forma;
+    if (!forma || forma === "aleator") forma = rng.choice(FORME);
+    if (!(forma in DIFF)) throw new Error("formă necunoscută: " + forma);
+    var dif = params.dificultate;
+    if (!(dif in DIFF[forma]))
+      throw new Error("dificultate necunoscută pt " + forma + ": " + dif);
+    var band = DIFF[forma][dif];
 
     for (var attempt = 0; attempt < 1500; attempt++) {
       var raw = buildRaw(rng, band.n, band.N);
       if (!raw) continue;
-      var structure = cellsFromRaw(raw);
+      var structure = GEOM[forma].cellsFromRaw(raw, band);
       var hidden = pickHidden(rng, structure, band.hide);
       if (hidden.length !== band.hide) continue;
 
@@ -492,6 +727,8 @@
         });
         var canon =
           "integrama|" +
+          forma +
+          "|" +
           dif +
           "|N" +
           band.N +
@@ -514,6 +751,7 @@
           hidden.slice().sort().join(",");
         return {
           tip: "integrama",
+          forma: forma,
           dificultate: dif,
           n: band.n,
           N: band.N,
@@ -527,7 +765,10 @@
       }
     }
     throw new Error(
-      "VERIFICARE EȘUATĂ: nu am generat o integramă UNICĂ pentru " + dif,
+      "VERIFICARE EȘUATĂ: nu am generat o integramă UNICĂ pentru " +
+        forma +
+        "/" +
+        dif,
     );
   }
 
@@ -567,15 +808,26 @@
     return '<div class="ig-cell ig-eq">=</div>';
   }
 
+  function trackSizes(count) {
+    // alternanță 14mm(num/centru)/8mm(op/marker) — verificată identică cu
+    // șirul fix folosit de „moara" (14 8 14 8 ... pt 9 rânduri).
+    var out = [];
+    for (var i = 0; i < count; i++) out.push(i % 2 === 0 ? "14mm" : "8mm");
+    return out.join(" ");
+  }
+
   function gridHtml(item, mode) {
     var st = item.structure;
+    var forma = item.forma || "moara";
     var out = [];
     for (var r = 0; r < st.rows; r++) {
       for (var c = 0; c < st.cols; c++) {
         var k = key(r, c);
         if (st.cells[k]) {
           out.push(cellHtml(item, r, c, mode));
-        } else if (isEqPosition(item, r, c)) {
+        } else if (
+          forma === "zigzag" ? st.markers[k] : isEqPosition(item, r, c)
+        ) {
           out.push(eqMarkerHtml(item, r, c));
         } else {
           out.push('<div class="ig-cell ig-x"></div>');
@@ -583,22 +835,41 @@
       }
     }
     var cls = "ig-grid" + (mode === "answer" ? " show-solution" : "");
+    var style =
+      forma === "zigzag"
+        ? "grid-template-columns:" +
+          trackSizes(st.cols) +
+          ";grid-template-rows:" +
+          trackSizes(st.rows) +
+          ";"
+        : "grid-template-columns:repeat(" +
+          st.cols +
+          "," +
+          DIFF.moara[item.dificultate].cellMM +
+          "mm);";
     return (
       '<div class="' +
       cls +
-      '" style="grid-template-columns:repeat(' +
+      '" data-forma="' +
+      forma +
+      '" data-dif="' +
+      item.dificultate +
+      '" data-rows="' +
+      st.rows +
+      '" data-cols="' +
       st.cols +
-      "," +
-      DIFF[item.dificultate].cellMM +
-      'mm);">' +
+      '" style="' +
+      style +
+      '">' +
       out.join("") +
       "</div>"
     );
   }
 
-  // poziții "=" cunoscute prin construcție: col3 (bloc inițial) pe rândul 4;
-  // col 4*i+3 pt fiecare i=1..n pe rândul 4; și col fixă pe rândurile 3/7 pt
-  // fiecare centru (brațele verticale).
+  // poziții "=" cunoscute prin construcție (DOAR „moara"): col3 (bloc
+  // inițial) pe rândul 4; col 4*i+3 pt fiecare i=1..n pe rândul 4; și col
+  // fixă pe rândurile 3/7 pt fiecare centru (brațele verticale). „zigzag"
+  // folosește `structure.markers` (calculat direct de cellsFromRawZigzag).
   function isEqPosition(item, r, c) {
     var n = item.n;
     if (r === 4) {
@@ -613,12 +884,12 @@
     return false;
   }
 
-  // ---------- geometrie ecuațiilor, re-derivată INDEPENDENT de cellsFromRaw ----------
-  // (folosită DOAR la round-trip-ul HTML — nu împarte cod cu construcția, doar
-  // convenția de poziționare documentată în antetul fișierului). Centrul morii i
-  // e la coloana 4*i; rândul 4 = coloana vertebrală; brațul SUS = rândurile 0-3;
-  // brațul JOS = rândurile 5-8 (aceeași coloană ca centrul).
-  function equationLayout(n) {
+  // ---------- geometrie ecuațiilor, re-derivată INDEPENDENT de cellsFromRaw* ----------
+  // (folosită DOAR la round-trip-ul HTML — nu apelează cellsFromRaw*/`structure`,
+  // doar reimplementează convenția de poziționare documentată în antet).
+  // „moara": centrul morii i e la coloana 4*i; rândul 4 = coloana vertebrală;
+  // brațul SUS = rândurile 0-3; brațul JOS = rândurile 5-8 (aceeași coloană).
+  function equationLayoutMoara(n) {
     var eqs = [];
     eqs.push({ cells: [key(4, 0), key(4, 2), key(4, 4)], opCell: key(4, 1) });
     for (var i = 1; i <= n; i++) {
@@ -640,6 +911,95 @@
     }
     return eqs;
   }
+
+  // „zigzag": aceeași convenție geometrică ca `cellsFromRawZigzag` (centre +
+  // direcții din `dirOut`), REIMPLEMENTATĂ independent (fără a apela funcția
+  // de construcție). Ordinea push-urilor trebuie să coincidă EXACT cu
+  // `cellsFromRawZigzag`: U/D per moară (m=1..n), apoi link-ul inițial (L),
+  // apoi link-urile R (j=1..n) — verificat de checkItem poziție-cu-poziție.
+  function equationLayoutZigzag(n, dirOut) {
+    function slotsA(center, dir) {
+      var d = DIRV[dir];
+      var far = [center[0] + 4 * d[0], center[1] + 4 * d[1]];
+      return {
+        p0: far,
+        p1: [far[0] - d[0], far[1] - d[1]],
+        p2: [far[0] - 2 * d[0], far[1] - 2 * d[1]],
+      };
+    }
+    function slotsB(center, dir) {
+      var d = DIRV[dir];
+      return {
+        p1: [center[0] + d[0], center[1] + d[1]],
+        p2: [center[0] + 2 * d[0], center[1] + 2 * d[1]],
+        p4: [center[0] + 4 * d[0], center[1] + 4 * d[1]],
+      };
+    }
+    var centers = { 1: [4, 4] };
+    var dirIn = { 1: "E" };
+    for (var i = 2; i <= n; i++) {
+      var din = dirOut[i - 2];
+      dirIn[i] = din;
+      var v = DIRV[din];
+      centers[i] = [centers[i - 1][0] + 4 * v[0], centers[i - 1][1] + 4 * v[1]];
+    }
+    var eqs = [];
+    for (var m = 1; m <= n; m++) {
+      var C = centers[m];
+      var occIn = oppositeDir(dirIn[m]);
+      var occOut = dirOut[m - 1];
+      var free = DIR_ORDER.filter(function (d) {
+        return d !== occIn && d !== occOut;
+      });
+      var sU = slotsA(C, free[0]);
+      eqs.push({
+        cells: [
+          key(sU.p0[0], sU.p0[1]),
+          key(sU.p2[0], sU.p2[1]),
+          key(C[0], C[1]),
+        ],
+        opCell: key(sU.p1[0], sU.p1[1]),
+      });
+      var sD = slotsB(C, free[1]);
+      eqs.push({
+        cells: [
+          key(C[0], C[1]),
+          key(sD.p2[0], sD.p2[1]),
+          key(sD.p4[0], sD.p4[1]),
+        ],
+        opCell: key(sD.p1[0], sD.p1[1]),
+      });
+    }
+    var sA1 = slotsA(centers[1], oppositeDir(dirIn[1]));
+    eqs.push({
+      cells: [
+        key(sA1.p0[0], sA1.p0[1]),
+        key(sA1.p2[0], sA1.p2[1]),
+        key(centers[1][0], centers[1][1]),
+      ],
+      opCell: key(sA1.p1[0], sA1.p1[1]),
+    });
+    for (var j = 1; j <= n; j++) {
+      var outDir = dirOut[j - 1];
+      var sR = slotsB(centers[j], outDir);
+      eqs.push({
+        cells: [
+          key(centers[j][0], centers[j][1]),
+          key(sR.p2[0], sR.p2[1]),
+          key(sR.p4[0], sR.p4[1]),
+        ],
+        opCell: key(sR.p1[0], sR.p1[1]),
+      });
+    }
+    return eqs;
+  }
+
+  GEOM.moara.equationLayout = function (n) {
+    return equationLayoutMoara(n);
+  };
+  GEOM.zigzag.equationLayout = function (n, band) {
+    return equationLayoutZigzag(n, band.dirOut);
+  };
 
   function domainSentence(item) {
     return (
@@ -761,27 +1121,43 @@
   }
 
   // ---------- ROUND-TRIP pe HTML TIPĂRIT (parsare INDEPENDENTĂ, nu ia `item`) ----------
-  // n/cols se deduc din nr de celule parsate (rows fix = 9), NU din structura internă.
-  // Ecuațiile se reconstruiesc din `equationLayout` + glifele PARSATE — nu din `st`.
+  // forma/dif/rows/cols se citesc din atributele `data-*` TIPĂRITE pe grilă
+  // (declarate, ca domeniul N din text) — NU inferate din structura internă.
+  // Ecuațiile se reconstruiesc din `GEOM[forma].equationLayout` + glifele
+  // PARSATE — nu din `st`.
   function parsePuzzleHtml(html) {
+    var gridMatch = html.match(
+      /<div class="ig-grid[^"]*" data-forma="([^"]*)" data-dif="([^"]*)" data-rows="(\d+)" data-cols="(\d+)"/,
+    );
+    if (!gridMatch)
+      throw new Error(
+        "nu am găsit atributele grilei (data-forma/dif/rows/cols) în HTML",
+      );
+    var forma = gridMatch[1];
+    var dif = gridMatch[2];
+    var ROWS = parseInt(gridMatch[3], 10);
+    var cols = parseInt(gridMatch[4], 10);
+    if (!(forma in DIFF) || !(dif in DIFF[forma]))
+      throw new Error(
+        "formă/dificultate tipărite necunoscute: " + forma + "/" + dif,
+      );
+    var band = DIFF[forma][dif];
+
     var re = /<div class="ig-cell([^"]*)">([^<]*)<\/div>/g;
     var cellsFlat = [],
       m;
     while ((m = re.exec(html))) cellsFlat.push({ cls: m[1], txt: m[2].trim() });
-    var ROWS = 9;
-    if (cellsFlat.length % ROWS !== 0)
+    if (cellsFlat.length !== ROWS * cols)
       throw new Error(
-        "nr celule parsate = " +
+        "nr celule parsate " +
           cellsFlat.length +
-          " (nu e multiplu de " +
+          " != rows*cols declarat (" +
           ROWS +
+          "*" +
+          cols +
+          "=" +
+          ROWS * cols +
           ")",
-      );
-    var cols = cellsFlat.length / ROWS;
-    var n = (cols - 5) / 4;
-    if (!(n >= 1 && Math.floor(n) === n))
-      throw new Error(
-        "cols=" + cols + " parsat nu corespunde niciunui n valid",
       );
 
     var parsedNum = {},
@@ -806,14 +1182,17 @@
     }
     var mn = html.match(/de la 1 la (\d+)/);
     var N = mn ? parseInt(mn[1], 10) : null;
-    var equations = equationLayout(n).map(function (eqPos) {
+    var eqPositions = GEOM[forma].equationLayout(band.n, band);
+    var equations = eqPositions.map(function (eqPos) {
       var op = parsedOp[eqPos.opCell];
       if (!op) throw new Error("operator lipsă/nedetectat la " + eqPos.opCell);
       return { cells: eqPos.cells, op: op };
     });
     return {
       N: N,
-      n: n,
+      n: band.n,
+      forma: forma,
+      dificultate: dif,
       num: parsedNum,
       hidden: parsedHidden,
       equations: equations,
@@ -840,32 +1219,29 @@
       if (evalOp(e.op, vals[0], vals[1]) !== vals[2])
         throw new Error("ecuație inconsistentă: " + e.cells.join(","));
     });
-    // 2b) fiecare moară are toate 4 operațiile distincte pe cele 4 brațe (L,R,U,D)
-    for (var i = 1; i <= item.n; i++) {
-      var opU = st.cells[key(1, 4 * i)].op;
-      var opD = st.cells[key(5, 4 * i)].op;
-      var opL = st.cells[key(4, 4 * (i - 1) + 1)].op;
-      var opR = st.cells[key(4, 4 * i + 1)].op;
+    // 2b) fiecare moară are toate 4 operațiile distincte pe cele 4 brațe
+    // (L,R,U,D) — generic pe `st.armCells` (populat de cellsFromRaw*, NU
+    // hardcodează poziții per formă).
+    Object.keys(st.armCells).forEach(function (i) {
+      var arm = st.armCells[i];
+      var ops = ["L", "R", "U", "D"].map(function (role) {
+        return st.cells[arm[role]].op;
+      });
       var setArm = {};
-      [opU, opD, opL, opR].forEach(function (o) {
+      ops.forEach(function (o) {
         setArm[o] = true;
       });
       if (Object.keys(setArm).length !== 4)
         throw new Error(
-          "moara " +
-            i +
-            " nu are 4 operații distincte: " +
-            [opL, opR, opU, opD].join(","),
+          "moara " + i + " nu are 4 operații distincte: " + ops.join(","),
         );
-    }
+    });
 
     // 3) nr ascunse == țintă
-    if (item.nrAscunse !== DIFF[item.dificultate].hide)
+    var band3 = DIFF[item.forma][item.dificultate];
+    if (item.nrAscunse !== band3.hide)
       throw new Error(
-        "nr ascunse " +
-          item.nrAscunse +
-          " != țintă " +
-          DIFF[item.dificultate].hide,
+        "nr ascunse " + item.nrAscunse + " != țintă " + band3.hide,
       );
 
     // 4) SOLUȚIE UNICĂ (verificator independent, pe obiectul în memorie)
@@ -887,6 +1263,12 @@
     // 5) ROUND-TRIP pe HTML-ul TIPĂRIT (parsare + reconstrucție INDEPENDENTE de `st`)
     var puz = paginaPrint(item, 1, 1, false);
     var p = parsePuzzleHtml(puz);
+    if (p.forma !== item.forma)
+      throw new Error("formă tipărită " + p.forma + " != " + item.forma);
+    if (p.dificultate !== item.dificultate)
+      throw new Error(
+        "dificultate tipărită " + p.dificultate + " != " + item.dificultate,
+      );
     if (p.N !== item.N)
       throw new Error("domeniu tipărit " + p.N + " != solver " + item.N);
     if (p.n !== item.n)
@@ -989,67 +1371,76 @@
       fail("oracol aritmetic: " + e.message);
     }
 
-    // 1) fiecare dificultate × mai multe seed-uri: unic + round-trip + nr ascunse + determinism
-    for (var dif in DIFF) {
-      var seeds = 24;
-      var okCount = 0,
-        hitTarget = 0;
-      var firstErr = null;
-      var allOpsSeen = {};
-      for (var seed = 0; seed < seeds; seed++) {
-        try {
-          var it = buildOne({ dificultate: dif }, seed);
-          checkItem(it);
-          var it2 = buildOne({ dificultate: dif }, seed);
-          var geomA = JSON.stringify([
-            Object.keys(it.structure.cells)
-              .sort()
-              .map(function (k) {
-                var c = it.structure.cells[k];
-                return c.kind === "num" ? c.value : c.op;
-              }),
-            it.hidden.slice().sort(),
-          ]);
-          var geomB = JSON.stringify([
-            Object.keys(it2.structure.cells)
-              .sort()
-              .map(function (k) {
-                var c = it2.structure.cells[k];
-                return c.kind === "num" ? c.value : c.op;
-              }),
-            it2.hidden.slice().sort(),
-          ]);
-          if (geomA !== geomB) throw new Error("nedeterminist");
-          it.structure.equations.forEach(function (e) {
-            allOpsSeen[e.op] = true;
-          });
-          if (it.nrAscunse === DIFF[dif].hide) hitTarget++;
-          okCount++;
-        } catch (e) {
-          if (!firstErr) firstErr = "seed=" + seed + ": " + e.message;
+    // 1) fiecare FORMĂ × dificultate × mai multe seed-uri: unic + round-trip
+    //    (poziție ȘI glif) + nr ascunse + determinism
+    FORME.forEach(function (forma) {
+      for (var dif in DIFF[forma]) {
+        var seeds = 24;
+        var okCount = 0,
+          hitTarget = 0;
+        var firstErr = null;
+        var allOpsSeen = {};
+        for (var seed = 0; seed < seeds; seed++) {
+          try {
+            var it = buildOne({ forma: forma, dificultate: dif }, seed);
+            checkItem(it);
+            var it2 = buildOne({ forma: forma, dificultate: dif }, seed);
+            var geomA = JSON.stringify([
+              Object.keys(it.structure.cells)
+                .sort()
+                .map(function (k) {
+                  var c = it.structure.cells[k];
+                  return c.kind === "num" ? c.value : c.op;
+                }),
+              it.hidden.slice().sort(),
+            ]);
+            var geomB = JSON.stringify([
+              Object.keys(it2.structure.cells)
+                .sort()
+                .map(function (k) {
+                  var c = it2.structure.cells[k];
+                  return c.kind === "num" ? c.value : c.op;
+                }),
+              it2.hidden.slice().sort(),
+            ]);
+            if (geomA !== geomB) throw new Error("nedeterminist");
+            it.structure.equations.forEach(function (e) {
+              allOpsSeen[e.op] = true;
+            });
+            if (it.nrAscunse === DIFF[forma][dif].hide) hitTarget++;
+            okCount++;
+          } catch (e) {
+            if (!firstErr) firstErr = "seed=" + seed + ": " + e.message;
+          }
         }
+        var tag = forma + "/" + dif;
+        if (okCount !== seeds)
+          fail(
+            tag + " — " + okCount + "/" + seeds + " OK; primul: " + firstErr,
+          );
+        else if (hitTarget !== seeds)
+          fail(
+            tag + " — nr ascunse a atins ținta doar " + hitTarget + "/" + seeds,
+          );
+        else if (Object.keys(allOpsSeen).length !== 4)
+          fail(
+            tag +
+              " — nu toate 4 operațiile au apărut în " +
+              seeds +
+              " seed-uri",
+          );
+        else
+          detalii.push(
+            "[OK] " +
+              tag +
+              " x" +
+              seeds +
+              " seed-uri -> soluție UNICĂ, round-trip HTML (poziție+glif), " +
+              DIFF[forma][dif].hide +
+              " ascunse, determinist, toate 4 operațiile prezente",
+          );
       }
-      if (okCount !== seeds)
-        fail(dif + " — " + okCount + "/" + seeds + " OK; primul: " + firstErr);
-      else if (hitTarget !== seeds)
-        fail(
-          dif + " — nr ascunse a atins ținta doar " + hitTarget + "/" + seeds,
-        );
-      else if (Object.keys(allOpsSeen).length !== 4)
-        fail(
-          dif + " — nu toate 4 operațiile au apărut în " + seeds + " seed-uri",
-        );
-      else
-        detalii.push(
-          "[OK] " +
-            dif +
-            " x" +
-            seeds +
-            " seed-uri -> soluție UNICĂ, round-trip HTML, " +
-            DIFF[dif].hide +
-            " ascunse, determinist, toate 4 operațiile prezente",
-        );
-    }
+    });
 
     // 2) negative control — o ecuație cu 2 necunoscute și nimic altceva care le
     //    fixeze NU e unică (dovadă că countSolutions chiar numără, nu doar confirmă).
@@ -1086,6 +1477,8 @@
   root.PlanseGen = root.PlanseGen || {};
   root.PlanseGen.integrama = {
     DIFF: DIFF,
+    FORME: FORME,
+    FORM_LABELS: FORM_LABELS,
     buildOne: buildOne,
     render: render,
     renderPages: renderPages,

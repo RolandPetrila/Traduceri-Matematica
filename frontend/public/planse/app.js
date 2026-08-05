@@ -20,7 +20,7 @@
     {
       id: "integrama",
       label: "Integramă",
-      desc: "Integramă aritmetică cu soluție unică (moară de vânt).",
+      desc: "Integramă aritmetică cu soluție unică (mai multe forme).",
       ready: true,
     },
     {
@@ -1263,14 +1263,29 @@
       return;
     }
     var LEVELS = [
-      { key: "Usor", label: "Ușor (1 moară, 1–12, 3 goluri)" },
-      { key: "Standard", label: "Standard (2 mori, 1–16, 5 goluri)" },
-      { key: "Greu", label: "Greu (3 mori, 1–20, 7 goluri)" },
+      { key: "Usor", label: "Ușor (domeniu mic, puține goluri)" },
+      { key: "Standard", label: "Standard" },
+      { key: "Greu", label: "Greu (domeniu mare, mai multe goluri)" },
     ];
+    var formaOpts =
+      '<option value="aleator">Amestecat (surpriză)</option>' +
+      integrama.FORME.map(function (id) {
+        return (
+          '<option value="' +
+          id +
+          '">' +
+          (integrama.FORM_LABELS[id] || id) +
+          "</option>"
+        );
+      }).join("");
 
     panel.innerHTML =
       '<div class="gen">' +
       '  <form class="gen-form" id="ig-form">' +
+      '    <fieldset class="fld"><legend>Formă</legend>' +
+      '      <select id="ig-forma" class="chalk-select">' +
+      formaOpts +
+      "</select></fieldset>" +
       '    <fieldset class="fld"><legend>Dificultate</legend>' +
       '      <div class="radios" id="ig-dif">' +
       LEVELS.map(function (l, i) {
@@ -1308,6 +1323,7 @@
       "</div>";
 
     var form = document.getElementById("ig-form");
+    var formaSel = document.getElementById("ig-forma");
     var npInput = document.getElementById("ig-np");
     var seedInput = document.getElementById("ig-seed");
     var preview = document.getElementById("ig-preview");
@@ -1350,6 +1366,7 @@
     }
 
     function generate() {
+      var forma = formaSel.value;
       var dif = selectedDif();
       var np = clampNp();
       var seedRaw = seedInput.value.trim();
@@ -1362,7 +1379,7 @@
       while (items.length < np && guard < np + 400) {
         guard++;
         try {
-          var it = integrama.buildOne({ dificultate: dif }, seed);
+          var it = integrama.buildOne({ forma: forma, dificultate: dif }, seed);
           if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);

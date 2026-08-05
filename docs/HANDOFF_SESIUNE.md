@@ -1,8 +1,23 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 seara (**4 cerințe NOI de la Roland**: integramă multi-formă, extindere varietate Planșe, modul „Școlare" full-curriculum, investigație OCR). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`** (conține TOATE cele 4 cerințe noi, detaliate, cu deciziile deja luate — vezi blocul de mai jos pt rezumat).
+> Ultima actualizare: 2026-08-08 (sesiune nouă pornită pe cele 4 cerințe din 2026-08-07 seara). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-08) — A/B/C/D: regim de execuție OBLIGATORIE, nu backlog opțional
+
+**Decizie de proces (Roland, 2026-08-08):** cele 4 cerințe din 2026-08-07 (A/B/C/D, detaliu în `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md` și acum și în `docs/PLAN_MASTER.md` §6b) NU sunt backlog opțional (spre deosebire de §7) — la FIECARE `/onboard` viitor trebuie semnalate explicit ca „trebuie executate" până sunt bifate [x]. După fiecare implementare: actualizează statusul AICI + în PLAN_MASTER §6b, și recomandă pasul următor din lista rămasă.
+
+**Ordine de start aleasă de Roland:** A) integramă multi-formă ÎNTÂI (motorul solver e deja topologie-agnostic — verificat azi). Roland a ales „toate 3 forme, pe rând": Zigzag → Cruce → Scară. B/C/D rămân în coadă, EXECUȚIE OBLIGATORIE, nu amânare pe termen nedefinit.
+
+- **A — ÎN LUCRU** (sesiune 2026-08-08). Status detaliat: vezi `docs/PLAN_MASTER.md` §6b.
+  - [x] **Zigzag** LIVRAT (gate verde 6/6 formă×dif + bug de poziție plantat/revenit + dovedit LIVE local static:8899). NEDEPLOYAT.
+  - [ ] **Cruce** — următorul (2 lanțuri perpendiculare dintr-un centru comun).
+  - [ ] **Scară** — ultimul (graf cu cicluri, tehnica „set ascuns aciclic" de la numere.js).
+- **B — restanță, neînceput.**
+- **C — restanță, neînceput.** Cere `PLAN_SCOLARE_[data].md` + AskUserQuestion propriu.
+- **D — restanță, dar REPRO ACUM CONFIRMAT (nu mai e „nereprodus"):** Roland a dat exemplul precis 2026-08-08 (`Screenshot (260).png` — comparație editor vs original `limite_matematica.jpeg`/`.pdf`). Bug real identificat: `\lim_{x\to\infty}` randează cu subscriptul lipit inline de „lim" (stil KaTeX text/inline) în loc de stivuit centrat dedesubt (stil display, ca-n original tipărit). NU e pierdere de conținut (cifrele/formulele sunt corecte, 9/9) — e strict stil de randare. Candidat fix: `\displaystyle`/`\operatorname*{lim}` pe LaTeX-ul generat pt `\lim`. Detaliu complet în `docs/PLAN_MASTER.md` §6b.
 
 ---
 
