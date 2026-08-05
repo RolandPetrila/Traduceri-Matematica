@@ -1,7 +1,7 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 (**P3 modul Planșe COMPLET 5/5 + P4 istoric→PDF LIVRATE, NEDEPLOYATE**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`** (rămas: **deploy grupat** integramă+P4 + **eyeball** Roland pe telefon — cod și gate sunt gata).
+> Ultima actualizare: 2026-08-07 (**v39 LIVE pe prod — modul Planșe COMPLET 6/6 generatoare + P4**, verificat pe alias). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`** (rămas: **eyeball Roland pe telefon** — cod, gate și deploy sunt gata).
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
 
 ---
@@ -19,8 +19,8 @@
   - **Gate:** selftest.html §9 (persistență reală + dedup + evicție FIFO cu control negativ) + harness Node (fallback in-memory, localStorage nu există în Node).
   - **Dovedit LIVE:** adăugat din Numere ȘI Integramă → **persistă la un reload REAL de pagină** → scos un item individual → print (document combinat conține AMBELE tipuri de grilă + paginile de răspuns) → coșul se golește, istoricul semnăturilor rămâne intact (verificat: `seen` are 4 intrări după print, `cart` are 0).
 - 🔧 **Housekeeping în timpul rundei:** `docs/PLAN_MASTER.md:264-265` (P3/P4 marcate greșit „backlog, NU acum") corectate la `[x]`. `scratchpad/planse_integrama.js` + `scratchpad/planse_history.js` noi (harness-uri Node, UNTRACKED, model `planse_numere.js`).
-- ⚠️ **NEDEPLOYAT.** `CACHE_VERSION` nu s-a bump-uit (fișierele noi sunt DEJA în `PLANSE_ASSETS` din `sw.js`, gata de precache la următorul deploy). Deploy grupat, doar cu confirmarea explicită a lui Roland („execută").
-- ➡️ **RĂMAS:** 1) deploy grupat (bump `CACHE_VERSION` + `cd frontend && vercel deploy --prod` + verifică ALIASUL — 2 proiecte Vercel) 2) eyeball Roland pe telefon: print PDF real + offline pentru integramă + coșul P4 (dictare/numere/căutare/unește deja verificate din rundele anterioare).
+- ✅✅✅ **DEPLOYAT v39-20260807a (2026-08-07, confirmat Roland „execută").** `CACHE_VERSION v38→v39` (commit `e89bc5f`), `cd frontend && vercel deploy --prod --yes`, deployment `dpl_H1nd1naQG3arMrhXGuPU6GapSRUW` READY/production. **Aliasul `traduceri-frontend.vercel.app` VERIFICAT:** `sw.js`=v39, homepage+`/editor-nou`+`/planse/index.html`+`/planse/generators/integrama.js`+`/planse/lib/history.js`+`/planse/selftest.html` = toate 200. **GATE PE PROD VERDE:** `selftest.html` pe alias → `__SELFTEST_OK__===true`, 9/9 secțiuni, 0 fail (oracolul labirint Python neatins). **Smoke E2E pe prod (Chrome MCP):** generat 2 integrame → adăugat în coș → tab „Coș" arată 2 grile randate corect. Backend `traduceri-api` NEATINS (planșe = static frontend).
+- ➡️ **RĂMAS:** eyeball Roland pe telefon: print PDF real + offline pentru integramă + coșul P4 (dictare/numere/căutare/unește au restanțe similare din rundele anterioare).
 - 📝 **De reținut (Cristina-eyeball, neblocant):** glifa de împărțire la integramă e `÷` (U+00F7); manualele RO folosesc uneori `:` — semnalat, nu schimbat fără confirmare.
 
 ---
