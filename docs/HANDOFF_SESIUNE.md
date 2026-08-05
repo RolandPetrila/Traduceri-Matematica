@@ -1,7 +1,27 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-06 (**P3 Planșe 3/5: Dictare LIVRAT — NEDEPLOYAT**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-06.md`** (continuă P3/P4: **numere→integramă→P4**; dictare = gata).
+> Ultima actualizare: 2026-08-06 (**P3 Planșe 4/5: Numere (SOLVER) + Dictare = DEPLOY GRUPAT v37**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-06.md`** (continuă P3/P4: **integramă (SOLVER)→P4**; dictare + numere = gata).
+
+---
+
+## ▶️ REIA DE AICI (2026-08-06 seara) — P3 Planșe 4/5: Numere (crossmath SOLVER) LIVRAT + DEPLOY GRUPAT
+
+**Generatorul `numere` (careu crossmath 3×3 multi-crossing, primul cu SOLVER soluție-unică) = livrat + gate verde + dovedit LIVE local.** Deployat GRUPAT cu dictare (v37) — vezi statusul deploy la finalul acestui bloc.
+
+- ✅ **`generators/numere.js`** — careu 3×3 de numere; fiecare RÂND și fiecare COLOANĂ = ecuație de 3 termeni cu 2 operatori (`+`/`−`, evaluat STÂNGA→DREAPTA = ordinea standard pt +/− → **zero capcană de precedență**). Operatorii + cele 6 rezultate TIPĂRITE; unele celule ascunse; copilul le completează.
+- ✅ **CORECTITUDINE = SOLUȚIE UNICĂ, cu 3 straturi:**
+  1. **Domeniul e TIPĂRIT** („numere de la 1 la N") → unicitatea se verifică pe domeniul DECLARAT (altfel „unic" e fals pt copilul care nu știe plafonul). N: Ușor 6 / Standard 9 / Greu 12.
+  2. **Insight liniar (advisor):** grila e sistem liniar ±1; a 2-a soluție apare exact la un CICLU (dreptunghi 2×2) în graful bipartit rânduri↔coloane. **Ascundem un set ACICLIC (pădure)** → eliminare prin „singletoni" golește tot → **unic INDEPENDENT de domeniu**. Max 5 celule (arbore de acoperire 3+3). Levierul de dificultate = **nr ascunse 3→4→5** (fără colaps: aciclic atinge mereu ținta).
+  3. **VERIFICATOR INDEPENDENT** (backtracking care NUMĂRĂ soluțiile pe domeniu; nu împarte logica de rezolvare cu generatorul care doar CONSTRUIEȘTE) → acceptă doar `count==1` ȘI `sol==intended` (= check pe calcularea FORWARD a rezultatelor).
+- ✅ **ROUND-TRIP pe HTML-ul TIPĂRIT** (lecția dictare): selftest extrage glifele operatorilor + numerele + rezultatele din HTML, hartă glif→op scrisă INDEPENDENT, re-rulează solverul → prinde un bug de randare (ex. „−" tipărit ca „+"). **Negative-control** (glifă minus→„+") → FAIL pe Standard/Greu = round-trip-ul are dinți. + oracol `evalLine` (5 cazuri) + control-negativ ciclu 2×2 → 3 soluții (solverul chiar numără).
+- ✅ **GATE (selftest = gate real):** oracol + Ușor/Standard/Greu × **24 seed-uri** fiecare → soluție UNICĂ + round-trip HTML + nr ascunse la țintă (3/4/5) + determinism (pe puzzle serializat) + control negativ. Rulat Node (`scratchpad/planse_numere.js`, UNTRACKED) + in-app (`selftest.html` §7, `__SELFTEST_OK__===true`, oracolul labirint Python NEATINS). `next build` OK.
+- ✅ **DOVEDIT LIVE local** (static :8899 + Chrome MCP): subtab Numere, Greu seed 7 → careu randat corect (verificat manual toate 6 ecuațiile), 5 goluri, toggle soluție (verzi), domeniul „1 la 12" tipărit, temă corectă. Print-crop: toate ≤ 297mm (grilă mică → mult slack).
+- ✅ **Wiring 5/5** (ca cautare/uneste/dictare): `index.html` · `app.js` (`ready:true` + `mountNumere` + `renderPanel` + `injectCss`) · `sw.js` `PLANSE_ASSETS` (`/planse/generators/numere.js`) · `selftest.html` §7 · toggle `.nm-grid.show-solution`. + polish dictare-meta („doar atâtea forme distincte" când Greu dă < cerut — carry-forward advisor).
+- 🔧 **Harness gate (UNTRACKED):** `scratchpad/planse_numere.js`. Rulează: `node scratchpad/planse_numere.js`.
+- ⏭️ **RĂMAS P3/P4:** **integramă** (aritmetică — **SOLVER soluție-unică**, aceeași disciplină: generator↔verificator independent) · **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage).
+
+**DEPLOY GRUPAT v37 (dictare + numere):** _(status completat după verificarea aliasului mai jos)_
 
 ---
 
