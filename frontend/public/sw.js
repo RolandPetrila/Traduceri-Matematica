@@ -20,6 +20,7 @@ const PLANSE_ASSETS = [
   "/planse/generators/labirint.js",
   "/planse/generators/cautare.js",
   "/planse/generators/uneste.js",
+  "/planse/generators/dictare.js",
   "/planse/lib/prng.js",
   "/planse/lib/render.js",
   "/planse/lib/signature.js",

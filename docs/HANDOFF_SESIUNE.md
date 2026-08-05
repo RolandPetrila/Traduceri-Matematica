@@ -1,7 +1,22 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-05 (**Chat AI v33→v35 + P3 Planșe 2/5 = DEPLOYAT v36**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-06.md`** (continuă P3/P4: dictare→numere→integramă→P4).
+> Ultima actualizare: 2026-08-06 (**P3 Planșe 3/5: Dictare LIVRAT — NEDEPLOYAT**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-06.md`** (continuă P3/P4: **numere→integramă→P4**; dictare = gata).
+
+---
+
+## ▶️ REIA DE AICI (2026-08-06) — P3 Planșe 3/5: Dictare LIVRAT (NEDEPLOYAT)
+
+**Generatorul `dictare` (dictare grafică pe grilă) = livrat + gate verde + dovedit LIVE local. NU deployat** (deploy grupat, cu confirmarea Roland).
+
+- ✅ **`generators/dictare.js`** — contur RECTILINIU pe grilă exprimat ca pași cardinali („8 căsuțe jos ↓", „1 căsuță dreapta →" …); pornind din punct marcat → apare o formă. **Catalog 17 forme** (pătrat, L, T, cupă, scări, casă, cruce/cruce-mare, H, I, E, munte, robot, coroană, cetate, munte-mare, scări-mari). Fără solver (conturul e dat).
+- ✅ **Dificultatea folosește AMBELE pârghii** (cerința „mărime grilă + nr pași"): benzi de pași FĂRĂ suprapunere — Ușor 4–8 (grilă 10) · Standard 9–13 (grilă 13) · Greu 14+ (grilă 16). Grila crește automat ca să încapă o formă mare; **subtitlul afișează grila REALĂ**. „Amestecat" alege din banda dificultății; formă anume = o planșă.
+- ✅ **Wiring 5/5** (ca la cautare/uneste): `index.html` (script înainte de app.js) · `app.js` (`ready:true` + `mountDictare` + ramură `renderPanel` + `injectCss`) · `sw.js` `PLANSE_ASSETS` (`/planse/generators/dictare.js` precache offline) · `selftest.html` (script + secțiunea 6) · toggle `.dict-draw.show-solution`.
+- ✅ **GATE (selftest = gate-ul real):** 17/17 forme verzi — **închis · cardinal · poligon SIMPLU · în cadru · determinism (pe GEOMETRIE, nu semnătură) · text↔contur**. Cel din urmă = check INVERS pe textul VIZIBIL al pasului (hartă `REV_LABEL` scrisă independent) → prinde o hartă de etichete inversată (U↔D), singurul bug pe care invarianții geometrici NU-l văd. **Negative-control** (bug plantat U↔D) → 35 FAIL = gate-ul are dinți. Rulat în Node (harness) ȘI in-app (`__SELFTEST_OK__===true`, labirint-oracle Python NEATINS). `next build` OK.
+- ✅ **DOVEDIT LIVE local** (static :8899 + Chrome MCP): subtab Dictare (badge ●), formă+dif+nr planșe, „Generează" → scări-mari Greu 18 pași grilă 16×16 randate corect (start-dot → traseul reproduce EXACT pașii), toggle soluție (sol-line ascunsă→vizibilă), temă corectă (tablă verde + cretă + Patrick Hand). **Probă print-crop:** înălțimea naturală a paginii puzzle pt TOATE cazurile worst (Greu 16–18 pași) ≤ 297mm → `overflow:hidden`@print NU decupează (≈50mm slack).
+- 🔧 **Harness gate (UNTRACKED):** `scratchpad/planse_dictare.js` (scratchpad e efemer — reconstruit după model). Rulează: `node scratchpad/planse_dictare.js`.
+- ⏭️ **RĂMAS P3/P4:** **numere** (careu 3×3 multi-crossing — **SOLVER soluție-unică**) · **integramă** (aritmetică — **SOLVER soluție-unică**) · **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage). Cele 2 cu solver = cele mai grele.
+- ⚠️ **DEPLOY (când Roland zice „execută", GRUPAT):** bump `CACHE_VERSION` în `frontend/public/sw.js` (v36→v37…) — bump-ul de grup trebuie să acopere **toate** fișierele P3/P4 livrate (dictare + numere/integramă/P4 când sunt gata); `dictare.js` e DEJA în `PLANSE_ASSETS`. Verifică ALIASUL după deploy. Eyeball Roland pe telefon (print PDF real + offline).
 
 ---
 
@@ -41,7 +56,8 @@ Modul `frontend/public/planse/` (vanilla-JS, iframe). Contract generator (ca `la
 - ✅✅ **Căutare** (word-search, `cautare.js`) — commit `0f897ae`. 5 teme × 3 dif, selftest 60 planșe verde, dovedit LIVE. **DEPLOYAT v36.**
 - ✅✅ **Unește** (connect-the-dots, `uneste.js`) — commit `32f4360`. 7 forme × 3 dif (SVG), selftest verde, dovedit LIVE (stea 20 pct). **DEPLOYAT v36.**
 - ✅✅ **DEPLOYAT v36-20260805d** (`b07b7d5`): alias `traduceri-frontend.vercel.app` sw.js=v36, `/planse/generators/{cautare,uneste}.js`=200 (precache offline). **RĂMAS eyeball Roland pe telefon** (print PDF real + offline). main=b07b7d5.
-- ⏭️ **RĂMAS P3:** **dictare** (dictare grafică pe grilă) · **numere** (careu 3×3 multi-crossing — **SOLVER soluție-unică**) · **integramă** (aritmetică — **SOLVER soluție-unică**). Cele 2 cu solver = cele mai grele (atenție corectitudine). + **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage).
+- ✅✅ **Dictare** (dictare grafică pe grilă, `dictare.js`) — LIVRAT 2026-08-06, gate verde, dovedit LIVE. **NEDEPLOYAT.** Vezi blocul „REIA DE AICI (2026-08-06)" din capul fișierului.
+- ⏭️ **RĂMAS P3:** **numere** (careu 3×3 multi-crossing — **SOLVER soluție-unică**) · **integramă** (aritmetică — **SOLVER soluție-unică**). Cele 2 cu solver = cele mai grele (atenție corectitudine). + **P4** (`lib/history.js`: coș planșe → PDF unic + unicitate persistentă localStorage).
 - **Deploy P3/P4:** grupat, cu confirmarea Roland; bump `CACHE_VERSION`; noile fișiere sunt DEJA în `sw.js` precache. Uneltele: `scratchpad/planse_*.js` (harness Node selftest).
 
 ### ▶️ RĂMAS (Chat AI)
