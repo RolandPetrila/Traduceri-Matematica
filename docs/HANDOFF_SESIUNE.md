@@ -1,7 +1,7 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-06 (**P3 Planșe 4/5: Numere (SOLVER) + Dictare = DEPLOY GRUPAT v37**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-06.md`** (continuă P3/P4: **integramă (SOLVER)→P4**; dictare + numere = gata).
+> Ultima actualizare: 2026-08-06 (**v38 LIVE pe prod:** Teste-selecție-tipuri-item + P3 Planșe 4/5 Numere(SOLVER)/Dictare). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-07.md`** (continuă: **integramă (SOLVER soluție-unică) → P4 (istoric→PDF)** + eyeball; dictare/numere/teste = gata & live).
 
 ---
 
@@ -12,7 +12,7 @@
 - ✅ `lib/test-generator.ts`: export `ITEM_TYPES` (5 tipuri, fiecare cu `instr` = descrierea de format pt promptul AI) + `TypeCount`. `buildGeneratePrompt` **semnătură nouă** `(clasa, tema, difficulty, withAnswers, typeCounts[])` — construiește promptul cu breakdown per tip (secțiuni + numerotare continuă + barem per tip); doar tipurile cu n>0 incluse; fallback 5 probleme dacă nimic; clamp 0..15/tip.
 - ✅ `components/teste/TestePanel.tsx` (GenerateTab): steppere per tip + total live + buton dezactivat la total 0 („Alege cel puțin un tip de item"); scos câmpul unic + importul `Input`. Output-ul AI rămâne text liber (fără parsare nouă) → randare/„trimite în editor" neatinse.
 - ✅ **Gate:** `tsc 0 · jest 172/172 (+3, test-generator rescris pt semnătura nouă) · next build OK`. **Dovedit LIVE local** (next start :3330 + Chrome MCP): 5 steppere, total live (10→3→0), buton dezactivat la 0, temă corectă.
-- ⚠️ **NEVERIFICAT (onest, R3):** că AI-ul **onorează** tipurile cerute — necesită apel real (fără chei local; `.env` doar pe Vercel). Promptul e unit-testat că CONȚINE instrucțiunile corecte; onorarea = eyeball pe PROD după deploy. **NEDEPLOYAT** (aștept „deploy").
+- ✅✅ **DEPLOYAT v38-20260806b + VERIFICAT E2E PE PROD.** `vercel deploy --prod` (frontend, alias `traduceri-frontend.vercel.app` `sw.js`=`v38-20260806b`, homepage+/editor-nou 200). **AI-ul ONOREAZĂ tipurile** (gap R3 închis): pe prod, clasa VII/Radicali, 1×fiecare tip → Gemini Flash a produs EXACT 5 secțiuni (I. Alegere multiplă a/b/c/d · II. Completare „___" · III. Rezolvare de probleme · IV. Adevărat/Fals A/F · V. Corespondență coloana A↔B), numerotare continuă, LaTeX randat KaTeX în preview. Backend `traduceri-api` NEATINS.
 
 ---
 
