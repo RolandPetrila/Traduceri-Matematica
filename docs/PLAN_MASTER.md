@@ -261,8 +261,8 @@
 
 - [x] **P1 — Modul Planșe reintrodus în `HANDOFF_SESIUNE.md`** (2026-08-03, secțiune „MODUL PLANȘE" cu starea reală: 2/8 faze, 1 generator/6).
 - [x] **P2 — Promisiunea „offline" REPARATĂ (2026-08-03):** `sw.js STATIC_ASSETS` += cele 7 fișiere prod din `/planse/` (index/app/style + generators/labirint + lib/prng/render/signature; `selftest.html` exclus) → precache la install ⇒ modulul merge OFFLINE imediat după instalare (înainte doar network-first le cacha DUPĂ prima vizită). + regulă cache-first pe `/planse/`. `sw.js` parsează. ⚠️ Bump `CACHE_VERSION` la deploy.
-- [ ] P3 — (backlog, decizia Roland: NU acum) Cele 5 generatoare rămase (numere/integramă/unește/dictare/căutare) + `data/*.json`. Efort **mare**
-- [ ] P4 — (backlog, decizia Roland: NU acum) `lib/history.js` (istoric + coș → un singur PDF) + unicitate persistentă între sesiuni. Efort **mediu**
+- [x] **P3 — 5/5 generatoare LIVRATE** (2026-08-05→08-07): căutare + unește (DEPLOYAT v36) · dictare + numere-SOLVER (DEPLOYAT v37) · **integramă-SOLVER** (moară de vânt, commit `bca987c`, NEDEPLOYAT). Cele 2 cu solver (numere/integramă) = disciplină domeniu-tipărit + verificator independent + round-trip HTML, gate verde.
+- [x] **P4 — `lib/history.js` LIVRAT** (2026-08-07, commit `aa9c49a`, NEDEPLOYAT): coș cross-generator → un singur PDF (`PlanseRender.printDocument`) + unicitate persistentă în localStorage (`seen`, plafon FIFO 300). Tab nou „Coș". Gate selftest.html §9 + probat live (persistență reală la reload).
 
 ---
 

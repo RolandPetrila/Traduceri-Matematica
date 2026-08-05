@@ -1,8 +1,27 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 (restanță manuală Render închisă). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-07.md`** (continuă: **integramă (SOLVER soluție-unică) → P4 (istoric→PDF)** + eyeball; dictare/numere/teste = gata & live).
+> Ultima actualizare: 2026-08-07 (**P3 modul Planșe COMPLET 5/5 + P4 istoric→PDF LIVRATE, NEDEPLOYATE**). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`** (rămas: **deploy grupat** integramă+P4 + **eyeball** Roland pe telefon — cod și gate sunt gata).
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-07) — integramă (SOLVER) + P4 istoric→PDF LIVRATE (NEDEPLOYATE)
+
+**Modulul Planșe e acum COMPLET pe cod: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + P4 (coș→PDF).** Ultimele 2 piese ale planului din 2026-08-03 sunt gata.
+
+- ✅ **Integramă** (`generators/integrama.js`, commit `bca987c`) — ULTIMUL generator P3, SOLVER soluție-unică. Formă confirmată de Roland via mock (AskUserQuestion, „Moară de vânt"): lanț de 1/2/3 „mori" (Ușor/Standard/Greu) — fiecare moară = 4 ecuații scurte `a op b = c` (una din fiecare +,−,×,÷) încrucișate într-o celulă centrală comună; morile se leagă într-o „coloană vertebrală" orizontală unică.
+  - **Disciplina numere.js respectată integral:** domeniu TIPĂRIT (inclusiv centrele, nu doar frunzele — decizie explicită, altfel enumerarea verificatorului pe 1..N ar rata soluții cu valori peste N la celulele-rezultat ascunse); construcție prin rezolvare directă/inversă (nu ghicire); set ascuns ales printr-o euristică de propagare forțată (`canForcePropagate`, DOAR euristică de construcție); **verificator INDEPENDENT** (`countSolutions`, backtracking separat, nu împarte cod cu euristica).
+  - **Bug real prins de runda advisor finală** (înainte de „gata"): verificarea operatorilor la round-trip era un no-op (compara `kind==="op"` pe celule care erau mereu `"num"`) — un `×` randat greșit ca `+` ar fi trecut selftest-ul verde. Fix: `parsePuzzleHtml` reconstruiește acum ecuațiile din POZIȚII + glife PARSATE (independent de starea internă `st`), nu doar din clase CSS. **Dovedit cu glif plantat greșit → FAIL, revert → OK** (aceeași disciplină ca „glifă minus→+" la numere).
+  - **Gate:** oracol aritmetic (4 operații + ÷ neexact) + 3×24 seed-uri (unic + round-trip HTML + determinist + toate 4 operațiile per moară) + control negativ (ecuație cu 2 necunoscute → solverul găsește 5 soluții, nu 1). `next build` OK.
+  - **Dovedit LIVE** (static :8899 + Chrome MCP, verificat direct din DOM nu doar vizual): Greu (3 mori, 10 ecuații) — toate valorile + toggle soluție corecte, print-crop 194/210mm (cazul cel mai lat).
+- ✅ **P4** (`lib/history.js`, commit `aa9c49a`) — coș cross-generator → UN SINGUR PDF + unicitate persistentă (localStorage, plafon FIFO 300 semnături). Tab nou „🧺 Coș". Toate 6 generatoarele au acum buton „Adaugă în coș" + `generate()` sare peste semnăturile deja folosite ISTORIC (nu doar dedup în lotul curent).
+  - **Gate:** selftest.html §9 (persistență reală + dedup + evicție FIFO cu control negativ) + harness Node (fallback in-memory, localStorage nu există în Node).
+  - **Dovedit LIVE:** adăugat din Numere ȘI Integramă → **persistă la un reload REAL de pagină** → scos un item individual → print (document combinat conține AMBELE tipuri de grilă + paginile de răspuns) → coșul se golește, istoricul semnăturilor rămâne intact (verificat: `seen` are 4 intrări după print, `cart` are 0).
+- 🔧 **Housekeeping în timpul rundei:** `docs/PLAN_MASTER.md:264-265` (P3/P4 marcate greșit „backlog, NU acum") corectate la `[x]`. `scratchpad/planse_integrama.js` + `scratchpad/planse_history.js` noi (harness-uri Node, UNTRACKED, model `planse_numere.js`).
+- ⚠️ **NEDEPLOYAT.** `CACHE_VERSION` nu s-a bump-uit (fișierele noi sunt DEJA în `PLANSE_ASSETS` din `sw.js`, gata de precache la următorul deploy). Deploy grupat, doar cu confirmarea explicită a lui Roland („execută").
+- ➡️ **RĂMAS:** 1) deploy grupat (bump `CACHE_VERSION` + `cd frontend && vercel deploy --prod` + verifică ALIASUL — 2 proiecte Vercel) 2) eyeball Roland pe telefon: print PDF real + offline pentru integramă + coșul P4 (dictare/numere/căutare/unește deja verificate din rundele anterioare).
+- 📝 **De reținut (Cristina-eyeball, neblocant):** glifa de împărțire la integramă e `÷` (U+00F7); manualele RO folosesc uneori `:` — semnalat, nu schimbat fără confirmare.
 
 ---
 
