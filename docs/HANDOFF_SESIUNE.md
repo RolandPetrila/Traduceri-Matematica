@@ -1,8 +1,25 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 (**v39 LIVE pe prod — modul Planșe COMPLET 6/6 generatoare + P4**, verificat pe alias). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
-> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`** (rămas: **eyeball Roland pe telefon** — cod, gate și deploy sunt gata).
+> Ultima actualizare: 2026-08-07 seara (**4 cerințe NOI de la Roland**: integramă multi-formă, extindere varietate Planșe, modul „Școlare" full-curriculum, investigație OCR). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`** (conține TOATE cele 4 cerințe noi, detaliate, cu deciziile deja luate — vezi blocul de mai jos pt rezumat).
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-07 seara) — 4 cerințe NOI Roland (planificate, NEÎNCEPUTE — vezi `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md` pt detaliu complet)
+
+**v39 e LIVE pe prod (integramă+P4 deployate și verificate — vezi blocul de mai jos).** Roland a cerut, în aceeași seară, 4 lucruri noi de executat într-o sesiune nouă:
+
+- **A) Integramă — mai multe forme.** Nu doar „moara de vânt": Roland vrea un catalog de topologii, alese ALEATORIU în funcție de dificultate, cu un control de „cât de complex" vrea exercițiul. Motorul de aritmetică + verificatorul independent din `generators/integrama.js` sunt DEJA topologie-agnostice (nu hardcodate pe „moară") — extinderea e mai ales geometrie nouă, nu solver nou. Recomandare: catalog de forme (model `dictare.js`/`uneste.js`) + selector „Formă" paralel cu „Dificultate". **OBLIGATORIU mock + AskUserQuestion + rundă advisor înainte de cod pt fiecare formă nouă** — lecția „3 respingeri" din istoricul proiectului (vezi memoria `finding_integrama_windmill_and_p4_history_2026_08_07`) se aplică la ORICE formă nouă, nu doar la prima.
+- **B) Extinde varietatea la celelalte generatoare din Planșe.** Ordine recomandată ieftin→scump: unește/dictare/căutare (cresc catalog forme/teme, risc mic, aditiv) → numere (grile mai mari 4×4/5×5, risc mediu) → labirint (forme/ieșiri multiple, risc mai mare — invarianți arbore-perfect+BFS).
+- **C) Modul „Școlare 🌐" — toată programa școlară din România** (grădiniță→liceu). Cerință extinsă: Cristina predă la clasele V-XII; Roland are nevoie și de grădiniță+clasele 0-IV pt copiii lui. **Cerință fermă a lui Roland: acoperire 100% a tuturor claselor/categoriilor — pilotul de start e la alegerea sesiunii noi, ținta finală nu se negociază.**
+  - **Decizie de arhitectură REZOLVATĂ azi** (risc de copyright discutat explicit cu Roland, pe surse verificate live — edu.ro, rocnee.eu): cererea inițială zicea „descarcă manualele și include-le în documentație" — am semnalat risc real (manuale.edu.ro e gratuit DE CONSULTAT, nu neapărat liber de redistribuit într-un alt produs/repo committed pe git). Roland a acceptat argumentul (manuale statice devin oricum învechite). **Decizie finală:** sursa de CONȚINUT = programa școlară OFICIALĂ (rocnee.eu, document public fără autor privat); manualele aprobate MEN = doar referință de aliniere (citite, nu stocate în masă); conținut nou = ORIGINAL generat AI, aliniat curricular — exact modelul deja dovedit la `project_curriculum_audit_2026_07_28` (audit editor vs 13 manuale). Dacă e nevoie de PDF-uri complete ca referință de dezvoltare, DOAR local gitignored (ca `99_Roland_Work`), NICIODATĂ committed.
+  - **Atenție timing:** la verificarea de azi, edu.ro anunța 175 de programe școlare NOI pt liceu „în transparență" (reformă activă, sursă `edu.ro/press_rel_38_2026`) — sesiunea nouă trebuie să verifice LIVE statusul curent, nu presupune stabilitate. Grădinița NU are „manuale" în sens clasic — are „Curriculum pentru educație timpurie" (domenii de dezvoltare).
+  - Task complex/multi-sesiune/risc real → **R-PLAN**: `PLAN_SCOLARE_[data].md` cu checklist bifabil pe clasă/categorie, NU începe cod fără confirmarea planului (măcar pilotul) de la Roland.
+- **D) Investigație OCR „limite" — VERIFICAT AZI, NEREPRODUS.** Roland a semnalat că formularea originală nu se păstrează la OCR-ul `limite_matematica.jpeg`. Am randat `Teste_Output/limite_matematica.pdf` (fișier din 2026-08-06) și l-am comparat vizual, formulă cu formulă, cu sursa — **toate 9 limitele (a-i) se potrivesc exact**, consistent cu scorul anterior din memorie (`finding_ocr_test_scorecard_2026_07_31`: math 10/10). Nu presupune bug-ul ca dovedit — cere-i lui Roland un exemplu precis (ce text, ce fișier, ce flux) înainte de orice fix.
+- **Cerință de proces nouă (Roland, 2026-08-07):** raportare LIVE a statusului fiecărei implementări, nu doar la finalul fazei.
+
+**Detaliu complet, cu tot raționamentul și opțiunile discutate: `docs/PROMPT_SESIUNE_NOUA_2026-08-08.md`.**
 
 ---
 
