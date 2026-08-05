@@ -1,7 +1,8 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-06 (**v38 LIVE pe prod:** Teste-selecție-tipuri-item + P3 Planșe 4/5 Numere(SOLVER)/Dictare). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-07 (restanță manuală Render închisă). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ➡️ **PENTRU SESIUNEA NOUĂ: lipește `docs/PROMPT_SESIUNE_NOUA_2026-08-07.md`** (continuă: **integramă (SOLVER soluție-unică) → P4 (istoric→PDF)** + eyeball; dictare/numere/teste = gata & live).
+> ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
 
 ---
 

@@ -20,7 +20,8 @@
     {
       id: "integrama",
       label: "Integramă",
-      desc: "Integramă aritmetică cu soluție unică.",
+      desc: "Integramă aritmetică cu soluție unică (moară de vânt).",
+      ready: true,
     },
     {
       id: "labirint",
@@ -72,6 +73,8 @@
       css += "\n" + (window.PlanseGen.dictare.interactiveCss || "");
     if (window.PlanseGen && window.PlanseGen.numere)
       css += "\n" + (window.PlanseGen.numere.interactiveCss || "");
+    if (window.PlanseGen && window.PlanseGen.integrama)
+      css += "\n" + (window.PlanseGen.integrama.interactiveCss || "");
     if (css) {
       var s = document.createElement("style");
       s.textContent = css;
@@ -1199,6 +1202,206 @@
     });
   }
 
+  // ---------------- INTEGRAMĂ (moară de vânt) ----------------
+  function mountIntegrama() {
+    var integrama = window.PlanseGen && window.PlanseGen.integrama;
+    if (!integrama) {
+      panel.innerHTML =
+        '<div class="wip"><h2>Eroare</h2><p>Generatorul integrama nu s-a încărcat.</p></div>';
+      return;
+    }
+    var LEVELS = [
+      { key: "Usor", label: "Ușor (1 moară, 1–12, 3 goluri)" },
+      { key: "Standard", label: "Standard (2 mori, 1–16, 5 goluri)" },
+      { key: "Greu", label: "Greu (3 mori, 1–20, 7 goluri)" },
+    ];
+
+    panel.innerHTML =
+      '<div class="gen">' +
+      '  <form class="gen-form" id="ig-form">' +
+      '    <fieldset class="fld"><legend>Dificultate</legend>' +
+      '      <div class="radios" id="ig-dif">' +
+      LEVELS.map(function (l, i) {
+        return (
+          '<label class="radio"><input type="radio" name="igdif" value="' +
+          l.key +
+          '"' +
+          (i === 1 ? " checked" : "") +
+          "> " +
+          l.label +
+          "</label>"
+        );
+      }).join("") +
+      "      </div></fieldset>" +
+      '    <fieldset class="fld"><legend>Număr integrame</legend>' +
+      '      <div class="stepper">' +
+      '        <button type="button" class="chalk-mini" id="ig-pminus">−</button>' +
+      '        <input type="number" id="ig-np" min="1" max="8" value="2" inputmode="numeric">' +
+      '        <button type="button" class="chalk-mini" id="ig-pplus">+</button>' +
+      "      </div>" +
+      '      <p class="adv-note">Fiecare integramă are soluție UNICĂ (verificată). Fiecare cruce = 4 ecuații scurte (+, −, ×, ÷) care se ating într-un număr comun.</p>' +
+      "    </fieldset>" +
+      '    <details class="adv"><summary>Avansat</summary>' +
+      '      <div class="adv-row"><label>Seed (opțional) <input type="number" id="ig-seed" placeholder="aleator" inputmode="numeric"></label></div>' +
+      "    </details>" +
+      '    <button type="submit" class="chalk-cta">⚡ Generează</button>' +
+      "  </form>" +
+      '  <div class="gen-actions" id="ig-actions" style="display:none">' +
+      '    <button type="button" class="chalk-btn2" id="ig-sol">👁 Arată soluția</button>' +
+      '    <button type="button" class="chalk-btn2" id="ig-print">🖨 Print / PDF</button>' +
+      '    <span class="gen-meta" id="ig-meta"></span>' +
+      "  </div>" +
+      '  <div class="gen-preview" id="ig-preview"><p class="hint">Alege dificultatea, apoi „Generează".</p></div>' +
+      "</div>";
+
+    var form = document.getElementById("ig-form");
+    var npInput = document.getElementById("ig-np");
+    var seedInput = document.getElementById("ig-seed");
+    var preview = document.getElementById("ig-preview");
+    var actions = document.getElementById("ig-actions");
+    var solBtn = document.getElementById("ig-sol");
+    var printBtn = document.getElementById("ig-print");
+    var meta = document.getElementById("ig-meta");
+
+    var state = { items: [], showSolution: false };
+
+    function selectedDif() {
+      var r = document.querySelector('input[name="igdif"]:checked');
+      return r ? r.value : "Standard";
+    }
+    function clampNp() {
+      var v = parseInt(npInput.value, 10);
+      if (isNaN(v)) v = 1;
+      v = Math.max(1, Math.min(8, v));
+      npInput.value = v;
+      return v;
+    }
+    document.getElementById("ig-pminus").addEventListener("click", function () {
+      npInput.value = Math.max(1, clampNp() - 1);
+    });
+    document.getElementById("ig-pplus").addEventListener("click", function () {
+      npInput.value = Math.min(8, clampNp() + 1);
+    });
+
+    function randomSeed() {
+      if (window.crypto && window.crypto.getRandomValues) {
+        var a = new Uint32Array(1);
+        window.crypto.getRandomValues(a);
+        return a[0];
+      }
+      return Math.floor(Math.random() * 0xffffffff);
+    }
+
+    function generate() {
+      var dif = selectedDif();
+      var np = clampNp();
+      var seedRaw = seedInput.value.trim();
+      var seedAdv = seedRaw === "" ? null : parseInt(seedRaw, 10);
+      var base = seedAdv !== null && !isNaN(seedAdv) ? seedAdv : randomSeed();
+      var items = [];
+      var seen = {};
+      var seed = base;
+      var guard = 0;
+      while (items.length < np && guard < np + 400) {
+        guard++;
+        try {
+          var it = integrama.buildOne({ dificultate: dif }, seed);
+          if (!seen[it.semnatura]) {
+            seen[it.semnatura] = true;
+            items.push(it);
+          }
+        } catch (e) {
+          if (window.console) console.error("[planse:integrama]", e);
+        }
+        seed++;
+      }
+      state.items = items;
+      state.showSolution = false;
+      renderPreview();
+      meta.textContent =
+        items.length +
+        " integram" +
+        (items.length === 1 ? "ă" : "e") +
+        " · seed bază " +
+        base;
+      actions.style.display = items.length ? "flex" : "none";
+      solBtn.textContent = "👁 Arată soluția";
+    }
+
+    function renderPreview() {
+      if (!state.items.length) {
+        preview.innerHTML = '<p class="hint">Nicio integramă generată.</p>';
+        return;
+      }
+      var html = "";
+      for (var i = 0; i < state.items.length; i++) {
+        var r = integrama.render(state.items[i]);
+        html +=
+          '<div class="preview-item"><div class="preview-cap">Integramă ' +
+          (i + 1) +
+          "/" +
+          state.items.length +
+          "</div>" +
+          r.interactive +
+          "</div>";
+      }
+      preview.innerHTML = html;
+      applySolution();
+    }
+
+    function applySolution() {
+      var grids = preview.querySelectorAll(".ig-grid");
+      for (var i = 0; i < grids.length; i++) {
+        grids[i].classList.toggle("show-solution", state.showSolution);
+      }
+    }
+
+    solBtn.addEventListener("click", function () {
+      state.showSolution = !state.showSolution;
+      solBtn.textContent = state.showSolution
+        ? "🙈 Ascunde soluția"
+        : "👁 Arată soluția";
+      applySolution();
+    });
+
+    printBtn.addEventListener("click", function () {
+      if (!state.items.length) return;
+      var total = state.items.length;
+      var puzzle = [];
+      var answer = [];
+      for (var i = 0; i < total; i++) {
+        var pg = integrama.renderPages(state.items[i], i + 1, total);
+        puzzle.push(pg.puzzle);
+        answer.push(pg.answer);
+      }
+      var doc = window.PlanseRender.printDocument({
+        title: "Integramă — careuri",
+        css: integrama.printCss,
+        puzzlePages: puzzle,
+        answerPages: answer,
+      });
+      var w = window.PlanseRender.openPrintWindow(doc);
+      if (!w) {
+        var blob = new Blob([doc], { type: "text/html" });
+        var url = URL.createObjectURL(blob);
+        var old = document.getElementById("ig-fallback");
+        if (old) old.remove();
+        var note = el(
+          '<div id="ig-fallback" class="fallback">Fereastra de print a fost blocată. ' +
+            '<a href="' +
+            url +
+            '" target="_blank" rel="noopener">Deschide foaia de print →</a></div>',
+        );
+        actions.parentNode.insertBefore(note, preview);
+      }
+    });
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      generate();
+    });
+  }
+
   // ---------------- SHELL ----------------
   function renderPanel(tab) {
     if (tab.id === "labirint" && tab.ready) {
@@ -1211,6 +1414,8 @@
       mountDictare();
     } else if (tab.id === "numere" && tab.ready) {
       mountNumere();
+    } else if (tab.id === "integrama" && tab.ready) {
+      mountIntegrama();
     } else {
       wipPanel(tab);
     }
