@@ -70,6 +70,7 @@
     <script src="./lib/prng.js"></script>
     <script src="./lib/signature.js"></script>
     <script src="./lib/render.js"></script>
+    <script src="./lib/history.js"></script>
     <script src="./generators/labirint.js"></script>
     <script src="./generators/cautare.js"></script>
     <script src="./generators/uneste.js"></script>
@@ -252,6 +253,17 @@
             "8) Integramă (moară de vânt) — soluție UNICĂ (solver independent) + round-trip HTML",
           );
           var res = window.PlanseGen.integrama.selftest();
+          res.detalii.forEach(function (d) {
+            line(g, d, d.indexOf("[FAIL]") === -1);
+          });
+        })();
+
+        // 9) Istoric & Coș (P4) — unicitate persistentă + coș (localStorage REAL în browser)
+        (function () {
+          var g = group(
+            "9) Istoric & Coș (lib/history.js) — persistență localStorage + dedup + evicție",
+          );
+          var res = window.PlanseHistory.selftest();
           res.detalii.forEach(function (d) {
             line(g, d, d.indexOf("[FAIL]") === -1);
           });

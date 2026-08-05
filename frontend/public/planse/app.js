@@ -54,6 +54,12 @@
       online: true,
       desc: "Fișe școlare generate de AI (online, Faza 4).",
     },
+    {
+      id: "istoric",
+      label: "🧺 Coș",
+      desc: "Coșul curent + istoricul planșelor deja folosite.",
+      ready: true,
+    },
   ];
 
   var nav = document.getElementById("subtabs");
@@ -86,6 +92,27 @@
     var t = document.createElement("template");
     t.innerHTML = html.trim();
     return t.content.firstChild;
+  }
+
+  // P4: helper-e comune pt „coș & istoric" (lib/history.js), folosite de toate
+  // generatoarele. Fail-open dacă lib-ul lipsește (ex. precache offline vechi).
+  function historyFresh(sig) {
+    return !(window.PlanseHistory && window.PlanseHistory.isKnown(sig));
+  }
+  function addBatchToCart(tip, items, btn) {
+    if (!window.PlanseHistory || !items.length) return;
+    var entries = items.map(function (it) {
+      return { tip: tip, semnatura: it.semnatura, item: it };
+    });
+    var added = window.PlanseHistory.addToCart(entries);
+    if (btn) {
+      var orig = btn.getAttribute("data-orig") || btn.textContent;
+      btn.setAttribute("data-orig", orig);
+      btn.textContent = added ? "✓ Adăugat (" + added + ")" : "🧺 Deja în coș";
+      setTimeout(function () {
+        btn.textContent = orig;
+      }, 1600);
+    }
   }
 
   function wipPanel(tab) {
@@ -162,6 +189,7 @@
       '  <div class="gen-actions" id="lab-actions" style="display:none">' +
       '    <button type="button" class="chalk-btn2" id="lab-sol">👁 Arată soluția</button>' +
       '    <button type="button" class="chalk-btn2" id="lab-print">🖨 Print / PDF</button>' +
+      '    <button type="button" class="chalk-btn2" id="lab-cart">🧺 Adaugă în coș</button>' +
       '    <span class="gen-meta" id="lab-meta"></span>' +
       "  </div>" +
       '  <div class="gen-preview" id="lab-preview"><p class="hint">Alege nivelul și numărul, apoi „Generează". Preview-ul apare aici.</p></div>' +
@@ -175,7 +203,11 @@
     var actions = document.getElementById("lab-actions");
     var solBtn = document.getElementById("lab-sol");
     var printBtn = document.getElementById("lab-print");
+    var cartBtn = document.getElementById("lab-cart");
     var meta = document.getElementById("lab-meta");
+    cartBtn.addEventListener("click", function () {
+      addBatchToCart("labirint", state.items, cartBtn);
+    });
 
     var state = { items: [], showSolution: false, mm: null };
 
@@ -234,7 +266,7 @@
         guard++;
         try {
           var it = lab.buildOne({ nivel: nivel }, seed);
-          if (!seen[it.semnatura]) {
+          if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
           }
@@ -397,6 +429,7 @@
       '  <div class="gen-actions" id="ca-actions" style="display:none">' +
       '    <button type="button" class="chalk-btn2" id="ca-sol">👁 Arată soluția</button>' +
       '    <button type="button" class="chalk-btn2" id="ca-print">🖨 Print / PDF</button>' +
+      '    <button type="button" class="chalk-btn2" id="ca-cart">🧺 Adaugă în coș</button>' +
       '    <span class="gen-meta" id="ca-meta"></span>' +
       "  </div>" +
       '  <div class="gen-preview" id="ca-preview"><p class="hint">Alege tema și dificultatea, apoi „Generează".</p></div>' +
@@ -412,7 +445,11 @@
     var actions = document.getElementById("ca-actions");
     var solBtn = document.getElementById("ca-sol");
     var printBtn = document.getElementById("ca-print");
+    var cartBtn = document.getElementById("ca-cart");
     var meta = document.getElementById("ca-meta");
+    cartBtn.addEventListener("click", function () {
+      addBatchToCart("cautare", state.items, cartBtn);
+    });
 
     var state = { items: [], showSolution: false, mm: null };
 
@@ -472,7 +509,7 @@
             { tema: tema, dificultate: dif, nrCuvinte: nw },
             seed,
           );
-          if (!seen[it.semnatura]) {
+          if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
           }
@@ -627,6 +664,7 @@
       '  <div class="gen-actions" id="un-actions" style="display:none">' +
       '    <button type="button" class="chalk-btn2" id="un-sol">👁 Arată soluția</button>' +
       '    <button type="button" class="chalk-btn2" id="un-print">🖨 Print / PDF</button>' +
+      '    <button type="button" class="chalk-btn2" id="un-cart">🧺 Adaugă în coș</button>' +
       '    <span class="gen-meta" id="un-meta"></span>' +
       "  </div>" +
       '  <div class="gen-preview" id="un-preview"><p class="hint">Alege forma și dificultatea, apoi „Generează".</p></div>' +
@@ -640,7 +678,11 @@
     var actions = document.getElementById("un-actions");
     var solBtn = document.getElementById("un-sol");
     var printBtn = document.getElementById("un-print");
+    var cartBtn = document.getElementById("un-cart");
     var meta = document.getElementById("un-meta");
+    cartBtn.addEventListener("click", function () {
+      addBatchToCart("uneste", state.items, cartBtn);
+    });
 
     var state = { items: [], showSolution: false };
 
@@ -686,7 +728,7 @@
         guard++;
         try {
           var it = uneste.buildOne({ forma: forma, dificultate: dif }, seed);
-          if (!seen[it.semnatura]) {
+          if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
           }
@@ -842,6 +884,7 @@
       '  <div class="gen-actions" id="di-actions" style="display:none">' +
       '    <button type="button" class="chalk-btn2" id="di-sol">👁 Arată soluția</button>' +
       '    <button type="button" class="chalk-btn2" id="di-print">🖨 Print / PDF</button>' +
+      '    <button type="button" class="chalk-btn2" id="di-cart">🧺 Adaugă în coș</button>' +
       '    <span class="gen-meta" id="di-meta"></span>' +
       "  </div>" +
       '  <div class="gen-preview" id="di-preview"><p class="hint">Alege forma și dificultatea, apoi „Generează".</p></div>' +
@@ -855,7 +898,11 @@
     var actions = document.getElementById("di-actions");
     var solBtn = document.getElementById("di-sol");
     var printBtn = document.getElementById("di-print");
+    var cartBtn = document.getElementById("di-cart");
     var meta = document.getElementById("di-meta");
+    cartBtn.addEventListener("click", function () {
+      addBatchToCart("dictare", state.items, cartBtn);
+    });
 
     var state = { items: [], showSolution: false };
 
@@ -901,7 +948,7 @@
         guard++;
         try {
           var it = dictare.buildOne({ forma: forma, dificultate: dif }, seed);
-          if (!seen[it.semnatura]) {
+          if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
           }
@@ -1049,6 +1096,7 @@
       '  <div class="gen-actions" id="nm-actions" style="display:none">' +
       '    <button type="button" class="chalk-btn2" id="nm-sol">👁 Arată soluția</button>' +
       '    <button type="button" class="chalk-btn2" id="nm-print">🖨 Print / PDF</button>' +
+      '    <button type="button" class="chalk-btn2" id="nm-cart">🧺 Adaugă în coș</button>' +
       '    <span class="gen-meta" id="nm-meta"></span>' +
       "  </div>" +
       '  <div class="gen-preview" id="nm-preview"><p class="hint">Alege dificultatea, apoi „Generează".</p></div>' +
@@ -1061,7 +1109,11 @@
     var actions = document.getElementById("nm-actions");
     var solBtn = document.getElementById("nm-sol");
     var printBtn = document.getElementById("nm-print");
+    var cartBtn = document.getElementById("nm-cart");
     var meta = document.getElementById("nm-meta");
+    cartBtn.addEventListener("click", function () {
+      addBatchToCart("numere", state.items, cartBtn);
+    });
 
     var state = { items: [], showSolution: false };
 
@@ -1106,7 +1158,7 @@
         guard++;
         try {
           var it = numere.buildOne({ dificultate: dif }, seed);
-          if (!seen[it.semnatura]) {
+          if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
           }
@@ -1249,6 +1301,7 @@
       '  <div class="gen-actions" id="ig-actions" style="display:none">' +
       '    <button type="button" class="chalk-btn2" id="ig-sol">👁 Arată soluția</button>' +
       '    <button type="button" class="chalk-btn2" id="ig-print">🖨 Print / PDF</button>' +
+      '    <button type="button" class="chalk-btn2" id="ig-cart">🧺 Adaugă în coș</button>' +
       '    <span class="gen-meta" id="ig-meta"></span>' +
       "  </div>" +
       '  <div class="gen-preview" id="ig-preview"><p class="hint">Alege dificultatea, apoi „Generează".</p></div>' +
@@ -1261,7 +1314,11 @@
     var actions = document.getElementById("ig-actions");
     var solBtn = document.getElementById("ig-sol");
     var printBtn = document.getElementById("ig-print");
+    var cartBtn = document.getElementById("ig-cart");
     var meta = document.getElementById("ig-meta");
+    cartBtn.addEventListener("click", function () {
+      addBatchToCart("integrama", state.items, cartBtn);
+    });
 
     var state = { items: [], showSolution: false };
 
@@ -1306,7 +1363,7 @@
         guard++;
         try {
           var it = integrama.buildOne({ dificultate: dif }, seed);
-          if (!seen[it.semnatura]) {
+          if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
           }
@@ -1402,6 +1459,134 @@
     });
   }
 
+  // ---------------- ISTORIC & COȘ (P4) ----------------
+  function mountIstoric() {
+    var H = window.PlanseHistory;
+    if (!H) {
+      panel.innerHTML =
+        '<div class="wip"><h2>Eroare</h2><p>lib/history.js nu s-a încărcat.</p></div>';
+      return;
+    }
+
+    function doPrint() {
+      var cart = H.getCart();
+      if (!cart.length) return;
+      var total = cart.length;
+      var puzzle = [],
+        answer = [];
+      var cssParts = {},
+        cssOrder = [];
+      cart.forEach(function (entry, idx) {
+        var gen = window.PlanseGen[entry.tip];
+        if (!gen) return;
+        var pg = gen.renderPages(entry.item, idx + 1, total);
+        puzzle.push(pg.puzzle);
+        answer.push(pg.answer);
+        if (!cssParts[entry.tip]) {
+          cssParts[entry.tip] = gen.printCss || "";
+          cssOrder.push(entry.tip);
+        }
+      });
+      var css = cssOrder
+        .map(function (t) {
+          return cssParts[t];
+        })
+        .join("\n");
+      var doc = window.PlanseRender.printDocument({
+        title: "Coș planșe",
+        css: css,
+        puzzlePages: puzzle,
+        answerPages: answer,
+      });
+      var w = window.PlanseRender.openPrintWindow(doc);
+      if (!w) {
+        var blob = new Blob([doc], { type: "text/html" });
+        var url = URL.createObjectURL(blob);
+        var note = el(
+          '<div class="fallback">Fereastra de print a fost blocată. ' +
+            '<a href="' +
+            url +
+            '" target="_blank" rel="noopener">Deschide foaia de print →</a></div>',
+        );
+        panel.insertBefore(note, panel.firstChild);
+        return; // nu goli coșul dacă print-ul n-a pornit — userul poate reîncerca
+      }
+      H.clearCart();
+      renderList();
+    }
+
+    function renderList() {
+      var cart = H.getCart();
+      var html = '<div class="gen">';
+      html +=
+        '<p class="adv-note">Planșe adăugate din ORICE generator (Numere, Integramă, Labirint, Unește, Dictare, Căutare) → un SINGUR document de print. Fiecare planșă adăugată aici e reținută ca „deja folosită" — generatoarele nu o vor mai oferi din nou automat.</p>';
+      html += '<div class="gen-actions" style="margin-bottom:16px;">';
+      html +=
+        '<button type="button" class="chalk-cta" id="ist-print"' +
+        (cart.length ? "" : " disabled") +
+        ">🖨 Printează coșul (" +
+        cart.length +
+        ")</button>";
+      html +=
+        '<button type="button" class="chalk-btn2" id="ist-clear"' +
+        (cart.length ? "" : " disabled") +
+        ">🗑 Golește coșul</button>";
+      html += "</div>";
+      if (!cart.length) {
+        html +=
+          '<p class="hint">Coșul e gol. Generează o planșă la orice tip și apasă „🧺 Adaugă în coș".</p>';
+      } else {
+        html += '<div class="gen-preview">';
+        cart.forEach(function (entry, idx) {
+          var gen = window.PlanseGen[entry.tip];
+          var rr = null;
+          try {
+            rr = gen ? gen.render(entry.item) : null;
+          } catch (e) {
+            rr = null;
+          }
+          html +=
+            '<div class="preview-item"><div class="preview-cap">' +
+            (idx + 1) +
+            "/" +
+            cart.length +
+            " — " +
+            entry.tip +
+            ' <button type="button" class="chalk-mini" data-remove="' +
+            entry.semnatura +
+            '">🗑</button></div>';
+          html += rr
+            ? rr.interactive
+            : '<p class="hint">(nu s-a putut re-randa — generatorul lipsește)</p>';
+          html += "</div>";
+        });
+        html += "</div>";
+      }
+      html += "</div>";
+      panel.innerHTML = html;
+
+      var printBtn = document.getElementById("ist-print");
+      var clearBtn = document.getElementById("ist-clear");
+      if (printBtn) printBtn.addEventListener("click", doPrint);
+      if (clearBtn)
+        clearBtn.addEventListener("click", function () {
+          H.clearCart();
+          renderList();
+        });
+      Array.prototype.forEach.call(
+        panel.querySelectorAll("[data-remove]"),
+        function (btn) {
+          btn.addEventListener("click", function () {
+            H.removeFromCart(btn.getAttribute("data-remove"));
+            renderList();
+          });
+        },
+      );
+    }
+
+    renderList();
+  }
+
   // ---------------- SHELL ----------------
   function renderPanel(tab) {
     if (tab.id === "labirint" && tab.ready) {
@@ -1416,6 +1601,8 @@
       mountNumere();
     } else if (tab.id === "integrama" && tab.ready) {
       mountIntegrama();
+    } else if (tab.id === "istoric" && tab.ready) {
+      mountIstoric();
     } else {
       wipPanel(tab);
     }

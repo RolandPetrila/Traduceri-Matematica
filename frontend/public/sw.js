@@ -26,6 +26,7 @@ const PLANSE_ASSETS = [
   "/planse/lib/prng.js",
   "/planse/lib/render.js",
   "/planse/lib/signature.js",
+  "/planse/lib/history.js",
 ];
 
 // Allow the page to force an immediately-installed worker to take over.
