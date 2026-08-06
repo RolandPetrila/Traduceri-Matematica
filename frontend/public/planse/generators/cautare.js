@@ -30,7 +30,12 @@
   var DIFF = {
     Usor: { n: 10, dirs: [D_E, D_S], defN: 6, maxN: 8 },
     Standard: { n: 12, dirs: [D_E, D_S, D_SE], defN: 8, maxN: 10 },
-    Greu: { n: 15, dirs: [D_E, D_S, D_SE, D_W, D_N, D_NW, D_SW, D_NE], defN: 10, maxN: 12 },
+    Greu: {
+      n: 15,
+      dirs: [D_E, D_S, D_SE, D_W, D_N, D_NW, D_SW, D_NE],
+      defN: 10,
+      maxN: 12,
+    },
   };
 
   var FILL = "ABCDEFGHIJLMNOPRSTUVZ"; // pool litere RO fără diacritice/rare (Q,W,Y,K)
@@ -40,47 +45,272 @@
     matematica: {
       label: "Matematică",
       words: [
-        "triunghi", "patrat", "cerc", "fractie", "produs", "suma", "diferenta",
-        "cat", "arie", "perimetru", "unghi", "dreapta", "numar", "adunare",
-        "scadere", "inmultire", "impartire", "radical", "putere", "ecuatie",
-        "grafic", "functie", "volum", "diagonala", "bisectoare", "mediana",
-        "procent", "medie", "romb", "cub", "sfera", "linie", "punct", "raza",
+        "triunghi",
+        "patrat",
+        "cerc",
+        "fractie",
+        "produs",
+        "suma",
+        "diferenta",
+        "cat",
+        "arie",
+        "perimetru",
+        "unghi",
+        "dreapta",
+        "numar",
+        "adunare",
+        "scadere",
+        "inmultire",
+        "impartire",
+        "radical",
+        "putere",
+        "ecuatie",
+        "grafic",
+        "functie",
+        "volum",
+        "diagonala",
+        "bisectoare",
+        "mediana",
+        "procent",
+        "medie",
+        "romb",
+        "cub",
+        "sfera",
+        "linie",
+        "punct",
+        "raza",
       ],
     },
     animale: {
       label: "Animale",
       words: [
-        "pisica", "caine", "elefant", "leu", "tigru", "urs", "vulpe", "iepure",
-        "cal", "vaca", "oaie", "capra", "gaina", "rata", "peste", "delfin",
-        "balena", "soarece", "lup", "cerb", "veverita", "arici", "broasca",
-        "albina", "fluture", "girafa", "zebra", "maimuta", "papagal", "bufnita",
+        "pisica",
+        "caine",
+        "elefant",
+        "leu",
+        "tigru",
+        "urs",
+        "vulpe",
+        "iepure",
+        "cal",
+        "vaca",
+        "oaie",
+        "capra",
+        "gaina",
+        "rata",
+        "peste",
+        "delfin",
+        "balena",
+        "soarece",
+        "lup",
+        "cerb",
+        "veverita",
+        "arici",
+        "broasca",
+        "albina",
+        "fluture",
+        "girafa",
+        "zebra",
+        "maimuta",
+        "papagal",
+        "bufnita",
       ],
     },
     fructe: {
       label: "Fructe și legume",
       words: [
-        "mar", "para", "pruna", "cirese", "capsuni", "banana", "portocala",
-        "lamaie", "strugure", "pepene", "morcov", "cartof", "rosie", "ceapa",
-        "usturoi", "varza", "ardei", "castravete", "vinete", "mazare", "fasole",
-        "salata", "ridiche", "dovleac", "kiwi", "ananas", "piersica", "caisa",
+        "mar",
+        "para",
+        "pruna",
+        "cirese",
+        "capsuni",
+        "banana",
+        "portocala",
+        "lamaie",
+        "strugure",
+        "pepene",
+        "morcov",
+        "cartof",
+        "rosie",
+        "ceapa",
+        "usturoi",
+        "varza",
+        "ardei",
+        "castravete",
+        "vinete",
+        "mazare",
+        "fasole",
+        "salata",
+        "ridiche",
+        "dovleac",
+        "kiwi",
+        "ananas",
+        "piersica",
+        "caisa",
       ],
     },
     natura: {
       label: "Natură",
       words: [
-        "soare", "luna", "stea", "nor", "ploaie", "zapada", "vant", "munte",
-        "rau", "mare", "padure", "copac", "floare", "iarba", "piatra", "nisip",
-        "frunza", "radacina", "lac", "deal", "camp", "cer", "curcubeu", "furtuna",
-        "insula", "vale", "izvor", "gheata",
+        "soare",
+        "luna",
+        "stea",
+        "nor",
+        "ploaie",
+        "zapada",
+        "vant",
+        "munte",
+        "rau",
+        "mare",
+        "padure",
+        "copac",
+        "floare",
+        "iarba",
+        "piatra",
+        "nisip",
+        "frunza",
+        "radacina",
+        "lac",
+        "deal",
+        "camp",
+        "cer",
+        "curcubeu",
+        "furtuna",
+        "insula",
+        "vale",
+        "izvor",
+        "gheata",
       ],
     },
     scoala: {
       label: "Școală",
       words: [
-        "carte", "caiet", "creion", "stilou", "guma", "rigla", "tabla", "creta",
-        "ghiozdan", "banca", "profesor", "elev", "lectie", "tema", "nota",
-        "pauza", "carioca", "penar", "harta", "glob", "compas", "raportor",
-        "manual", "recreatie", "coleg", "clasa",
+        "carte",
+        "caiet",
+        "creion",
+        "stilou",
+        "guma",
+        "rigla",
+        "tabla",
+        "creta",
+        "ghiozdan",
+        "banca",
+        "profesor",
+        "elev",
+        "lectie",
+        "tema",
+        "nota",
+        "pauza",
+        "carioca",
+        "penar",
+        "harta",
+        "glob",
+        "compas",
+        "raportor",
+        "manual",
+        "recreatie",
+        "coleg",
+        "clasa",
+      ],
+    },
+    corp_uman: {
+      label: "Corpul uman",
+      words: [
+        "cap",
+        "ochi",
+        "nas",
+        "gura",
+        "urechi",
+        "par",
+        "gat",
+        "umar",
+        "brat",
+        "mana",
+        "deget",
+        "picior",
+        "genunchi",
+        "glezna",
+        "spate",
+        "piept",
+        "inima",
+        "plaman",
+        "stomac",
+        "creier",
+        "muschi",
+        "piele",
+        "sprinceana",
+        "gene",
+        "obraz",
+        "barbie",
+        "calcai",
+        "talpa",
+        "cot",
+      ],
+    },
+    meserii: {
+      label: "Meserii",
+      words: [
+        "doctor",
+        "profesor",
+        "inginer",
+        "pompier",
+        "politist",
+        "medic",
+        "avocat",
+        "judecator",
+        "contabil",
+        "bucatar",
+        "frizer",
+        "croitor",
+        "zidar",
+        "tamplar",
+        "fermier",
+        "pescar",
+        "sofer",
+        "pilot",
+        "marinar",
+        "actor",
+        "cantaret",
+        "pictor",
+        "scriitor",
+        "jurnalist",
+        "veterinar",
+        "farmacist",
+        "brutar",
+        "macelar",
+        "electrician",
+        "mecanic",
+      ],
+    },
+    transport: {
+      label: "Transport",
+      words: [
+        "masina",
+        "bicicleta",
+        "motocicleta",
+        "autobuz",
+        "tren",
+        "avion",
+        "vapor",
+        "barca",
+        "camion",
+        "tramvai",
+        "metrou",
+        "elicopter",
+        "submarin",
+        "sanie",
+        "trotineta",
+        "karting",
+        "ambulanta",
+        "macara",
+        "remorca",
+        "autocar",
+        "tractor",
+        "roaba",
+        "cisterna",
+        "planor",
+        "balon",
+        "iaht",
       ],
     },
   };
@@ -107,7 +337,8 @@
   }
 
   function placeWord(grid, word, r, c, dr, dc) {
-    for (var i = 0; i < word.length; i++) grid[r + dr * i][c + dc * i] = word[i];
+    for (var i = 0; i < word.length; i++)
+      grid[r + dr * i][c + dc * i] = word[i];
   }
 
   // O încercare de plasare a tuturor cuvintelor (cele mai lungi întâi). Întoarce
@@ -132,7 +363,14 @@
       if (!cands.length) return null;
       var p = cands[rng.randrange(cands.length)];
       placeWord(grid, word, p[0], p[1], p[2], p[3]);
-      placed.push({ word: word, r: p[0], c: p[1], dr: p[2], dc: p[3], len: word.length });
+      placed.push({
+        word: word,
+        r: p[0],
+        c: p[1],
+        dr: p[2],
+        dc: p[3],
+        len: word.length,
+      });
     }
     return { grid: grid, placed: placed };
   }
@@ -180,7 +418,10 @@
         chosen.pop();
         res = tryPlace(n, cfg.dirs, chosen, rng);
       }
-      if (!res) throw new Error("VERIFICARE ESUATA: plasare imposibila " + temaId + "/" + dif);
+      if (!res)
+        throw new Error(
+          "VERIFICARE ESUATA: plasare imposibila " + temaId + "/" + dif,
+        );
     }
 
     // Umple golurile cu litere aleatoare (determinist pe RNG).
@@ -297,7 +538,8 @@
     var clasa = raspuns ? "page-a4 pagina-raspuns" : "page-a4";
     var antet, sub;
     if (raspuns) {
-      antet = '<div class="header-title">Răspuns &mdash; Căutare ' + nr + "</div>";
+      antet =
+        '<div class="header-title">Răspuns &mdash; Căutare ' + nr + "</div>";
       sub =
         '<div class="nota-parinte">Pentru părinte &mdash; nu se printează. Cuvintele găsite sunt evidențiate.</div>';
     } else {
@@ -440,11 +682,26 @@
           } catch (err) {
             ok = false;
             combOk = false;
-            detalii.push("[FAIL] " + temaId + "/" + dif + " seed=" + seed + ": " + err.message);
+            detalii.push(
+              "[FAIL] " +
+                temaId +
+                "/" +
+                dif +
+                " seed=" +
+                seed +
+                ": " +
+                err.message,
+            );
           }
         }
         if (combOk)
-          detalii.push("[OK] " + temaId + "/" + dif + " x4 seeds -> cuvinte lizibile, grila plina");
+          detalii.push(
+            "[OK] " +
+              temaId +
+              "/" +
+              dif +
+              " x4 seeds -> cuvinte lizibile, grila plina",
+          );
       }
     }
     return { ok: ok, detalii: detalii };
