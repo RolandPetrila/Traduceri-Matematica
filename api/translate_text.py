@@ -190,8 +190,8 @@ class handler(BaseHTTPRequestHandler):
             # it past ~4MB will 413. Proper fix (follow-up): strip img_b64 client-side
             # before POST (translation needs no image data) and re-attach after.
             if content_length > 4_000_000:  # 4MB — under Vercel's ~4.5MB body cap
-                self._send_json(413, {"error": "Request too large"}, origin)
-                return
+                from lib.exceptions import RequestTooLarge
+                raise RequestTooLarge("Request too large")
 
             body = self.rfile.read(content_length)
             data = json.loads(body.decode("utf-8"))

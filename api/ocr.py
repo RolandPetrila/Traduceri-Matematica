@@ -126,8 +126,8 @@ class handler(BaseHTTPRequestHandler):
 
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length > MAX_BODY_SIZE:
-                self._send_json(413, {"error": "Fisierul depaseste limita de 4MB", "status": "error"})
-                return
+                from lib.exceptions import RequestTooLarge
+                raise RequestTooLarge("Fisierul depaseste limita de 4MB")
 
             content_type = self.headers.get("Content-Type", "")
             body = self.rfile.read(content_length)

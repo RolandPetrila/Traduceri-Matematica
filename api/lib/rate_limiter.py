@@ -29,7 +29,6 @@ from collections import defaultdict
 # large multi-page document processed in a burst (up to ~120 pages/min).
 RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/api/ocr": (120, 2000),
-    "/api/translate": (120, 1000),
     "/api/translate-text": (120, 3000),
     "/api/convert": (30, 300),
     "/api/deepl-usage": (60, 1000),
