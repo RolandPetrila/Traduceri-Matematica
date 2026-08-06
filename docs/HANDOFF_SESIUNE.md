@@ -11,12 +11,16 @@
 
 **Ordine de start aleasă de Roland:** A) integramă multi-formă ÎNTÂI (motorul solver e deja topologie-agnostic — verificat azi). Roland a ales „toate 3 forme, pe rând": Zigzag → Cruce → Scară. B/C/D rămân în coadă, EXECUȚIE OBLIGATORIE, nu amânare pe termen nedefinit.
 
-- **A — ÎN LUCRU** (sesiune 2026-08-08). Status detaliat: vezi `docs/PLAN_MASTER.md` §6b.
-  - [x] **Zigzag** LIVRAT (gate verde 6/6 formă×dif + bug de poziție plantat/revenit + dovedit LIVE local static:8899). NEDEPLOYAT.
-  - [x] **Cruce** LIVRAT (gate verde 9/9 formă×dif + bug de poziție plantat/revenit + dovedit LIVE). Notă importantă: designul inițial (2 mori pe fiecare braț la Greu) avea o coliziune reală de celule, descoperită prin calcul + confirmată la eyeball (ecuație cu goluri) — înlocuit cu bănzi collision-free (un singur braț crește per dificultate) + invariant asertat în selftest. Detaliu: `docs/PLAN_MASTER.md` §6b. NEDEPLOYAT.
-  - [ ] **Scară** — ultimul (graf cu cicluri, tehnica „set ascuns aciclic" de la numere.js).
-- **B — restanță, neînceput.**
-- **C — restanță, neînceput.** Cere `PLAN_SCOLARE_[data].md` + AskUserQuestion propriu.
+- **A — COMPLET 3/3, DEPLOYAT v40** (2026-08-08). Status detaliat: vezi `docs/PLAN_MASTER.md` §6b.
+  - [x] **Zigzag** LIVRAT (gate verde 6/6 formă×dif + bug de poziție plantat/revenit + dovedit LIVE local static:8899).
+  - [x] **Cruce** LIVRAT (gate verde 9/9 formă×dif + bug de poziție plantat/revenit + dovedit LIVE). Notă importantă: designul inițial (2 mori pe fiecare braț la Greu) avea o coliziune reală de celule, descoperită prin calcul + confirmată la eyeball (ecuație cu goluri) — înlocuit cu bănzi collision-free (un singur braț crește per dificultate) + invariant asertat în selftest. Detaliu: `docs/PLAN_MASTER.md` §6b.
+  - [x] **Scară** LIVRAT (commit `35d6dcf`, gate verde 9/9 formă×dif + bug de poziție plantat/revenit + dovedit LIVE). Rundă advisor a corectat premisa inițială („graf cu cicluri → trebuie tehnica set-aciclic de la numere.js"): `canForcePropagate` rămâne solid indiferent de cicluri, întrebarea reală era doar dacă selecția greedy ATINGE ținta de ascunse — testat empiric, 24/24 seed-uri o ating pe toate cele 3 dificultăți, FĂRĂ tehnica de la numere.js (2 lanțuri independente, treapta = verificare redundantă, nu legătură necesară). Advisor a mai prins din timp o problemă de lățime de print (cols crește cu n) — rezolvată cu `cellMM` per dificultate ca la moară, verificat 168/170/169mm sub cei 186mm A4. Detaliu: `docs/PLAN_MASTER.md` §6b.
+  - ✅✅ **DEPLOYAT v40 (2026-08-08).** `CACHE_VERSION v39→v40`, `vercel deploy --prod --yes` din `frontend/`, alias verificat: `sw.js`=v40, `selftest.html` pe alias → `__SELFTEST_OK__===true`. Backend `traduceri-api` neatins.
+- **B — COMPLET 5/5** (2026-08-08, executat sequential via mcp sequential-thinking, ordine ieftin→scump). Status detaliat: vezi `docs/PLAN_MASTER.md` §6b.
+  - [x] **Unește** (`a0c6d0f`) catalog 7→12 forme. [x] **Dictare** (`7d72d8b`) catalog 17→23. [x] **Căutare** (`6bb1159`) teme 5→8. [x] **Numere** (`5aa9a06`) 3×3→3×4×5 parametrizabil (bug real de generare 5×5 prins+fixat, budget încercări scalat cu size). [x] **Labirint** (`91ec040`, cel mai riscant — flagat de plan) formă pătrat/lat/înalt + ieșire selectabilă, PĂSTRÂND byte-exact cele 24 semnături PY_REF (oracol Python) pt calea implicită; blind-spot ★ hardcodat prins de advisor înainte de cod, fix + bug plantat/revenit ca dovadă.
+  - Extensia Chrome a fost indisponibilă toată faza B — verificare vizuală/wiring alternativă cu `sharp` (rasterizare SVG), `jsdom` (simulare DOM reală rulând funcțiile din `app.js`), dump-uri ASCII.
+  - ➡️ **Deploy B: vezi mai jos** (imediat după această actualizare, per disciplina „nu amâna deploy după gate verde").
+- **C — restanță, neînceput.** Cere `PLAN_SCOLARE_[data].md` + AskUserQuestion propriu ÎNAINTE de cod — nu poate începe direct ca B/D.
 - **D — restanță, dar REPRO ACUM CONFIRMAT (nu mai e „nereprodus"):** Roland a dat exemplul precis 2026-08-08 (`Screenshot (260).png` — comparație editor vs original `limite_matematica.jpeg`/`.pdf`). Bug real identificat: `\lim_{x\to\infty}` randează cu subscriptul lipit inline de „lim" (stil KaTeX text/inline) în loc de stivuit centrat dedesubt (stil display, ca-n original tipărit). NU e pierdere de conținut (cifrele/formulele sunt corecte, 9/9) — e strict stil de randare. Candidat fix: `\displaystyle`/`\operatorname*{lim}` pe LaTeX-ul generat pt `\lim`. Detaliu complet în `docs/PLAN_MASTER.md` §6b.
 
 ---
