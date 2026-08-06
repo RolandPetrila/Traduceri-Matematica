@@ -14,7 +14,7 @@
     {
       id: "numere",
       label: "Numere",
-      desc: "Careuri numerice încrucișate (3×3 multi-crossing).",
+      desc: "Careuri numerice încrucișate (3×3/4×4/5×5 multi-crossing).",
       ready: true,
     },
     {
@@ -1049,7 +1049,7 @@
     });
   }
 
-  // ---------------- NUMERE (crossmath 3×3) ----------------
+  // ---------------- NUMERE (crossmath 3×3/4×4/5×5) ----------------
   function mountNumere() {
     var numere = window.PlanseGen && window.PlanseGen.numere;
     if (!numere) {
@@ -1057,15 +1057,26 @@
         '<div class="wip"><h2>Eroare</h2><p>Generatorul numere nu s-a încărcat.</p></div>';
       return;
     }
+    // Etichetele NU includ N/goluri exacte (variază cu Mărimea — vezi
+    // numere.DIFF[marime][dif] — un text fix ar deveni fals la 4×4/5×5).
     var LEVELS = [
-      { key: "Usor", label: "Ușor (1–6, 3 goluri, doar +)" },
-      { key: "Standard", label: "Standard (1–9, 4 goluri, +/−)" },
-      { key: "Greu", label: "Greu (1–12, 5 goluri, +/−)" },
+      { key: "Usor", label: "Ușor (doar +)" },
+      { key: "Standard", label: "Standard (+/−)" },
+      { key: "Greu", label: "Greu (+/−, mai multe goluri)" },
     ];
+
+    var MARIMI = numere.MARIMI || [3];
+    var marimeOpts = MARIMI.map(function (m) {
+      return '<option value="' + m + '">' + m + "×" + m + "</option>";
+    }).join("");
 
     panel.innerHTML =
       '<div class="gen">' +
       '  <form class="gen-form" id="nm-form">' +
+      '    <fieldset class="fld"><legend>Mărime grilă</legend>' +
+      '      <select id="nm-marime" class="chalk-select">' +
+      marimeOpts +
+      "</select></fieldset>" +
       '    <fieldset class="fld"><legend>Dificultate</legend>' +
       '      <div class="radios" id="nm-dif">' +
       LEVELS.map(function (l, i) {
@@ -1121,6 +1132,10 @@
       var r = document.querySelector('input[name="nmdif"]:checked');
       return r ? r.value : "Standard";
     }
+    function selectedMarime() {
+      var sel = document.getElementById("nm-marime");
+      return sel ? parseInt(sel.value, 10) : MARIMI[0];
+    }
     function clampNp() {
       var v = parseInt(npInput.value, 10);
       if (isNaN(v)) v = 1;
@@ -1146,6 +1161,7 @@
 
     function generate() {
       var dif = selectedDif();
+      var marime = selectedMarime();
       var np = clampNp();
       var seedRaw = seedInput.value.trim();
       var seedAdv = seedRaw === "" ? null : parseInt(seedRaw, 10);
@@ -1157,7 +1173,7 @@
       while (items.length < np && guard < np + 400) {
         guard++;
         try {
-          var it = numere.buildOne({ dificultate: dif }, seed);
+          var it = numere.buildOne({ marime: marime, dificultate: dif }, seed);
           if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);
