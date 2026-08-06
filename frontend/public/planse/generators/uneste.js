@@ -19,14 +19,14 @@
   var DIFF = { Usor: 1, Standard: 2, Greu: 3 }; // factor subdiviziune laturi
 
   // --- forme calculate (evită erorile de coordonate manuale) ---
-  function starPts() {
+  // n = nr colțuri (raze); R/r = raza exterioară/interioară. „stea" = n=5
+  // clasic; „soare" reutilizează cu n=8, r mai apropiat de R (raze mai late).
+  function starPts(n, R, r) {
     var pts = [],
       cx = 0.5,
-      cy = 0.5,
-      R = 0.46,
-      r = 0.19;
-    for (var i = 0; i < 10; i++) {
-      var ang = -Math.PI / 2 + (i * Math.PI) / 5;
+      cy = 0.5;
+    for (var i = 0; i < 2 * n; i++) {
+      var ang = -Math.PI / 2 + (i * Math.PI) / n;
       var rad = i % 2 === 0 ? R : r;
       pts.push([cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)]);
     }
@@ -67,8 +67,31 @@
     });
   }
 
+  // fluture — jumătatea DREAPTĂ (aripă sus + aripă jos, y crescător monoton
+  // ca să nu se auto-intersecteze) oglindită (x -> 1-x, ordine inversă) pt
+  // simetrie garantată.
+  function butterflyPts() {
+    var right = [
+      [0.62, 0.12], // aripa de sus, lângă corp
+      [0.88, 0.14], // aripa de sus, colț exterior
+      [0.98, 0.32], // aripa de sus, vârf
+      [0.8, 0.46], // aripa de sus, spre talie
+      [0.56, 0.5], // talie (lângă corp)
+      [0.72, 0.58], // aripa de jos, spre exterior
+      [0.88, 0.75], // aripa de jos, vârf
+      [0.68, 0.85], // aripa de jos, lângă corp
+    ];
+    var mirrored = right
+      .slice()
+      .reverse()
+      .map(function (p) {
+        return [1 - p[0], p[1]];
+      });
+    return [[0.5, 0.2]].concat(right, [[0.5, 0.8]], mirrored);
+  }
+
   var SHAPES = {
-    stea: { label: "Stea", pts: starPts() },
+    stea: { label: "Stea", pts: starPts(5, 0.46, 0.19) },
     inima: { label: "Inimă", pts: heartPts(16) },
     casa: {
       label: "Casă",
@@ -134,6 +157,48 @@
         [0.55, 0.78],
         [0.55, 0.62],
         [0.1, 0.62],
+      ],
+    },
+    // 3 colțuri + mijlocul fiecărei laturi (colinear, deci desenul rămâne un
+    // triunghi exact) — altfel Ușor (fără subdiviziune) ar avea doar 3
+    // puncte, sub minimul de 4 cerut de selftest.
+    triunghi: {
+      label: "Triunghi",
+      pts: [
+        [0.5, 0.08],
+        [0.71, 0.465],
+        [0.92, 0.85],
+        [0.5, 0.85],
+        [0.08, 0.85],
+        [0.29, 0.465],
+      ],
+    },
+    patrat: {
+      label: "Pătrat",
+      pts: [
+        [0.15, 0.15],
+        [0.85, 0.15],
+        [0.85, 0.85],
+        [0.15, 0.85],
+      ],
+    },
+    soare: { label: "Soare", pts: starPts(8, 0.46, 0.3) },
+    fluture: { label: "Fluture", pts: butterflyPts() },
+    nor: {
+      label: "Nor",
+      pts: [
+        [0.22, 0.72],
+        [0.13, 0.58],
+        [0.19, 0.42],
+        [0.32, 0.36],
+        [0.38, 0.24],
+        [0.55, 0.19],
+        [0.68, 0.27],
+        [0.76, 0.4],
+        [0.9, 0.44],
+        [0.93, 0.58],
+        [0.83, 0.7],
+        [0.65, 0.74],
       ],
     },
   };
