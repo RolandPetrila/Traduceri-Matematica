@@ -148,6 +148,32 @@
       { key: "Standard", label: "Standard 12×12" },
       { key: "Avansat", label: "Avansat 16×16" },
     ];
+    var formaOpts = Object.keys(lab.FORME)
+      .map(function (k) {
+        return (
+          '<option value="' +
+          k +
+          '"' +
+          (k === "patrat" ? " selected" : "") +
+          ">" +
+          lab.FORME[k] +
+          "</option>"
+        );
+      })
+      .join("");
+    var iesireOpts = Object.keys(lab.IESIRI)
+      .map(function (k) {
+        return (
+          '<option value="' +
+          k +
+          '"' +
+          (k === "coltOpus" ? " selected" : "") +
+          ">" +
+          lab.IESIRI[k] +
+          "</option>"
+        );
+      })
+      .join("");
 
     panel.innerHTML =
       '<div class="gen">' +
@@ -178,6 +204,14 @@
       "    </fieldset>" +
       '    <details class="adv">' +
       "      <summary>Avansat</summary>" +
+      '      <div class="adv-row">' +
+      '        <label>Formă <select id="lab-forma" class="chalk-select">' +
+      formaOpts +
+      "</select></label>" +
+      '        <label>Ieșire <select id="lab-iesire" class="chalk-select">' +
+      iesireOpts +
+      "</select></label>" +
+      "      </div>" +
       '      <div class="adv-row">' +
       '        <label>Seed (opțional) <input type="number" id="lab-seed" placeholder="aleator" inputmode="numeric"></label>' +
       '        <label>Mărime celulă <input type="number" id="lab-mm" step="0.1" placeholder="auto"> mm</label>' +
@@ -215,13 +249,25 @@
       var r = document.querySelector('input[name="nivel"]:checked');
       return r ? r.value : "Standard";
     }
+    function selectedForma() {
+      var s = document.getElementById("lab-forma");
+      return s ? s.value : "patrat";
+    }
+    function selectedIesire() {
+      var s = document.getElementById("lab-iesire");
+      return s ? s.value : "coltOpus";
+    }
     function updateMmPlaceholder() {
       var n = lab.NIVELURI[selectedNivel()];
-      mmInput.placeholder = "auto (" + lab.cellMm(n) + ")";
+      var dims = lab.dimsFor(n, selectedForma());
+      mmInput.placeholder = "auto (" + lab.cellMm(dims.rows, dims.cols) + ")";
     }
     updateMmPlaceholder();
     document
       .getElementById("lab-nivel")
+      .addEventListener("change", updateMmPlaceholder);
+    document
+      .getElementById("lab-forma")
       .addEventListener("change", updateMmPlaceholder);
 
     function clampNr() {
@@ -249,6 +295,8 @@
 
     function generate() {
       var nivel = selectedNivel();
+      var forma = selectedForma();
+      var iesire = selectedIesire();
       var nr = clampNr();
       var seedRaw = seedInput.value.trim();
       var seedAdv = seedRaw === "" ? null : parseInt(seedRaw, 10);
@@ -265,7 +313,10 @@
       while (items.length < nr && guard < nr + 200) {
         guard++;
         try {
-          var it = lab.buildOne({ nivel: nivel }, seed);
+          var it = lab.buildOne(
+            { nivel: nivel, forma: forma, iesire: iesire },
+            seed,
+          );
           if (!seen[it.semnatura] && historyFresh(it.semnatura)) {
             seen[it.semnatura] = true;
             items.push(it);

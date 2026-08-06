@@ -138,10 +138,13 @@
 
   /**
    * @param {string} nivel
-   * @param {number} n
+   * @param {number} rows
+   * @param {number} cols
    * @param {Array<[[number,number],[number,number]]>} edges  perechi de celule
+   * @param {string} [extra]  suffix ASCII opțional (forma/ieșire non-implicite);
+   *   omis => format identic cu fixture-ul Python "nivel|NxN|hash" (3 segmente).
    */
-  function labirint(nivel, n, edges) {
+  function labirint(nivel, rows, cols, edges, extra) {
     var parts = edges.map(function (e) {
       var a = e[0],
         b = e[1];
@@ -153,7 +156,9 @@
       return x < y ? -1 : x > y ? 1 : 0;
     });
     var h = md5(parts.join("|")).slice(0, 12);
-    return nivel + "|" + n + "x" + n + "|" + h;
+    var sig = nivel + "|" + rows + "x" + cols + "|" + h;
+    if (extra) sig += "|" + extra;
+    return sig;
   }
 
   root.PlanseSig = { md5: md5, labirint: labirint };
