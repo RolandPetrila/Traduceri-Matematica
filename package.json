@@ -11,6 +11,9 @@
     "install:all": "cd frontend && npm install && cd .. && pip install -r requirements.txt",
     "dev:full": "concurrently \"npm run backend\" \"npm run dev\""
   },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/RolandPetrila/Traduceri-Matematica.git"
