@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import "katex/dist/katex.min.css"; // stiluri KaTeX (fonturile sunt bundle-uite de Next din pachet)
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import { X, Download } from "lucide-react";
+import { X, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -91,6 +91,8 @@ function EditorShell({ editor }: { editor: Editor | null }) {
     legacyAvailableName,
     bringLegacy,
     dismissLegacyAvailable,
+    externalUpdateWarning,
+    dismissExternalUpdate,
   } = useEditorDocument();
   const [confirmBring, setConfirmBring] = useState(false);
 
@@ -366,6 +368,41 @@ function EditorShell({ editor }: { editor: Editor | null }) {
             onClick={dismissLegacyAvailable}
             aria-label="Ignoră"
             title="Ignoră"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Coliziune autosave (advisor /improve #2): document salvat din altă
+          fereastră/filă (ex. „tot ecranul" deschis separat) — nu suprascriem
+          automat, doar avertizăm; utilizatorul alege să reîncarce sau să continue. */}
+      {externalUpdateWarning && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-destructive/10 px-3 py-2 text-xs"
+        >
+          <span className="flex-1 min-w-[12rem]">
+            Acest document a fost salvat dintr-o altă fereastră/filă. Dacă
+            editezi în ambele simultan, ultima salvare câștigă.
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 gap-1 px-2"
+            onClick={() => window.location.reload()}
+            title="Reîncarcă ultima versiune salvată"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Reîncarcă
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 shrink-0 p-0"
+            onClick={dismissExternalUpdate}
+            aria-label="Ignoră (păstrez ce am aici)"
+            title="Ignoră (păstrez ce am aici)"
           >
             <X className="h-3.5 w-3.5" />
           </Button>

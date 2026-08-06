@@ -47,7 +47,7 @@ class handler(BaseHTTPRequestHandler):
             self._send_json(200, data)
         except Exception as e:
             print(f"[GEMINI-USAGE] Error: {e}", file=sys.stderr)
-            self._send_json(500, {"status": "error", "error": str(e), "level": "ok",
+            self._send_json(500, {"status": "error", "error": str(e), "level": "error",
                                   "count": 0, "limit": 2600})
 
     def do_OPTIONS(self):

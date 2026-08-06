@@ -155,6 +155,7 @@ export function EditorTranslateProvider({
           doc: sourceDoc,
           sourceLang,
           targetLang: target,
+          engine: "deepl",
           signal: ac.signal,
         });
         cacheRef.current.set(target, translated);

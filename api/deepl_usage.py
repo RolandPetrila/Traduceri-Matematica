@@ -77,7 +77,7 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             print(f"[DEEPL-USAGE] Error: {e}", file=sys.stderr)
-            self._send_json(500, {"status": "error", "error": str(e), "level": "ok",
+            self._send_json(500, {"status": "error", "error": str(e), "level": "error",
                                   "character_count": 0, "character_limit": 0})
 
     def do_OPTIONS(self):

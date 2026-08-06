@@ -1,7 +1,34 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-08 (sesiune nouă pornită pe cele 4 cerințe din 2026-08-07 seara). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-07 (rulare `/improve` completă + 5 quick-wins executate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-07) — `/improve` complet + 5 quick-wins LIVRATE (NEDEPLOYATE)
+
+**Prima rulare `/improve complet`** (5 agenți Explore paraleli + gate rulat efectiv, nu doar citat). Raport complet: `.claude-outputs/improve/2026-08-07_010000/improve_report.md` (+`roadmap.md`, `snapshot.json`). 26 recomandări, 2×P0. Memorie: `finding`/`project_improve_audit_2026_08_07`.
+
+**Executate azi (lot „quick-wins sigure", ales de Roland din 4 opțiuni via AskUserQuestion):**
+
+- ✅ **#1 — F8 traducere-în-editor folosea Gemini în loc de DeepL** (`editor-translate.ts:248` default `engine="gemini"`→`"deepl"` + `editor-translate-state.tsx:154` trece explicit `engine:"deepl"`). Verificat cu `git log -S` pe commit-ul F8 original (`bffc930`) — nicio decizie deliberată documentată, era scăpare la portare. **Impact: fiecare traducere din fluxul zilnic trece acum prin DeepL (principal, per CLAUDE.md), nu prin Gemini.**
+- ✅ **#2 — Lock avertisment coliziune autosave `/editor` vs `/editor-nou`** — cele 2 ferestre scriau aceeași cheie `localStorage["editor_nou_v1"]` fără niciun semnal. Adăugat `storage` event listener în `editor-document.tsx` (se declanșează DOAR în ferestrele care NU au scris — detecție sigură, 0 fals-pozitiv pe propriile save-uri) + banner `role="alert"` în `EditorTiptap.tsx` cu buton „Reîncarcă" / „Ignoră".
+- ✅ **#6 — `PLAN_MASTER.md` §7 housekeeping** — șterse 3 rânduri stale („Modul Chat AI/Calculator/Corectare-Generare teste: 0%") care listau ca neconstruite module LIVRATE deja din sesiunea „RUNDĂ MODULE" 2026-08-04 (v30/v31/v32). Notă adăugată în doc cu sursa corecției.
+- ✅ **#10 — bug `level:"ok"` pe răspuns 500** în `deepl_usage.py` + `gemini_usage.py` → `level:"error"`.
+- ✅ **#11 — script `typecheck`** adăugat în `frontend/package.json` (`tsc --noEmit`, numit deja „gate-ul real" în comentariul `next.config.js` dar fără punct de intrare npm).
+- **Gate: `tsc 0 · jest 172/172 · pytest 46/46 · next build OK` (8 rute, First Load JS 103-135kB, neschimbat).**
+- **NEDEPLOYAT** — commit+push pe `faza-g-editor` făcut conform convenției proiectului (`feedback_auto_push`), dar deploy-ul (`vercel deploy --prod`) așteaptă confirmarea explicită a lui Roland.
+
+**Rămase din raportul `/improve` (P1, neexecutate azi — vezi raportul pt detalii):**
+
+- **#3** — verifică statutul de cost `gemini-2.5-pro` (Google AI Studio billing) — [INCERT], cere acces cont Roland.
+- **#4** — bump `maxDuration` 60→300s în `vercel.json` (verificat la sursă: Hobby permite acum 300s) — atinge config deploy, cere confirmare.
+- **#5** — migrează `pages/api/proxy.js` → App Router (prerequisit hard pt Next 16, Pages Router eliminat complet fără shim).
+- **#7, #8** — Teste→Corectează fără „trimite în editor" + Istoric→Traduceri permanent gol.
+- **#9** — curățenie `translation_router.py` (8 funcții moarte + integrare Claude neutilizată).
+- **#17, #18** — verificare cont DeepL (API Free retras pt clienți noi iul. 2026) + Fluid Compute activ pe proiectele Vercel.
+
+**➡️ Coada activă §6b (C, D) rămâne prioritară față de restul raportului `/improve`** — vezi blocul de mai jos.
 
 ---
 

@@ -287,19 +287,18 @@
 
 ## §7. BACKLOG — NU în execuție (decizia Roland: listate, nu implementate)
 
-| Item                                                             | Stare                                                                                                                                   | Efort          |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Modul Chat AI                                                    | 0% — **substituit funcțional** de modulul Asistent AI (`public/asistent/` + `pages/api/proxy.js`, respectă și decizia „Groq prioritar") | mare           |
-| Modul Calculator                                                 | 0% — lipsesc `app/calculator`, `CalculatorPanel`, `GraphPlot`, `math.js`                                                                | mare           |
-| Modul Corectare/Generare teste                                   | 0%                                                                                                                                      | mare           |
-| Next 15 → 16                                                     | `next: ^15.5.20`                                                                                                                        | mare           |
-| Tailwind v3 → v4                                                 | `tailwindcss: ^3.4.0`                                                                                                                   | mediu          |
-| **Merge `faza-g-editor` → `main`**                               | `main..faza-g-editor` = **169 commituri**; producția se deployează dintr-un branch de feature                                           | mediu (review) |
-| Quota hard-cap + Upstash (rate-limit distribuit)                 | `rate_limiter.py` e in-memory per-instanță; precedent existent: `pages/api/proxy.js:72-74`                                              | mediu          |
-| PDF >20 pagini în loturi                                         | azi = plafonare la 20 cu mesaj onest, nu batching                                                                                       | mediu          |
-| Export HTML interactiv multi-limbă                               | `data-i` = 0 hituri                                                                                                                     | mediu          |
-| SW auto-versioning                                               | `sw.js:3` încă manual                                                                                                                   | mic            |
-| Logging JSON structurat / bundle analyzer / dicționar math în UI | —                                                                                                                                       | mic-mediu      |
+> **Corectate 2026-08-07** (găsite stale la audit `/improve`): rândurile „Modul Chat AI / Calculator / Corectare-Generare teste" ziceau „0%" deși toate 3 au fost LIVRATE în sesiunea „RUNDĂ MODULE" din 2026-08-04 (deployate v30/v31/v32) — vezi `components/chat/ChatPanel.tsx`, `components/calculator/CalculatorPanel.tsx`, `components/teste/TestePanel.tsx`. §7 nu fusese actualizat după livrare. Șterse de aici; rămân valide doar itemii de mai jos.
+
+| Item                                                             | Stare                                                                                         | Efort          |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------- |
+| Next 15 → 16                                                     | `next: ^15.5.20`                                                                              | mare           |
+| Tailwind v3 → v4                                                 | `tailwindcss: ^3.4.0`                                                                         | mediu          |
+| **Merge `faza-g-editor` → `main`**                               | `main..faza-g-editor` = **169 commituri**; producția se deployează dintr-un branch de feature | mediu (review) |
+| Quota hard-cap + Upstash (rate-limit distribuit)                 | `rate_limiter.py` e in-memory per-instanță; precedent existent: `pages/api/proxy.js:72-74`    | mediu          |
+| PDF >20 pagini în loturi                                         | azi = plafonare la 20 cu mesaj onest, nu batching                                             | mediu          |
+| Export HTML interactiv multi-limbă                               | `data-i` = 0 hituri                                                                           | mediu          |
+| SW auto-versioning                                               | `sw.js:3` încă manual                                                                         | mic            |
+| Logging JSON structurat / bundle analyzer / dicționar math în UI | —                                                                                             | mic-mediu      |
 
 ---
 

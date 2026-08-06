@@ -55,6 +55,15 @@ type DocumentApi = {
   bringLegacy: () => void;
   /** Ascunde oferta de aducere (pentru sesiunea curentă). */
   dismissLegacyAvailable: () => void;
+  /**
+   * O ALTĂ filă/fereastră (ex. `/editor` → „tot ecranul" deschide `/editor-nou`
+   * separat) tocmai a salvat acest document — autosave-ul local ar putea
+   * suprascrie silențios munca din cealaltă fereastră dacă utilizatorul
+   * continuă să editeze aici fără să știe.
+   */
+  externalUpdateWarning: boolean;
+  /** Ascunde avertismentul (păstrează conținutul curent din ACEASTĂ fereastră). */
+  dismissExternalUpdate: () => void;
 };
 
 const DocumentContext = createContext<DocumentApi | null>(null);
@@ -139,6 +148,7 @@ export function EditorDocumentProvider({
   const [legacyAvailableName, setLegacyAvailableName] = useState<string | null>(
     null,
   );
+  const [externalUpdateWarning, setExternalUpdateWarning] = useState(false);
   const nameRef = useRef(name);
   nameRef.current = name;
   const restoredRef = useRef(false);
@@ -225,6 +235,21 @@ export function EditorDocumentProvider({
     }
   }, [editor, persist]);
 
+  // Coliziune autosave (advisor /improve #2): `/editor` deschide `/editor-nou`
+  // într-o fereastră NOUĂ, independentă — ambele scriu aceeași cheie STORAGE_KEY,
+  // fără niciun lock. Evenimentul `storage` se declanșează DOAR în ferestrele/
+  // filele CARE NU AU FĂCUT scrierea (spec DOM) → detectăm sigur o salvare
+  // venită din cealaltă fereastră, fără fals-pozitiv pe propriile noastre save-uri.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !restoredRef.current) return;
+      if (e.newValue === e.oldValue) return;
+      setExternalUpdateWarning(true);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   // Auto-save debounced pe fiecare modificare (după ce restore-ul a rulat).
   useEffect(() => {
     if (!editor) return;
@@ -255,6 +280,8 @@ export function EditorDocumentProvider({
         legacyAvailableName,
         bringLegacy,
         dismissLegacyAvailable: () => setLegacyAvailableName(null),
+        externalUpdateWarning,
+        dismissExternalUpdate: () => setExternalUpdateWarning(false),
       }}
     >
       {children}

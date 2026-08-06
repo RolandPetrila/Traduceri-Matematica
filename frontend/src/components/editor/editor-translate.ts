@@ -245,7 +245,7 @@ export async function translateEditorDoc(params: {
   engine?: string;
   signal?: AbortSignal;
 }): Promise<JSONContent> {
-  const { doc, sourceLang, targetLang, engine = "gemini", signal } = params;
+  const { doc, sourceLang, targetLang, engine = "deepl", signal } = params;
   const { sections, skeleton, mathInlineType } = extractTranslatable(doc);
   if (sections.length === 0) return doc; // nimic de tradus (doc gol / doar figuri)
   const translated = await postSections(
