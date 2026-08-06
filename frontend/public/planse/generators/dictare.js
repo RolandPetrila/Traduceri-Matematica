@@ -43,6 +43,28 @@
     Greu: { grid: 16, minSteps: 14, maxSteps: 99 },
   };
 
+  // Generatoare de mișcări (evită transcrierea manuală eronată de coordonate,
+  // ca la starPts/heartPts din uneste.js). Ambele reproduc EXACT structura
+  // formelor „cetate"/„coroana" deja existente (verificat prin re-derivare).
+  // Zid crenelat (merloane plate): pornește direct cu dinții, se închide pe jos.
+  function crenellation(teeth, w, toothH, wallH) {
+    var moves = [];
+    for (var i = 0; i < teeth; i++)
+      moves.push(["R", w], ["D", toothH], ["R", w], ["U", toothH]);
+    var width = w * (2 * teeth + 1);
+    moves.push(["R", w], ["D", wallH], ["L", width], ["U", wallH]);
+    return moves;
+  }
+  // Coroană (colți ascuțiți): urcă mai întâi baza, apoi colții, se închide pe jos.
+  function crown(spikes, w, spikeH, baseH) {
+    var moves = [["U", baseH]];
+    for (var i = 0; i < spikes; i++)
+      moves.push(["R", w], ["D", spikeH], ["R", w], ["U", spikeH]);
+    var width = w * (2 * spikes + 1);
+    moves.push(["R", w], ["D", baseH], ["L", width]);
+    return moves;
+  }
+
   // --- Catalog de forme rectilinii (mișcări închise; verificate de selftest) -----
   var SHAPES = {
     // Ușor (4–8 pași)
@@ -118,6 +140,16 @@
         ["L", 8],
       ],
     },
+    dreptunghi: {
+      label: "Dreptunghi",
+      moves: [
+        ["R", 6],
+        ["D", 3],
+        ["L", 6],
+        ["U", 3],
+      ],
+    },
+    creneluri_mici: { label: "Zid mic", moves: crenellation(1, 2, 1, 2) },
 
     // Standard (9–13 pași)
     cruce: {
@@ -239,6 +271,22 @@
         ["U", 4],
       ],
     },
+    litera_f: {
+      label: "Litera F",
+      moves: [
+        ["R", 5],
+        ["D", 2],
+        ["L", 3],
+        ["D", 1],
+        ["R", 3],
+        ["D", 2],
+        ["L", 3],
+        ["D", 3],
+        ["L", 2],
+        ["U", 8],
+      ],
+    },
+    cetate_mica: { label: "Cetate mică", moves: crenellation(2, 2, 2, 4) },
 
     // Greu (14+ pași)
     coroana: {
@@ -327,6 +375,8 @@
         ["L", 8],
       ],
     },
+    cetate_mare: { label: "Cetate mare", moves: crenellation(4, 2, 2, 6) },
+    coroana_mare: { label: "Coroană mare", moves: crown(4, 2, 3, 6) },
   };
   var SHAPE_IDS = Object.keys(SHAPES);
 
