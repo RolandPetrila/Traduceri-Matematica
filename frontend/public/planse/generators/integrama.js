@@ -90,11 +90,32 @@
       Standard: { n: 3, N: 16, hide: 5, dirOut: ["E", "S", "S"] },
       Greu: { n: 4, N: 20, hide: 7, dirOut: ["E", "S", "S", "E"] },
     },
+    // nH/nV = nr mori pe brațul orizontal/vertical, INCLUSIV hub-ul comun
+    // (nH=1 înseamnă „doar hub-ul", braț orizontal = bloc terminal, ca la
+    // moara n=1). Hub-ul are 4 brațe LINK (V/E/N/S), fără brațe U/D proprii —
+    // vezi buildRawCruce.
+    // INVARIANT DE COLIZIUNE (verificat empiric, rundă advisor 2026-08-08):
+    // dacă AMBELE brațe au nH>=2 ȘI nV>=2, brațul liber al morii orizontale 2
+    // și cel al morii verticale 2 ajung pe ACEEAȘI celulă (colț comun la pas
+    // 4 pe ambele axe) — coliziune reală de date (valori diferite pe aceeași
+    // celulă), nu doar vizuală. `cellsFromRawCruce` are un mecanism WIDE_GAP
+    // (pas dublu pe hop-ul hub->V2) care REZOLVĂ coliziunea de date, dar la
+    // eyeball live arată ecuația verticală RUPTĂ de goluri (rânduri goale
+    // între fiecare element) — respins după probă. Decizie: NICIO bandă de
+    // dificultate de mai jos nu are nH>=2 ȘI nV>=2 simultan (doar UN braț
+    // crește per dificultate) — WIDE_GAP rămâne cod mort/plasă de siguranță,
+    // nu calea activă.
+    cruce: {
+      Usor: { nH: 1, nV: 1, N: 12, hide: 3 },
+      Standard: { nH: 2, nV: 1, N: 16, hide: 5 },
+      Greu: { nH: 1, nV: 3, N: 20, hide: 7 },
+    },
   };
   var FORME = Object.keys(DIFF);
   var FORM_LABELS = {
     moara: "Moară de vânt (lanț drept)",
     zigzag: "Zigzag (coloană cotită)",
+    cruce: "Cruce (2 lanțuri perpendiculare)",
   };
 
   // ---------- aritmetică (regula puzzle-ului; testată cu oracol în selftest) ----------
@@ -229,9 +250,13 @@
   }
 
   // ---------- CONSTRUCȚIE ----------
-  function buildRaw(rng, n, N) {
-    var perm = ALL_OPS.slice();
-    rng.shuffle(perm);
+  // forcedX1/forcedPerm (opționale, folosite DOAR de „cruce" — vezi buildRawCruce):
+  // permit unui al 2-lea lanț să pornească din ACELAȘI X1 și cu un `perm`
+  // ales astfel încât cele 4 operații de la moara comună (hub) să rămână
+  // distincte. Omise -> comportament IDENTIC cu înainte (moara/zigzag).
+  function buildRaw(rng, n, N, forcedX1, forcedPerm) {
+    var perm = forcedPerm || ALL_OPS.slice();
+    if (!forcedPerm) rng.shuffle(perm);
 
     // link_j operator (j=0..n): link_0 = moara1.L ; link_j (1<=j<=n-1) = moara_j.R ;
     // link_n = moara_n.R.
@@ -253,7 +278,7 @@
       Xmax = Math.min(N - 1, Math.ceil(N * 0.8));
     if (Xmin > Xmax)
       Xmin = Xmax = Math.max(2, Math.min(N - 1, Math.floor(N / 2)));
-    X[1] = rng.randint(Xmin, Xmax);
+    X[1] = forcedX1 !== undefined ? forcedX1 : rng.randint(Xmin, Xmax);
 
     var l0 = pickPairForResult(rng, linkOp(0), X[1], N);
     if (!l0) return null;
@@ -312,6 +337,220 @@
       downLeaf1: downLeaf1,
       downLeaf2: downLeaf2,
       linkOp: linkOp,
+    };
+  }
+
+  // ---------- CONSTRUCȚIE „cruce" (2 lanțuri buildRaw, hub comun) ----------
+  // Construiește lanțul ORIZONTAL normal (X1 liber), apoi lanțul VERTICAL cu
+  // X1 FORȚAT să fie ACELAȘI cu orizontalului (hub comun) — `forcedX1`. Ca
+  // hub-ul să aibă toate 4 operații distincte pe cele 4 brațe-link (nu doar
+  // 2, ca la moara normală), `vPerm` e construit EXPLICIT din operațiile
+  // NEFOLOSITE de orizontal la L/R (adică exact U/D-ul orizontalului) —
+  // garantează 4 distincte prin construcție, nu prin respingere/reîncercare.
+  function buildRawCruce(rng, nH, nV, N) {
+    var hRaw = buildRaw(rng, nH, N);
+    if (!hRaw) return null;
+    var hArm1 = armOps(hRaw.perm, 1);
+    var vPerm = [hArm1.U, hArm1.D, hArm1.L, hArm1.R];
+    var vRaw = buildRaw(rng, nV, N, hRaw.X[1], vPerm);
+    if (!vRaw) return null;
+    return { h: hRaw, v: vRaw, nH: nH, nV: nV, N: N };
+  }
+
+  // Construiește harta de celule (forma „cruce"). Hub la (4,4) — 4 brațe
+  // LINK (L=vest/bloc inițial orizontal, R=est/lanț orizontal, U=nord/bloc
+  // inițial vertical, D=sud/lanț vertical), FĂRĂ brațe U/D proprii (spre
+  // deosebire de o moară normală). Morile 2..nH (est) și 2..nV (sud) au
+  // brațe U/D normale (perpendiculare pe direcția lanțului lor).
+  // WIDE_GAP (rundă advisor 2026-08-08): dacă AMBELE brațe cresc (nH>=2 ȘI
+  // nV>=2), hop-ul hub->V2 folosește pas 8 (nu 4) — la pas 4 pe ambele axe,
+  // brațul liber al morii orizontale 2 (care ajunge la (8,8)) s-ar suprapune
+  // EXACT cu brațul liber al morii verticale 2 (care ajunge tot la (8,8)) —
+  // valori DIFERITE, generate independent, deci coliziune reală de date, nu
+  // doar vizuală. Sub-pasul (op/leaf/marker/rezultat) se scalează UNIFORM
+  // (vSub = gap/4) ca toate cele 4 poziții să rămână egal-spațiate.
+  function cellsFromRawCruce(hRaw, vRaw, nH, nV) {
+    var cells = {},
+      equations = [],
+      markers = {},
+      armCells = {};
+    function setNum(r, c, v) {
+      cells[key(r, c)] = { kind: "num", value: v };
+    }
+    function setOp(r, c, op) {
+      cells[key(r, c)] = { kind: "op", op: op };
+    }
+    function setMarker(r, c) {
+      markers[key(r, c)] = true;
+    }
+    function eq(a, b, c, op) {
+      equations.push({ cells: [a, b, c], op: op });
+    }
+
+    var HR = 4,
+      HC = 4;
+    setNum(HR, HC, hRaw.X[1]); // == vRaw.X[1] (hub comun, forțat la construcție)
+    armCells.hub = {};
+
+    // ---- V: blocul inițial ORIZONTAL (hub.L) — mereu terminal ----
+    setNum(HR, HC - 4, hRaw.a0);
+    setOp(HR, HC - 3, hRaw.linkOp(0));
+    setNum(HR, HC - 2, hRaw.b0);
+    setMarker(HR, HC - 1);
+    eq(key(HR, HC - 4), key(HR, HC - 2), key(HR, HC), hRaw.linkOp(0));
+    armCells.hub.L = key(HR, HC - 3);
+
+    // ---- N: blocul inițial VERTICAL (hub.U) — mereu terminal ----
+    setNum(HR - 4, HC, vRaw.a0);
+    setOp(HR - 3, HC, vRaw.linkOp(0));
+    setNum(HR - 2, HC, vRaw.b0);
+    setMarker(HR - 1, HC);
+    eq(key(HR - 4, HC), key(HR - 2, HC), key(HR, HC), vRaw.linkOp(0));
+    armCells.hub.U = key(HR - 3, HC);
+
+    // ---- E: continuarea ORIZONTALĂ (hub.R) — spre mora 2 sau bloc final ----
+    if (nH < 2) {
+      setOp(HR, HC + 1, hRaw.linkOp(1));
+      setNum(HR, HC + 2, hRaw.bFinal);
+      setMarker(HR, HC + 3);
+      setNum(HR, HC + 4, hRaw.rFinal);
+      eq(key(HR, HC), key(HR, HC + 2), key(HR, HC + 4), hRaw.linkOp(1));
+    } else {
+      setOp(HR, HC + 1, hRaw.linkOp(1));
+      setNum(HR, HC + 2, hRaw.innerB[1]);
+      setMarker(HR, HC + 3);
+      setNum(HR, HC + 4, hRaw.X[2]);
+      eq(key(HR, HC), key(HR, HC + 2), key(HR, HC + 4), hRaw.linkOp(1));
+    }
+    armCells.hub.R = key(HR, HC + 1);
+
+    // ---- S: continuarea VERTICALĂ (hub.D) — spre mora 2 sau bloc final ----
+    var wideGap = nH >= 2 && nV >= 2;
+    var vGap1 = wideGap ? 8 : 4;
+    var vSub = vGap1 / 4;
+    if (nV < 2) {
+      setOp(HR + vSub, HC, vRaw.linkOp(1));
+      setNum(HR + 2 * vSub, HC, vRaw.bFinal);
+      setMarker(HR + 3 * vSub, HC);
+      setNum(HR + 4 * vSub, HC, vRaw.rFinal);
+      eq(
+        key(HR, HC),
+        key(HR + 2 * vSub, HC),
+        key(HR + 4 * vSub, HC),
+        vRaw.linkOp(1),
+      );
+    } else {
+      setOp(HR + vSub, HC, vRaw.linkOp(1));
+      setNum(HR + 2 * vSub, HC, vRaw.innerB[1]);
+      setMarker(HR + 3 * vSub, HC);
+      setNum(HR + 4 * vSub, HC, vRaw.X[2]);
+      eq(
+        key(HR, HC),
+        key(HR + 2 * vSub, HC),
+        key(HR + 4 * vSub, HC),
+        vRaw.linkOp(1),
+      );
+    }
+    armCells.hub.D = key(HR + vSub, HC);
+
+    // ---- lanț ORIZONTAL, morile 2..nH (spre EST, pas 4, ca la „moara") ----
+    for (var i = 2; i <= nH; i++) {
+      var c = HC + 4 * (i - 1);
+      var hk = "H" + i;
+      armCells[hk] = {};
+      armCells[hk].L = i === 2 ? armCells.hub.R : armCells["H" + (i - 1)].R;
+      setNum(HR - 4, c, hRaw.upLeaf1[i]);
+      setOp(HR - 3, c, armOps(hRaw.perm, i).U);
+      setNum(HR - 2, c, hRaw.upLeaf2[i]);
+      setMarker(HR - 1, c);
+      eq(key(HR - 4, c), key(HR - 2, c), key(HR, c), armOps(hRaw.perm, i).U);
+      armCells[hk].U = key(HR - 3, c);
+      setOp(HR + 1, c, armOps(hRaw.perm, i).D);
+      setNum(HR + 2, c, hRaw.downLeaf1[i]);
+      setMarker(HR + 3, c);
+      setNum(HR + 4, c, hRaw.downLeaf2[i]);
+      eq(key(HR, c), key(HR + 2, c), key(HR + 4, c), armOps(hRaw.perm, i).D);
+      armCells[hk].D = key(HR + 1, c);
+      if (i < nH) {
+        setOp(HR, c + 1, hRaw.linkOp(i));
+        setNum(HR, c + 2, hRaw.innerB[i]);
+        setMarker(HR, c + 3);
+        setNum(HR, c + 4, hRaw.X[i + 1]);
+        eq(key(HR, c), key(HR, c + 2), key(HR, c + 4), hRaw.linkOp(i));
+      } else {
+        setOp(HR, c + 1, hRaw.linkOp(nH));
+        setNum(HR, c + 2, hRaw.bFinal);
+        setMarker(HR, c + 3);
+        setNum(HR, c + 4, hRaw.rFinal);
+        eq(key(HR, c), key(HR, c + 2), key(HR, c + 4), hRaw.linkOp(nH));
+      }
+      armCells[hk].R = key(HR, c + 1);
+    }
+
+    // ---- lanț VERTICAL, morile 2..nV (spre SUD, pas 4 după primul hop) ----
+    var vRowOf2 = HR + vGap1;
+    for (var j = 2; j <= nV; j++) {
+      var r = j === 2 ? vRowOf2 : vRowOf2 + 4 * (j - 2);
+      var vk = "V" + j;
+      armCells[vk] = {};
+      armCells[vk].L = j === 2 ? armCells.hub.D : armCells["V" + (j - 1)].R;
+      // brațele libere ale morilor verticale 2..nV = EST/VEST (nu N/S, ocupate de lanț)
+      setNum(r, HC + 4, vRaw.upLeaf1[j]);
+      setOp(r, HC + 3, armOps(vRaw.perm, j).U);
+      setNum(r, HC + 2, vRaw.upLeaf2[j]);
+      setMarker(r, HC + 1);
+      eq(key(r, HC + 4), key(r, HC + 2), key(r, HC), armOps(vRaw.perm, j).U);
+      armCells[vk].U = key(r, HC + 3);
+      setOp(r, HC - 1, armOps(vRaw.perm, j).D);
+      setNum(r, HC - 2, vRaw.downLeaf1[j]);
+      setMarker(r, HC - 3);
+      setNum(r, HC - 4, vRaw.downLeaf2[j]);
+      eq(key(r, HC), key(r, HC - 2), key(r, HC - 4), armOps(vRaw.perm, j).D);
+      armCells[vk].D = key(r, HC - 1);
+      if (j < nV) {
+        var rNext = vRowOf2 + 4 * (j - 1);
+        setOp(r + 1, HC, vRaw.linkOp(j));
+        setNum(r + 2, HC, vRaw.innerB[j]);
+        setMarker(r + 3, HC);
+        setNum(rNext, HC, vRaw.X[j + 1]);
+        eq(key(r, HC), key(r + 2, HC), key(rNext, HC), vRaw.linkOp(j));
+      } else {
+        setOp(r + 1, HC, vRaw.linkOp(nV));
+        setNum(r + 2, HC, vRaw.bFinal);
+        setMarker(r + 3, HC);
+        setNum(r + 4, HC, vRaw.rFinal);
+        eq(key(r, HC), key(r + 2, HC), key(r + 4, HC), vRaw.linkOp(nV));
+      }
+      armCells[vk].R = key(r + 1, HC);
+    }
+
+    var maxR = 0,
+      maxC = 0,
+      minR = 0,
+      minC = 0;
+    Object.keys(cells)
+      .concat(Object.keys(markers))
+      .forEach(function (kk) {
+        var parts = kk.split(",");
+        var rr = parseInt(parts[0], 10),
+          cc = parseInt(parts[1], 10);
+        maxR = Math.max(maxR, rr);
+        maxC = Math.max(maxC, cc);
+        minR = Math.min(minR, rr);
+        minC = Math.min(minC, cc);
+      });
+    if (minR !== 0 || minC !== 0)
+      throw new Error(
+        "cruce: coordonată negativă neașteptată (" + minR + "," + minC + ")",
+      );
+
+    return {
+      cells: cells,
+      equations: equations,
+      markers: markers,
+      armCells: armCells,
+      rows: maxR + 1,
+      cols: maxC + 1,
     };
   }
 
@@ -558,10 +797,24 @@
   }
 
   var GEOM = {
-    moara: { cellsFromRaw: cellsFromRawMoara },
+    moara: {
+      cellsFromRaw: cellsFromRawMoara,
+      build: function (rng, band) {
+        return buildRaw(rng, band.n, band.N);
+      },
+      nOf: function (band) {
+        return band.n;
+      },
+    },
     zigzag: {
       cellsFromRaw: function (raw, band) {
         return cellsFromRawZigzag(raw, band.dirOut);
+      },
+      build: function (rng, band) {
+        return buildRaw(rng, band.n, band.N);
+      },
+      nOf: function (band) {
+        return band.n;
       },
     },
   };
@@ -699,9 +952,10 @@
     if (!(dif in DIFF[forma]))
       throw new Error("dificultate necunoscută pt " + forma + ": " + dif);
     var band = DIFF[forma][dif];
+    var nDisplay = GEOM[forma].nOf(band);
 
     for (var attempt = 0; attempt < 1500; attempt++) {
-      var raw = buildRaw(rng, band.n, band.N);
+      var raw = GEOM[forma].build(rng, band);
       if (!raw) continue;
       var structure = GEOM[forma].cellsFromRaw(raw, band);
       var hidden = pickHidden(rng, structure, band.hide);
@@ -733,7 +987,7 @@
           "|N" +
           band.N +
           "|n" +
-          band.n +
+          nDisplay +
           "|" +
           allNumKeys
             .sort()
@@ -753,7 +1007,7 @@
           tip: "integrama",
           forma: forma,
           dificultate: dif,
-          n: band.n,
+          n: nDisplay,
           N: band.N,
           structure: structure,
           hidden: hidden,
@@ -826,7 +1080,7 @@
         if (st.cells[k]) {
           out.push(cellHtml(item, r, c, mode));
         } else if (
-          forma === "zigzag" ? st.markers[k] : isEqPosition(item, r, c)
+          forma === "moara" ? isEqPosition(item, r, c) : st.markers[k]
         ) {
           out.push(eqMarkerHtml(item, r, c));
         } else {
@@ -836,7 +1090,7 @@
     }
     var cls = "ig-grid" + (mode === "answer" ? " show-solution" : "");
     var style =
-      forma === "zigzag"
+      forma !== "moara"
         ? "grid-template-columns:" +
           trackSizes(st.cols) +
           ";grid-template-rows:" +
@@ -999,6 +1253,88 @@
   };
   GEOM.zigzag.equationLayout = function (n, band) {
     return equationLayoutZigzag(n, band.dirOut);
+  };
+
+  // „cruce": aceeași convenție geometrică ca `cellsFromRawCruce`,
+  // REIMPLEMENTATĂ independent (fără a apela funcția de construcție).
+  // Ordinea push-urilor trebuie să coincidă EXACT: W,N,E,S (hub), apoi
+  // U/D/R per moară orizontală 2..nH, apoi U/D/R per moară verticală 2..nV.
+  function equationLayoutCruce(nH, nV) {
+    var HR = 4,
+      HC = 4;
+    var eqs = [];
+    // W (hub.L)
+    eqs.push({
+      cells: [key(HR, HC - 4), key(HR, HC - 2), key(HR, HC)],
+      opCell: key(HR, HC - 3),
+    });
+    // N (hub.U)
+    eqs.push({
+      cells: [key(HR - 4, HC), key(HR - 2, HC), key(HR, HC)],
+      opCell: key(HR - 3, HC),
+    });
+    // E (hub.R)
+    eqs.push({
+      cells: [key(HR, HC), key(HR, HC + 2), key(HR, HC + 4)],
+      opCell: key(HR, HC + 1),
+    });
+    // S (hub.D)
+    var wideGap = nH >= 2 && nV >= 2;
+    var vGap1 = wideGap ? 8 : 4;
+    var vSub = vGap1 / 4;
+    eqs.push({
+      cells: [key(HR, HC), key(HR + 2 * vSub, HC), key(HR + 4 * vSub, HC)],
+      opCell: key(HR + vSub, HC),
+    });
+    // orizontal, morile 2..nH
+    for (var i = 2; i <= nH; i++) {
+      var c = HC + 4 * (i - 1);
+      eqs.push({
+        cells: [key(HR - 4, c), key(HR - 2, c), key(HR, c)],
+        opCell: key(HR - 3, c),
+      });
+      eqs.push({
+        cells: [key(HR, c), key(HR + 2, c), key(HR + 4, c)],
+        opCell: key(HR + 1, c),
+      });
+      eqs.push({
+        cells: [key(HR, c), key(HR, c + 2), key(HR, c + 4)],
+        opCell: key(HR, c + 1),
+      });
+    }
+    // vertical, morile 2..nV
+    var vRowOf2 = HR + vGap1;
+    for (var j = 2; j <= nV; j++) {
+      var r = j === 2 ? vRowOf2 : vRowOf2 + 4 * (j - 2);
+      eqs.push({
+        cells: [key(r, HC + 4), key(r, HC + 2), key(r, HC)],
+        opCell: key(r, HC + 3),
+      });
+      eqs.push({
+        cells: [key(r, HC), key(r, HC - 2), key(r, HC - 4)],
+        opCell: key(r, HC - 1),
+      });
+      var rNext = j < nV ? vRowOf2 + 4 * (j - 1) : r + 4;
+      eqs.push({
+        cells: [key(r, HC), key(r + 2, HC), key(rNext, HC)],
+        opCell: key(r + 1, HC),
+      });
+    }
+    return eqs;
+  }
+  GEOM.cruce = {
+    cellsFromRaw: function (raw, band) {
+      return cellsFromRawCruce(raw.h, raw.v, band.nH, band.nV);
+    },
+    equationLayout: function (n, band) {
+      return equationLayoutCruce(band.nH, band.nV);
+    },
+    build: function (rng, band) {
+      return buildRawCruce(rng, band.nH, band.nV, band.N);
+    },
+    nOf: function (band) {
+      return band.nH + band.nV - 1;
+    },
   };
 
   function domainSentence(item) {
@@ -1182,7 +1518,7 @@
     }
     var mn = html.match(/de la 1 la (\d+)/);
     var N = mn ? parseInt(mn[1], 10) : null;
-    var eqPositions = GEOM[forma].equationLayout(band.n, band);
+    var eqPositions = GEOM[forma].equationLayout(GEOM[forma].nOf(band), band);
     var equations = eqPositions.map(function (eqPos) {
       var op = parsedOp[eqPos.opCell];
       if (!op) throw new Error("operator lipsă/nedetectat la " + eqPos.opCell);
@@ -1190,7 +1526,7 @@
     });
     return {
       N: N,
-      n: band.n,
+      n: GEOM[forma].nOf(band),
       forma: forma,
       dificultate: dif,
       num: parsedNum,
@@ -1336,6 +1672,31 @@
     function fail(msg) {
       ok = false;
       detalii.push("[FAIL] " + msg);
+    }
+
+    // -1) invariant „cruce": nicio bandă de dificultate nu are nH>=2 ȘI
+    // nV>=2 simultan (ar declanșa WIDE_GAP -> ecuație verticală cu goluri la
+    // print, respins la eyeball 2026-08-08). Asertat AICI (nu doar în cod)
+    // ca o modificare viitoare a DIFF.cruce să nu strice tăcut vizualul.
+    try {
+      for (var dc in DIFF.cruce) {
+        var bc = DIFF.cruce[dc];
+        if (bc.nH >= 2 && bc.nV >= 2)
+          throw new Error(
+            "cruce/" +
+              dc +
+              " are nH=" +
+              bc.nH +
+              " ȘI nV=" +
+              bc.nV +
+              " (ambele >=2) -> declanșează WIDE_GAP, respins la eyeball",
+          );
+      }
+      detalii.push(
+        "[OK] invariant cruce — nicio dificultate nu crește ambele brațe simultan",
+      );
+    } catch (e) {
+      fail(e.message);
     }
 
     // 0) oracol evalOp / solveSecond / solveFirst (independent de generator)

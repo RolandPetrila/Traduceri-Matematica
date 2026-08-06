@@ -13,7 +13,7 @@
 
 - **A — ÎN LUCRU** (sesiune 2026-08-08). Status detaliat: vezi `docs/PLAN_MASTER.md` §6b.
   - [x] **Zigzag** LIVRAT (gate verde 6/6 formă×dif + bug de poziție plantat/revenit + dovedit LIVE local static:8899). NEDEPLOYAT.
-  - [ ] **Cruce** — următorul (2 lanțuri perpendiculare dintr-un centru comun).
+  - [x] **Cruce** LIVRAT (gate verde 9/9 formă×dif + bug de poziție plantat/revenit + dovedit LIVE). Notă importantă: designul inițial (2 mori pe fiecare braț la Greu) avea o coliziune reală de celule, descoperită prin calcul + confirmată la eyeball (ecuație cu goluri) — înlocuit cu bănzi collision-free (un singur braț crește per dificultate) + invariant asertat în selftest. Detaliu: `docs/PLAN_MASTER.md` §6b. NEDEPLOYAT.
   - [ ] **Scară** — ultimul (graf cu cicluri, tehnica „set ascuns aciclic" de la numere.js).
 - **B — restanță, neînceput.**
 - **C — restanță, neînceput.** Cere `PLAN_SCOLARE_[data].md` + AskUserQuestion propriu.
