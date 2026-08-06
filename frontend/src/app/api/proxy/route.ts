@@ -1,14 +1,31 @@
-// Proxy serverless multi-provider — Vercel Node function.
-// Cheile stau DOAR server-side (env vars Vercel), niciodata in browser.
+import { NextRequest, NextResponse } from "next/server";
+
+// Proxy serverless multi-provider — App Router route handler (migrat din
+// `pages/api/proxy.js`, 2026-08-07, prerequisit pt Next 16 — Pages Router
+// eliminat complet acolo, fără shim). Comportament IDENTIC, doar API-ul
+// Node (req/res) → Fetch API (Request/Response) al App Router-ului.
+// Cheile stau DOAR server-side (env vars Vercel), niciodată în browser.
 // Client: fetch('/api/proxy?provider=<groq|gemini|mistral|cerebras|openrouter|gemini2|mistral2|deepl|deepl2|tavily|brave>', {method:'POST', body: <payload upstream>})
-// Proxy injecteaza cheia + forwardeaza la upstream + intoarce raspunsul brut.
+// Proxy injectează cheia + forwardează la upstream + întoarce răspunsul brut.
 
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
 const DEEPL_URL = "https://api-free.deepl.com/v2/translate";
 
-const PROVIDERS = {
+type ProviderAuth = "query" | "bearer" | "deepl" | "body" | "header";
+
+interface ProviderCfg {
+  url: string;
+  env: string;
+  auth: ProviderAuth;
+  extraHeaders?: Record<string, string>;
+  headerName?: string;
+  method?: "GET" | "POST";
+  query?: string[];
+}
+
+const PROVIDERS: Record<string, ProviderCfg> = {
   // --- LLM text (primari) ---
   gemini: { url: GEMINI_URL, env: "GOOGLE_API_KEY", auth: "query" },
   groq: {
@@ -58,11 +75,12 @@ const PROVIDERS = {
 // Integrat in Traduceri: doar same-origin (host-ul propriu, adaugat mai jos).
 // Domeniul standalone al proiectului sursa a fost eliminat (nu mai e o origine
 // de incredere aici -> ar fi o suprafata de abuz a cotei AI).
-const ALLOWED_HOSTS = [];
-function hostOf(u) {
+const ALLOWED_HOSTS: string[] = [];
+function hostOf(u: string | null): string {
+  if (!u) return "";
   try {
     return new URL(u).host.toLowerCase();
-  } catch (e) {
+  } catch {
     return "";
   }
 }
@@ -78,9 +96,9 @@ const RL_MAX = 60;
 const RL_PREFIX = "asistent-text-ai:rl:"; // namespacing — DB Upstash poate fi partajat cu alte proiecte
 
 // Fallback best-effort in-memory (per instanta serverless) — folosit cand Upstash lipseste/cade.
-const rlBuckets = new Map();
+const rlBuckets = new Map<string, number[]>();
 const RL_MAX_IPS = 10000; // plafon de siguranta per instanta warm
-function rateLimitedMemory(ip) {
+function rateLimitedMemory(ip: string): boolean {
   const now = Date.now();
   const arr = (rlBuckets.get(ip) || []).filter((t) => now - t < RL_WINDOW_MS);
   arr.push(now);
@@ -88,10 +106,10 @@ function rateLimitedMemory(ip) {
   // Evictie oportunista: cand Map-ul creste, scoate IP-urile cu fereastra expirata
   // (altfel Map-ul ar creste nemarginit pe o instanta warm cu multe IP-uri distincte).
   if (rlBuckets.size > RL_MAX_IPS) {
-    for (const [k, ts] of rlBuckets) {
+    rlBuckets.forEach((ts, k) => {
       if (!ts.length || now - ts[ts.length - 1] >= RL_WINDOW_MS)
         rlBuckets.delete(k);
-    }
+    });
   }
   return arr.length > RL_MAX;
 }
@@ -100,7 +118,7 @@ function rateLimitedMemory(ip) {
 // Daca env vars lipsesc SAU Upstash nu raspunde la timp -> fallback in-memory (zero regresie).
 const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-async function rateLimited(ip) {
+async function rateLimited(ip: string): Promise<boolean> {
   if (!UPSTASH_URL || !UPSTASH_TOKEN) return rateLimitedMemory(ip);
   const key = RL_PREFIX + ip;
   const ctrl = new AbortController();
@@ -126,17 +144,26 @@ async function rateLimited(ip) {
         ? data[0].result
         : 0;
     return count > RL_MAX;
-  } catch (e) {
+  } catch {
     return rateLimitedMemory(ip); // Upstash down/timeout -> nu bloca app-ul
   } finally {
     clearTimeout(timer);
   }
 }
 
+function clientIp(request: NextRequest): string {
+  // `x-real-ip` (setat de Vercel la IP-ul real) inainte de ultimul element din
+  // `x-forwarded-for` (primul e controlabil de client -> spoof = bucket nou).
+  const real = (request.headers.get("x-real-ip") || "").trim();
+  if (real) return real;
+  const fwd = (request.headers.get("x-forwarded-for") || "").split(",");
+  return (fwd.pop() || "").trim() || "unknown";
+}
+
 // --- Cost-cap anti-abuz: clientul NU poate alege modelul scump sau limite mari ---
 // Modele permise per provider (orice altceva e fortat la primul). Plafoane aplicate
 // DOAR daca clientul trimite explicit campul (traficul legit al app-ului nu-l trimite).
-const MODEL_ALLOW = {
+const MODEL_ALLOW: Record<string, string[]> = {
   // 70b = default pt Chat AI matematică (calitate); 8b păstrat pt compat Asistent. Ambele free pe Groq.
   groq: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
   mistral: ["mistral-large-latest"],
@@ -147,78 +174,71 @@ const MODEL_ALLOW = {
 const MAX_TOKENS_CAP = 8192;
 const MAX_RESULTS_CAP = 10;
 
-// Next.js Pages API route config: allow large OCR image payloads through the
-// body parser, relay large upstream responses (OCR JSON / search results can
-// exceed the 4MB default), and give Deep Research up to 60s on Vercel.
-export const config = {
-  maxDuration: 60,
-  api: { bodyParser: { sizeLimit: "10mb" }, responseLimit: "10mb" },
-};
+// Durata maximă — păstrată identică cu `pages/api/proxy.js` (config.maxDuration=60)
+// ca migrarea să NU schimbe și comportamentul de timeout odată cu rutarea.
+// (Body/response size: Pages Router avea `bodyParser sizeLimit/responseLimit: "10mb"`,
+// dar plafonul REAL al platformei e 4.5MB pt orice Vercel Function — App Router
+// Route Handlers nu au un echivalent de config, nici nu au nevoie: capul platformei
+// se aplică oricum, indiferent de router.)
+export const maxDuration = 60;
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed — POST only" });
-    return;
-  }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type JsonBody = Record<string, any>;
 
+export async function POST(request: NextRequest) {
   // Origin allowlist — blocheaza cererile browser cross-origin (nivel CSRF).
   // NU e o protectie completa anti-script: un client non-browser poate trimite
   // Host+Origin potrivite. Aparatul real contra epuizarii cotei = cost-cap
   // (model allowlist, mai jos) + rate-limit per-IP + limitele free-tier ale
-  // providerilor. Vezi si get_client_ip mai jos.
-  const host = String(req.headers.host || "").toLowerCase();
+  // providerilor. Vezi si clientIp mai jos.
+  const host = (request.headers.get("host") || "").toLowerCase();
   const allowed = new Set([host, ...ALLOWED_HOSTS]);
-  const oh = hostOf(req.headers.origin);
-  const rh = hostOf(req.headers.referer);
+  const oh = hostOf(request.headers.get("origin"));
+  const rh = hostOf(request.headers.get("referer"));
   const fromBrowser = oh || rh;
   if (!fromBrowser || (!allowed.has(oh) && !allowed.has(rh))) {
-    res.status(403).json({ error: "Forbidden — cerere neautorizata" });
-    return;
+    return NextResponse.json(
+      { error: "Forbidden — cerere neautorizata" },
+      { status: 403 },
+    );
   }
 
-  // Rate-limit best-effort (per IP). Foloseste `x-real-ip` (setat de platforma
-  // Vercel la IP-ul real al clientului) inainte de `x-forwarded-for`, al
-  // carui prim element e controlabil de client (spoof -> bucket nou/cerere).
-  const ip =
-    String(req.headers["x-real-ip"] || "").trim() ||
-    String(req.headers["x-forwarded-for"] || "")
-      .split(",")
-      .pop()
-      .trim() ||
-    "unknown";
-  if (await rateLimited(ip)) {
-    res
-      .status(429)
-      .json({ error: "Prea multe cereri — incearca din nou intr-un minut" });
-    return;
+  // Rate-limit best-effort (per IP).
+  if (await rateLimited(clientIp(request))) {
+    return NextResponse.json(
+      { error: "Prea multe cereri — incearca din nou intr-un minut" },
+      { status: 429 },
+    );
   }
 
-  const provider = String(
-    (req.query && req.query.provider) || "",
+  const provider = (
+    request.nextUrl.searchParams.get("provider") || ""
   ).toLowerCase();
   const cfg = PROVIDERS[provider];
   if (!cfg) {
-    res.status(400).json({ error: "Unknown provider: " + provider });
-    return;
+    return NextResponse.json(
+      { error: "Unknown provider: " + provider },
+      { status: 400 },
+    );
   }
 
   const key = process.env[cfg.env];
   if (!key) {
-    res.status(500).json({
-      error: "Server key missing (" + cfg.env + ") — seteaza env var in Vercel",
-    });
-    return;
+    return NextResponse.json(
+      {
+        error:
+          "Server key missing (" + cfg.env + ") — seteaza env var in Vercel",
+      },
+      { status: 500 },
+    );
   }
 
-  let body = req.body;
-  if (typeof body === "string") {
-    try {
-      body = JSON.parse(body);
-    } catch (e) {
-      body = {};
-    }
+  let body: JsonBody = {};
+  try {
+    body = (await request.json()) || {};
+  } catch {
+    body = {};
   }
-  body = body || {};
 
   // Cost-cap: forteaza modelul permis + plafoneaza limitele daca-s trimise (audit #1).
   if (MODEL_ALLOW[provider]) {
@@ -239,17 +259,19 @@ export default async function handler(req, res) {
 
   let url = cfg.url;
   const method = cfg.method || "POST";
-  const headers = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (cfg.extraHeaders) Object.assign(headers, cfg.extraHeaders);
   if (cfg.auth === "query") url += "?key=" + encodeURIComponent(key);
   else if (cfg.auth === "bearer") headers["Authorization"] = "Bearer " + key;
   else if (cfg.auth === "deepl")
     headers["Authorization"] = "DeepL-Auth-Key " + key;
   else if (cfg.auth === "body") body.api_key = key;
-  else if (cfg.auth === "header") headers[cfg.headerName] = key;
+  else if (cfg.auth === "header") headers[cfg.headerName!] = key;
 
   // Provideri GET (ex: Brave): parametrii relevanti din body -> query string, fara corp.
-  let fetchOpts;
+  let fetchOpts: RequestInit;
   if (method === "GET") {
     const params = new URLSearchParams();
     (cfg.query || []).forEach((k) => {
@@ -266,16 +288,20 @@ export default async function handler(req, res) {
   try {
     const upstream = await fetch(url, fetchOpts);
     const text = await upstream.text();
-    res.status(upstream.status);
-    res.setHeader(
-      "Content-Type",
-      upstream.headers.get("content-type") || "application/json",
-    );
-    res.send(text);
-  } catch (e) {
-    res.status(502).json({
-      error: "Proxy upstream failed",
-      detail: String((e && e.message) || e),
+    return new Response(text, {
+      status: upstream.status,
+      headers: {
+        "Content-Type":
+          upstream.headers.get("content-type") || "application/json",
+      },
     });
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error: "Proxy upstream failed",
+        detail: String((e as Error)?.message || e),
+      },
+      { status: 502 },
+    );
   }
 }

@@ -19,11 +19,17 @@
 - **Gate: `tsc 0 · jest 172/172 · pytest 46/46 · next build OK` (8 rute, First Load JS 103-135kB, neschimbat).**
 - **NEDEPLOYAT** — commit+push pe `faza-g-editor` făcut conform convenției proiectului (`feedback_auto_push`), dar deploy-ul (`vercel deploy --prod`) așteaptă confirmarea explicită a lui Roland.
 
-**Rămase din raportul `/improve` (P1, neexecutate azi — vezi raportul pt detalii):**
+**Continuare 2026-08-07 (a doua rundă, Roland: „continua"): #4 + #5 LIVRATE.**
+
+- ✅ **#4 — `maxDuration` 60→300s** în `vercel.json` (`api/*.py`) — verificat la sursă primară (`vercel.com/docs/functions/limitations`, Hobby permite acum 300s implicit/maxim, nu doar 60s).
+- ✅ **#5 — `pages/api/proxy.js` → `app/api/proxy/route.ts`** (App Router, prerequisit hard Next 16 — Pages Router eliminat complet acolo, fără shim). Portare 1:1 (10 provideri, origin-allowlist, rate-limit Upstash+fallback in-memory, cost-cap model/tokens). `frontend/src/pages/` ȘTERS complet (era singurul fișier din el) — build-ul confirmă: secțiunea „Route (pages)" a dispărut integral din output, bundle-ul Pages Router (~83kB framework+main chunks) nu se mai include. Fix pe parcurs: `for...of` pe `Map` incompatibil cu `target:es5` din `tsconfig.json` → înlocuit cu `.forEach` (același pattern ca `app/api/logs/route.ts`, care rezolvase deja asta). 2 comentarii-pointer actualizate (`chat-providers.ts`, `logs/route.ts`) să indice noua locație.
+- **Smoke-test LIVE (`next start` local, `.env` cu chei reale):** 403 fără Origin/Referer (CSRF OK) · 400 provider necunoscut · **cerere validă cu `provider=gemini` a lovit efectiv API-ul real Gemini și a primit înapoi răspunsul autentic al providerului** (pipeline complet dovedit end-to-end, nu doar compilare) · GET→405 (comportament implicit App Router).
+- **Gate: `tsc 0 · jest 172/172 · pytest 46/46 · next build OK`.** Commit separat de lotul inițial de 5 quick-wins.
+- **NEDEPLOYAT** — commit+push făcut (convenție automată), dar `vercel deploy --prod` (ambele proiecte: `traduceri-api` pt #4, `traduceri-frontend` pt #5) așteaptă confirmarea explicită a lui Roland.
+
+**Rămase din raportul `/improve` (P1, neexecutate — vezi raportul pt detalii):**
 
 - **#3** — verifică statutul de cost `gemini-2.5-pro` (Google AI Studio billing) — [INCERT], cere acces cont Roland.
-- **#4** — bump `maxDuration` 60→300s în `vercel.json` (verificat la sursă: Hobby permite acum 300s) — atinge config deploy, cere confirmare.
-- **#5** — migrează `pages/api/proxy.js` → App Router (prerequisit hard pt Next 16, Pages Router eliminat complet fără shim).
 - **#7, #8** — Teste→Corectează fără „trimite în editor" + Istoric→Traduceri permanent gol.
 - **#9** — curățenie `translation_router.py` (8 funcții moarte + integrare Claude neutilizată).
 - **#17, #18** — verificare cont DeepL (API Free retras pt clienți noi iul. 2026) + Fluid Compute activ pe proiectele Vercel.

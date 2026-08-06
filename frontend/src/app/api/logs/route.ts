@@ -19,7 +19,7 @@ function supabaseHeaders(): Record<string, string> {
 
 // S5 — protecție anti-abuz pt endpoint-ul PUBLIC de log (scrie în Supabase cu
 // service-role key). Fără plafon → flood necontrolat al tabelei `logs`.
-// Model: `pages/api/proxy.js:69-91` (best-effort in-memory, per instanță serverless).
+// Model: `app/api/proxy/route.ts` (best-effort in-memory, per instanță serverless).
 const MAX_BODY_BYTES = 32 * 1024; // un rând de log legit e < ~4KB
 const RL_WINDOW_MS = 60 * 1000;
 const RL_MAX = 120; // 120 log-uri / minut / IP (2/s sustinut — larg pt telemetrie legit)

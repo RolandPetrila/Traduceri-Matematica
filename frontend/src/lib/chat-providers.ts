@@ -33,7 +33,8 @@ export type ProviderStep = {
 /**
  * Lanțul confirmat de Roland (2026-08-05). Toți providerii sunt free-tier și au
  * cheile deja setate pe `traduceri-frontend` (verificat: 200 pe prod). Modelele
- * OpenAI-compatibile trebuie să fie în `MODEL_ALLOW` din `pages/api/proxy.js`.
+ * OpenAI-compatibile trebuie să fie în `MODEL_ALLOW` din `app/api/proxy/route.ts`
+ * (migrat din `pages/api/proxy.js` la App Router, 2026-08-07, prerequisit Next 16).
  */
 export const CHAIN: ProviderStep[] = [
   { id: "gemini", label: "Gemini Flash", format: "gemini" },
