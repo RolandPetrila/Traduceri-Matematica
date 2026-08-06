@@ -28,6 +28,15 @@
  *    "ocupă" direcția de intrare/ieșire a coloanei vertebrale LOCALE (poate
  *    diferi de E/V dacă moara e pivot), iar U/D ocupă cele 2 direcții
  *    RĂMASE. Vezi `DIR_ZZ` + `cellsFromRawZigzag` pt algoritmul complet.
+ *  - „scara" — 2 lanțuri buildRaw INDEPENDENTE (nu hub comun ca la „cruce"),
+ *    paralele (rând 0 = sus, rând 4 = jos), legate prin n ecuații „treaptă"
+ *    verticale (X_top[i] op leaf = X_bot[i]) la fiecare coloană centrală.
+ *    Graful ARE cicluri (top_i-top_{i+1}-bot_{i+1}-bot_i-top_i via 2 spine +
+ *    2 trepte), dar `canForcePropagate` rămâne SOLID: fiecare joncțiune se
+ *    deduce din propriul lanț (frunze externe), treapta e o VERIFICARE
+ *    redundantă, nu o legătură necesară pt determinare — deci NU a fost
+ *    nevoie de tehnica „set ascuns aciclic" de la numere.js (confirmat de
+ *    rundă advisor 2026-08-08, testat empiric în selftest).
  *
  * CORECTITUDINE = SOLUȚIE UNICĂ:
  *  - Domeniul e TIPĂRIT („toate numerele din desen sunt de la 1 la N", inclusiv
@@ -110,12 +119,22 @@
       Standard: { nH: 2, nV: 1, N: 16, hide: 5 },
       Greu: { nH: 1, nV: 3, N: 20, hide: 7 },
     },
+    // 2 lanțuri buildRaw INDEPENDENTE (n mori fiecare) + n trepte verticale.
+    // cellMM scade cu n (lățime print col = 4n+5 celule) — la fel ca „moara":
+    // Ușor(13col*13mm=169mm), Standard(17col*10mm=170mm), Greu(21col*8mm=168mm),
+    // toate sub 186mm utilizabili pe A4 (verificat, rundă advisor 2026-08-08).
+    scara: {
+      Usor: { n: 2, N: 12, hide: 3, cellMM: 13 },
+      Standard: { n: 3, N: 16, hide: 5, cellMM: 10 },
+      Greu: { n: 4, N: 20, hide: 7, cellMM: 8 },
+    },
   };
   var FORME = Object.keys(DIFF);
   var FORM_LABELS = {
     moara: "Moară de vânt (lanț drept)",
     zigzag: "Zigzag (coloană cotită)",
     cruce: "Cruce (2 lanțuri perpendiculare)",
+    scara: "Scară (2 coloane vertebrale + trepte)",
   };
 
   // ---------- aritmetică (regula puzzle-ului; testată cu oracol în selftest) ----------
@@ -355,6 +374,55 @@
     var vRaw = buildRaw(rng, nV, N, hRaw.X[1], vPerm);
     if (!vRaw) return null;
     return { h: hRaw, v: vRaw, nH: nH, nV: nV, N: N };
+  }
+
+  // ---------- CONSTRUCȚIE „scara" (2 lanțuri buildRaw INDEPENDENTE + trepte) ----------
+  // Spre deosebire de „cruce" (hub COMUN), aici top/bot au FIECARE propriul
+  // X1 liber (nu forțat) — sunt 2 lanțuri complet independente. Treapta i
+  // leagă X_top[i] și X_bot[i] cu o frunză REZOLVATĂ (nu aleasă liber, ca la
+  // pickSecondFree) — `linkLeaf`, ca la un link interior normal — pt ca
+  // ecuația treaptă să fie CONSISTENTĂ cu cele 2 valori deja fixate de
+  // propriile lanțuri. `rungOp[i]` evită operațiile L/R deja folosite de
+  // joncțiunea i pe FIECARE spine (top ȘI bot) — ca `checkItem` (fără
+  // operații duplicate per joncțiune) să treacă prin construcție, nu prin
+  // respingere/reîncercare la nivel de item întreg.
+  function buildRawScara(rng, n, N) {
+    var top = buildRaw(rng, n, N);
+    if (!top) return null;
+    var bot = buildRaw(rng, n, N);
+    if (!bot) return null;
+    var rungOp = [],
+      rungLeaf = [];
+    for (var i = 1; i <= n; i++) {
+      var excluded = {};
+      excluded[top.linkOp(i - 1)] = true;
+      excluded[top.linkOp(i)] = true;
+      excluded[bot.linkOp(i - 1)] = true;
+      excluded[bot.linkOp(i)] = true;
+      var candidates = ALL_OPS.filter(function (o) {
+        return !excluded[o];
+      });
+      if (!candidates.length) return null;
+      rng.shuffle(candidates);
+      var found = false;
+      for (var t = 0; t < candidates.length && !found; t++) {
+        var op = candidates[t];
+        var leaf = linkLeaf(op, top.X[i], bot.X[i], N);
+        if (leaf === null) continue;
+        rungOp[i] = op;
+        rungLeaf[i] = leaf;
+        found = true;
+      }
+      if (!found) return null;
+    }
+    return {
+      top: top,
+      bot: bot,
+      rungOp: rungOp,
+      rungLeaf: rungLeaf,
+      n: n,
+      N: N,
+    };
   }
 
   // Construiește harta de celule (forma „cruce"). Hub la (4,4) — 4 brațe
@@ -796,6 +864,107 @@
     };
   }
 
+  // Embeddează UN lanț buildRaw pe un rând FIX (fără brațe U/D) — folosit de
+  // `cellsFromRawScara` de 2 ori (top/bot). Identic geometric cu partea
+  // orizontală a lui `cellsFromRawMoara`, doar fără brațele SUS/JOS.
+  function embedSpine(setNum, setOp, setMarker, eq, raw, row) {
+    var n = raw.n;
+    setNum(row, 0, raw.a0);
+    setOp(row, 1, raw.linkOp(0));
+    setNum(row, 2, raw.b0);
+    setMarker(row, 3);
+    setNum(row, 4, raw.X[1]);
+    eq(key(row, 0), key(row, 2), key(row, 4), raw.linkOp(0));
+    for (var i = 1; i <= n; i++) {
+      var c = 4 * i;
+      if (i < n) {
+        var cNext = 4 * (i + 1);
+        setOp(row, c + 1, raw.linkOp(i));
+        setNum(row, c + 2, raw.innerB[i]);
+        setMarker(row, c + 3);
+        setNum(row, cNext, raw.X[i + 1]);
+        eq(key(row, c), key(row, c + 2), key(row, cNext), raw.linkOp(i));
+      } else {
+        setOp(row, c + 1, raw.linkOp(n));
+        setNum(row, c + 2, raw.bFinal);
+        setMarker(row, c + 3);
+        setNum(row, c + 4, raw.rFinal);
+        eq(key(row, c), key(row, c + 2), key(row, c + 4), raw.linkOp(n));
+      }
+    }
+  }
+
+  // Construiește harta de celule (forma „scara"). TOP=rând0, BOT=rând4 (câte
+  // o coloană vertebrală fiecare, fără brațe U/D proprii — vezi `embedSpine`).
+  // Treapta i (coloana 4*i): TOP(rând0) op(rând1) leaf(rând2) =(rând3) BOT(rând4).
+  // `armCells["T"+i]`/`["B"+i]` = {L,R,D|U} — NU are 4 roluri ca o moară
+  // normală (checkItem le tratează diferit — vezi comentariul de acolo).
+  function cellsFromRawScara(raw) {
+    var n = raw.n;
+    var cells = {},
+      equations = [],
+      markers = {},
+      armCells = {};
+    function setNum(r, c, v) {
+      cells[key(r, c)] = { kind: "num", value: v };
+    }
+    function setOp(r, c, op) {
+      cells[key(r, c)] = { kind: "op", op: op };
+    }
+    function setMarker(r, c) {
+      markers[key(r, c)] = true;
+    }
+    function eq(a, b, c, op) {
+      equations.push({ cells: [a, b, c], op: op });
+    }
+
+    var TOP = 0,
+      BOT = 4;
+    embedSpine(setNum, setOp, setMarker, eq, raw.top, TOP);
+    embedSpine(setNum, setOp, setMarker, eq, raw.bot, BOT);
+
+    for (var i = 1; i <= n; i++) {
+      var c = 4 * i;
+      setOp(TOP + 1, c, raw.rungOp[i]);
+      setNum(TOP + 2, c, raw.rungLeaf[i]);
+      setMarker(TOP + 3, c);
+      eq(key(TOP, c), key(TOP + 2, c), key(BOT, c), raw.rungOp[i]);
+    }
+
+    for (var i2 = 1; i2 <= n; i2++) {
+      var c2 = 4 * i2;
+      armCells["T" + i2] = {
+        L: key(TOP, c2 - 3),
+        R: key(TOP, c2 + 1),
+        D: key(TOP + 1, c2),
+      };
+      armCells["B" + i2] = {
+        L: key(BOT, c2 - 3),
+        R: key(BOT, c2 + 1),
+        U: key(TOP + 1, c2),
+      };
+    }
+
+    var maxR = 0,
+      maxC = 0;
+    Object.keys(cells)
+      .concat(Object.keys(markers))
+      .forEach(function (kk) {
+        var parts = kk.split(",");
+        maxR = Math.max(maxR, parseInt(parts[0], 10));
+        maxC = Math.max(maxC, parseInt(parts[1], 10));
+      });
+
+    return {
+      cells: cells,
+      equations: equations,
+      markers: markers,
+      armCells: armCells,
+      rows: maxR + 1,
+      cols: maxC + 1,
+    };
+  }
+
   var GEOM = {
     moara: {
       cellsFromRaw: cellsFromRawMoara,
@@ -1089,18 +1258,29 @@
       }
     }
     var cls = "ig-grid" + (mode === "answer" ? " show-solution" : "");
-    var style =
-      forma !== "moara"
-        ? "grid-template-columns:" +
-          trackSizes(st.cols) +
-          ";grid-template-rows:" +
-          trackSizes(st.rows) +
-          ";"
-        : "grid-template-columns:repeat(" +
-          st.cols +
-          "," +
-          DIFF.moara[item.dificultate].cellMM +
-          "mm);";
+    // „moara"/„scara": lățime UNIFORMĂ per coloană (cellMM scade cu n, ca
+    // lățimea totală de print să încapă pe A4 — vezi DIFF.scara). „zigzag"/
+    // „cruce": ambele axe variază (coturi/brațe), lățime FIXĂ alternantă
+    // (trackSizes) pe ambele axe.
+    var style;
+    if (forma === "moara" || forma === "scara") {
+      style =
+        "grid-template-columns:repeat(" +
+        st.cols +
+        "," +
+        DIFF[forma][item.dificultate].cellMM +
+        "mm);" +
+        (forma === "scara"
+          ? "grid-template-rows:" + trackSizes(st.rows) + ";"
+          : "");
+    } else {
+      style =
+        "grid-template-columns:" +
+        trackSizes(st.cols) +
+        ";grid-template-rows:" +
+        trackSizes(st.rows) +
+        ";";
+    }
     return (
       '<div class="' +
       cls +
@@ -1337,6 +1517,61 @@
     },
   };
 
+  // „scara": aceeași convenție geometrică ca `cellsFromRawScara`,
+  // REIMPLEMENTATĂ independent. Ordinea push-urilor trebuie să coincidă
+  // EXACT: spine TOP (init + link 1..n), spine BOT (init + link 1..n),
+  // apoi trepte 1..n — vezi `embedSpine`/`cellsFromRawScara`.
+  function equationLayoutScara(n) {
+    var TOP = 0,
+      BOT = 4;
+    var eqs = [];
+    function spineEqs(row) {
+      eqs.push({
+        cells: [key(row, 0), key(row, 2), key(row, 4)],
+        opCell: key(row, 1),
+      });
+      for (var i = 1; i <= n; i++) {
+        var c = 4 * i;
+        if (i < n) {
+          var cNext = 4 * (i + 1);
+          eqs.push({
+            cells: [key(row, c), key(row, c + 2), key(row, cNext)],
+            opCell: key(row, c + 1),
+          });
+        } else {
+          eqs.push({
+            cells: [key(row, c), key(row, c + 2), key(row, c + 4)],
+            opCell: key(row, c + 1),
+          });
+        }
+      }
+    }
+    spineEqs(TOP);
+    spineEqs(BOT);
+    for (var j = 1; j <= n; j++) {
+      var c2 = 4 * j;
+      eqs.push({
+        cells: [key(TOP, c2), key(TOP + 2, c2), key(BOT, c2)],
+        opCell: key(TOP + 1, c2),
+      });
+    }
+    return eqs;
+  }
+  GEOM.scara = {
+    cellsFromRaw: function (raw) {
+      return cellsFromRawScara(raw);
+    },
+    equationLayout: function (n) {
+      return equationLayoutScara(n);
+    },
+    build: function (rng, band) {
+      return buildRawScara(rng, band.n, band.N);
+    },
+    nOf: function (band) {
+      return band.n;
+    },
+  };
+
   function domainSentence(item) {
     return (
       "Completează căsuțele goale cu numere de la 1 la " +
@@ -1555,22 +1790,48 @@
       if (evalOp(e.op, vals[0], vals[1]) !== vals[2])
         throw new Error("ecuație inconsistentă: " + e.cells.join(","));
     });
-    // 2b) fiecare moară are toate 4 operațiile distincte pe cele 4 brațe
-    // (L,R,U,D) — generic pe `st.armCells` (populat de cellsFromRaw*, NU
-    // hardcodează poziții per formă).
+    // 2b) fără operații DUPLICATE per joncțiune, pe `st.armCells` (populat de
+    // cellsFromRaw*, NU hardcodează poziții per formă). „moara"/„zigzag"/
+    // „cruce": fiecare moară e o cruce reală cu 4 brațe L,R,U,D — se cere
+    // EXACT 4 roluri distincte (nu doar „fără duplicate", ca o eventuală
+    // lipsă de rol viitoare să nu treacă tăcut). „scara": o joncțiune are
+    // DOAR L/R (link pe propria coloană) + D SAU U (treaptă) — 3 roluri, nu
+    // 4 — declarat explicit aici (nu o relaxare tăcută a regulii de mai sus).
     Object.keys(st.armCells).forEach(function (i) {
       var arm = st.armCells[i];
-      var ops = ["L", "R", "U", "D"].map(function (role) {
-        return st.cells[arm[role]].op;
-      });
-      var setArm = {};
-      ops.forEach(function (o) {
-        setArm[o] = true;
-      });
-      if (Object.keys(setArm).length !== 4)
-        throw new Error(
-          "moara " + i + " nu are 4 operații distincte: " + ops.join(","),
-        );
+      if (item.forma === "scara") {
+        var rolesS = Object.keys(arm);
+        var opsS = rolesS.map(function (role) {
+          return st.cells[arm[role]].op;
+        });
+        var setS = {};
+        opsS.forEach(function (o) {
+          setS[o] = true;
+        });
+        if (Object.keys(setS).length !== opsS.length)
+          throw new Error(
+            "scara: joncțiunea " +
+              i +
+              " are operații duplicate: " +
+              opsS.join(","),
+          );
+      } else {
+        var ops = ["L", "R", "U", "D"].map(function (role) {
+          if (!(role in arm))
+            throw new Error(
+              "moara " + i + " nu are rolul " + role + " (armCells incomplet)",
+            );
+          return st.cells[arm[role]].op;
+        });
+        var setArm = {};
+        ops.forEach(function (o) {
+          setArm[o] = true;
+        });
+        if (Object.keys(setArm).length !== 4)
+          throw new Error(
+            "moara " + i + " nu are 4 operații distincte: " + ops.join(","),
+          );
+      }
     });
 
     // 3) nr ascunse == țintă
