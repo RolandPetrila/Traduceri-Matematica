@@ -1,8 +1,10 @@
 /* dictare.js — generator „Dictare grafică" (graphical dictation on a grid).
  * Contract §5 (ca uneste.js / cautare.js):
  *   buildOne(params, seed) -> item
- *   render(item, mm?) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
- *   renderPages(item, nr, total, mm?) -> { puzzle, answer }
+ *   render(item) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
+ *   renderPages(item, nr, total) -> { puzzle, answer }
+ *   (fără parametru mm — spre deosebire de labirint.js/cautare.js; grila se
+ *   scalează automat per dificultate, vezi benzile de pași din DIFF)
  *   selftest() -> { ok, detalii }
  *   signature(item) -> string
  *

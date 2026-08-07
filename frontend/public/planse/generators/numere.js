@@ -1,8 +1,10 @@
 /* numere.js — generator „Numere" (careu crossmath size×size, size ∈ {3,4,5}).
  * Contract §5 (ca uneste.js / cautare.js / dictare.js):
  *   buildOne(params, seed) -> item   // params = {marime, dificultate}
- *   render(item, mm?) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
- *   renderPages(item, nr, total, mm?) -> { puzzle, answer }
+ *   render(item) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
+ *   renderPages(item, nr, total) -> { puzzle, answer }
+ *   (fără parametru mm — spre deosebire de labirint.js/cautare.js; grila se
+ *   scalează automat intern via trackSizesMm/trackSizesPx)
  *   selftest() -> { ok, detalii }
  *   signature(item) -> string
  *

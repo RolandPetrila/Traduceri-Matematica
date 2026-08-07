@@ -2,8 +2,10 @@
  * ÎNCRUCIȘEAZĂ într-o celulă centrală comună — o „moară" — toate 4 operațiile
  * +,−,×,÷ prezente per moară). Contract §5 (ca numere.js/dictare.js):
  *   buildOne(params, seed) -> item   // params = {forma, dificultate}
- *   render(item, mm?) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
- *   renderPages(item, nr, total, mm?) -> { puzzle, answer }
+ *   render(item) -> { pages:[puzzle, answer], css, interactive, interactiveCss }
+ *   renderPages(item, nr, total) -> { puzzle, answer }
+ *   (fără parametru mm — spre deosebire de labirint.js/cautare.js; grila se
+ *   scalează automat, vezi cellMM per dificultate)
  *   selftest() -> { ok, detalii }
  *   signature(item) -> string
  *
