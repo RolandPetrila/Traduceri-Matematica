@@ -27,14 +27,27 @@
 - **Gate: `tsc 0 · jest 172/172 · pytest 46/46 · next build OK`.** Commit separat de lotul inițial de 5 quick-wins.
 - ✅✅ **DEPLOYAT + VERIFICAT (2026-08-07, confirmat Roland „fa deploy").** Backend `traduceri-api` (`dpl_7HgDUU8JLrvp9vKNfhY7bpjjyr1K`) — alias `traduceri-api.vercel.app/api/health` → `build_version:"72b1948"`, `/api/deepl-usage`+`/api/gemini-usage`+`OPTIONS /api/ocr` = 200. **Descoperire utilă din healthcheck:** `character_limit:1000000` pe DeepL (nu 500k) — confirmă că cheia a trecut deja pe planul nou „Developer" (răspunde parțial la #17, fără acces la cont). Frontend `traduceri-frontend` (`CACHE_VERSION v41→v42-20260807a`, `dpl_6avseBZiYicD291uVkepSy88gXLX`) — alias `sw.js`=v42, homepage+`/editor-nou`=200, **`/api/proxy` verificat live pe prod**: 403 fără origin, 400 provider necunoscut (ruta App Router migrată funcționează identic pe producție).
 
-**Rămase din raportul `/improve` (P1, neexecutate — vezi raportul pt detalii):**
+**Continuare 2026-08-07 (a treia rundă, Roland: „fa deploy si pe urma continua cu #9 pana la #26"):**
 
-- **#3** — verifică statutul de cost `gemini-2.5-pro` (Google AI Studio billing) — [INCERT], cere acces cont Roland.
-- **#7, #8** — Teste→Corectează fără „trimite în editor" + Istoric→Traduceri permanent gol.
-- **#9** — curățenie `translation_router.py` (8 funcții moarte + integrare Claude neutilizată).
-- **#17, #18** — verificare cont DeepL (API Free retras pt clienți noi iul. 2026) + Fluid Compute activ pe proiectele Vercel.
+- ✅ **#9** curățenie `translation_router.py` (8 funcții moarte + integrare Claude neutilizată șterse) + `RequestTooLarge` cablat în `ocr.py`/`translate_text.py` (413 manual → excepție tipizată; `convert.py` NEATINS, except-block diferit) + intrare fantomă `/api/translate` ștearsă din `rate_limiter.py`.
+- ✅ **#12** `dev:full` reparat (`concurrently` adăugat ca devDependency root, testat live).
+- ✅ **#13** Calculator — buton „Inserează rezultatul" la Științific + Matrice (prop nou `onInsertTextToEditor`, cablat identic cu Chat/Teste).
+- ✅ **#14** Convertor — mesaj explicit „indisponibil pt re-descărcare" pe intrările ≥2MB din istoric (înainte: buton absent tăcut).
+- ✅ **#15** 4 teste noi handler HTTP `/api/ocr` (OPTIONS/CORS, 413, 400, 200 cu OCR mockuit) — gap închis, pytest 46→50.
+- ✅ **#16** `app/asistent/page.tsx` + `public/asistent/*` ȘTERSE (deja marcate „curățare la FIN"); bonus: `next.config.js` — eliminat blocul CSP dedicat + simplificată sursa globală.
+- ✅ **#22** CI minimal (`.github/workflows/gate.yml`, tsc+jest+build+pytest, non-blocking) — **verificat LIVE cu `gh run watch`**, ambele joburi verzi pe rulare reală.
+- ✅ **#23+#24** comentarii stale corectate (doc `mm?` la dictare/numere/integramă, titluri secțiuni `selftest.html`) — doar text, verificat cu harness-urile Node existente (SELFTEST OK).
+- ⏭️ **#3, #17, #18** rămân [INCERT]/blocate — cer acces la conturi (Google AI Studio, DeepL, Vercel dashboard) pe care nu îl am. #18 parțial investigat prin API Vercel (`get_project`) — nu expune direct statusul Fluid Compute.
+- ⏸️ **#19 (Next 16), #20 (Tailwind v4), #21 (AI Gateway)** — Roland a confirmat explicit „nu acum" pt toate 3 (AskUserQuestion), rămân backlog conștient.
+- ⏸️ **#25 (prompt instalare PWA)** — verificat: zero referințe `beforeinstallprompt` în tot frontend-ul, gap-ul e CONFIRMAT real (nu fals-pozitiv). Roland a ales să nu implementeze acum (cere mock+confirmare separată, regula §17).
+- ⏸️ **#26 (persistență Chat/Teste/Calculator)** — Roland a confirmat „rămâne cum e" (era marcat OVERKILL în raport).
+- **🔧 Regresie prinsă și reparată în aceeași rundă:** `outputFileTracingRoot` (adăugat în #16 ca fix cosmetic pt un warning local) a RUPT deploy-ul real pe Vercel (`ENOENT .../path0/path0/routes-manifest.json` — conflict cu Root Directory-ul proiectului). Prins la primul `vercel deploy --prod` după commit, NU la build local (care mersese OK de multiple ori). Revert imediat, redeploy confirmat OK. Lecție: un fix "cosmetic" de config poate rupe silențios producția — build local verde ≠ deploy Vercel verde.
+- ✅✅ **DEPLOYAT + VERIFICAT (batch 2).** Backend `traduceri-api` (`dpl_4wUpLmqeFEL4MbEJW2BpQd6da1u4`) — `/api/health` → `build_version` la ultimul commit relevant, 200. Frontend `traduceri-frontend` (`CACHE_VERSION v42→v43-20260807b`, `dpl_HLw1yLno84LjCCLoRhKLJPQW8bsr`) — alias `sw.js`=v43, homepage 200, **`/asistent` → 404 confirmat** (ruta ștearsă chiar a dispărut din producție), `/api/proxy` → 403 fără origin (funcțional pe prod).
+- **Gate final (după toate cele 9 fix-uri, re-rulat de la zero):** `tsc 0 · jest 172/172 · pytest 50/50 · next build OK`.
 
-**➡️ Coada activă §6b (C, D) rămâne prioritară față de restul raportului `/improve`** — vezi blocul de mai jos.
+**Progres total raport `/improve`: 16/26 executate** (#1,2,4,5,6,9,10,11,12,13,14,15,16,22,23,24 + verificare #25). Rămân: #3/#17/#18 (blocate, cer acces cont), #19/#20/#21/#25(implementare)/#26 (decizie conștientă Roland: nu acum) + P2-P4 neatinse din raport (vezi `.claude-outputs/improve/2026-08-07_010000/improve_report.md`).
+
+**➡️ Coada activă §6b (C, D) rămâne prioritară pt sesiunea următoare** — vezi blocul de mai jos. Recomandare neschimbată: **D** (bug `\lim`, repro confirmat, fix candidat identificat, risc mic).
 
 ---
 
