@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sendChat } from "@/lib/chat-providers";
+import { sendChat, type ChatMessage } from "@/lib/chat-providers";
 import { buildSystemPrompt } from "@/lib/chat-context";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
@@ -47,6 +47,11 @@ export function TestePanel({
     </div>
   );
 }
+
+/** Trunchiere la limita de tokeni (ChatPanel.tsx are acelasi pattern) — mesajul-prompt
+ * de continuare, trimis modelului, nu afisat in UI. */
+const CONTINUE_PROMPT =
+  "Continuă exact de unde ai rămas, fără să reiei ce ai scris deja.";
 
 /* ──────────────────────────────── Generează ──────────────────────────────── */
 
@@ -108,6 +113,11 @@ function GenerateTab({
   const [result, setResult] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [note, setNote] = useState("");
+  // Istoricul trimis modelului (pt continuare) + flag „ultimul raspuns a fost taiat
+  // la limita de tokeni" (acelasi pattern ca ChatPanel.tsx — un test lung, 10 itemi
+  // + barem, poate atinge 8192 tok si s-ar taia MUT fara asta).
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [truncated, setTruncated] = useState(false);
 
   const effectiveTema = tema || groups[0] || "diverse";
   const total = ITEM_TYPES.reduce((s, t) => s + (counts[t.key] || 0), 0);
@@ -118,6 +128,7 @@ function GenerateTab({
   const generate = async () => {
     setStatus("loading");
     setNote("Generez testul…");
+    setTruncated(false);
     const typeCounts = ITEM_TYPES.map((t) => ({
       key: t.key,
       n: counts[t.key] || 0,
@@ -129,14 +140,34 @@ function GenerateTab({
       answers,
       typeCounts,
     );
-    const r = await sendChat(
-      [{ role: "user", content: prompt }],
-      buildSystemPrompt(),
-    );
+    const initial: ChatMessage[] = [{ role: "user", content: prompt }];
+    const r = await sendChat(initial, buildSystemPrompt());
     if (r.ok) {
       setResult(r.reply);
       setStatus("idle");
       setNote(`Generat cu ${r.provider}.`);
+      setTruncated(r.truncated);
+      setHistory([...initial, { role: "assistant", content: r.reply }]);
+    } else {
+      setStatus("error");
+      setNote(r.error);
+    }
+  };
+
+  const continueGenerate = async () => {
+    setStatus("loading");
+    setNote("Continui testul…");
+    const nextHistory: ChatMessage[] = [
+      ...history,
+      { role: "user", content: CONTINUE_PROMPT },
+    ];
+    const r = await sendChat(nextHistory, buildSystemPrompt());
+    if (r.ok) {
+      setResult((prev) => prev + "\n" + r.reply);
+      setStatus("idle");
+      setNote(`Continuat cu ${r.provider}.`);
+      setTruncated(r.truncated);
+      setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
     } else {
       setStatus("error");
       setNote(r.error);
@@ -256,6 +287,17 @@ function GenerateTab({
             aria-label="Previzualizare test"
             dangerouslySetInnerHTML={{ __html: renderMathText(result) }}
           />
+          {truncated && status !== "loading" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 self-start text-xs"
+              onClick={continueGenerate}
+            >
+              Continuă răspunsul ▸
+            </Button>
+          )}
           {onSendToEditor && (
             <Button
               type="button"
@@ -299,6 +341,8 @@ function CorrectTab({
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [note, setNote] = useState("");
   const [result, setResult] = useState("");
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [truncated, setTruncated] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const onFile = async (file: File) => {
@@ -334,14 +378,16 @@ function CorrectTab({
         .trim();
       if (!text) throw new Error("N-am putut extrage text din imagine.");
       setNote("Corectez…");
-      const r = await sendChat(
-        [{ role: "user", content: buildCorrectPrompt(text) }],
-        buildSystemPrompt(),
-      );
+      const initial: ChatMessage[] = [
+        { role: "user", content: buildCorrectPrompt(text) },
+      ];
+      const r = await sendChat(initial, buildSystemPrompt());
       if (r.ok) {
         setResult(r.reply);
         setStatus("idle");
         setNote(`Corectat cu ${r.provider}.`);
+        setTruncated(r.truncated);
+        setHistory([...initial, { role: "assistant", content: r.reply }]);
       } else {
         setStatus("error");
         setNote(r.error);
@@ -349,6 +395,26 @@ function CorrectTab({
     } catch (e) {
       setStatus("error");
       setNote((e as Error).message || "Eroare");
+    }
+  };
+
+  const continueCorrect = async () => {
+    setStatus("loading");
+    setNote("Continui corectarea…");
+    const nextHistory: ChatMessage[] = [
+      ...history,
+      { role: "user", content: CONTINUE_PROMPT },
+    ];
+    const r = await sendChat(nextHistory, buildSystemPrompt());
+    if (r.ok) {
+      setResult((prev) => prev + "\n" + r.reply);
+      setStatus("idle");
+      setNote(`Continuat cu ${r.provider}.`);
+      setTruncated(r.truncated);
+      setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
+    } else {
+      setStatus("error");
+      setNote(r.error);
     }
   };
 
@@ -392,6 +458,17 @@ function CorrectTab({
             aria-label="Corectură"
             dangerouslySetInnerHTML={{ __html: renderMathText(result) }}
           />
+          {truncated && status !== "loading" && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 self-start text-xs"
+              onClick={continueCorrect}
+            >
+              Continuă răspunsul ▸
+            </Button>
+          )}
           {onSendToEditor && (
             <Button
               type="button"
