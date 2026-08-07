@@ -102,25 +102,25 @@ F0 conține **ambele jumătăți din §2**, ca să nu amân acoperirea (advisor)
 
 ### 6A — Skeleton 100% (acoperirea, mărginit & verificabil)
 
-- [ ] Extras din cele 4 `config_*.json` → `gradinita.json` + `primar.json` + `gimnaziu.json` + `liceu.json` (16 nivele × materii/domenii), schemă dual-shape (materii / domenii-cod), cu `sursa_url`+`data_extragere`.
-- [ ] Verificator de completitudine INDEPENDENT rulat peste TOATE 16 nivelele → verde (nr noduri/nivel == config-sursă). Test negativ (nod șters) → FAIL.
-- [ ] `liceu.json` cu flag `in_reforma:true` pe conținut (marcaj UI „programă în tranziție 2026-2027").
+- [x] Extras din cele 4 `config_*.json` → `curriculum/{gradinita,primar,gimnaziu,liceu}.ts` (16 nivele × materii/domenii, 112 noduri), schemă dual-shape (materii / domenii-cod), cu `sursa_url`+`data_extragere`.
+- [x] Verificator de completitudine INDEPENDENT (`verifier.ts`, oracol verbatim) rulat peste TOATE 16 nivelele → verde (112 noduri). Test negativ (nod șters/typo/nivel șters) → FAIL.
+- [x] Liceu cu flag `in_reforma:true` pe ciclu + noduri (marcaj UI „programă în tranziție 2026-2027" — verificat LIVE).
 
 ### 6B — Pilot de conținut: Gimnaziu Clasa 5, Matematică (cap-coadă)
 
 Cel mai curat caz (programă stabilă 2017, reutilizare Teste/math). Concepte permise (din regulament): puteri (exponent natural), fracții ordinare/zecimale, unități de măsură, geometrie inițiere (unghiuri/triunghi), perimetru/arie. Text-only + CSS shapes pt geometrie, 3-5 exerciții/pagină A4.
 
-- [ ] Tab „Școlare 🌐" apare (tabs.json ×2 + wiring page.tsx), restul intact.
-- [ ] Import regulament Clasa 5 Matematică ca asset separat (`public/scolare/regulamente/`).
-- [ ] `ScolarePanel.tsx`: selectoare ciclu/clasă/materie/dificultate (populate din skeleton) + „Cerință specifică" + buton Generează.
-- [ ] Generare Matematică Clasa 5 prin `/api/proxy` → fișă A4 randată, print-crop ≤ 297mm.
-- [ ] Strat de verificare numerică (mate) + marcaj „⚠ verifică înainte de tipărire".
-- [ ] Anti-repetare: semnătură fișă în localStorage → re-roll la coliziune (a 2-a generare ≠ prima).
-- [ ] Print/PDF + „➕ În editor".
+- [x] Tab „Școlare 🌐" apare (tabs.json ×2 + wiring page.tsx), restul intact. **Verificat LIVE.**
+- [x] Import regulament Clasa 5 Matematică ca asset separat (`public/scolare/regulamente/`).
+- [x] `ScolarePanel.tsx`: selectoare ciclu/clasă/materie/dificultate (populate din skeleton) + „Cerință specifică" + buton Generează. **+ banner „nod ne-ghidat" (advisor).**
+- [x] Generare Matematică Clasa 5 prin `/api/proxy` → fișă A4 randată. **Verificat LIVE (Gemini Flash, KaTeX).**
+- [x] Strat de verificare numerică (mate) + marcaj „⚠ verifică înainte de tipărire". **Bug fals-pozitiv prins la probă → corectat.**
+- [~] Anti-repetare: dedup semnătură exactă + avoid-list + re-roll. **Onest: re-roll = plasă (dublură byte-identică ~imposibilă la temp 0.3); avoid-list netestat izolat live.**
+- [x] Print/PDF + „➕ În editor". **Butoane prezente; print-area izolată verificată structural; print-to-hârtie = eyeball Roland pe telefon.**
 
 ### Gate F0
 
-- [ ] `tsc 0 · jest (+teste noi: skeleton loader, verificator completitudine pe 16 nivele, semnătură) · next build OK`. Dovadă LIVE local (next start + Chrome dacă e disponibil; altfel jsdom/sharp ca la faza B Planșe).
+- [x] `tsc 0 · jest 205/205 (+24) · next build OK`. **Dovadă LIVE:** Chrome pe dev :3341 (după curățare SW stale) + 2 fișe reale prin `/api/proxy` PROD (script Node). **Runda advisor pe F0: 3 fix-uri (banner ne-ghidat, verify-fisa graniță, guard defensiv).**
 
 ---
 

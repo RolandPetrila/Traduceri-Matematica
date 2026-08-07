@@ -43,17 +43,18 @@ function refToFile(ref: string): string {
   return ref.replace(/\//g, "_").replace(/clasa-/g, "clasa") + ".md";
 }
 
+// Cache inclusiv MISS-urile ("" = fetch eșuat) ca să nu re-cerem la fiecare generare.
 const regCache: Record<string, string> = {};
 async function loadRegulament(ref?: string): Promise<string | undefined> {
   if (!ref) return undefined;
-  if (regCache[ref] !== undefined) return regCache[ref];
+  if (ref in regCache) return regCache[ref] || undefined;
   try {
     const res = await fetch(`/scolare/regulamente/${refToFile(ref)}`);
-    if (!res.ok) return undefined;
-    const text = await res.text();
+    const text = res.ok ? await res.text() : "";
     regCache[ref] = text;
-    return text;
+    return text || undefined;
   } catch {
+    regCache[ref] = "";
     return undefined;
   }
 }
@@ -64,7 +65,9 @@ export function ScolarePanel({
   onSendToEditor?: (text: string) => void;
 }) {
   const [cycleId, setCycleId] = useState("gimnaziu");
-  const cycle = getCycle(cycleId)!;
+  // Fallback defensiv: un cycleId invalid (stare inconsistentă) degradează la primul
+  // ciclu, nu crapă componenta (`getCycle` poate întoarce undefined).
+  const cycle = getCycle(cycleId) ?? CURRICULUM[0];
   const [levelId, setLevelId] = useState("clasa-5");
   const level = useMemo(
     () => getLevel(cycleId, levelId) ?? cycle.nivele[0],
@@ -75,6 +78,11 @@ export function ScolarePanel({
     () => getNode(cycleId, level.id, nodeId) ?? level.noduri[0],
     [cycleId, level, nodeId],
   );
+
+  // „Ghidat curricular" = nodul are un regulament propriu (concepte/interdicții).
+  // În F0 doar Gimnaziu Clasa 5 Matematică e cablat; restul au skeleton, dar
+  // conținutul nu e încă ghidat (F1+). Semnalăm ONEST, nu lăsăm UI-ul să pară 100%.
+  const grounded = !!node.regulament_ref;
 
   const [dificultate, setDificultate] = useState<Dificultate>("Standard");
   const [nrEx, setNrEx] = useState(5);
@@ -89,14 +97,16 @@ export function ScolarePanel({
 
   // La schimbarea ciclului/nivelului, resetează selecțiile dependente la primul valid.
   const onCycle = (id: string) => {
+    const c = getCycle(id);
+    if (!c) return;
     setCycleId(id);
-    const c = getCycle(id)!;
     setLevelId(c.nivele[0].id);
     setNodeId(c.nivele[0].noduri[0].id);
   };
   const onLevel = (id: string) => {
+    const l = getLevel(cycleId, id);
+    if (!l) return;
     setLevelId(id);
-    const l = getLevel(cycleId, id)!;
     setNodeId(l.noduri[0].id);
   };
 
@@ -176,9 +186,15 @@ export function ScolarePanel({
       {/* Print-izolat: la tipărire se vede DOAR fișa (.scolare-print-area). */}
       <style>{`
         @media print {
+          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
           body * { visibility: hidden !important; }
           .scolare-print-area, .scolare-print-area * { visibility: visible !important; }
-          .scolare-print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 12mm; }
+          .scolare-print-area {
+            position: absolute; left: 0; top: 0; width: 100%;
+            margin: 0; padding: 12mm; border: 0 !important; background: #fff !important;
+            color: #000 !important; box-shadow: none !important;
+          }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           @page { size: A4; margin: 0; }
         }
       `}</style>
@@ -280,6 +296,15 @@ export function ScolarePanel({
         <p className="mt-2 rounded-md border border-chalk-yellow/40 bg-chalk-yellow/10 p-2 text-xs text-chalk-yellow">
           ⚠ Programă în reformă curriculară (2026-2027) — verifică alinierea la
           programa oficială curentă (rocnee.eu).
+        </p>
+      )}
+
+      {!grounded && (
+        <p className="mt-2 rounded-md border border-chalk-blue/40 bg-chalk-blue/10 p-2 text-xs text-chalk-blue">
+          ℹ Acest nod are structura completă, dar conținutul nu e încă ghidat de
+          un regulament propriu (F0 acoperă integral doar{" "}
+          <strong>Gimnaziu · Clasa a V-a · Matematică</strong>). Fișa generată
+          aici e mai puțin precisă curricular — urmează la fazele următoare.
         </p>
       )}
 
