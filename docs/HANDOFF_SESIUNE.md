@@ -20,9 +20,9 @@ Sesiune „execută tot ce poți autonom". Coadă §6b: **D (fix)** + itemi răm
   - `HistoryList.handleClearTranslations` nu reseta `viewMode` → un user cu intrări legacy care apasă „Șterge tot" pe Traduceri rămânea cu panou gol. Fix `setViewMode("conversii")`. Commit `56c7dcb`.
   - Bonus (gap onest, deja documentat mai jos ca „RĂMAS (Chat AI)"): `TestePanel` ignora `truncated` din `sendChat` — adăugat pattern „Continuă răspunsul" (Generate+Correct), verificat live. Commit `3a85b47`.
 - **Gate final (tot ce s-a atins azi):** `tsc 0 · jest 181/181 (+9) · pytest 50/50 · next build OK` (8 rute).
-- **NEDEPLOYAT** — 5 commit-uri frontend-only, push-uite pe `faza-g-editor`; deploy grupat, cu confirmarea Roland.
+- ✅✅ **DEPLOYAT v44-20260807c (2026-08-07, confirmat Roland „confirm deploy").** `CACHE_VERSION v43→v44-20260807c` (commit `9aa0ac5`), `vercel deploy --prod --yes` din `frontend/`, deployment `dpl_Fe59bmQTZDgKi42vCvfkG1k6FQJL` READY/production. **Alias `traduceri-frontend.vercel.app` VERIFICAT:** `sw.js`=v44-20260807c, homepage+`/editor-nou`=200. Cele 8 commit-uri (D + #7/#8/#26b) sunt LIVE pe prod. Backend `traduceri-api` NEATINS.
 - **Exclus din sesiunea asta (motiv, nu omisiune):** **C** (Școlare) cere `PLAN_SCOLARE_[data].md` + `AskUserQuestion` propriu — nu poate porni fără plan explicit. **#3** (cost `gemini-2.5-pro`) și **#17-cont Vercel dashboard** rămân [INCERT], cer acces la cont pe care sesiunea nu îl are. **#19/#20/#21/#25(implementare)/#26** — Roland a ales explicit „nu acum" (AskUserQuestion, 2026-08-07); nu redeschise fără cerere nouă directă.
-- ➡️ **URMĂTORUL:** deploy grupat (5 commit-uri de azi) cu confirmarea Roland, apoi coada §6b rămasă: **C** (necesită plan propriu).
+- ➡️ **URMĂTORUL:** ✅ deploy grupat FĂCUT (v44). Acum coada §6b rămasă: **C** (modul Școlare) — în lucru: `PLAN_SCOLARE_2026-08-07.md` (R-PLAN) + AskUserQuestion înainte de cod.
 
 ---
 
