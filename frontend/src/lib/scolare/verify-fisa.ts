@@ -4,6 +4,11 @@
  * DETECTABILE (operații simple + puteri) și semnalăm nepotrivirile. Onest limitat:
  * NU verifică probleme cu enunț liber / raționament. Bannerul „verifică înainte de
  * tipărire" se afișează MEREU, indiferent de rezultat. Vezi docs/PLAN_SCOLARE §4.3/D7.
+ *
+ * Consecință acceptată a CHAIN (vezi mai jos): egalitățile cu sufix LaTeX de
+ * unitate (ex. „10 + 5 = 15 \text{cm}") nu se mai verifică izolat, la fel ca
+ * lanțurile reale — fals-negativ preferabil fals-pozitivului (bannerul
+ * „verifică" rămâne mereu afișat, deci nu e o gaură de siguranță tăcută).
  */
 
 const SUPERSCRIPT: Record<string, string> = {
