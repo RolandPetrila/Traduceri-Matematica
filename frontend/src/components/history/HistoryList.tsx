@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { logAction } from "@/lib/monitoring";
-import { getHistory, clearHistory, getConversionHistory, clearConversionHistory } from "@/lib/storage";
+import {
+  getHistory,
+  clearHistory,
+  getConversionHistory,
+  clearConversionHistory,
+} from "@/lib/storage";
 import type { HistoryEntry, ConversionHistoryEntry } from "@/lib/types";
 import HistoryDetail from "./HistoryDetail";
 
@@ -45,13 +50,19 @@ export default function HistoryList() {
       {/* View mode toggle */}
       <div className="flex gap-2 mb-4">
         <button
-          onClick={() => { logAction("Istoric: mod traduceri"); setViewMode("traduceri"); }}
+          onClick={() => {
+            logAction("Istoric: mod traduceri");
+            setViewMode("traduceri");
+          }}
           className={`chalk-btn text-sm ${viewMode === "traduceri" ? "!border-chalk-yellow !bg-white/10" : ""}`}
         >
           Traduceri ({entries.length})
         </button>
         <button
-          onClick={() => { logAction("Istoric: mod conversii"); setViewMode("conversii"); }}
+          onClick={() => {
+            logAction("Istoric: mod conversii");
+            setViewMode("conversii");
+          }}
           className={`chalk-btn text-sm ${viewMode === "conversii" ? "!border-chalk-yellow !bg-white/10" : ""}`}
         >
           Conversii ({convEntries.length})
@@ -66,7 +77,10 @@ export default function HistoryList() {
               Istoric traduceri ({entries.length})
             </h3>
             {entries.length > 0 && (
-              <button onClick={handleClearTranslations} className="chalk-btn text-sm !text-chalk-red">
+              <button
+                onClick={handleClearTranslations}
+                className="chalk-btn text-sm !text-chalk-red"
+              >
                 Sterge tot
               </button>
             )}
@@ -81,32 +95,49 @@ export default function HistoryList() {
               {entries.map((entry) => (
                 <button
                   key={entry.id}
-                  onClick={() => { logAction("Istoric: traducere deschisa", { id: entry.id, langs: `${entry.source_lang}->${entry.target_lang}` }); setSelected(entry); }}
+                  onClick={() => {
+                    logAction("Istoric: traducere deschisa", {
+                      id: entry.id,
+                      langs: `${entry.source_lang}->${entry.target_lang}`,
+                    });
+                    setSelected(entry);
+                  }}
                   className="w-full text-left bg-white/5 hover:bg-white/8 rounded-lg px-4 py-3 transition-all"
                 >
                   <div className="flex justify-between items-center">
                     <div>
                       <span className="font-bold">
-                        {entry.source_lang.toUpperCase()} &rarr; {entry.target_lang.toUpperCase()}
+                        {entry.source_lang.toUpperCase()} &rarr;{" "}
+                        {entry.target_lang.toUpperCase()}
                       </span>
                       <span className="ml-3 text-sm opacity-60">
-                        {entry.pages} pagini &middot; {(entry.duration_ms / 1000).toFixed(1)}s
+                        {entry.pages} pagini &middot;{" "}
+                        {(entry.duration_ms / 1000).toFixed(1)}s
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        entry.status === "success"
-                          ? "bg-green-900/30 text-chalk-green"
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          entry.status === "success"
+                            ? "bg-green-900/30 text-chalk-green"
+                            : entry.status === "partial"
+                              ? "bg-yellow-900/30 text-chalk-yellow"
+                              : "bg-red-900/30 text-chalk-red"
+                        }`}
+                      >
+                        {entry.status === "success"
+                          ? "Succes"
                           : entry.status === "partial"
-                          ? "bg-yellow-900/30 text-chalk-yellow"
-                          : "bg-red-900/30 text-chalk-red"
-                      }`}>
-                        {entry.status === "success" ? "Succes" : entry.status === "partial" ? "Partial" : "Eroare"}
+                            ? "Partial"
+                            : "Eroare"}
                       </span>
                       <span className="text-xs opacity-40">
                         {new Date(entry.date).toLocaleDateString("ro-RO", {
-                          day: "2-digit", month: "short", year: "numeric",
-                          hour: "2-digit", minute: "2-digit",
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </span>
                     </div>
@@ -129,7 +160,10 @@ export default function HistoryList() {
               Istoric conversii ({convEntries.length})
             </h3>
             {convEntries.length > 0 && (
-              <button onClick={handleClearConversions} className="chalk-btn text-sm !text-chalk-red">
+              <button
+                onClick={handleClearConversions}
+                className="chalk-btn text-sm !text-chalk-red"
+              >
                 Sterge tot
               </button>
             )}
@@ -148,7 +182,9 @@ export default function HistoryList() {
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="font-bold capitalize">{entry.operation}</span>
+                      <span className="font-bold capitalize">
+                        {entry.operation}
+                      </span>
                       {entry.target_format && (
                         <span className="ml-2 text-sm opacity-60">
                           &rarr; {entry.target_format.toUpperCase()}
@@ -159,17 +195,22 @@ export default function HistoryList() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        entry.status === "success"
-                          ? "bg-green-900/30 text-chalk-green"
-                          : "bg-red-900/30 text-chalk-red"
-                      }`}>
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          entry.status === "success"
+                            ? "bg-green-900/30 text-chalk-green"
+                            : "bg-red-900/30 text-chalk-red"
+                        }`}
+                      >
                         {entry.status === "success" ? "Succes" : "Eroare"}
                       </span>
                       <span className="text-xs opacity-40">
                         {new Date(entry.date).toLocaleDateString("ro-RO", {
-                          day: "2-digit", month: "short", year: "numeric",
-                          hour: "2-digit", minute: "2-digit",
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </span>
                     </div>
@@ -183,8 +224,12 @@ export default function HistoryList() {
                         onClick={() => {
                           const binary = atob(entry.output_data!);
                           const bytes = new Uint8Array(binary.length);
-                          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                          const blob = new Blob([bytes], { type: entry.output_mime || "application/octet-stream" });
+                          for (let i = 0; i < binary.length; i++)
+                            bytes[i] = binary.charCodeAt(i);
+                          const blob = new Blob([bytes], {
+                            type:
+                              entry.output_mime || "application/octet-stream",
+                          });
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement("a");
                           a.href = url;
@@ -196,6 +241,14 @@ export default function HistoryList() {
                       >
                         Re-download
                       </button>
+                    )}
+                    {!entry.output_data && entry.status === "success" && (
+                      <span
+                        className="text-xs opacity-50 ml-2 flex-shrink-0"
+                        title="Fișier prea mare (≥2MB) pentru păstrare în istoricul local — reconvertește dacă ai nevoie din nou de el"
+                      >
+                        ⚠ indisponibil pt re-descărcare
+                      </span>
                     )}
                   </div>
                 </div>

@@ -19,8 +19,11 @@ import {
  */
 export function CalculatorPanel({
   onInsertToEditor,
+  onInsertTextToEditor,
 }: {
   onInsertToEditor?: (src: string, alt?: string) => void;
+  /** #13 (/improve) — Științific/Matrice trimit TEXT (rezultat), nu imagine ca Grafic. */
+  onInsertTextToEditor?: (text: string) => void;
 }) {
   return (
     <div className="w-full rounded-lg border border-border bg-card p-3 text-card-foreground shadow-sm">
@@ -32,13 +35,13 @@ export function CalculatorPanel({
         </TabsList>
 
         <TabsContent value="stiintific">
-          <ScientificTab />
+          <ScientificTab onInsertTextToEditor={onInsertTextToEditor} />
         </TabsContent>
         <TabsContent value="grafic">
           <GraphTab onInsertToEditor={onInsertToEditor} />
         </TabsContent>
         <TabsContent value="matrice">
-          <MatrixTab />
+          <MatrixTab onInsertTextToEditor={onInsertTextToEditor} />
         </TabsContent>
       </Tabs>
     </div>
@@ -55,7 +58,11 @@ const SCI_KEYS: string[][] = [
 ];
 const SCI_FN = ["log(", "abs(", "e", "!", "%"];
 
-function ScientificTab() {
+function ScientificTab({
+  onInsertTextToEditor,
+}: {
+  onInsertTextToEditor?: (text: string) => void;
+}) {
   const [expr, setExpr] = useState("");
   const [res, setRes] = useState<EvalResult | null>(null);
   const [ans, setAns] = useState("");
@@ -176,6 +183,16 @@ function ScientificTab() {
           =
         </Button>
       </div>
+      {onInsertTextToEditor && res?.ok && (
+        <Button
+          type="button"
+          size="sm"
+          className="h-9"
+          onClick={() => onInsertTextToEditor(`${expr} = ${res.value}`)}
+        >
+          + Inserează rezultatul în editor
+        </Button>
+      )}
     </div>
   );
 }
@@ -271,7 +288,11 @@ const MATRIX_TEMPLATES: { label: string; tpl: string }[] = [
   { label: "Rezolvă sistem", tpl: "lusolve([[2, 1], [1, 3]], [5, 10])" },
 ];
 
-function MatrixTab() {
+function MatrixTab({
+  onInsertTextToEditor,
+}: {
+  onInsertTextToEditor?: (text: string) => void;
+}) {
   const [expr, setExpr] = useState("");
   const [res, setRes] = useState<EvalResult | null>(null);
 
@@ -322,6 +343,16 @@ function MatrixTab() {
           <span className="text-destructive">{res.error || "…"}</span>
         )}
       </div>
+      {onInsertTextToEditor && res?.ok && (
+        <Button
+          type="button"
+          size="sm"
+          className="h-9"
+          onClick={() => onInsertTextToEditor(`${expr} = ${res.value}`)}
+        >
+          + Inserează rezultatul în editor
+        </Button>
+      )}
     </div>
   );
 }

@@ -11,7 +11,8 @@ import { insertEditorImage, insertEditorText } from "@/lib/editor-commands";
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
 // CHAT: Asistentul iframe vechi înlocuit de Chat AI nativ (matematică). Ruta
-// /asistent + public/asistent rămân nefolosite (curățare la FIN).
+// /asistent + public/asistent au fost ȘTERSE (2026-08-07, /improve #16) —
+// tab-ul păstrează id-ul "asistent" doar pt continuitatea localStorage["activeTab"].
 const ChatPanel = dynamic(
   () =>
     import("@/components/chat/ChatPanel").then((m) => ({
@@ -117,6 +118,11 @@ export default function Home() {
               // Comută pe Editor, apoi inserează graficul ca figură (settle cross-tab).
               handleTabChange("editor");
               setTimeout(() => insertEditorImage(src, alt), 150);
+            }}
+            onInsertTextToEditor={(text) => {
+              // #13 (/improve) — Științific/Matrice trimit rezultatul ca text.
+              handleTabChange("editor");
+              setTimeout(() => insertEditorText(text), 150);
             }}
           />
         </div>

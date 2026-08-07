@@ -1,3 +1,5 @@
+const path = require("path");
+
 /** @type {import('next').NextConfig} */
 // Build connect-src from env so CSP follows the deployed API + Supabase domains.
 // On Vercel set NEXT_PUBLIC_API_URL (Python API project) and NEXT_PUBLIC_SUPABASE_URL.
@@ -9,6 +11,11 @@ const connectSrc = ["'self'", apiUrl, supabaseUrl, "https://*.supabase.co"]
 
 const nextConfig = {
   reactStrictMode: true,
+  // Monorepo real: C:\Proiecte\Traduceri_Matematica (frontend/ + api/ + package.json
+  // root cu package-lock.json propriu, adăugat 2026-08-07 /improve #12). Setat explicit
+  // ca Next să nu mai ghicească root-ul din cele 2 lockfile-uri (warning inofensiv, dar
+  // silențios de aici încolo).
+  outputFileTracingRoot: path.join(__dirname, ".."),
   // Expose the Vercel deploy commit SHA to the client (VersionBadge). Vercel sets
   // VERCEL_GIT_COMMIT_SHA at build time; Next inlines NEXT_PUBLIC_* into the bundle.
   env: {
@@ -35,10 +42,10 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
       },
       {
-        // Global CSP — exclude the /asistent/ static subtree (the embedded PWA
-        // needs a relaxed CSP for its CDNs; see the dedicated block below).
-        // The wrapper route /asistent (bare, no slash) stays under this strict CSP.
-        source: "/((?!asistent/).*)",
+        // Global CSP — aplicat pretutindeni. Excepția pt /asistent/ (relaxată,
+        // pt CDN-urile iframe-ului vechi) a fost eliminată odată cu modulul
+        // (2026-08-07, /improve #16) — /asistent + public/asistent nu mai există.
+        source: "/(.*)",
         headers: [
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
@@ -46,38 +53,6 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value: `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src ${connectSrc}; frame-src 'self' blob:; frame-ancestors 'self'`,
-          },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains",
-          },
-        ],
-      },
-      {
-        // Asistent Text AI — embedded PWA (iframe module, Faza G). Relaxed CSP
-        // for its CDNs (Tailwind/FontAwesome/marked/DOMPurify/Tesseract) + its
-        // own /api/proxy (same-origin). frame-ancestors 'self' so the host app
-        // can iframe it; SAMEORIGIN so the framing is allowed. Microphone is
-        // enabled for voice dictation (iframe also needs allow="microphone").
-        source: "/asistent/:path*",
-        headers: [
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          {
-            key: "Permissions-Policy",
-            value: "microphone=(self), camera=(), geolocation=()",
-          },
-          {
-            key: "Content-Security-Policy",
-            value:
-              "default-src 'self'; " +
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; " +
-              "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " +
-              "font-src 'self' data: https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
-              "img-src 'self' data: blob:; " +
-              "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com; " +
-              "worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'",
           },
           {
             key: "Strict-Transport-Security",
