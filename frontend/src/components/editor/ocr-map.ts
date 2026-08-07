@@ -123,9 +123,30 @@ export function parseInlineToNodes(text: string): JSONContent[] {
   return out;
 }
 
+/** Etichetă scurtă de enumerare („1.", „a)", „1. a)") sau nimic — nu proză. */
+const LABEL_ONLY = /^(?:\d+[.)]\s*)?(?:[a-zA-Z][.)]\s*)?$/;
+
+/**
+ * D (coadă 2026-08-08) — `\lim` STANDALONE pe propria linie (formula = tot conținutul
+ * după o eventuală etichetă scurtă „a)"/„1."/„1. a)", nimic după) → prefix `\displaystyle`,
+ * ca-n original tipărit (indicele stivuit CENTRAT sub „lim"), nu inline/lipit lateral
+ * (repro confirmat `Screenshot (260).png`, `limite_matematica.jpeg`). Un `\lim` MENȚIONAT
+ * ÎN PROZĂ (text substanțial înainte SAU după formulă) rămâne NEATINS — inline e stilul
+ * corect acolo. `\liminf`/`\limsup`/`\limits` excluse explicit (nu sunt `\lim`).
+ */
+function displaystyleStandaloneLim(text: string): string {
+  const m = /^([^$]*)\$([^$]+)\$([^$]*)$/.exec(text.trim());
+  if (!m) return text;
+  const [, before, latex, after] = m;
+  if (!LABEL_ONLY.test(before) || after.trim().length > 0) return text;
+  if (!/\\lim(?![a-zA-Z])/.test(latex) || /\\displaystyle/.test(latex))
+    return text;
+  return text.replace(latex, `\\displaystyle ${latex}`);
+}
+
 /** Un bloc de text (paragraf/titlu). Content gol → nod fără `content` (paragraf valid, gol). */
 function makeParagraph(text: string): JSONContent {
-  const inline = parseInlineToNodes(text);
+  const inline = parseInlineToNodes(displaystyleStandaloneLim(text));
   const node: JSONContent = { type: "paragraph" };
   if (inline.length) node.content = inline;
   return node;

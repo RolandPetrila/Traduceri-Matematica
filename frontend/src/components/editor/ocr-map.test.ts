@@ -358,8 +358,12 @@ describe("filtru zgomot — cifre izolate (randuri 1 fantoma, limite)", () => {
     });
     // cele 3 „1" dispar; rămân a) și b)
     expect(blocks).toHaveLength(2);
-    expect(mathOf(blocks[0].content)).toEqual(["\\lim_{x\\to\\infty} x"]);
+    // D: \lim standalone (etichetă scurtă + formulă, nimic altceva) → \displaystyle
+    expect(mathOf(blocks[0].content)).toEqual([
+      "\\displaystyle \\lim_{x\\to\\infty} x",
+    ]);
     expect(textOf(blocks[0].content)).toContain("a)");
+    expect(mathOf(blocks[1].content)).toEqual(["\\displaystyle \\lim x"]);
   });
 
   it("NU elimina cifre in context (90 grade sau 12 puncte)", () => {
@@ -368,5 +372,85 @@ describe("filtru zgomot — cifre izolate (randuri 1 fantoma, limite)", () => {
       content: "90°\n12 puncte",
     });
     expect(blocks).toHaveLength(2);
+  });
+});
+
+describe("D — \\lim standalone → \\displaystyle (repro Screenshot (260).png)", () => {
+  it("etichetă literă + formulă (fără alt text) → prefix \\displaystyle", () => {
+    const blocks = sectionToBlocks({
+      type: "list",
+      content: "a) $\\lim_{x\\to\\infty}\\frac{1+2x+x^2}{1+3x+x^2}$",
+    });
+    expect(mathOf(blocks[0].content)).toEqual([
+      "\\displaystyle \\lim_{x\\to\\infty}\\frac{1+2x+x^2}{1+3x+x^2}",
+    ]);
+  });
+
+  it("etichetă combinată „1. a)” + formulă → prefix \\displaystyle", () => {
+    const blocks = sectionToBlocks({
+      type: "list",
+      content: "1. a) $\\lim_{x\\to 1}\\frac{x-1}{x^2+x-2}$",
+    });
+    expect(mathOf(blocks[0].content)).toEqual([
+      "\\displaystyle \\lim_{x\\to 1}\\frac{x-1}{x^2+x-2}",
+    ]);
+  });
+
+  it("formulă fără nicio etichetă (linie goală înainte) → tot prefix \\displaystyle", () => {
+    const blocks = sectionToBlocks({
+      type: "paragraph",
+      content: "$\\lim_{n\\to\\infty} a_n$",
+    });
+    expect(mathOf(blocks[0].content)).toEqual([
+      "\\displaystyle \\lim_{n\\to\\infty} a_n",
+    ]);
+  });
+
+  it("\\lim MENȚIONAT ÎN PROZĂ (text substanțial înainte) → NEATINS, rămâne inline", () => {
+    const blocks = sectionToBlocks({
+      type: "paragraph",
+      content: "Dacă șirul are $\\lim_{n\\to\\infty} a_n = L$",
+    });
+    expect(mathOf(blocks[0].content)).toEqual(["\\lim_{n\\to\\infty} a_n = L"]);
+  });
+
+  it("\\lim urmat de text (concluzie de propoziție) → NEATINS", () => {
+    const blocks = sectionToBlocks({
+      type: "paragraph",
+      content: "a) $\\lim_{x\\to 0} f(x) = 5$ deci funcția e continuă",
+    });
+    expect(mathOf(blocks[0].content)).toEqual(["\\lim_{x\\to 0} f(x) = 5"]);
+  });
+
+  it("deja are \\displaystyle → nu se dublează", () => {
+    const blocks = sectionToBlocks({
+      type: "list",
+      content: "a) $\\displaystyle\\lim_{x\\to 0} f(x)$",
+    });
+    expect(mathOf(blocks[0].content)).toEqual([
+      "\\displaystyle\\lim_{x\\to 0} f(x)",
+    ]);
+  });
+
+  it("\\liminf / \\limsup / \\limits — NU sunt \\lim, rămân NEATINSE", () => {
+    const liminf = sectionToBlocks({
+      type: "list",
+      content: "a) $\\liminf_{n\\to\\infty} a_n$",
+    });
+    expect(mathOf(liminf[0].content)).toEqual(["\\liminf_{n\\to\\infty} a_n"]);
+
+    const limsup = sectionToBlocks({
+      type: "list",
+      content: "b) $\\limsup_{n\\to\\infty} a_n$",
+    });
+    expect(mathOf(limsup[0].content)).toEqual(["\\limsup_{n\\to\\infty} a_n"]);
+  });
+
+  it("formulă standalone FĂRĂ \\lim (ex. fracție simplă) → NEATINSĂ (fix scoped la \\lim)", () => {
+    const blocks = sectionToBlocks({
+      type: "list",
+      content: "a) $\\frac{1}{2}$",
+    });
+    expect(mathOf(blocks[0].content)).toEqual(["\\frac{1}{2}"]);
   });
 });
