@@ -41,7 +41,7 @@ export function TestePanel({
           <GenerateTab onSendToEditor={onSendToEditor} />
         </TabsContent>
         <TabsContent value="corecteaza">
-          <CorrectTab />
+          <CorrectTab onSendToEditor={onSendToEditor} />
         </TabsContent>
       </Tabs>
     </div>
@@ -291,7 +291,11 @@ function sectionText(s: OcrSectionLite): string {
   return parts.filter(Boolean).join("\n");
 }
 
-function CorrectTab() {
+function CorrectTab({
+  onSendToEditor,
+}: {
+  onSendToEditor?: (text: string) => void;
+}) {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [note, setNote] = useState("");
   const [result, setResult] = useState("");
@@ -382,11 +386,23 @@ function CorrectTab() {
         </p>
       )}
       {result && (
-        <div
-          className="rounded-md border border-dashed border-border bg-white p-3 text-sm text-black"
-          aria-label="Corectură"
-          dangerouslySetInnerHTML={{ __html: renderMathText(result) }}
-        />
+        <>
+          <div
+            className="rounded-md border border-dashed border-border bg-white p-3 text-sm text-black"
+            aria-label="Corectură"
+            dangerouslySetInnerHTML={{ __html: renderMathText(result) }}
+          />
+          {onSendToEditor && (
+            <Button
+              type="button"
+              size="sm"
+              className="h-9"
+              onClick={() => onSendToEditor(result)}
+            >
+              ➕ Trimite corectarea în Editor
+            </Button>
+          )}
+        </>
       )}
     </div>
   );
