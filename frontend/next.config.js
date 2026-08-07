@@ -1,5 +1,3 @@
-const path = require("path");
-
 /** @type {import('next').NextConfig} */
 // Build connect-src from env so CSP follows the deployed API + Supabase domains.
 // On Vercel set NEXT_PUBLIC_API_URL (Python API project) and NEXT_PUBLIC_SUPABASE_URL.
@@ -11,11 +9,11 @@ const connectSrc = ["'self'", apiUrl, supabaseUrl, "https://*.supabase.co"]
 
 const nextConfig = {
   reactStrictMode: true,
-  // Monorepo real: C:\Proiecte\Traduceri_Matematica (frontend/ + api/ + package.json
-  // root cu package-lock.json propriu, adăugat 2026-08-07 /improve #12). Setat explicit
-  // ca Next să nu mai ghicească root-ul din cele 2 lockfile-uri (warning inofensiv, dar
-  // silențios de aici încolo).
-  outputFileTracingRoot: path.join(__dirname, ".."),
+  // NU seta outputFileTracingRoot la părinte (încercat 2026-08-07, revert imediat):
+  // rezolvă warning-ul cosmetic de workspace-root LOCAL, dar rupe deploy-ul real pe
+  // Vercel (ENOENT .next/path0/path0/routes-manifest.json — Root Directory-ul
+  // proiectului `traduceri-frontend` e deja `frontend/`, suprascrierea intră în
+  // conflict cu rezolvarea de căi a build-ului Vercel). Warning-ul rămâne, inofensiv.
   // Expose the Vercel deploy commit SHA to the client (VersionBadge). Vercel sets
   // VERCEL_GIT_COMMIT_SHA at build time; Next inlines NEXT_PUBLIC_* into the bundle.
   env: {
