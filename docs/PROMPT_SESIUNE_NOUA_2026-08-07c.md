@@ -24,17 +24,19 @@ Branch `faza-g-editor`. **Prod = v44-20260807c** (D `\lim` + #7/#8/#26b, DEPLOYA
 
 ## ▶️ COADĂ ACTIVĂ §6b (execuție OBLIGATORIE — semnalează la fiecare onboard)
 
-| | Cerință | Status |
-|---|---|---|
-| **A** | Integramă multi-formă | ✅ DEPLOYAT v40 |
-| **B** | Extindere generatoare Planșe | ✅ DEPLOYAT v41 |
-| **D** | Bug `\lim` | ✅ DEPLOYAT v44 |
+|       | Cerință                       | Status                                   |
+| ----- | ----------------------------- | ---------------------------------------- |
+| **A** | Integramă multi-formă         | ✅ DEPLOYAT v40                          |
+| **B** | Extindere generatoare Planșe  | ✅ DEPLOYAT v41                          |
+| **D** | Bug `\lim`                    | ✅ DEPLOYAT v44                          |
 | **C** | Modul Școlare full-curriculum | 🔵 **F0 LIVRAT (NEDEPLOYAT)**; F1+ rămân |
 
 ### PRIMUL PAS: decizie Roland (rămasă deschisă)
+
 Deploy grupat C/F0 **acum** (bump `CACHE_VERSION` v44→v45 în `frontend/public/sw.js`, `vercel deploy --prod --yes` din `frontend/`, verifică ALIASUL `traduceri-frontend.vercel.app` — `sw.js`=v45 + tab Școlare live; backend `traduceri-api` NEATINS) **SAU** întâi eyeball Roland pe telefon (fișă + print real) și deploy după. **Cere confirmarea.**
 
 ### URMĂTORUL în C: F1 — Gimnaziu Matematică Clasa 6/7/8
+
 **Blocaj real confirmat (bug „7 regulamente"):** `Gimnaziu/Clasa_6/7/8` + `Liceu/Clasa_9-12` din folderul-sursă Carla au `regulament.md` **copiat byte-identic din Clasa 5** (nu au reguli proprii). Deci F1 = **scrie regulamente proprii** per clasă (conținut nou aliniat la programa oficială pe clasă — modelul `project_curriculum_audit_2026_07_28`), ca asset în `frontend/public/scolare/regulamente/` (ȘI/SAU în Carla-sursă). Adaugă `regulament_ref` + `capitole` pe nodurile respective din skeleton. Vezi `docs/PLAN_SCOLARE_2026-08-07.md` §7/§8.
 
 ## REGULI FERME
@@ -46,6 +48,7 @@ Deploy grupat C/F0 **acum** (bump `CACHE_VERSION` v44→v45 în `frontend/public
 - NU deploya fără confirmare explicită Roland.
 
 ## Fișiere de referință C
+
 - `docs/PLAN_SCOLARE_2026-08-07.md` v1.1 — planul complet (skeleton/conținut, F0-F6, decizii D1-D9, reguli).
 - `docs/Export_chat_sesiune_Carla.md` — exportul sesiunii de design (D1-D9), UNTRACKED (nu committed — clasificatorul a blocat; e doar referință locală).
 - Folder-sursă: `G:\My Drive\Roly\4. Artificial Inteligence\Folder_Lucru\Carla\` (regulamente + `Curricula/config_*.json`).
