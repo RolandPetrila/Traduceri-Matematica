@@ -1,8 +1,17 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 (D rezolvat + #7/#8/#17/#18 din raportul `/improve` închise). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-07 seara (C/F0 DEPLOYAT v45). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ⚠️ **Corecție de dată (2026-08-07):** fișierul `docs/PROMPT_SESIUNE_NOUA_2026-08-09.md` (folosit ca prompt de pornire al acestei sesiuni) era mislabelat — creat de fapt pe 2026-08-07 (verificat: `git log` pe commit-ul `cd6fd2a`, ora sistemului), nu pe 08-09. Toate referirile „2026-08-09" din munca acestei sesiuni au fost corectate la data reală 2026-08-07. Vezi memoria [[finding_ocr_map_inline_vs_displaystyle_2026_08_07]].
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-07 seara, rundă 4) — C/F0 DEPLOYAT v45
+
+**Decizie Roland (AskUserQuestion, /onboard sesiune nouă):** „Deploy grupat acum" pt C/F0 (modul Școlare), din 3 opțiuni (deploy acum / eyeball telefon întâi / continuă F1 fără deploy).
+
+- ✅✅ **DEPLOYAT v45-20260807d.** `CACHE_VERSION v44→v45-20260807d` (`frontend/public/sw.js`, commit `d35fa36`), `cd frontend && vercel deploy --prod --yes`, deployment `dpl_HwwEDX8cPmJGQAnJCpmA9Dv5j9Lo` READY/production. **Aliasul `traduceri-frontend.vercel.app` VERIFICAT:** `sw.js`=v45-20260807d (curl), homepage + `/editor-nou` = 200. **Verificat LIVE în Chrome pe alias (nu doar dev):** tab „Școlare 🌐" randează, selectoarele Ciclu (Grădiniță/Primar/Gimnaziu/Liceu) + Clasa (V-VIII pt Gimnaziu) + Materie (9 materii) + Exerciții + Dificultate sunt toate populate corect — confirmă skeleton-ul 16 nivele/112 noduri e live pe prod. Nu s-a regenerat o fișă AI nouă pe prod (deja dovedit LIVE prin `/api/proxy` în sesiunea F0 anterioară — cod neschimbat, doar promovat). Backend `traduceri-api` NEATINS.
+- ➡️ **URMĂTORUL C:** F1 — Gimnaziu Matematică Clasa 6/7/8 (+ Liceu). Cere SCRIEREA regulamentelor proprii (bug „7 regulamente": acele clase au `regulament.md` copiat byte-identic din Clasa 5). Vezi `docs/PLAN_SCOLARE_2026-08-07.md` §7/§8.
 
 ---
 
