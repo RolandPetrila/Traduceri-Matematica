@@ -36,6 +36,13 @@ const TestePanel = dynamic(
     })),
   { ssr: false },
 );
+const ScolarePanel = dynamic(
+  () =>
+    import("@/components/scolare/ScolarePanel").then((m) => ({
+      default: m.ScolarePanel,
+    })),
+  { ssr: false },
+);
 const HistoryList = dynamic(() => import("@/components/history/HistoryList"), {
   ssr: false,
 });
@@ -128,6 +135,14 @@ export default function Home() {
         </div>
         <div style={{ display: activeTab === "teste" ? "block" : "none" }}>
           <TestePanel
+            onSendToEditor={(text) => {
+              handleTabChange("editor");
+              setTimeout(() => insertEditorText(text), 150);
+            }}
+          />
+        </div>
+        <div style={{ display: activeTab === "scolare" ? "block" : "none" }}>
+          <ScolarePanel
             onSendToEditor={(text) => {
               handleTabChange("editor");
               setTimeout(() => insertEditorText(text), 150);

@@ -17,6 +17,13 @@
       "icon": "🧩",
       "kind": "iframe",
       "description": "Generatoare de planșe educaționale A4 — instant, offline, printabile."
+    },
+    {
+      "id": "scolare",
+      "label": "Școlare",
+      "icon": "🌐",
+      "kind": "react",
+      "description": "Fișe curriculare RO (grădiniță→liceu) generate cu AI, pe programa oficială."
     }
   ]
 }
