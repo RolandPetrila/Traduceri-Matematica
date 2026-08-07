@@ -17,12 +17,19 @@ export default function HistoryList() {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
   const [convEntries, setConvEntries] = useState<ConversionHistoryEntry[]>([]);
   const [selected, setSelected] = useState<HistoryEntry | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("traduceri");
+  // #8 (/improve): tab-ul „Traduceri" nu mai e populat de nimeni (vechiul flux a fost
+  // inlocuit de traducerea reversibila din Editor, F8) - default pe „conversii" (singurul
+  // mereu functional). Daca un user are INTRARI VECHI in localStorage (dinainte de F8),
+  // le pastram accesibile (nu stergem storage.ts/HistoryDetail) - doar ascundem
+  // comutatorul cand nu exista nimic de comutat (altfel arata ca un panou stricat).
+  const [viewMode, setViewMode] = useState<ViewMode>("conversii");
 
   useEffect(() => {
     setEntries(getHistory());
     setConvEntries(getConversionHistory());
   }, []);
+
+  const hasTranslations = entries.length > 0;
 
   const handleClearTranslations = () => {
     if (confirm("Stergi tot istoricul de traduceri?")) {
@@ -47,108 +54,105 @@ export default function HistoryList() {
 
   return (
     <div className="space-y-4">
-      {/* View mode toggle */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => {
-            logAction("Istoric: mod traduceri");
-            setViewMode("traduceri");
-          }}
-          className={`chalk-btn text-sm ${viewMode === "traduceri" ? "!border-chalk-yellow !bg-white/10" : ""}`}
-        >
-          Traduceri ({entries.length})
-        </button>
-        <button
-          onClick={() => {
-            logAction("Istoric: mod conversii");
-            setViewMode("conversii");
-          }}
-          className={`chalk-btn text-sm ${viewMode === "conversii" ? "!border-chalk-yellow !bg-white/10" : ""}`}
-        >
-          Conversii ({convEntries.length})
-        </button>
-      </div>
+      {/* View mode toggle — „Traduceri" apare doar daca exista intrari VECHI (legacy) */}
+      {hasTranslations && (
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => {
+              logAction("Istoric: mod traduceri");
+              setViewMode("traduceri");
+            }}
+            className={`chalk-btn text-sm ${viewMode === "traduceri" ? "!border-chalk-yellow !bg-white/10" : ""}`}
+          >
+            Traduceri ({entries.length})
+          </button>
+          <button
+            onClick={() => {
+              logAction("Istoric: mod conversii");
+              setViewMode("conversii");
+            }}
+            className={`chalk-btn text-sm ${viewMode === "conversii" ? "!border-chalk-yellow !bg-white/10" : ""}`}
+          >
+            Conversii ({convEntries.length})
+          </button>
+        </div>
+      )}
 
-      {/* Translations history */}
-      {viewMode === "traduceri" && (
+      {/* Translations history — doar intrari VECHI (F8 a inlocuit fluxul, nu mai scrie aici) */}
+      {hasTranslations && viewMode === "traduceri" && (
         <>
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold text-chalk-yellow">
               Istoric traduceri ({entries.length})
             </h3>
-            {entries.length > 0 && (
-              <button
-                onClick={handleClearTranslations}
-                className="chalk-btn text-sm !text-chalk-red"
-              >
-                Sterge tot
-              </button>
-            )}
+            <button
+              onClick={handleClearTranslations}
+              className="chalk-btn text-sm !text-chalk-red"
+            >
+              Sterge tot
+            </button>
           </div>
-
-          {entries.length === 0 ? (
-            <p className="text-center opacity-40 py-8">
-              Nicio traducere in istoric. Efectueaza prima traducere!
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {entries.map((entry) => (
-                <button
-                  key={entry.id}
-                  onClick={() => {
-                    logAction("Istoric: traducere deschisa", {
-                      id: entry.id,
-                      langs: `${entry.source_lang}->${entry.target_lang}`,
-                    });
-                    setSelected(entry);
-                  }}
-                  className="w-full text-left bg-white/5 hover:bg-white/8 rounded-lg px-4 py-3 transition-all"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-bold">
-                        {entry.source_lang.toUpperCase()} &rarr;{" "}
-                        {entry.target_lang.toUpperCase()}
-                      </span>
-                      <span className="ml-3 text-sm opacity-60">
-                        {entry.pages} pagini &middot;{" "}
-                        {(entry.duration_ms / 1000).toFixed(1)}s
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          entry.status === "success"
-                            ? "bg-green-900/30 text-chalk-green"
-                            : entry.status === "partial"
-                              ? "bg-yellow-900/30 text-chalk-yellow"
-                              : "bg-red-900/30 text-chalk-red"
-                        }`}
-                      >
-                        {entry.status === "success"
-                          ? "Succes"
+          <p className="text-xs opacity-50">
+            Intrari mai vechi — traducerea din Editor (butoanele RO|SK|EN|DE)
+            pastreaza acum toate versiunile, reversibil, fara istoric separat.
+          </p>
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <button
+                key={entry.id}
+                onClick={() => {
+                  logAction("Istoric: traducere deschisa", {
+                    id: entry.id,
+                    langs: `${entry.source_lang}->${entry.target_lang}`,
+                  });
+                  setSelected(entry);
+                }}
+                className="w-full text-left bg-white/5 hover:bg-white/8 rounded-lg px-4 py-3 transition-all"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="font-bold">
+                      {entry.source_lang.toUpperCase()} &rarr;{" "}
+                      {entry.target_lang.toUpperCase()}
+                    </span>
+                    <span className="ml-3 text-sm opacity-60">
+                      {entry.pages} pagini &middot;{" "}
+                      {(entry.duration_ms / 1000).toFixed(1)}s
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        entry.status === "success"
+                          ? "bg-green-900/30 text-chalk-green"
                           : entry.status === "partial"
-                            ? "Partial"
-                            : "Eroare"}
-                      </span>
-                      <span className="text-xs opacity-40">
-                        {new Date(entry.date).toLocaleDateString("ro-RO", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
+                            ? "bg-yellow-900/30 text-chalk-yellow"
+                            : "bg-red-900/30 text-chalk-red"
+                      }`}
+                    >
+                      {entry.status === "success"
+                        ? "Succes"
+                        : entry.status === "partial"
+                          ? "Partial"
+                          : "Eroare"}
+                    </span>
+                    <span className="text-xs opacity-40">
+                      {new Date(entry.date).toLocaleDateString("ro-RO", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </div>
-                  <div className="mt-1 text-xs opacity-40 truncate">
-                    {entry.files.join(", ")}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+                </div>
+                <div className="mt-1 text-xs opacity-40 truncate">
+                  {entry.files.join(", ")}
+                </div>
+              </button>
+            ))}
+          </div>
         </>
       )}
 
