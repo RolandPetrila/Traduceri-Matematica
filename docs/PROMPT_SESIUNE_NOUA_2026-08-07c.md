@@ -1,5 +1,7 @@
 # PROMPT SESIUNE NOUĂ — Traduceri Matematică (creat 2026-08-07, seara — runda 3, DUPĂ C/F0)
 
+> ⚠️ **DEPĂȘIT (2026-08-07 seara, runda 4):** decizia deschisă la §„PRIMUL PAS" de mai jos a fost luată — Roland a ales **„Deploy grupat acum"** (via AskUserQuestion la /onboard). **C/F0 e DEPLOYAT v45-20260807d**, verificat pe alias (`sw.js`=v45, tab „Școlare 🌐" randează + generare AI reală testată direct pe alias, `selftest.html` Planșe tot verde). Nu mai cere din nou confirmarea de deploy pt F0 — vezi `docs/HANDOFF_SESIUNE.md` (secțiunea „rundă 4") pt detaliu. **Următorul pas real: F1** (Gimnaziu Mate Cl.6/7/8 + Liceu — scrierea regulamentelor proprii, bug „7 regulamente").
+>
 > Lipește ACEST fișier (sau doar **PROMPT SCURT** de la final) ca PRIM mesaj în sesiunea nouă, după `/onboard`.
 > **Înlocuiește** `docs/PROMPT_SESIUNE_NOUA_2026-08-07b.md` (acela era înainte de C). Nu-l șterge (istoric git), dar nu-l folosi ca punct de plecare.
 > ⚠️ **Verifică data reală** (`date` / `git log --format=%ad`) înainte de a scrie orice dată — un nume de fișier cu dată NU e dovadă (capcană propagată deja o dată în proiect).
