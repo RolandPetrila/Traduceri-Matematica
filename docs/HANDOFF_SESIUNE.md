@@ -1,7 +1,23 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 (rulare `/improve` completă + 5 quick-wins executate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-09 (D rezolvat + #7/#8/#17/#18 din raportul `/improve` închise). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-09) — D rezolvat + curățenie `/improve` (#7/#8/#17/#18) — NEDEPLOYAT
+
+Sesiune „execută tot ce poți autonom". Coadă §6b: **D (fix)** + itemi rămași din raportul `/improve` (`2026-08-07_010000/improve_report.md`) care erau sigur executabili fără decizie nouă de la Roland.
+
+- ✅ **D — bug `\lim`** REZOLVAT. Root cause: `ocr-map.ts` trata orice `$\lim...$` ca nod inline, indiferent de context — KaTeX text-style pune indicele lateral, nu stivuit. Fix `displaystyleStandaloneLim()`: doar linii „etichetă scurtă + O SINGURĂ formulă `\lim`, nimic altceva" primesc `\displaystyle`; `\lim` în proză rămâne neatins; `\liminf`/`\limsup`/`\limits` excluse. Verificat vizual (KaTeX render before/after în Chrome — indicele se stivuiește centrat, identic cu originalul scanat). 8 teste noi, jest 172→180. Commit `fee08c1`. Detaliu: `docs/PLAN_MASTER.md` §6b.
+- ✅ **#7** (`/improve`) — `TestePanel.tsx` `CorrectTab` nu avea „Trimite în Editor" (asimetric vs `GenerateTab`). Adăugat, `onSendToEditor` propagat. **Verificat LIVE** (dev server local :3340 + Chrome, OCR mockuit la nivel de `fetch` — apelul real `/api/ocr` cross-origin spre prod a picat cu 503 din dev, orthogonal problemei; corectarea AI a rulat REAL prin `/api/proxy` same-origin, Gemini Flash): butonul apare, comută pe Editor, inserează textul, autosave confirmat. Commit `4ac4cce`.
+- ✅ **#8** (`/improve`) — tab „Istoric → Traduceri" era permanent gol (`addToHistory` fără apelanți din F8) — arăta ca un bug. Fix: comutatorul + secțiunea „Traduceri" apar DOAR dacă există intrări VECHI în localStorage (nu am șters `storage.ts`/`HistoryDetail.tsx`, ca să nu pierdem acces la date legacy); default „Conversii". **Verificat LIVE:** `/istoric` arată direct „Istoric conversii (0)", fără panoul confuz. Commit `491c3d3`.
+- ✅ **#17** (`/improve`, era [INCERT]) — verificat cod: `api/deepl_usage.py` citește `character_limit` LIVE din răspunsul API DeepL (`usage.get("character_limit", 500000)`), nu presupune 500k hardcodat — deja robust la trecerea pe planul „Developer" (1M, confirmat 2026-08-07). Niciun cod de schimbat.
+- ✅ **#18** (`/improve`, era [INCERT]) — verificat via Vercel MCP (`get_project` pe ambele proiecte): API-ul nu expune direct flag-ul Fluid Compute (confirmă limitarea știută), dar documentația Vercel curentă (încărcată la pornirea sesiunii) descrie Fluid Compute ca **default-ul platformei azi**, nu un toggle per-proiect legacy — combinat cu `maxDuration=300s` deja confirmat funcțional. [PROBABIL] rezolvat fără acțiune; recomand un spot-check rapid în dashboard doar dacă Roland vrea certitudine 100%.
+- **Gate final (tot ce s-a atins azi):** `tsc 0 · jest 180/180 (+8) · pytest 50/50 · next build OK` (8 rute).
+- **NEDEPLOYAT** — toate 3 commit-uri frontend-only, push-uite pe `faza-g-editor`; deploy grupat, cu confirmarea Roland.
+- **Exclus din sesiunea asta (motiv, nu omisiune):** **C** (Școlare) cere `PLAN_SCOLARE_[data].md` + `AskUserQuestion` propriu — nu poate porni fără plan explicit. **#3** (cost `gemini-2.5-pro`) și **#17-cont Vercel dashboard** rămân [INCERT], cer acces la cont pe care sesiunea nu îl are. **#19/#20/#21/#25(implementare)/#26** — Roland a ales explicit „nu acum" (AskUserQuestion, 2026-08-07); nu redeschise fără cerere nouă directă.
+- ➡️ **URMĂTORUL:** deploy grupat (D+#7+#8) cu confirmarea Roland, apoi coada §6b rămasă: **C** (necesită plan propriu).
 
 ---
 
