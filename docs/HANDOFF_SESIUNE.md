@@ -14,10 +14,14 @@ Sesiune „execută tot ce poți autonom". Coadă §6b: **D (fix)** + itemi răm
 - ✅ **#8** (`/improve`) — tab „Istoric → Traduceri" era permanent gol (`addToHistory` fără apelanți din F8) — arăta ca un bug. Fix: comutatorul + secțiunea „Traduceri" apar DOAR dacă există intrări VECHI în localStorage (nu am șters `storage.ts`/`HistoryDetail.tsx`, ca să nu pierdem acces la date legacy); default „Conversii". **Verificat LIVE:** `/istoric` arată direct „Istoric conversii (0)", fără panoul confuz. Commit `491c3d3`.
 - ✅ **#17** (`/improve`, era [INCERT]) — verificat cod: `api/deepl_usage.py` citește `character_limit` LIVE din răspunsul API DeepL (`usage.get("character_limit", 500000)`), nu presupune 500k hardcodat — deja robust la trecerea pe planul „Developer" (1M, confirmat 2026-08-07). Niciun cod de schimbat.
 - ✅ **#18** (`/improve`, era [INCERT]) — verificat via Vercel MCP (`get_project` pe ambele proiecte): API-ul nu expune direct flag-ul Fluid Compute (confirmă limitarea știută), dar documentația Vercel curentă (încărcată la pornirea sesiunii) descrie Fluid Compute ca **default-ul platformei azi**, nu un toggle per-proiect legacy — combinat cu `maxDuration=300s` deja confirmat funcțional. [PROBABIL] rezolvat fără acțiune; recomand un spot-check rapid în dashboard doar dacă Roland vrea certitudine 100%.
-- **Gate final (tot ce s-a atins azi):** `tsc 0 · jest 180/180 (+8) · pytest 50/50 · next build OK` (8 rute).
-- **NEDEPLOYAT** — toate 3 commit-uri frontend-only, push-uite pe `faza-g-editor`; deploy grupat, cu confirmarea Roland.
+- **Rundă advisor (înainte de „gata") — a prins 2 bug-uri BLOCANTE, corectate:**
+  - Fix D fusese verificat DOAR pe stringuri sintetice. Verificat pe payload REAL `/api/ocr` (curl direct pe `traduceri-api.vercel.app`, server-side): **9/9 formule confirmate cu `\displaystyle`**, cu formatarea exactă a Gemini. Adăugat test permanent de regresie în `ocr-map.test.ts`. Commit `56c7dcb`.
+  - `HistoryList.handleClearTranslations` nu reseta `viewMode` → un user cu intrări legacy care apasă „Șterge tot" pe Traduceri rămânea cu panou gol. Fix `setViewMode("conversii")`. Commit `56c7dcb`.
+  - Bonus (gap onest, deja documentat mai jos ca „RĂMAS (Chat AI)"): `TestePanel` ignora `truncated` din `sendChat` — adăugat pattern „Continuă răspunsul" (Generate+Correct), verificat live. Commit `3a85b47`.
+- **Gate final (tot ce s-a atins azi):** `tsc 0 · jest 181/181 (+9) · pytest 50/50 · next build OK` (8 rute).
+- **NEDEPLOYAT** — 5 commit-uri frontend-only, push-uite pe `faza-g-editor`; deploy grupat, cu confirmarea Roland.
 - **Exclus din sesiunea asta (motiv, nu omisiune):** **C** (Școlare) cere `PLAN_SCOLARE_[data].md` + `AskUserQuestion` propriu — nu poate porni fără plan explicit. **#3** (cost `gemini-2.5-pro`) și **#17-cont Vercel dashboard** rămân [INCERT], cer acces la cont pe care sesiunea nu îl are. **#19/#20/#21/#25(implementare)/#26** — Roland a ales explicit „nu acum" (AskUserQuestion, 2026-08-07); nu redeschise fără cerere nouă directă.
-- ➡️ **URMĂTORUL:** deploy grupat (D+#7+#8) cu confirmarea Roland, apoi coada §6b rămasă: **C** (necesită plan propriu).
+- ➡️ **URMĂTORUL:** deploy grupat (5 commit-uri de azi) cu confirmarea Roland, apoi coada §6b rămasă: **C** (necesită plan propriu).
 
 ---
 
