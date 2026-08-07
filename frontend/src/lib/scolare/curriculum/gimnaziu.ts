@@ -76,7 +76,21 @@ const gimnaziu: CurriculumCycle = {
           nume: "Limba și Literatura Română",
           sursa_nume: "Limba si Literatura Romana",
         },
-        { id: "matematica", nume: "Matematică", sursa_nume: "Matematica" },
+        {
+          // F1 — regulament propriu (era copie Clasa 5, bug „7 regulamente").
+          id: "matematica",
+          nume: "Matematică",
+          sursa_nume: "Matematica",
+          regulament_ref: "gimnaziu/clasa-6/matematica",
+          capitole: [
+            "Mulțimi și divizibilitate (operații cu mulțimi, descompunere în factori primi, c.m.m.d.c./c.m.m.m.c.)",
+            "Rapoarte și proporții (regula de trei simplă, mărimi direct/invers proporționale)",
+            "Mulțimea numerelor întregi (operații, ecuații/inecuații)",
+            "Mulțimea numerelor raționale (operații, ecuații liniare simple)",
+            "Noțiuni geometrice fundamentale (unghiuri, drepte paralele/perpendiculare, cercul)",
+            "Triunghiul (construcție, congruență, linii importante, teorema lui Pitagora)",
+          ],
+        },
         {
           id: "limba-engleza",
           nume: "Limba Engleză",
@@ -114,7 +128,22 @@ const gimnaziu: CurriculumCycle = {
           nume: "Limba și Literatura Română",
           sursa_nume: "Limba si Literatura Romana",
         },
-        { id: "matematica", nume: "Matematică", sursa_nume: "Matematica" },
+        {
+          // F1 — regulament propriu (era copie Clasa 5, bug „7 regulamente").
+          id: "matematica",
+          nume: "Matematică",
+          sursa_nume: "Matematica",
+          regulament_ref: "gimnaziu/clasa-7/matematica",
+          capitole: [
+            "Mulțimea numerelor reale (radicali, numere iraționale, ℕ⊂ℤ⊂ℚ⊂ℝ)",
+            "Ecuații și sisteme de ecuații liniare",
+            "Elemente de organizare a datelor (sistem de axe ortogonale)",
+            "Patrulaterul (paralelogram, dreptunghi, romb, pătrat, trapez)",
+            "Cercul (unghi înscris, coarde, arce, tangente, poligoane regulate)",
+            "Asemănarea triunghiurilor (teorema lui Thales)",
+            "Relații metrice în triunghiul dreptunghic (Pitagora, trigonometrie)",
+          ],
+        },
         {
           id: "limba-engleza",
           nume: "Limba Engleză",
@@ -153,7 +182,20 @@ const gimnaziu: CurriculumCycle = {
           nume: "Limba și Literatura Română",
           sursa_nume: "Limba si Literatura Romana",
         },
-        { id: "matematica", nume: "Matematică", sursa_nume: "Matematica" },
+        {
+          // F1 — regulament propriu (era copie Clasa 5, bug „7 regulamente").
+          id: "matematica",
+          nume: "Matematică",
+          sursa_nume: "Matematica",
+          regulament_ref: "gimnaziu/clasa-8/matematica",
+          capitole: [
+            "Intervale de numere reale. Inecuații în ℝ",
+            "Calcul algebric în ℝ (formule de calcul prescurtat, descompuneri în factori, ecuații de gradul II)",
+            "Funcții (f(x)=ax+b, elemente de statistică)",
+            "Elemente ale geometriei în spațiu (corpuri geometrice, paralelism, perpendicularitate)",
+            "Arii și volume ale corpurilor geometrice (prismă, piramidă, cilindru, con, sferă)",
+          ],
+        },
         {
           id: "limba-engleza",
           nume: "Limba Engleză",

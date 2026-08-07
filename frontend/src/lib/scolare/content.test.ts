@@ -125,6 +125,17 @@ describe("verificare aritmetică (D7)", () => {
     expect(verifyArithmetic("2 + 3 + 4 = 9").issues).toEqual([]); // sumă lanț, nu „3+4=9"
   });
 
+  test("lanț de puteri cu „⋅” (DOT OPERATOR U+22C5) nu dă fals-pozitiv (bug prins la proba LIVE, F1 Clasa 6)", () => {
+    // Gemini randează \cdot ca U+22C5, nu U+00B7 — CHAIN nu-l recunoștea, deci
+    // „5^1=2" (mijlocul lanțului „...5^1=2⋅3⋅5=30") era verificat izolat și greșit semnalat.
+    expect(
+      verifyArithmetic("c.m.m.d.c.(90,120)=2^1⋅3^1⋅5^1=2⋅3⋅5=30").issues,
+    ).toEqual([]);
+    expect(
+      verifyArithmetic("c.m.m.m.c.(90,120)=2^3⋅3^2⋅5^1=8⋅9⋅5=360").issues,
+    ).toEqual([]);
+  });
+
   test("listă numerotată multi-rând nu confundă numărul liniei următoare", () => {
     const r = verifyArithmetic("1. 2 + 3 = 5\n2. 10 : 2 = 5");
     expect(r.checked).toBe(2);

@@ -65,7 +65,11 @@ function apply(a: number, op: string, b: number): number | null {
 // spații/tab-uri), semnalează că e mijloc de număr sau parte dintr-un lanț
 // (ex. „b + 10 = 20 + 10 = 30") → NU o verificăm izolat. NU includem „." / „,":
 // punctul de listă („1. 2+3=5") și sfârșitul de propoziție sunt legitime.
-const CHAIN = "0123456789+-−×x*·:÷/^=";
+// „·" (U+00B7 MIDDLE DOT) ȘI „⋅" (U+22C5 DOT OPERATOR) sunt ambele glife de
+// înmulțire folosite de AI (Gemini randează `\cdot` ca U+22C5) — lipsa celei
+// de-a doua a produs fals-pozitive pe lanțuri ca „2^1⋅3^1⋅5^1=2⋅3⋅5=30"
+// (prins la proba live pe Clasa 6 Matematică, F1).
+const CHAIN = "0123456789+-−×x*·⋅:÷/^=";
 
 /** Graniță curată: lângă egalitate (pe același rând) nu e cifră/operator/=. */
 function cleanBoundary(text: string, start: number, end: number): boolean {
