@@ -1,8 +1,26 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-07 seara (C/F0 DEPLOYAT v45). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-08 (C/F1 LIVRAT, NEDEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ⚠️ **Corecție de dată (2026-08-07):** fișierul `docs/PROMPT_SESIUNE_NOUA_2026-08-09.md` (folosit ca prompt de pornire al acestei sesiuni) era mislabelat — creat de fapt pe 2026-08-07 (verificat: `git log` pe commit-ul `cd6fd2a`, ora sistemului), nu pe 08-09. Toate referirile „2026-08-09" din munca acestei sesiuni au fost corectate la data reală 2026-08-07. Vezi memoria [[finding_ocr_map_inline_vs_displaystyle_2026_08_07]].
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-08) — C/F1 LIVRAT (regulamente Cl. 6/7/8 Matematică), NEDEPLOYAT
+
+**Continuare directă a lui F0** (Roland: „continua implementarea urmatorilor pasi recomandati de tine"). F1 = scrierea regulamentelor proprii pt Gimnaziu Clasa 6/7/8 Matematică, rezolvând bug-ul „7 regulamente" (acele clase aveau `regulament.md` copiat byte-identic din Clasa 5 — vezi `docs/PLAN_SCOLARE_2026-08-07.md` §8).
+
+- ✅ **Sursare conținut**: descărcat direct PDF-ul oficial OMEN 3393/2017 de la `ise.ro` (același `sursa_url` deja citat în skeleton) — 33 pagini. `pdftotext` a fost folosit DOAR pt localizarea capitolelor (pierde diacritice ț/ș/ă/â/î pe acest PDF specific, font fără ToUnicode complet); conținutul final a fost extras din randarea imagine a paginilor (Read tool, diacritice corecte) pt tabelele „Conținuturi" ale claselor VI (pag. 14-16), VII (pag. 20-23), VIII (pag. 27-29).
+- ✅ **3 regulamente noi** `frontend/public/scolare/regulamente/gimnaziu_clasa{6,7,8}_matematica.md`, format identic Clasa 5 (domenii permise / tipuri exerciții / exemple concrete / interdicții explicite / densitate-layout), fiecare cu interdicții specifice care exclud conținutul claselor următoare (ex. Cl.6 NU are Thales/radicali, Cl.7 NU are geometrie în spațiu/ecuație gradul II).
+- ✅ **Wiring skeleton**: `regulament_ref`+`capitole` adăugate pe nodurile `matematica` din `frontend/src/lib/scolare/curriculum/gimnaziu.ts` pt Cl. 6/7/8 (Cl. 5 neatinsă). Verificatorul de completitudine (`verifier.ts`) rămâne verde — compară doar `sursa_nume`, nu regulament_ref/capitole.
+- ✅ **Verificat LIVE** (dev local `:3350`, chei reale din `.env`, generare REALĂ Gemini Flash — nu mock): banner „nod ne-ghidat" a dispărut pt toate 3 clasele; fișe generate:
+  - Cl. 6: c.m.m.d.c./c.m.m.m.c. prin factori primi, mărimi invers proporționale, calcul cu numere întregi, ecuație cu numere raționale, unghiuri în jurul unui punct — toate din capitolele regulamentului.
+  - Cl. 7: radicali (scoatere factori, raționalizare numitor), sistem de ecuații liniare, trapez dreptunghic (Pitagora), teorema lui Thales, trigonometrie triunghi dreptunghic.
+  - Cl. 8: inecuație liniară + reprezentare pe axă, descompunere în factori (a²-b²), ecuație de gradul II (discriminant), statistică (medie/mediană/mod), prismă triunghiulară (geometrie în spațiu).
+- 🔧 **Bug real prins la proba LIVE, corectat imediat:** `verify-fisa.ts` semnala fals-pozitiv pe lanțul „c.m.m.d.c.(90,120)=2^1⋅3^1⋅5^1=2⋅3⋅5=30" — regexul de puteri izola greșit „5^1=2" ca egalitate independentă. Cauză: `CHAIN` (lista de caractere care marchează „mijloc de lanț, nu verifica izolat") conținea „·" (U+00B7 MIDDLE DOT) dar NU „⋅" (U+22C5 DOT OPERATOR) — glifa REALĂ pe care Gemini o folosește pt `\cdot`. Fix de 1 caracter + test de regresie cu string-ul EXACT din răspunsul AI (nu sintetic). Regenerare live după fix → 0 fals-pozitive.
+- **Gate: `tsc 0 · jest 206/206 (+1) · next build OK`.** Commit `98d0da5` pe `faza-g-editor`, push în curs.
+- **NEDEPLOYAT** — ca la F0, deploy grupat așteaptă confirmarea explicită a lui Roland.
+- ➡️ **URMĂTORUL C:** F2 (restul materiilor la Gimnaziu, 7-11 materii/clasă — necesită regulamente Roland din Carla) sau F3/F4/F5 (Primar/Grădiniță/Liceu). Vezi `docs/PLAN_SCOLARE_2026-08-07.md` §7.
 
 ---
 
