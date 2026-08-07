@@ -1,11 +1,12 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-09 (D rezolvat + #7/#8/#17/#18 din raportul `/improve` închise). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-07 (D rezolvat + #7/#8/#17/#18 din raportul `/improve` închise). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> ⚠️ **Corecție de dată (2026-08-07):** fișierul `docs/PROMPT_SESIUNE_NOUA_2026-08-09.md` (folosit ca prompt de pornire al acestei sesiuni) era mislabelat — creat de fapt pe 2026-08-07 (verificat: `git log` pe commit-ul `cd6fd2a`, ora sistemului), nu pe 08-09. Toate referirile „2026-08-09" din munca acestei sesiuni au fost corectate la data reală 2026-08-07. Vezi memoria [[finding_ocr_map_inline_vs_displaystyle_2026_08_07]].
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
 
 ---
 
-## ▶️ REIA DE AICI (2026-08-09) — D rezolvat + curățenie `/improve` (#7/#8/#17/#18) — NEDEPLOYAT
+## ▶️ REIA DE AICI (2026-08-07, rundă 2) — D rezolvat + curățenie `/improve` (#7/#8/#17/#18) — NEDEPLOYAT
 
 Sesiune „execută tot ce poți autonom". Coadă §6b: **D (fix)** + itemi rămași din raportul `/improve` (`2026-08-07_010000/improve_report.md`) care erau sigur executabili fără decizie nouă de la Roland.
 
