@@ -37,6 +37,10 @@ export default function HistoryList() {
       clearHistory();
       setEntries([]);
       setSelected(null);
+      // hasTranslations devine false -> comutatorul + sectiunea "Traduceri" dispar;
+      // fara asta viewMode ramane "traduceri" si nu se mai randeaza nimic (nici
+      // conversiile) pana la reload, pt ca blocul lor e gated pe viewMode==="conversii".
+      setViewMode("conversii");
     }
   };
 

@@ -453,4 +453,32 @@ describe("D — \\lim standalone → \\displaystyle (repro Screenshot (260).png)
     });
     expect(mathOf(blocks[0].content)).toEqual(["\\frac{1}{2}"]);
   });
+
+  // Payload REAL /api/ocr pe limite_matematica.jpeg (verificat 2026-08-09, curl direct
+  // pe traduceri-api.vercel.app — vezi finding_ocr_map_inline_vs_displaystyle_2026_08_09).
+  // Copiat ca literal (nu citit din scratchpad, care e efemer/netrackuit prin
+  // conventie si n-ar supravietui unui checkout curat in CI) — spatiile din jurul
+  // `\to`/`+`/`-` sunt
+  // EXACT cum le emite Gemini (diferit de restul testelor, scrise fara spatii).
+  it("REGRESIE — payload OCR real (toate 9 limitele a-i) primesc \\displaystyle", () => {
+    const blocks = sectionToBlocks({
+      type: "list",
+      content:
+        "a) $\\lim_{x \\to \\infty} \\frac{1 + 2x + x^2}{1 + 3x + x^2}$\n" +
+        "b) $\\lim_{x \\to 1} \\frac{x - 1}{x^2 + x - 2}$\n" +
+        "c) $\\lim_{x \\to -2} \\frac{x^2 + x - 2}{x^4 - 16}$\n" +
+        "d) $\\lim_{x \\to 1} \\frac{\\sqrt{6x + 3} - \\sqrt{8x + 1}}{x^2 + 3x - 4}$\n" +
+        "e) $\\lim_{x \\to -\\infty} \\frac{2 + x}{\\sqrt{x^2 + 4}}$\n" +
+        "f) $\\lim_{x \\to \\infty} (x - \\sqrt[3]{x^3 - x^2 + 6x - 5})$\n" +
+        "g) $\\lim_{x \\to \\infty} \\frac{\\sin 13x}{x}$\n" +
+        "h) $\\lim_{x \\to 2} \\frac{\\sin (x^3 - 8)}{x - 2}$\n" +
+        "i) $\\lim_{x \\to -1} \\frac{2}{(x + 1)(x^2 - 1)}$",
+    });
+    expect(blocks).toHaveLength(9);
+    for (const b of blocks) {
+      const math = mathOf(b.content);
+      expect(math).toHaveLength(1);
+      expect(math[0]).toMatch(/^\\displaystyle \\lim/);
+    }
+  });
 });
