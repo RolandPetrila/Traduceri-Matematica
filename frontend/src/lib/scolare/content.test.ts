@@ -136,6 +136,17 @@ describe("verificare aritmetică (D7)", () => {
     ).toEqual([]);
   });
 
+  test("lanț de puteri cu LaTeX brut (\\cdot) nu dă fals-pozitiv — aceeași clasă de bug, mecanism diferit", () => {
+    // raw text-ul AI poate fi LaTeX NEprocesat (verificat prin capturarea răspunsului
+    // real /api/proxy la o probă live F1): un lanț ca „5^1 = 2 \cdot 3 \cdot 5 = 30"
+    // are backslash imediat după „2", nu glifa „⋅" — CHAIN fără „\" nu-l recunoștea.
+    expect(
+      verifyArithmetic(
+        "c.m.m.d.c.(90,120)=2^1 \\cdot 3^1 \\cdot 5^1 = 2 \\cdot 3 \\cdot 5 = 30",
+      ).issues,
+    ).toEqual([]);
+  });
+
   test("listă numerotată multi-rând nu confundă numărul liniei următoare", () => {
     const r = verifyArithmetic("1. 2 + 3 = 5\n2. 10 : 2 = 5");
     expect(r.checked).toBe(2);

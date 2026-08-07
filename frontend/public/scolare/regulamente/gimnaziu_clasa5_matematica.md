@@ -7,7 +7,7 @@
 ## Domenii de conținut permise (programa oficială)
 
 - **Numere naturale**: operații, puteri cu exponent natural, reguli de calcul cu puteri, ordinea efectuării operațiilor.
-- **Divizibilitate**: divizori, multipli, criterii de divizibilitate (2, 3, 5, 10).
+- **Divizibilitate**: divizori, multipli, criterii de divizibilitate cu 2, 5, 10ⁿ, 3 și 9.
 - **Metode aritmetice de rezolvare a problemelor** (metoda figurativă, a falsei ipoteze, reducerea la unitate).
 - **Mulțimi**: notații, apartenență, incluziune, reuniune, intersecție (elementar).
 - **Fracții ordinare**: transformări, compararea, operații.

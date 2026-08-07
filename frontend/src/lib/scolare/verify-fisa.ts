@@ -66,10 +66,14 @@ function apply(a: number, op: string, b: number): number | null {
 // (ex. „b + 10 = 20 + 10 = 30") → NU o verificăm izolat. NU includem „." / „,":
 // punctul de listă („1. 2+3=5") și sfârșitul de propoziție sunt legitime.
 // „·" (U+00B7 MIDDLE DOT) ȘI „⋅" (U+22C5 DOT OPERATOR) sunt ambele glife de
-// înmulțire folosite de AI (Gemini randează `\cdot` ca U+22C5) — lipsa celei
-// de-a doua a produs fals-pozitive pe lanțuri ca „2^1⋅3^1⋅5^1=2⋅3⋅5=30"
-// (prins la proba live pe Clasa 6 Matematică, F1).
-const CHAIN = "0123456789+-−×x*·⋅:÷/^=";
+// înmulțire folosite de AI (Gemini scrie uneori Unicode brut în loc de LaTeX
+// — prins la proba live pe Clasa 6 Matematică, F1, cu lanțul
+// „2^1⋅3^1⋅5^1=2⋅3⋅5=30"). „\" (backslash) e inclus separat: raw text-ul AI
+// e adesea LaTeX NEprocesat (`\cdot`, `\text{cm}`, `\Rightarrow`...), deci un
+// lanț ca „5^1 = 2 \cdot 3 \cdot 5 = 30" are ACEEAȘI problemă printr-un
+// mecanism diferit (comanda LaTeX, nu glifa) — un singur caracter acoperă
+// toată clasa de comenzi LaTeX, nu doar `\cdot`.
+const CHAIN = "0123456789+-−×x*·⋅:÷/^=\\";
 
 /** Graniță curată: lângă egalitate (pe același rând) nu e cifră/operator/=. */
 function cleanBoundary(text: string, start: number, end: number): boolean {
