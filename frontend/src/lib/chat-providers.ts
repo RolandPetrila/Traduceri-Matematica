@@ -153,6 +153,15 @@ export async function sendChat(
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS);
       let res: Response;
+      let json: unknown;
+      // `finally` acoperă fetch() ȘI res.json() — găsit la code review:
+      // clearTimeout rula imediat după ce soseau header-ele (fetch() rezolvat),
+      // ÎNAINTE de citirea corpului. Un provider care trimite header-e și apoi
+      // îngheață la mijlocul corpului lăsa res.json() fără NICIUN timeout —
+      // sendChat rămânea agățat la infinit, blocând tot tab-ul (Teste/Școlare
+      // au un singur `status` comun, deci butonul principal rămânea dezactivat
+      // permanent). ctrl.signal rămâne legat de fetch pe toată durata (spec-ul
+      // fetch propagă abort-ul și la citirea streaming a corpului).
       try {
         res = await fetch(`/api/proxy?provider=${step.id}`, {
           method: "POST",
@@ -160,14 +169,14 @@ export async function sendChat(
           body: JSON.stringify(body),
           signal: ctrl.signal,
         });
+        if (!res.ok) {
+          errors.push(`${step.label}: HTTP ${res.status}`);
+          continue;
+        }
+        json = await res.json();
       } finally {
         clearTimeout(timer);
       }
-      if (!res.ok) {
-        errors.push(`${step.label}: HTTP ${res.status}`);
-        continue;
-      }
-      const json = await res.json();
       const reply = parseReply(step.id, json);
       if (reply)
         return {

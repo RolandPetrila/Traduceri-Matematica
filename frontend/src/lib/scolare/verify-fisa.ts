@@ -37,8 +37,20 @@ export interface VerifyResult {
   issues: ArithIssue[];
 }
 
-/** Parsează un număr românesc (virgulă zecimală) sau internațional. */
+/**
+ * Parsează un număr, convenție românească: „," e separatorul ZECIMAL
+ * („12,5" = 12.5), „." e separatorul de MII („1.500" = 1500), NU zecimal.
+ * Găsit la code review (2026-08-08): funcția trata orbeste „." ca zecimal
+ * pt orice grup de cifre după el — „1.500 - 800 = 700" (corect) era
+ * calculat ca 1.5-800=-798.5 și marcat fals ca greșit pe fișele tipărite.
+ * Regula: „." urmat de EXACT 3 cifre (tiparul de grupare pe mii, ex.
+ * „1.500", „100.000") → cifrele se lipesc, fără separator. Orice alt
+ * număr de cifre după „." (ex. „3.14") rămâne tratat ca zecimal — ambiguu,
+ * dar 3 cifre exacte e semnătura specifică a grupării pe mii.
+ */
 function num(s: string): number {
+  const m = s.match(/^(-?)(\d+)\.(\d{3})$/);
+  if (m) return (m[1] === "-" ? -1 : 1) * parseInt(m[2] + m[3], 10);
   return parseFloat(s.replace(",", "."));
 }
 

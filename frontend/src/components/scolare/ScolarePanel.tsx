@@ -28,6 +28,7 @@ import {
 } from "@/lib/scolare/history";
 import { verifyArithmetic, type VerifyResult } from "@/lib/scolare/verify-fisa";
 import { sanitizeFisa } from "@/lib/scolare/sanitize";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 
 /**
  * Modul „Școlare 🌐" (F0, 2026-08-07) — generator AI de fișe curriculare A4.
@@ -44,18 +45,27 @@ const CONTINUE_PROMPT =
 // Acoperirea ghidată, derivată LIVE din skeleton (nu hardcodată) — vezi trap 2, advisor F3.
 const GROUNDED_COVERAGE = describeGroundedCoverage();
 
-// Cache inclusiv MISS-urile ("" = fetch eșuat) ca să nu re-cerem la fiecare generare.
+// Cache DOAR succesele — un eșec tranzitoriu (ex. cold edge-cache imediat
+// după deploy) nu mai rămâne blocat permanent pt restul sesiunii tab-ului
+// (bug găsit la code review: eșecul se cache-uia ca "" definitiv, fără
+// retry, fără semnal vizibil pt utilizator). `hasOwnProperty` în loc de
+// `in` — `in` verifică și proprietățile moștenite din Object.prototype
+// (ex. dacă un regulament_ref ar fi vreodată "constructor", `in` ar
+// întoarce true fals-pozitiv înainte de orice fetch real).
 const regCache: Record<string, string> = {};
 async function loadRegulament(ref?: string): Promise<string | undefined> {
   if (!ref) return undefined;
-  if (ref in regCache) return regCache[ref] || undefined;
+  if (Object.prototype.hasOwnProperty.call(regCache, ref))
+    return regCache[ref] || undefined;
   try {
-    const res = await fetch(`/scolare/regulamente/${refToFile(ref)}`);
+    const res = await fetchWithRetry(
+      `/scolare/regulamente/${refToFile(ref)}`,
+      {},
+    );
     const text = res.ok ? await res.text() : "";
-    regCache[ref] = text;
+    if (text) regCache[ref] = text;
     return text || undefined;
   } catch {
-    regCache[ref] = "";
     return undefined;
   }
 }
@@ -171,6 +181,15 @@ export function ScolarePanel({
     const r = await sendChat(next, buildScolareSystemPrompt());
     if (r.ok) {
       const merged = sanitizeFisa(result + "\n" + r.reply);
+      // Bug găsit la code review: continueGenerate() nu apela record(), deci
+      // enunțurile care existau DOAR în coada unei continuări nu intrau
+      // niciodată în istoricul anti-repetare — generate() le putea reda la
+      // o generare ulterioară pt aceeași clasă+materie, fără avertisment.
+      record(
+        bucketKey(cycleId, level.id, node.id),
+        signature(merged),
+        extractStems(merged),
+      );
       setResult(merged);
       setHistory([
         ...next,

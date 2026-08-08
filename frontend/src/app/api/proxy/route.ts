@@ -249,20 +249,26 @@ export async function POST(request: NextRequest) {
   }
 
   // Cost-cap: forteaza modelul permis + plafoneaza limitele daca-s trimise (audit #1).
+  // `Number(x) || default` trata un 0 EXPLICIT trimis de caller ca "nesetat"
+  // (0 e falsy in JS) si il inlocuia silentios cu default-ul, desi garda
+  // `!= null` de mai sus fusese scrisa exact ca sa lase prin doar valorile
+  // explicit trimise — bug gasit la code review, latent azi (niciun caller
+  // curent nu trimite 0), fixat cu `numOr` (fallback DOAR la NaN, nu la 0).
+  const numOr = (v: unknown, fallback: number): number => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  };
   if (MODEL_ALLOW[provider]) {
     const allow = MODEL_ALLOW[provider];
     if (!allow.includes(body.model)) body.model = allow[0];
     if (body.max_tokens != null) {
-      body.max_tokens = Math.min(
-        Number(body.max_tokens) || 2048,
-        MAX_TOKENS_CAP,
-      );
+      body.max_tokens = Math.min(numOr(body.max_tokens, 2048), MAX_TOKENS_CAP);
     }
   }
   if (provider === "tavily" && body.max_results != null) {
-    body.max_results = Math.min(Number(body.max_results) || 5, MAX_RESULTS_CAP);
+    body.max_results = Math.min(numOr(body.max_results, 5), MAX_RESULTS_CAP);
   } else if (provider === "brave" && body.count != null) {
-    body.count = Math.min(Number(body.count) || 5, MAX_RESULTS_CAP);
+    body.count = Math.min(numOr(body.count, 5), MAX_RESULTS_CAP);
   }
 
   let url = cfg.url;

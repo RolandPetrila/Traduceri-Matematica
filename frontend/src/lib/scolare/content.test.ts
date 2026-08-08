@@ -167,6 +167,19 @@ describe("verificare aritmetică (D7)", () => {
     expect(r.checked).toBe(2);
     expect(r.issues).toEqual([]);
   });
+
+  test("separator de mii „.” (convenție RO) nu dă fals-pozitiv (bug prins la code review 2026-08-08)", () => {
+    // „1.500 - 800 = 700" (1500-800=700, corect) era calculat ca
+    // 1.5-800=-798.5 fiindca num() trata orbeste "." ca zecimal.
+    expect(verifyArithmetic("1.500 - 800 = 700").issues).toEqual([]);
+    expect(verifyArithmetic("1.234 + 500 = 1.734").issues).toEqual([]);
+    expect(verifyArithmetic("100.000 - 1.000 = 99.000").issues).toEqual([]);
+    // control pozitiv: o ecuație CHIAR greșită cu separator de mii tot e prinsă
+    expect(verifyArithmetic("1.500 - 800 = 800").issues.length).toBe(1);
+    // zecimalele „normale" (fara tipar de 3 cifre dupa punct) raman neafectate
+    expect(verifyArithmetic("3.14 + 1 = 4.14").issues).toEqual([]);
+    expect(verifyArithmetic("3.14 + 1 = 5").issues.length).toBe(1);
+  });
 });
 
 describe("sanitizeFisa (colapsare linii de completat runaway, proba LIVE F3)", () => {
