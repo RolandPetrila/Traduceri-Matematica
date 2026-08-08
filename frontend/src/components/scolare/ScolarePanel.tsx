@@ -81,8 +81,9 @@ export function ScolarePanel({
   );
 
   // „Ghidat curricular" = nodul are un regulament propriu (concepte/interdicții).
-  // În F0 doar Gimnaziu Clasa 5 Matematică e cablat; restul au skeleton, dar
-  // conținutul nu e încă ghidat (F1+). Semnalăm ONEST, nu lăsăm UI-ul să pară 100%.
+  // Din 2026-08-08 toate cele 112 noduri din skeleton (Grădiniță/Primar/Gimnaziu/
+  // Liceu) au regulament_ref — practic mereu true azi, dar rămâne calculat din
+  // date (nu hardcodat) ca gardă onestă dacă un nod nou e adăugat fără regulament.
   const grounded = !!node.regulament_ref;
 
   const [dificultate, setDificultate] = useState<Dificultate>("Standard");

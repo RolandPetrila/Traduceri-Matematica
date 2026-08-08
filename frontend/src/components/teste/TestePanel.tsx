@@ -141,16 +141,24 @@ function GenerateTab({
       typeCounts,
     );
     const initial: ChatMessage[] = [{ role: "user", content: prompt }];
-    const r = await sendChat(initial, buildSystemPrompt());
-    if (r.ok) {
-      setResult(r.reply);
-      setStatus("idle");
-      setNote(`Generat cu ${r.provider}.`);
-      setTruncated(r.truncated);
-      setHistory([...initial, { role: "assistant", content: r.reply }]);
-    } else {
+    try {
+      const r = await sendChat(initial, buildSystemPrompt());
+      if (r.ok) {
+        setResult(r.reply);
+        setStatus("idle");
+        setNote(`Generat cu ${r.provider}.`);
+        setTruncated(r.truncated);
+        setHistory([...initial, { role: "assistant", content: r.reply }]);
+      } else {
+        setStatus("error");
+        setNote(r.error);
+      }
+    } catch (e) {
+      // sendChat nu aruncă în mod normal (prinde erorile per-provider intern),
+      // dar gardă defensivă — fără ea, o excepție neprevăzută ar lăsa `status`
+      // blocat pe "loading" (butonul dezactivat permanent). Vezi audit Faza C.
       setStatus("error");
-      setNote(r.error);
+      setNote((e as Error).message || "Eroare");
     }
   };
 
@@ -343,7 +351,38 @@ function CorrectTab({
   const [result, setResult] = useState("");
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [truncated, setTruncated] = useState(false);
+  const [pastedText, setPastedText] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  /** Nucleul comun poză→OCR și text lipit: trimite textul lucrării la AI pt corectare. */
+  const correctText = async (text: string) => {
+    if (!text.trim()) {
+      setNote("N-am text de corectat.");
+      return;
+    }
+    setStatus("loading");
+    setNote("Corectez…");
+    setResult("");
+    try {
+      const initial: ChatMessage[] = [
+        { role: "user", content: buildCorrectPrompt(text) },
+      ];
+      const r = await sendChat(initial, buildSystemPrompt());
+      if (r.ok) {
+        setResult(r.reply);
+        setStatus("idle");
+        setNote(`Corectat cu ${r.provider}.`);
+        setTruncated(r.truncated);
+        setHistory([...initial, { role: "assistant", content: r.reply }]);
+      } else {
+        setStatus("error");
+        setNote(r.error);
+      }
+    } catch (e) {
+      setStatus("error");
+      setNote((e as Error).message || "Eroare");
+    }
+  };
 
   const onFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -377,21 +416,7 @@ function CorrectTab({
         .join("\n\n")
         .trim();
       if (!text) throw new Error("N-am putut extrage text din imagine.");
-      setNote("Corectez…");
-      const initial: ChatMessage[] = [
-        { role: "user", content: buildCorrectPrompt(text) },
-      ];
-      const r = await sendChat(initial, buildSystemPrompt());
-      if (r.ok) {
-        setResult(r.reply);
-        setStatus("idle");
-        setNote(`Corectat cu ${r.provider}.`);
-        setTruncated(r.truncated);
-        setHistory([...initial, { role: "assistant", content: r.reply }]);
-      } else {
-        setStatus("error");
-        setNote(r.error);
-      }
+      await correctText(text);
     } catch (e) {
       setStatus("error");
       setNote((e as Error).message || "Eroare");
@@ -421,8 +446,8 @@ function CorrectTab({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-muted-foreground">
-        Atașează o poză a lucrării rezolvate → o citesc (OCR) și îți spun unde e
-        greșit + o notă orientativă.
+        Atașează o poză a lucrării rezolvate (OCR) SAU lipește textul direct →
+        îți spun unde e greșit + o notă orientativă.
       </p>
       <input
         ref={fileRef}
@@ -438,12 +463,38 @@ function CorrectTab({
       <Button
         type="button"
         size="sm"
-        className="h-9"
+        className="h-9 self-start"
         onClick={() => fileRef.current?.click()}
         disabled={status === "loading"}
       >
         📎 Atașează poza lucrării
       </Button>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor="teste-correct-text"
+          className="text-[11px] text-muted-foreground"
+        >
+          ...sau lipește/scrie textul lucrării (fără poză):
+        </label>
+        <textarea
+          id="teste-correct-text"
+          value={pastedText}
+          onChange={(e) => setPastedText(e.target.value)}
+          placeholder="Lipește aici enunțurile + rezolvările elevului…"
+          className="min-h-24 rounded-md border border-border bg-background p-2 text-sm"
+          disabled={status === "loading"}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 self-start"
+          onClick={() => correctText(pastedText)}
+          disabled={status === "loading" || !pastedText.trim()}
+        >
+          Corectează textul
+        </Button>
+      </div>
       {note && (
         <p
           className={`text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}

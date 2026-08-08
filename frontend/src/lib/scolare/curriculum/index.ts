@@ -69,8 +69,12 @@ export function describeGroundedCoverage(
       });
     });
     if (grounded === 0) return;
+    // Grădinița are „domenii de dezvoltare", nu „materii" — bannerul trebuie să
+    // folosească termenul corect, nu „materii" hardcodat pt orice ciclu.
+    const allDomenii = cycle.nivele.every((l) => l.tip === "domeniu");
+    const noun = allDomenii ? "domeniile" : "materiile";
     if (grounded === total) {
-      parts.push(`${cycle.nume} (toate materiile)`);
+      parts.push(`${cycle.nume} (toate ${noun})`);
     } else {
       const shown = names.slice(0, 4).join(", ");
       parts.push(`${cycle.nume} (${shown}${names.length > 4 ? " ș.a." : ""})`);

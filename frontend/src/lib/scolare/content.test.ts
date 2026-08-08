@@ -204,7 +204,9 @@ describe("describeGroundedCoverage (banner anti-stale, dinți)", () => {
   // anti-staleness netestat e exact cum s-a întâmplat asta — deci îl testăm.
   test("descrie acoperirea REALĂ derivată din skeleton (toate cele 4 cicluri complete)", () => {
     const s = describeGroundedCoverage();
-    expect(s).toContain("Grădiniță (toate materiile)");
+    // Grădinița are „domenii de dezvoltare", nu „materii" — bannerul trebuie
+    // să folosească termenul corect (bug găsit la audit, fixat).
+    expect(s).toContain("Grădiniță (toate domeniile)");
     expect(s).toContain("Primar (toate materiile)");
     expect(s).toContain("Gimnaziu (toate materiile)");
     expect(s).toContain("Liceu (toate materiile)");

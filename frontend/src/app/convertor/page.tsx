@@ -7,8 +7,10 @@ import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
 
+// Ținte suportate = EXACT ce acceptă `routes` din api/convert.py (bug găsit la
+// audit Faza C: UI oferea pdf→jpg/png, dar backend nu are acele rute → 400).
 const CONVERSION_MAP: Record<string, string[]> = {
-  pdf: ["docx", "html", "jpg", "png"],
+  pdf: ["docx", "html"],
   docx: ["pdf", "html"],
   jpg: ["pdf", "png"],
   jpeg: ["pdf", "png"],

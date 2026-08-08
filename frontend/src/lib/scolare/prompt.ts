@@ -87,7 +87,7 @@ export function buildScolarePrompt(input: PromptInput): string {
 
   if (node.in_reforma) {
     lines.push(
-      "ATENȚIE: programa acestei clase e în reformă curriculară (2026-2027). Rămâi la concepte fundamentale, larg acceptate, ale disciplinei.",
+      `ATENȚIE: programa acestei clase e în reformă curriculară (2026-2027). Rămâi la concepte fundamentale, larg acceptate, ale ${tipNod}.`,
     );
   }
 

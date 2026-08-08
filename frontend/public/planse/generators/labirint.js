@@ -119,8 +119,14 @@
     return { pasaje: pasaje, edges: edges, nrViz: nrViz };
   }
 
+  // `pasaje` e Set (intern, în timpul generării/verificării) SAU Array (dupa
+  // ce item-ul a trecut prin history.js/coșul P4 — `Set` nu supraviețuiește
+  // JSON.stringify, devine "{}" fara nicio informatie; de-aia buildOne()
+  // întoarce Array.from(...) mai jos, ca item-ul sa fie JSON-safe din start).
   function arePasaj(pasaje, a, b) {
-    return pasaje.has(edgeKey(a, b));
+    var k = edgeKey(a, b);
+    if (pasaje instanceof Set) return pasaje.has(k);
+    return pasaje.indexOf(k) !== -1;
   }
 
   function verifica(rows, cols, pasaje, edges, exit) {
@@ -211,7 +217,8 @@
       rows: rows,
       cols: cols,
       exit: exit,
-      pasaje: g.pasaje,
+      // Array, nu Set — JSON-safe pt. coșul P4/history.js (vezi nota la arePasaj).
+      pasaje: Array.from(g.pasaje),
       edges: g.edges,
       drum: drum,
       nrViz: g.nrViz,

@@ -454,7 +454,10 @@
       n: n,
       grid: grid,
       words: res.placed,
-      wordCells: wordCells,
+      // Array, nu Set — Set nu supraviețuiește JSON.stringify (devine "{}"
+      // fara nicio informație) în coșul P4/history.js. gridHtml() reconstruiește
+      // Set-ul la randare pt lookup O(1).
+      wordCells: Array.from(wordCells),
       seed: seed,
       semnatura: Sig.md5(temaId + "|" + dif + "|" + gridStr).slice(0, 12),
     };
@@ -488,7 +491,10 @@
   function gridHtml(item, mode) {
     var n = item.n,
       grid = item.grid,
-      wc = item.wordCells;
+      wc =
+        item.wordCells instanceof Set
+          ? item.wordCells
+          : new Set(item.wordCells);
     var out = [];
     for (var r = 0; r < n; r++) {
       for (var c = 0; c < n; c++) {
