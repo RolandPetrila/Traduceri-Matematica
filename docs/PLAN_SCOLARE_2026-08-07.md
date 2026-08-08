@@ -1,7 +1,7 @@
 # PLAN — Modul „Școlare 🌐" (materiale curriculare RO, grădiniță→liceu)
 
 > Versiune plan: 1.1 (revizie advisor: skeleton-first în F0, regulament separat de skeleton, bug 7-regulamente confirmat, plafon prompt verificat) · Data reală: **2026-08-07** (verificată `date`, nu dedusă din nume de fișier) · Efort țintă: xhigh
-> Cerința C din coada §6b (`docs/PLAN_MASTER.md`). Sursă de context: sesiunea de design Carla (`docs/Export_chat_sesiune_Carla.md`) + scope memory `project-scolare-curriculum-scope` + folderul-sursă Carla (`G:\My Drive\Roly\4. Artificial Inteligence\Folder_Lucru\Carla\`).
+> Cerința C din coada §6b (`docs/PLAN_MASTER.md`). Sursă de context: sesiunea de design Carla (`docs/Export_chat_sesiune_Carla.md` — **local, UNTRACKED, nu în git**) + scope memory `project-scolare-curriculum-scope` + folderul-sursă Carla (`G:\My Drive\Roly\4. Artificial Inteligence\Folder_Lucru\Carla\` — de asemenea local/gitignored).
 > **R-PLAN: NU se scrie cod până Roland confirmă acest plan** (măcar pilotul F0). Acest fișier = checklist bifabil + reguli de siguranță + jurnal de execuție.
 
 ---
