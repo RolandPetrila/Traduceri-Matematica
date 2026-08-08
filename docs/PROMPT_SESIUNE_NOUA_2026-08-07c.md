@@ -1,6 +1,6 @@
 # PROMPT SESIUNE NOUĂ — Traduceri Matematică (creat 2026-08-07, seara — runda 3, DUPĂ C/F0)
 
-> ⚠️ **DEPĂȘIT ÎN ÎNTREGIME (actualizat 2026-08-08):** C/F0 DEPLOYAT v45-20260807d (Roland a ales „Deploy grupat acum") ȘI C/F1 (regulamente proprii Gimnaziu Cl. 6/7/8 Matematică) LIVRAT — bug „7 regulamente" rezolvat pt aceste 3 clase, verificat LIVE cu generare AI reală pe toate 3, gate `tsc 0 · jest 206/206 · build OK`, commit `98d0da5`, **NEDEPLOYAT**. Fișierul ăsta nu mai reflectă starea curentă a §„PRIMUL PAS"/„URMĂTORUL în C" de mai jos — pt context real vezi `docs/HANDOFF_SESIUNE.md` (secțiunea cea mai recentă) + `docs/PLAN_SCOLARE_2026-08-07.md` §11 (jurnal). **Următorul pas real: decide deploy grupat F1 SAU continuă F2** (restul materiilor Gimnaziu) / F3-F5 (Primar/Grădiniță/Liceu).
+> ⚠️ **ÎNLOCUIT COMPLET de `docs/PROMPT_SESIUNE_NOUA_2026-08-08b.md`** (creat 2026-08-08): C/F0 DEPLOYAT v45 ȘI C/F1 (regulamente proprii Gimnaziu Cl. 6/7/8 Matematică) DEPLOYAT v46-20260808 (Roland a confirmat „Deploy grupat acum" de 2 ori) — bug „7 regulamente" rezolvat pt aceste 3 clase, verificat LIVE cu generare AI reală DIRECT pe alias, gate `tsc 0 · jest 207/207 · build OK`. **Folosește fișierul `...2026-08-08b.md` ca punct de plecare pt sesiunea nouă, NU pe acesta.**
 >
 > Lipește ACEST fișier (sau doar **PROMPT SCURT** de la final) ca PRIM mesaj în sesiunea nouă, după `/onboard`.
 > **Înlocuiește** `docs/PROMPT_SESIUNE_NOUA_2026-08-07b.md` (acela era înainte de C). Nu-l șterge (istoric git), dar nu-l folosi ca punct de plecare.
