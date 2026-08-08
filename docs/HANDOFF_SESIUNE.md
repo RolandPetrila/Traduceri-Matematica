@@ -6,6 +6,33 @@
 
 ---
 
+## ▶️ REIA DE AICI (2026-08-09) — + Research upgrade-uri (Gemini 3.6-flash, Convertor real, securitate, code review complet 6 bug-uri fixate); NEDEPLOYAT
+
+> ✅✅ **Continuare directă a sesiunii de mai jos (Școlare 4/4 cicluri), în aceeași sesiune: `/research` „upgrade-uri funcții existente" + code review complet whole-repo (workflow separat, 24 agenți, efort max).**
+>
+> **Upgrade-uri AI (verificate empiric, apel API direct cu cheia de producție, nu doar documentație):**
+>
+> - `gemini-2.5-flash-lite` (fallback OCR tier 2) era **RETRAS de Google** (404) — bug real: lanțul de fallback prindea doar 429, nu 404, deci un tier mort oprea toată cererea OCR. Fixat: model nou (`gemini-3.5-flash-lite`) + condiție de fallback lărgită.
+> - Model principal `gemini-2.5-flash` → `gemini-3.6-flash` pe toate 4 locațiile hardcodate (`route.ts`, `translate_text.py`, `ocr_structured.py`) — confirmat gratuit, mai rapid (11.2s vs 15.2s la prompt realist), mai eficient (mai puțini „thinking tokens"), verificat end-to-end cu replica exactă a payload/parse logic din `chat-providers.ts`.
+> - `gemini-2.5-pro` (fallback OCR tier 3) apare acum **paid-only** pe pagina oficială de prețuri Google — scos din lanț din precauție R-COST, înlocuit cu `gemini-2.5-flash` (cert gratuit).
+> - **Convertor PDF→JPG/PNG implementat REAL** (nu doar ascuns din UI cum s-a făcut într-o rundă anterioară) — descoperire: `PyMuPDF` e deja dependință de PRODUCȚIE, deja folosită de `api/ocr.py` pt exact același randaj. Funcție nouă `pdf_to_image()` (pagină unică→imagine, multi-pagină→.zip), 5 teste noi.
+> - Securitate: `npm audit fix` a rezolvat 3 vulnerabilități (nanoid DoS, js-yaml CVE-2026-59870, dompurify XSS) fără breaking changes. Rămân 5: 3 legate de Next.js 16 (deja declinat de Roland) + 2 fără fix upstream disponibil (`image-size`, risc real scăzut — aplicația embedează doar PNG).
+> - Dependințe Python actualizate la ultimele patch-uri (pypdf/PyMuPDF/Pillow/python-docx/Markdown), `pytest` lăsat neatins (major bump, dev-only, fără beneficiu).
+> - Raport complet: `.claude-outputs/research/2026-08-09_015059/research_upgrade-uri-functii-existente.md` (gitignored, per convenția `/improve`).
+>
+> **Code review complet whole-repo** (workflow separat `wf_004124a3-20e`, 24 agenți, efort max, `git diff main...HEAD`) — 13 găsiri verificate independent (din 15 candidate), raportate prin `ReportFindings`. **6 fixate** (commit `d5d8a5a`):
+>
+> 1. **[CRITIC]** `verify-fisa.ts` afișa „corecturi" matematice FALSE pe fișele tipăribile — trata separatorul românesc de mii („.") ca zecimal, deci „1.500 - 800 = 700" (corect) era marcat greșit. Test de regresie cu string-ul exact din raport.
+> 2. `ScolarePanel.continueGenerate()` nu salva în istoricul anti-repetare.
+> 3. Cache regulament vulnerabil la `Object.prototype` (`in` → `hasOwnProperty`) + cache permanent al eșecurilor de fetch (acum folosește `fetchWithRetry`, nu mai cache-uiește eșecuri).
+> 4. `route.ts`: un `0` explicit trimis de caller era tratat ca „nesetat" (`Number(x) || default` → fallback doar la NaN).
+> 5. `chat-providers.ts sendChat()`: timeout-ul nu acoperea citirea corpului răspunsului — un provider care îngheață mid-body putea bloca UI-ul permanent.
+>    **7 nefixate, documentate** (feature-scope — Tavily deep-research pierdut la migrarea Chat AI; edge-case-uri înguste — `ocr-map.ts` headings/captions; refactor mai mare amânat conștient — duplicare cod în `TestePanel.tsx`/`app.js`/`CalculatorPanel.tsx`; inconsistență sistemică preexistentă — comentarii RO vs R-LANG).
+>
+> **Gate final (după toate cele de mai sus): `tsc 0 · jest 330/330 · build OK · pytest 54/54`.** Commit-uri: `d54836a` (Convertor), `519fb01` (Gemini), `d11748b` (deps Python), `d5d8a5a` (fix-uri code review), `bbedebb` (raport research). Toate **NEDEPLOYATE** — deploy grupat v48 așteaptă confirmarea explicită a lui Roland.
+
+---
+
 ## ▶️ REIA DE AICI (2026-08-08, sesiune „finalizare completă") — Școlare 4/4 CICLURI (112/112 noduri) + audit întreagă aplicație + 4 bug-uri fixate; NEDEPLOYAT
 
 > ✅✅✅ **Coadă C (Școlare) COMPLETĂ — toate 4 cicluri, toate materiile/domeniile, 112/112 noduri grounded.** La cererea explicită a lui Roland („finalizeaza in intregime toate clasele si categoriile"), sesiunea a extins F4 (Grădiniță, deja gata) cu:
