@@ -1,6 +1,6 @@
 # Sistem Traduceri Matematica — CLAUDE.md
 
-# Versiune: 4.0 | Data: 2026-07-07
+# Versiune: 4.1 | Data: 2026-08-08
 
 ## Overview
 
@@ -16,7 +16,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
   - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
   - Deploy real = confirmare explicita de la Roland (linkare conturi + env vars).
-- **Ultima sesiune**: 2026-07-11 — Overlay „document fidel" LIVE (pixel-perfect PDF text) + fix SEV1 CORS (traducere browser reparata: text/plain) + naming export D/G. Snapshot: `~/.claude/context-snapshots/Traduceri-Matematica-checkpoint-2026-07-11/`
+- **Ultima sesiune**: 2026-08-08 — PROD `v46`. C/F3 (Școlare Primar Cl.0-4, 21 regulamente) LIVRAT NEDEPLOYAT + audit complet documentație. Coada C: F3→F2→F4→F5 (următorul F2). Detaliu curent: `docs/HANDOFF_SESIUNE.md` + `docs/PLAN_MASTER.md` §CURENT (nu mai lista aici starea volatilă — driftează).
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 
@@ -34,7 +34,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - AI OCR: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode) → fallback Mistral OCR — text + bbox figuri
 - AI Traducere: DeepL Free (principal) → NLLB / OpenRouter / Gemini / Groq (lanturi fallback)
 - Figuri: crop bbox din imaginea originala (Pillow)
-- Rasterizare PDF: in browser cu pdf.js (o pagina/invocare → respecta 60s serverless)
+- Rasterizare PDF: in browser cu pdf.js (o pagina/invocare → procesare per-pagina, comod sub `maxDuration` 300s)
 - Log-uri + coduri eroare: Supabase (tabele `logs`, `gemini_counter`), cross-device
 - Deploy: Vercel (auto-deploy din GitHub, free) + Supabase (free)
 - Dezvoltare locala: `dev_server.py` + `DEV_LOCAL.bat` (emuleaza rutarea Vercel — DOAR local)
@@ -43,7 +43,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 
 - `docs/PLAN_MASTER.md` — **SURSA UNICA** de adevar (tracking [ ]/[x]) · `docs/PROMPT_SESIUNE_NOUA.md` — prompt de reluare direct executabil
 - `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice (backlog/imbunatatiri = acum in `docs/PLAN_MASTER.md` §7)
-- `vercel.json` — config functii Python (maxDuration 60s)
+- `vercel.json` — config functii Python (maxDuration 300s)
 - `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
 - `config/error_codes.json` — coduri de eroare (`E-<ARIE>-<NNN>`)
 - `api/ocr.py` — OCR o pagina (Gemini JSON, Pro→Flash fallback)
@@ -66,7 +66,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - LaTeX: protejat cu placeholders la traducere, randat cu MathJax (SVG vectorial)
 - Figuri: crop bbox din original (Pillow)
 - Editare: contentEditable persistat in cacheRef (supravietuieste switch limba + export)
-- Serverless: procesare grea per-pagina (limita 60s); fara stare in memorie intre invocari (contoare in Supabase)
+- Serverless: procesare grea per-pagina (limita `maxDuration` 300s pe Hobby, setat in vercel.json — per-pagina ramane buna practica); fara stare in memorie intre invocari (contoare in Supabase)
 - Commit/push: dupa modificari; deploy real doar cu confirmare (outward-facing)
 
 ## Flow UNIC traducere — Metoda unificata 3 pasi (definitiva)
@@ -101,9 +101,11 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 
 1. **Traduceri** — prioritar, in executie
 2. **Convertor fisiere** — functional, de polish
-3. **Editor matematic** (gimnaziu+liceu) — INTEGRAT (Faza G): iframe `/editor`, tema verde, quickbar + search matematic
+3. **Editor matematic** (gimnaziu+liceu) — LIVRAT: **nativ TipTap** (iframe-ul vechi retras la F6), tema verde, quickbar + search matematic, 334+ formule V-XII
 4. **Asistent Text AI** — INTEGRAT (Faza G): iframe `/asistent` (drop-in), proxy AI same-origin (`/api/proxy`)
-5. **Chat AI / Calculator / Corectare-Generare teste** — schitate
+5. **Chat AI · Calculator · Corectare-Generare teste (Teste)** — LIVRATE + DEPLOYATE (v30/v31/v32, 2026-08-04)
+6. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
+7. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — F0/F1 DEPLOYATE (v45/v46), F3 (Primar) LIVRAT; coadă F3→F2→F4→F5
 
 ## Important
 

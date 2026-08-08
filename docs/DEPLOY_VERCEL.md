@@ -51,7 +51,7 @@ Motiv: ruta Next `frontend/src/app/api/logs` s-ar ciocni cu functiile Python `ap
 
 ## Pas 3b — Chei AI pentru Asistent Text AI (ruta `/api/proxy`)
 
-Modulul **Asistent** (tab `/asistent`) foloseste o **ruta Next Pages** `frontend/src/pages/api/proxy.js`
+Modulele AI (Asistent/Chat/Școlare) folosesc o **ruta App Router** `frontend/src/app/api/proxy/route.ts` (migrata din Pages Router, 2026-08-07)
 care traieste in **proiectul frontend** (same-origin cu iframe-ul). Deci cheile AI ale proxy-ului se
 seteaza pe proiectul **frontend**, nu pe cel Python. Fara ele, `/api/proxy` intoarce `500 Server key missing`
 si Asistentul e nefunctional (restul aplicatiei merge normal).
@@ -90,7 +90,7 @@ Apoi `vercel --prod` pentru redeploy. Alternativ: adauga-le manual in dashboard-
 - **Marime functii Python**: dependentele native ocupa ~**78 MB** dezarhivat
   (PyMuPDF ~62MB + Pillow ~7MB + fpdf ~3MB + pypdf ~3MB + python-docx ~3MB) — sub
   limita Vercel de **250 MB**/functie. PyMuPDF nu poate fi scos (folosit de `_pdf_to_images` pt rasterizare PDF server-side; `figure_crop.py` foloseste Pillow, nu PyMuPDF).
-- Vercel Hobby: functii max **60s** (setat in `vercel.json`). De aceea OCR ruleaza **o pagina/apel**
+- Vercel Hobby: functii max **300s** `maxDuration` (setat in `vercel.json`). OCR ruleaza oricum **o pagina/apel**
   (rasterizare pdf.js in browser). Nu procesa zeci de pagini intr-un singur apel.
 - Supabase free se **suspenda dupa ~1 saptamana** de inactivitate. Codul e **fail-open**: daca
   Supabase e jos, OCR/traducerea merg normal, doar logarea se degradeaza.

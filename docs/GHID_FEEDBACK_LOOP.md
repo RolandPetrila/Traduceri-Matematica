@@ -13,19 +13,19 @@ si ce trebuie reparat — fara sa imi explici nimic. Fiecare eroare are un **cod
 
 ## Cele 10 componente (toate active)
 
-| # | Componenta | Ce capteaza | Unde se salveaza |
-|---|---|---|---|
-| 1 | Error Capture | Erori JavaScript neprinde | localStorage + local_debug.log |
-| 1b | Console Interception | React warnings, MathJax errors | localStorage + local_debug.log |
-| 2 | Action Tracker | Toate actiunile tale (click-uri, selectii) | localStorage + local_debug.log |
-| 3 | API Interceptor | Fiecare apel API cu status + durata | localStorage + local_debug.log |
-| 4 | Data Validator | Verifica calitatea output-ului (LaTeX, SVG, headings) | localStorage + local_debug.log |
-| 5 | Session Context | Device, browser, rezolutie, PWA | localStorage + local_debug.log |
-| 6 | Server Logging | Pipeline OCR + traducere detaliat | local_debug.log (doar local) |
-| 7 | File Writer | Scrie logurile client in fisier local | data/logs/local_debug.log |
-| 8 | ISSUES.md | Probleme vizuale raportate manual | ISSUES.md |
-| 9 | DEV_LOCAL.bat | Pornire mediu local cu cleanup | DEV_LOCAL.bat |
-| 10 | Export Loguri | Buton "Copiaza loguri" pe /diagnostics | Clipboard |
+| #   | Componenta           | Ce capteaza                                           | Unde se salveaza               |
+| --- | -------------------- | ----------------------------------------------------- | ------------------------------ |
+| 1   | Error Capture        | Erori JavaScript neprinde                             | localStorage + local_debug.log |
+| 1b  | Console Interception | React warnings, MathJax errors                        | localStorage + local_debug.log |
+| 2   | Action Tracker       | Toate actiunile tale (click-uri, selectii)            | localStorage + local_debug.log |
+| 3   | API Interceptor      | Fiecare apel API cu status + durata                   | localStorage + local_debug.log |
+| 4   | Data Validator       | Verifica calitatea output-ului (LaTeX, SVG, headings) | localStorage + local_debug.log |
+| 5   | Session Context      | Device, browser, rezolutie, PWA                       | localStorage + local_debug.log |
+| 6   | Server Logging       | Pipeline OCR + traducere detaliat                     | local_debug.log (doar local)   |
+| 7   | File Writer          | Scrie logurile client in fisier local                 | data/logs/local_debug.log      |
+| 8   | ISSUES.md            | Probleme vizuale raportate manual                     | ISSUES.md                      |
+| 9   | DEV_LOCAL.bat        | Pornire mediu local cu cleanup                        | DEV_LOCAL.bat                  |
+| 10  | Export Loguri        | Buton "Copiaza loguri" pe /diagnostics                | Clipboard                      |
 
 ---
 
@@ -168,31 +168,31 @@ Device: desktop | Windows | Chrome | 1920x1080
 
 ## Fisiere create/modificate
 
-| Fisier | Ce s-a schimbat |
-|---|---|
-| `frontend/src/lib/monitoring.ts` | +Console interception, +API interceptor global |
-| `frontend/src/lib/validator.ts` | NOU — validare output traduceri/conversii |
-| `frontend/src/app/api/logs/route.ts` | Rescris — scrie in fisier local (dev mode) |
-| `frontend/src/app/traduceri/page.tsx` | +Validator call dupa traducere |
-| `frontend/src/app/convertor/page.tsx` | +Validator call, +logAction operatie/format |
-| `frontend/src/components/traduceri/LanguageSelector.tsx` | +logAction limba schimbata/inversata |
-| `frontend/src/components/traduceri/FileUpload.tsx` | +logAction fisiere selectate |
-| `frontend/src/components/traduceri/Dictionary.tsx` | +logAction termen adaugat/sters |
-| `frontend/src/components/traduceri/PreviewPanel.tsx` | +logAction editor toggle |
-| `frontend/src/app/diagnostics/page.tsx` | +Buton "Copiaza loguri" |
-| `api/translate.py` | +Logging per-pas OCR/traducere/output stats |
-| `api/convert.py` | +Logging conversie initiata/completa/eroare |
-| `data/logs/local_debug.log` | Fisierul de log (creat automat, gitignored) |
-| `ISSUES.md` | Template probleme vizuale |
-| `DEV_LOCAL.bat` | Script pornire mediu local |
+| Fisier                                                   | Ce s-a schimbat                                                                                                                         |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `frontend/src/lib/monitoring.ts`                         | +Console interception, +API interceptor global                                                                                          |
+| `frontend/src/lib/validator.ts`                          | NOU — validare output traduceri/conversii                                                                                               |
+| `frontend/src/app/api/logs/route.ts`                     | Rescris — scrie in fisier local (dev mode)                                                                                              |
+| `frontend/src/app/traduceri/page.tsx`                    | +Validator call dupa traducere                                                                                                          |
+| `frontend/src/app/convertor/page.tsx`                    | +Validator call, +logAction operatie/format                                                                                             |
+| `frontend/src/components/traduceri/LanguageSelector.tsx` | +logAction limba schimbata/inversata                                                                                                    |
+| `frontend/src/components/traduceri/FileUpload.tsx`       | +logAction fisiere selectate                                                                                                            |
+| `frontend/src/components/traduceri/Dictionary.tsx`       | +logAction termen adaugat/sters                                                                                                         |
+| `frontend/src/components/traduceri/PreviewPanel.tsx`     | +logAction editor toggle                                                                                                                |
+| `frontend/src/app/diagnostics/page.tsx`                  | +Buton "Copiaza loguri"                                                                                                                 |
+| `api/ocr.py` + `api/translate_text.py`                   | +Logging per-pas OCR/traducere/output stats (flux 3-pași: `/api/ocr` apoi `/api/translate-text`; `api/translate.py` vechi a fost șters) |
+| `api/convert.py`                                         | +Logging conversie initiata/completa/eroare                                                                                             |
+| `data/logs/local_debug.log`                              | Fisierul de log (creat automat, gitignored)                                                                                             |
+| `ISSUES.md`                                              | Template probleme vizuale                                                                                                               |
+| `DEV_LOCAL.bat`                                          | Script pornire mediu local                                                                                                              |
 
 ---
 
 ## Comenzi rapide pentru Claude
 
-| Ce vrei | Ce scrii in chat |
-|---|---|
-| Verifica logurile locale | "Citeste data/logs/local_debug.log" |
-| Verifica probleme vizuale | "Citeste ISSUES.md" |
-| Porneste server local | "Ruleaza DEV_LOCAL.bat" sau dublu-click |
-| Commit + push | "Push" |
+| Ce vrei                   | Ce scrii in chat                        |
+| ------------------------- | --------------------------------------- |
+| Verifica logurile locale  | "Citeste data/logs/local_debug.log"     |
+| Verifica probleme vizuale | "Citeste ISSUES.md"                     |
+| Porneste server local     | "Ruleaza DEV_LOCAL.bat" sau dublu-click |
+| Commit + push             | "Push"                                  |

@@ -1,32 +1,35 @@
 # Comenzi /slash — Ghid Utilizare Claude Code
 
+> Nume verificate față de comenzile reale (`~/.claude/commands` + skills). Actualizat 2026-08-08.
+
 ## Comenzi recomandate pentru proiectul Traduceri Matematica
 
-| Comanda | Cand se foloseste | Frecventa recomandata |
-|---|---|---|
-| `/status` | Inceput sesiune — vezi unde esti cu proiectul | La fiecare sesiune noua |
-| `/audit_full` | Verificare completa proiect (cod, securitate, structura) | 1x pe saptamana sau dupa feature mare |
-| `/review` | Review cod inainte de push important | La fiecare commit major |
-| `/test` | Dupa modificari cod — genereaza si ruleaza teste | Dupa fiecare feature/fix |
-| `/health` | Check rapid daca totul functioneaza corect | Cand ceva pare ciudat |
-| `/deploy` | Checklist complet inainte de deploy (Vercel + Supabase) | La fiecare deploy |
-| `/plan` | Planificare feature noua complexa | Cand ai cerinte noi |
-| `/checkpoint` | Salvare progres sesiune pentru continuitate | La sfarsit de sesiune |
-| `/deep-research` | Cercetare aprofundata + recomandari imbunatatire | Cand vrei sa upgradezi proiectul |
-| `/analyze` | Analiza statica cod (fara git, orice proiect) | Dupa refactoring major |
-| `/explain` | Explicatie concept/cod la nivel de incepator | Cand nu intelegi o parte din cod |
-| `/securitate` | Audit securitate complet | Inainte de deploy public |
+| Comanda       | Cand se foloseste                                                       | Frecventa recomandata            |
+| ------------- | ----------------------------------------------------------------------- | -------------------------------- |
+| `/onboard`    | Inceput sesiune — primire rapida context (CLAUDE.md + memorie + git)    | La fiecare sesiune noua          |
+| `/status`     | Status rapid proiect in 30s (stack, git, anomalii)                      | Orientare rapida                 |
+| `/audit`      | Audit complet proiect (12-18 domenii, scor, plan remediere)             | Dupa feature mare                |
+| `/review`     | Code review pe modificarile git (6 criterii + verdict + mesaj commit)   | La fiecare commit major          |
+| `/test`       | Genereaza si ruleaza teste (detectare framework)                        | Dupa fiecare feature/fix         |
+| `/doctor`     | Health check MEDIU de lucru (MCP-uri, hooks, env, git)                  | Cand ceva pare ciudat            |
+| `/deploy`     | Checklist pre-deploy (build, teste, env, securitate, git)               | La fiecare deploy                |
+| `/plan`       | Planificare feature noua complexa (clarificare + spec + task breakdown) | Cand ai cerinte noi              |
+| `/checkpoint` | Snapshot persistent sesiune (pentru terminal nou)                       | La sfarsit de sesiune            |
+| `/improve`    | Cercetare + recomandari imbunatatire pe 3 lentile (valoare/efort)       | Cand vrei sa upgradezi           |
+| `/research`   | Cercetare web (min 3 surse, marcat CERT/PROBABIL/INCERT)                | Cand ai nevoie de dovezi         |
+| `/explain`    | Explicatie concept/cod la nivel de incepator                            | Cand nu intelegi o parte din cod |
+| `/security`   | Audit securitate (OWASP Top 10 + dependinte + secrets + git history)    | Inainte de deploy public         |
 
 ## Comenzi avansate (situatii speciale)
 
-| Comanda | Cand se foloseste | Nota |
-|---|---|---|
-| `/orchestrate` | Task-uri mari, paralele, independente (3+ terminale) | Overkill pentru proiecte mici/medii |
-| `/workflow` | Inlantuire mai multe comenzi automat | Cand ai un flow repetitiv |
-| `/sabloane` | Analiza workflow si recomandari personalizate | 1x la inceput de proiect |
-| `/ask` | Clarificare completa inainte de executie | Cand task-ul e ambiguu |
-| `/dashboard` | Generare dashboard HTML vizual | Pentru rapoarte vizuale |
-| `/review-trimestrial` | Raport trimestrial activitate AI | 1x la 3 luni |
+| Comanda                 | Cand se foloseste                                                      | Nota                                |
+| ----------------------- | ---------------------------------------------------------------------- | ----------------------------------- |
+| `/fortify`              | Intarire completa proiect (inventar + diagnostic cross-cutting + plan) | Consolidare periodica               |
+| `/orchestrator`         | Setup multi-terminal (T1 executie + T2 audit + T3 orchestrator)        | Overkill pentru proiecte mici/medii |
+| `/debug`                | Diagnostic rapid din log-uri reale (root cause + fix + verificare)     | La erori SEV1/SEV2                  |
+| `/perf`                 | Analiza performanta cu masuratori reale (bottlenecks + recomandari)    | La probleme de viteza               |
+| `/simplify`             | Reduce complexitate cod/documentatie (dead code, over-engineering)     | Dupa acumulare de cod               |
+| `/sugereaza-blueprints` | Analizeaza proiectul si recomanda blueprint-uri potrivite              | 1x la inceput de proiect            |
 
 ## Ordine recomandata intr-o sesiune tipica
 

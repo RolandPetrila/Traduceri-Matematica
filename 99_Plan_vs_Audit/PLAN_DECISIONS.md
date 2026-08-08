@@ -1,7 +1,10 @@
 # PLAN DECISIONS LOG
-# Proiect: Traduceri Matematica v3
-# Scris de: T1 (terminal plan/executie)
-# Citit de: T2 (auditor) + Roland
+
+# Proiect: Traduceri Matematica (LIVE Vercel+Supabase, PROD v46 la 2026-08-08)
+
+# Log de decizii tehnice ferme („nu re-litiga"). Sursa unica de status = docs/PLAN_MASTER.md.
+
+# NOTĂ: workflow-ul vechi 3-terminale (T1/T2/T3) nu mai există — istoric în rundele de mai jos.
 
 ---
 
@@ -300,6 +303,7 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
 ## Runda v4 — 2026-07-07 (Restructurare masiva: Vercel + Supabase)
 
 ### Intrebari puse lui Roland (AskUserQuestion)
+
 - Q-v4-1: Fisierele locale (editor, HANDOFF, Asistent_Text_AI) nu sunt in repo. Cum le aduci?
   -> Raspuns: **Push pe branch git** (le fetch-uiesc). Faza G blocata pana atunci.
 - Q-v4-2: Migrare Vercel — doar frontend sau full?
@@ -308,6 +312,7 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
   -> Raspuns: **Doar log-uri + coduri eroare centralizate** (cross-device). Fara auth, fara stocare documente.
 
 ### Decizii luate
+
 - D33: Migrare FULL Render → Vercel. Backend `api/*.py` (deja in forma handler Vercel) devine functii serverless; `dev_server.py` ramane DOAR harness local. Se retrag `render.yaml` + `keepalive.py`.
 - D34: Doua proiecte Vercel separate (frontend `frontend/` + API `api/`) — evita coliziunea cu ruta Next `frontend/src/app/api/logs`.
 - D35: OCR per-pagina — rasterizare PDF in browser cu pdf.js (o pagina/invocare) ca sa respecte limita 60s serverless Hobby. Fix si progresul fals → progres real.
@@ -320,6 +325,27 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
 - D42: Figuri = crop bbox din original (Pillow) — confirmat metoda curenta (D28-D30 SVG-inline au fost pivotate inapoi la crop in cod).
 
 ### Cerinte confirmate
+
 - C-v4-1: Executie automata (rulez/testez local, remediez singur); deploy real = confirmare.
 - C-v4-2: Proiectele sursa originale raman NEMODIFICATE.
 - C-v4-3: Mentiunile utilizatorului salvate in memorie + regulament (facut).
+
+---
+
+## Runda consolidare — 2026-08-08 (adaugata la auditul de documentatie)
+
+> Log-ul se oprise la 2026-07-07 (v4). Deciziile ferme de dupa traiau doar in PLAN_MASTER/HANDOFF/memorie
+> — aici sunt consemnate ca „nu re-litiga". Migrate si cele unice din `PLAN_RUNDA_MODULE_2026-08-04.md`
+> (superseded si sters la acest audit — totul livrat, recuperabil din git).
+
+### Decizii ferme (nu re-litiga)
+
+- D43: **S7 — `ALLOWED_ORIGIN` fail-open = RISC ACCEPTAT** (Roland, 2026-08-01). App fara auth/cookies → CORS `*` nu expune date. **NU „fixa" autonom** — e decizie, nu scapare. (PLAN_MASTER §2 S7.)
+- D44: **M3 — Dark-mode RESPINS DEFINITIV** (2026-08-04). Ramane tema verde „tabla+creta" (R-THEME) in toate modulele. Nu se mai propune.
+- D45: **G5 — Overlay pixel-perfect ABANDONAT** (2026-07-30); backend overlay sters (C1). Nu se reia.
+- D46: **R-COPYRIGHT (Scolare) — sursa de continut = programa oficiala publica** (OMEN, rocnee.eu/ise.ro); manualele MEN = referinta de aliniere, NICIODATA stocate/redistribuite/committed; PDF-uri de referinta doar local gitignored. Grounding = continut original AI aliniat curricular. (Roland a re-cerut „manuale in folder" de 2× → reamintit decizia; nu proceda diferit fara reamintire.)
+- D47: **V5 — clasa VIII „functia liniara" = `(a≠0)`** (2026-08-04), nu `f(x)=ax+b` general.
+- D48: **Coada C (Scolare) = F3→F2→F4→F5** (AskUserQuestion 2026-08-08); F5 (Liceu, in reforma) DOAR dupa ce F3+F2+F4 sunt „functional perfect". Urmatorul = F2.
+- D49: **Lant Chat AI** (migrat din PLAN_RUNDA): Gemini Flash → Gemini Flash(2) → Cerebras 120B → Groq 70B → Mistral Large ×2. OpenRouter `:free` SCOS (retras de furnizor, 404 — memorie `finding_chat_openrouter_free_404`); „exceptia R-COST OpenRouter platit" e moot.
+- D50: **Ritm de executie** (migrat din PLAN_RUNDA): secvential · gate dupa fiecare item · deploy GRUPAT cu confirmarea Roland.
+- D51: **Consolidare docuri** (2026-07-30 `54fac8f`: 9 planuri → PLAN_MASTER; 2026-08-08: 9 prompturi de sesiune → 1 canonic `docs/PROMPT_SESIUNE_NOUA.md`).

@@ -40,8 +40,9 @@ de traducere de baza cand adaugi feature-uri noi.
 ## R-DEPLOY: Deploy Vercel + Supabase (free)
 
 Deploy pe Vercel (frontend Next.js + backend Python serverless), log-uri pe Supabase.
-Totul pe free tier. Functiile serverless au limita 60s → orice procesare grea (OCR)
-se face per-pagina (o invocare/pagina). Fara proces persistent in productie.
+Totul pe free tier. Functiile serverless au limita `maxDuration` 300s pe Hobby (setat in
+vercel.json) → orice procesare grea (OCR) se face per-pagina (o invocare/pagina), bună
+practica, comod sub limita. Fara proces persistent in productie.
 Deploy-ul real (linkare conturi, env vars) necesita confirmare explicita de la Roland.
 
 ## R-EDIT: Editare live persistenta

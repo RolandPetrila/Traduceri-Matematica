@@ -21,7 +21,7 @@ Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 - **Figuri**: Crop din original cu Pillow (bbox de la OCR)
 - **Log-uri + coduri eroare**: Supabase (tabele `logs`, `gemini_counter`)
 - **Deploy**: Vercel (auto-deploy din GitHub, free tier) + Supabase (free tier)
-- **Rasterizare PDF**: in browser cu pdf.js (o pagina/invocare → respecta limita 60s serverless)
+- **Rasterizare PDF**: in browser cu pdf.js (o pagina/invocare → procesare per-pagina, comod sub `maxDuration` 300s)
 
 ## Dezvoltare locala
 
@@ -54,13 +54,13 @@ api/                  Handlere Python serverless (Vercel)
   lib/                Module partajate (OCR, traducere, HTML, crop, Supabase)
   fonts/              DejaVu Sans (pentru PDF diacritice)
 frontend/             Next.js 15 app (Vercel)
-  src/app/            Pagini (traduceri, convertor, diagnostics)
-  src/components/     Componente React
-  src/lib/            Utilitare (cache, monitoring, storage)
-config/               Configuratie (limbi, tab-uri, dictionar, coduri eroare)
+  src/app/            Pagini + rute API App Router (editor, convertor, diagnostics, api/proxy, api/logs)
+  src/components/     Componente React (editor, chat, calculator, teste, scolare, ...)
+  src/lib/            Utilitare (cache, monitoring, storage, scolare/, chat-providers, ...)
+config/               Configuratie (tab-uri, coduri eroare)
 supabase/             schema.sql (referinta tabele logs + contoare)
 99_Plan_vs_Audit/     Log decizii tehnice (PLAN_DECISIONS). Sursa unica = docs/PLAN_MASTER.md
-vercel.json           Config functii Python (maxDuration 60s)
+vercel.json           Config functii Python (maxDuration 300s)
 ```
 
 ## API Endpoints
@@ -74,6 +74,15 @@ vercel.json           Config functii Python (maxDuration 60s)
 | `/api/deepl-usage`    | GET      | Cota DeepL combinata (2 chei)                  |
 | `/api/gemini-usage`   | GET      | Cota Gemini (contor Supabase)                  |
 | `/api/logs`           | GET/POST | Log-uri diagnostic (via Supabase)              |
+
+> **Notă:** modulele AI (Chat / Asistent / Școlare) folosesc o rută **frontend** App Router
+> `frontend/src/app/api/proxy/route.ts` (same-origin, chei server-side, rate-limit + cost-cap) —
+> nu handlerul Python de mai sus.
+
+## Module (LIVE)
+
+Traduceri (backend, tab retras) · Convertor · Editor matematic (nativ TipTap) · Asistent AI ·
+Chat AI · Calculator · Teste · Planșe (6 generatoare + coș) · Școlare 🌐 (fișe curriculare AI).
 
 ## Licenta
 
