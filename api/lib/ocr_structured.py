@@ -107,9 +107,15 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
         },
     }).encode("utf-8")
 
-    # Fallback chain: Flash (1000 RPD) → Flash-Lite (1500 RPD) → Pro (100 RPD, quality)
-    # Flash-Lite added 2026-04-06 (G1): 30 RPM / 1500 RPD — total Gemini capacity: 2600 RPD
-    MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
+    # Fallback chain: 3 modele Gemini distincte (cote RPD separate), toate
+    # confirmate GRATUITE + funcționale empiric (probă directă API, 2026-08-08
+    # — vezi .claude-outputs/research/). "gemini-2.5-flash-lite" (fostul tier 2)
+    # a fost RETRAS de Google ("no longer available to new users", 404) — model
+    # mort, nu doar depasit. "gemini-2.5-pro" (fostul tier 3) apare acum listat
+    # paid-only pe pagina oficiala de prețuri — scos din lanț din precauție
+    # R-COST (regulă absolută, "fără excepție"), deși apelul de test a răspuns
+    # 200 cu cheia gratuită curentă (ambiguu, nu o dovadă de gratuitate).
+    MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
     data = None
 
     for model_name in MODELS:
@@ -128,8 +134,11 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
             print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
             break
         except urllib.error.HTTPError as e:
-            if e.code == 429 and model_name != MODELS[-1]:
-                print(f"[OCR-STRUCT] {model_name} rate limited (429), trying next model", file=sys.stderr)
+            # 429 = rate-limited pe acest tier; 404 = model retras/inexistent
+            # (exact ce s-a intamplat cu gemini-2.5-flash-lite) — in ambele
+            # cazuri incercam tier-ul urmator in loc sa oprim tot lanțul.
+            if e.code in (429, 404) and model_name != MODELS[-1]:
+                print(f"[OCR-STRUCT] {model_name} HTTP {e.code}, trying next model", file=sys.stderr)
                 continue
             error_body = e.read().decode("utf-8", errors="replace")[:300]
             print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)

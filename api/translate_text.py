@@ -95,7 +95,11 @@ def _gemini_translate(text: str, source_lang: str, target_lang: str) -> str:
         f"{protected}"
     )
 
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    # gemini-3.6-flash: upgrade de la gemini-2.5-flash (2026-08-08, cercetare
+    # de upgrade) — confirmat empiric gratuit + mai rapid la calitate egala/mai
+    # buna (vezi .claude-outputs/research/). translation_router.py incearca
+    # deja alti provideri (NLLB/OpenRouter/Groq) daca acest apel esueaza.
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
     payload = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
     }).encode("utf-8")

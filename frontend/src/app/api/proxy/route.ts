@@ -8,8 +8,16 @@ import { NextRequest, NextResponse } from "next/server";
 // Client: fetch('/api/proxy?provider=<groq|gemini|mistral|cerebras|openrouter|gemini2|mistral2|deepl|deepl2|tavily|brave>', {method:'POST', body: <payload upstream>})
 // Proxy injectează cheia + forwardează la upstream + întoarce răspunsul brut.
 
+// gemini-3.6-flash: upgrade de la gemini-2.5-flash (2026-08-08, cercetare de
+// upgrade) — confirmat empiric gratuit + mai rapid (11.2s vs 15.2s la un
+// prompt realist, buget 8192 tokeni identic productiei) + calitate egala/mai
+// buna + mai putini "thinking tokens" (mai eficient). Foloseste ACEEASI
+// schema de raspuns (candidates[0].content.parts[].text + finishReason),
+// verificat direct — parseReply/isTruncated din chat-providers.ts neatinse.
+// Lantul de fallback (gemini→gemini2→cerebras→groq→mistral→mistral2) ramane
+// plasa de siguranta daca acest model are vreodata o problema punctuala.
 const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 const MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions";
 const DEEPL_URL = "https://api-free.deepl.com/v2/translate";
 

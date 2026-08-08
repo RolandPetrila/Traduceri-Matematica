@@ -21,12 +21,18 @@ from lib import supabase_client
 _lock = threading.Lock()
 _state: dict = {"count": 0, "date": ""}
 
-# Gemini free tier limits (RPD = requests per day)
+# Gemini free tier limits (RPD = requests per day). "total" e un plafon local
+# ORIENTATIV (fail-open, nu blocheaza apeluri) — Google nu publica un tabel
+# exact per-model, cifrele sunt cele mai bune estimari disponibile la
+# 2026-08-08. gemini-2.5-flash-lite a fost RETRAS de Google (404, "no longer
+# available to new users") — inlocuit cu gemini-3.5-flash-lite in lantul de
+# fallback (vezi ocr_structured.py). gemini-2.5-pro scos din lant (acum
+# paid-only pe pagina oficiala de preturi, R-COST).
 GEMINI_LIMITS = {
+    "gemini-3.6-flash": 1000,
+    "gemini-3.5-flash-lite": 1500,
     "gemini-2.5-flash": 1000,
-    "gemini-2.5-flash-lite": 1500,
-    "gemini-2.5-pro": 100,
-    "total": 2600,
+    "total": 3500,
 }
 
 
