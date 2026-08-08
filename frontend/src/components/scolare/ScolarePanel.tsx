@@ -6,10 +6,12 @@ import { sendChat, type ChatMessage } from "@/lib/chat-providers";
 import { renderMathText } from "@/lib/math-html";
 import {
   CURRICULUM,
+  describeGroundedCoverage,
   getCycle,
   getLevel,
   getNode,
 } from "@/lib/scolare/curriculum";
+import { refToFile } from "@/lib/scolare/ref";
 import {
   buildScolarePrompt,
   buildScolareSystemPrompt,
@@ -25,6 +27,7 @@ import {
   signature,
 } from "@/lib/scolare/history";
 import { verifyArithmetic, type VerifyResult } from "@/lib/scolare/verify-fisa";
+import { sanitizeFisa } from "@/lib/scolare/sanitize";
 
 /**
  * Modul „Școlare 🌐" (F0, 2026-08-07) — generator AI de fișe curriculare A4.
@@ -38,10 +41,8 @@ const NR_OPTIONS = [3, 4, 5, 6, 8];
 const CONTINUE_PROMPT =
   "Continuă exact de unde ai rămas, fără să reiei ce ai scris deja.";
 
-/** „gimnaziu/clasa-5/matematica" → „gimnaziu_clasa5_matematica.md". */
-function refToFile(ref: string): string {
-  return ref.replace(/\//g, "_").replace(/clasa-/g, "clasa") + ".md";
-}
+// Acoperirea ghidată, derivată LIVE din skeleton (nu hardcodată) — vezi trap 2, advisor F3.
+const GROUNDED_COVERAGE = describeGroundedCoverage();
 
 // Cache inclusiv MISS-urile ("" = fetch eșuat) ca să nu re-cerem la fiecare generare.
 const regCache: Record<string, string> = {};
@@ -139,17 +140,20 @@ export function ScolarePanel({
         setNote(r.error);
         return;
       }
-      const sig = signature(r.reply);
+      // Sanitizează runaway-urile de „linii de completat" ÎNAINTE de orice consum
+      // (dedup, randare, verificare, editor) — vezi lib/scolare/sanitize.ts (proba LIVE F3).
+      const reply = sanitizeFisa(r.reply);
+      const sig = signature(reply);
       if (isDuplicate(bucket, sig) && attempt < 2) {
-        avoid = [...avoid, ...extractStems(r.reply)];
+        avoid = [...avoid, ...extractStems(reply)];
         setNote("Fișă deja generată — reîncerc cu alta…");
         continue;
       }
-      record(bucket, sig, extractStems(r.reply));
-      setResult(r.reply);
-      setHistory([...initial, { role: "assistant", content: r.reply }]);
+      record(bucket, sig, extractStems(reply));
+      setResult(reply);
+      setHistory([...initial, { role: "assistant", content: reply }]);
       setTruncated(r.truncated);
-      setVerify(verifyArithmetic(r.reply));
+      setVerify(verifyArithmetic(reply));
       setStatus("idle");
       setNote(`Generat cu ${r.provider}.`);
       return;
@@ -165,9 +169,12 @@ export function ScolarePanel({
     ];
     const r = await sendChat(next, buildScolareSystemPrompt());
     if (r.ok) {
-      const merged = result + "\n" + r.reply;
+      const merged = sanitizeFisa(result + "\n" + r.reply);
       setResult(merged);
-      setHistory([...next, { role: "assistant", content: r.reply }]);
+      setHistory([
+        ...next,
+        { role: "assistant", content: sanitizeFisa(r.reply) },
+      ]);
       setTruncated(r.truncated);
       setVerify(verifyArithmetic(merged));
       setStatus("idle");
@@ -302,9 +309,9 @@ export function ScolarePanel({
       {!grounded && (
         <p className="mt-2 rounded-md border border-chalk-blue/40 bg-chalk-blue/10 p-2 text-xs text-chalk-blue">
           ℹ Acest nod are structura completă, dar conținutul nu e încă ghidat de
-          un regulament propriu (F0 acoperă integral doar{" "}
-          <strong>Gimnaziu · Clasa a V-a · Matematică</strong>). Fișa generată
-          aici e mai puțin precisă curricular — urmează la fazele următoare.
+          un regulament propriu. Momentan sunt ghidate curricular:{" "}
+          <strong>{GROUNDED_COVERAGE}</strong>. Fișa generată aici e mai puțin
+          precisă curricular — urmează la fazele următoare.
         </p>
       )}
 

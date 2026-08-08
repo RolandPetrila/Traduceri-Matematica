@@ -84,7 +84,19 @@ const CHAIN = "0123456789+-−×x*·⋅:÷/^=\\";
 function cleanBoundary(text: string, start: number, end: number): boolean {
   let i = start - 1;
   while (i >= 0 && (text[i] === " " || text[i] === "\t")) i--;
-  if (i >= 0 && text[i] !== "\n" && CHAIN.indexOf(text[i]) >= 0) return false;
+  if (i >= 0 && text[i] !== "\n") {
+    if (CHAIN.indexOf(text[i]) >= 0) return false;
+    // Comandă LaTeX de operator ÎNAINTEA operandului stâng (ex. „□ \div 3 - 15 = 65"):
+    // „3" e împărțitorul din `\div 3`, iar „- 15 = 65" continuă o expresie mai mare —
+    // NU o egalitate izolată. Caracterul adiacent e o literă („v" din „\div"), pe care
+    // CHAIN n-o prinde; sărim înapoi peste cuvânt și, dacă e precedat de „\", e comandă
+    // LaTeX → graniță murdară. Prins la proba LIVE F3 (metoda mersului invers, Cl.4).
+    if (text[i] >= "a" && text[i] <= "z") {
+      let k = i;
+      while (k >= 0 && text[k] >= "a" && text[k] <= "z") k--;
+      if (k >= 0 && text[k] === "\\") return false;
+    }
+  }
   let j = end;
   while (j < text.length && (text[j] === " " || text[j] === "\t")) j++;
   if (j < text.length && text[j] !== "\n" && CHAIN.indexOf(text[j]) >= 0)

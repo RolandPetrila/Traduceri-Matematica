@@ -10,6 +10,7 @@ import {
   clearHistory,
 } from "./history";
 import { verifyArithmetic } from "./verify-fisa";
+import { sanitizeFisa } from "./sanitize";
 
 const pilot = () => ({
   cycle: getCycle("gimnaziu")!,
@@ -147,9 +148,48 @@ describe("verificare aritmetică (D7)", () => {
     ).toEqual([]);
   });
 
+  test("operand după comandă LaTeX (\\div) nu dă fals-pozitiv (bug prins la proba LIVE F3, mersul invers)", () => {
+    // „□ \div 3 - 15 = 65": „3" e împărțitorul din \div, „- 15 = 65" continuă expresia
+    // (□÷3 − 15 = 65) — NU o egalitate izolată. Caracterul adiacent e „v" din „\div".
+    expect(verifyArithmetic("$□ \\div 3 - 15 = 65$").issues).toEqual([]);
+    expect(verifyArithmetic("x \\times 4 - 2 = 10").issues).toEqual([]);
+    // control pozitiv: o egalitate chiar greșită, FĂRĂ comandă LaTeX înainte, e tot prinsă
+    expect(verifyArithmetic("3 - 15 = 65").issues.length).toBe(1);
+  });
+
   test("listă numerotată multi-rând nu confundă numărul liniei următoare", () => {
     const r = verifyArithmetic("1. 2 + 3 = 5\n2. 10 : 2 = 5");
     expect(r.checked).toBe(2);
     expect(r.issues).toEqual([]);
+  });
+});
+
+describe("sanitizeFisa (colapsare linii de completat runaway, proba LIVE F3)", () => {
+  test("șir lung de underscore → marcaj scurt", () => {
+    const out = sanitizeFisa("Scrie cuvântul: " + "_".repeat(93178));
+    expect(out).toBe("Scrie cuvântul: ______");
+    expect(out.length).toBeLessThan(40);
+  });
+
+  test("backslash-underscore și underscore cu spații → colapsate", () => {
+    expect(sanitizeFisa("Răspuns: " + "\\_".repeat(30))).toBe(
+      "Răspuns: ______",
+    );
+    expect(sanitizeFisa("Scrie: " + "_ ".repeat(20))).toBe("Scrie: ______");
+  });
+
+  test("blank SCURT (3 unități) rămâne neatins", () => {
+    expect(sanitizeFisa("___, 12, ___")).toBe("___, 12, ___");
+    expect(sanitizeFisa("$ \\_ \\_ \\_ $")).toBe("$ \\_ \\_ \\_ $");
+  });
+
+  test("nu strică textul normal, formulele sau markdown-ul", () => {
+    const t = "**Titlu**\n1. Cât e $2^5 = 32$? Vecinii lui 12 sunt (...).";
+    expect(sanitizeFisa(t)).toBe(t);
+  });
+
+  test("șir absurd de „.” sau „-” → colapsat la 6", () => {
+    expect(sanitizeFisa("a" + ".".repeat(50) + "b")).toBe("a......b");
+    expect(sanitizeFisa("c" + "-".repeat(50) + "d")).toBe("c------d");
   });
 });
