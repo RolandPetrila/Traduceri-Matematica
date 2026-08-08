@@ -202,12 +202,12 @@ describe("sanitizeFisa (colapsare linii de completat runaway, proba LIVE F3)", (
 describe("describeGroundedCoverage (banner anti-stale, dinți)", () => {
   // Mecanismul există FIINDCĂ bannerul hardcodat a devenit stale după F1. Un mecanism
   // anti-staleness netestat e exact cum s-a întâmplat asta — deci îl testăm.
-  test("descrie acoperirea REALĂ derivată din skeleton (F3: Primar complet, Gimnaziu doar Mate)", () => {
+  test("descrie acoperirea REALĂ derivată din skeleton (F4: Grădiniță + Primar complete, Gimnaziu doar Mate)", () => {
     const s = describeGroundedCoverage();
+    expect(s).toContain("Grădiniță (toate materiile)");
     expect(s).toContain("Primar (toate materiile)");
     expect(s).toContain("Gimnaziu (Matematică)");
-    // ciclurile FĂRĂ noduri ghidate sunt OMISE (grădiniță + liceu, în F3)
-    expect(s).not.toContain("Grădiniță");
+    // ciclul FĂRĂ noduri ghidate rămâne OMIS (liceu — neatins de F4)
     expect(s).not.toContain("Liceu");
   });
 
