@@ -128,15 +128,15 @@ Cel mai curat caz (programă stabilă 2017, reutilizare Teste/math). Concepte pe
 
 **Skeleton-ul (acoperirea 100%) e livrat integral în F0** (6A). Fazele următoare adaugă doar CONȚINUT — regulamentele proprii + generarea per (clasă×materie/domeniu). „100% conținut" nu există (spațiu infinit); ce se extinde e acoperirea de regulamente + validarea generării.
 
-| Fază   | Conținut (după skeleton-ul 100% din F0)                                                                                | Mărime                 |
-| ------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **F0** | Skeleton 100% (16 nivele) + pilot conținut Clasa 5 Matematică cap-coadă                                                | M (1 sesiune)          |
-| **F1** | ✅ **LIVRAT (2026-08-08)** — Gimnaziu Matematică, regulamente proprii Clasa 6/7/8 + generare validată                  | M                      |
-| **F3** | ✅ **LIVRAT (2026-08-08)** — Primar Cl.0-4, 21 regulamente proprii (toate materiile) + verificare la sursă + LIVE 6/21 | M-L                    |
-| F2     | Gimnaziu toate materiile (regulamente Roland, 7-11 materii/clasă) — **URMĂTORUL** (coadă F3→F2→F4)                     | L                      |
-| F4     | Grădiniță (domenii de dezvoltare, formă diferită de schemă)                                                            | M                      |
-| F5     | Liceu (Clasa 9-12) — regulamente proprii + conținut marcat „în reformă"; re-verifică rocnee.eu LIVE                    | L (incert pe aliniere) |
-| F6     | Șlefuire: coș multi-fișă (opțional), rezervor pre-generat pt clasele des-folosite (instant/offline)                    | S-M                    |
+| Fază   | Conținut (după skeleton-ul 100% din F0)                                                                                                               | Mărime                 |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **F0** | Skeleton 100% (16 nivele) + pilot conținut Clasa 5 Matematică cap-coadă                                                                               | M (1 sesiune)          |
+| **F1** | ✅ **LIVRAT (2026-08-08)** — Gimnaziu Matematică, regulamente proprii Clasa 6/7/8 + generare validată                                                 | M                      |
+| **F3** | ✅✅ **LIVRAT + DEPLOYAT v47 (2026-08-08)** — Primar Cl.0-4, 21 regulamente proprii + verificare la sursă + LIVE 6/21 + verificat end-to-end pe alias | M-L                    |
+| F2     | Gimnaziu toate materiile (regulamente Roland, 7-11 materii/clasă) — **URMĂTORUL** (coadă F3→F2→F4)                                                    | L                      |
+| F4     | Grădiniță (domenii de dezvoltare, formă diferită de schemă)                                                                                           | M                      |
+| F5     | Liceu (Clasa 9-12) — regulamente proprii + conținut marcat „în reformă"; re-verifică rocnee.eu LIVE                                                   | L (incert pe aliniere) |
+| F6     | Șlefuire: coș multi-fișă (opțional), rezervor pre-generat pt clasele des-folosite (instant/offline)                                                   | S-M                    |
 
 **Onest (advisor point 4):** acoperirea de CONȚINUT (regulamente proprii + generare validată pe toate materiile × 16 nivele) e **multi-sesiune/multi-lună** — nu o promit într-o sesiune. Dar „100% skeleton" (arborele complet de selecție, verificat) e livrat în F0. F0 dă prima valoare reală + dovedește mașinăria; restul e repetiție a aceluiași tipar.
 
