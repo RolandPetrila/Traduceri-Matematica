@@ -7,10 +7,13 @@ import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
 
-// Ținte suportate = EXACT ce acceptă `routes` din api/convert.py (bug găsit la
-// audit Faza C: UI oferea pdf→jpg/png, dar backend nu are acele rute → 400).
+// Ținte suportate = EXACT ce acceptă rutarea din api/convert.py. (Bug găsit la
+// audit Faza C: UI oferea pdf→jpg/png fără rută backend → 400; corectat apoi
+// implementat propriu-zis cu PyMuPDF — deja dependință de PRODUCȚIE, folosită
+// și de api/ocr.py pt exact același randaj PDF→imagine. PDF multi-pagină →
+// backend întoarce o arhivă .zip cu câte o imagine per pagină, max 30 pagini.)
 const CONVERSION_MAP: Record<string, string[]> = {
-  pdf: ["docx", "html"],
+  pdf: ["docx", "html", "jpg", "png"],
   docx: ["pdf", "html"],
   jpg: ["pdf", "png"],
   jpeg: ["pdf", "png"],

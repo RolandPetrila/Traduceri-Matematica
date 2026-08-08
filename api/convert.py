@@ -114,6 +114,46 @@ def image_convert(data: bytes, name: str, target: str) -> dict:
     return {"data": buf.getvalue(), "mime": mime, "filename": f"{_stem(name)}.{target}"}
 
 
+def pdf_to_image(data: bytes, name: str, target_format: str, dpi: int = 150, max_pages: int = 30) -> dict:
+    """Randeaza fiecare pagina PDF ca imagine. PyMuPDF e deja dependinta de
+    PRODUCTIE (requirements.txt) — acelasi tipar ca api/ocr.py._pdf_to_images
+    (DPI 150), doar ca aici procesam tot documentul (Convertor nu are limita
+    de 60s per-pagina a /api/ocr). O singura pagina -> fisierul de imagine
+    direct; mai multe pagini -> arhiva .zip cu cate o imagine per pagina.
+    """
+    import zipfile
+
+    try:
+        import pymupdf
+    except ImportError as e:
+        raise ValueError("Randarea PDF->imagine indisponibila (PyMuPDF lipsa)") from e
+
+    ext = "jpg" if target_format in ("jpg", "jpeg") else "png"
+    mime = "image/jpeg" if ext == "jpg" else "image/png"
+    stem = _stem(name)
+
+    doc = pymupdf.open(stream=data, filetype="pdf")
+    try:
+        total = len(doc)
+        if total == 0:
+            raise ValueError("PDF-ul nu are pagini")
+        if total > max_pages:
+            raise ValueError(f"PDF cu {total} pagini depaseste plafonul de {max_pages} pagini pt conversie in imagini")
+
+        if total == 1:
+            pix = doc[0].get_pixmap(dpi=dpi)
+            return {"data": pix.tobytes(ext), "mime": mime, "filename": f"{stem}.{ext}"}
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for i in range(total):
+                pix = doc[i].get_pixmap(dpi=dpi)
+                zf.writestr(f"{stem}_pagina{i + 1:02d}.{ext}", pix.tobytes(ext))
+        return {"data": buf.getvalue(), "mime": "application/zip", "filename": f"{stem}_pagini.zip"}
+    finally:
+        doc.close()
+
+
 def md_to_html(data: bytes, name: str) -> dict:
     import markdown as md_lib
 
@@ -515,6 +555,8 @@ def process(files: list[dict], operation: str, target_format: str, **kwargs) -> 
         return image_to_pdf(data, name)
     if ext in ("jpg", "jpeg", "png") and target_format in ("jpg", "jpeg", "png"):
         return image_convert(data, name, target_format)
+    if ext == "pdf" and target_format in ("jpg", "jpeg", "png"):
+        return pdf_to_image(data, name, target_format)
 
     routes = {
         ("pdf", "docx"): lambda: pdf_to_docx(data, name),
