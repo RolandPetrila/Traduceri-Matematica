@@ -133,10 +133,14 @@ Cel mai curat caz (programă stabilă 2017, reutilizare Teste/math). Concepte pe
 | **F0** | Skeleton 100% (16 nivele) + pilot conținut Clasa 5 Matematică cap-coadă                                                                               | M (1 sesiune)          |
 | **F1** | ✅ **LIVRAT (2026-08-08)** — Gimnaziu Matematică, regulamente proprii Clasa 6/7/8 + generare validată                                                 | M                      |
 | **F3** | ✅✅ **LIVRAT + DEPLOYAT v47 (2026-08-08)** — Primar Cl.0-4, 21 regulamente proprii + verificare la sursă + LIVE 6/21 + verificat end-to-end pe alias | M-L                    |
-| F2     | Gimnaziu toate materiile (regulamente Roland, 7-11 materii/clasă) — **URMĂTORUL** (coadă F3→F2→F4)                                                    | L                      |
-| F4     | Grădiniță (domenii de dezvoltare, formă diferită de schemă)                                                                                           | M                      |
-| F5     | Liceu (Clasa 9-12) — regulamente proprii + conținut marcat „în reformă"; re-verifică rocnee.eu LIVE                                                   | L (incert pe aliniere) |
+| **F4** | 🎯 **URMĂTORUL** — Grădiniță, TOATE domeniile (DLC/DS/DEC/DOS + Cunoașterea Mediului), 12 noduri; schema dual-shape „domeniu"                         | M                      |
+| F2     | Gimnaziu toate materiile non-mate — ⏸️ **AMÂNAT** (Roland 2026-08-08: gimnaziu = doar Mate acum)                                                      | L                      |
+| F5     | Liceu (Clasa 9-12) non-mate + mate — ⏸️ **AMÂNAT** (Roland 2026-08-08: liceu = doar Mate acum; reformă activă)                                        | L (incert pe aliniere) |
 | F6     | Șlefuire: coș multi-fișă (opțional), rezervor pre-generat pt clasele des-folosite (instant/offline)                                                   | S-M                    |
+
+> **🔮 SCOPE REVIZUIT (Roland, 2026-08-08, după F3 deployat) — vezi PLAN_DECISIONS D52:** acoperire cu TOATE materiile/domeniile DOAR pt **Grădiniță + Primar 0-4**. Primar 0-4 = **DEJA FĂCUT (F3)**. Gimnaziu + Liceu = **doar Matematică deocamdată** (F1 gimnaziu mate gata). → **Următorul = F4 (Grădiniță).**
+>
+> **VIITOR, la cererea explicită a lui Roland — GATA DE EXECUTAT DIRECT:** extindere **Cl.5-12 cu TOATE materiile non-mate** (Limba Română, Istorie, Geografie, Biologie, Fizică, Chimie, Engleză, Ed. Tehnologică, Informatică+TIC, Ed. Socială la gimnaziu; + materiile de liceu). **Skeleton-ul le are DEJA ca noduri** (verificator verde pe toate 16 nivele) — lipsește DOAR conținutul: regulamente proprii per (clasă×materie), sursate Carla-Cl.5 (are secțiuni per-materie) + programa oficială pt Cl.6-12 (ca F1). Model dovedit: F3. Când Roland cere „extinde gimnaziu/liceu" → se aplică exact tiparul F3 (subagenți verificare la sursă → regulamente aliniate → wire → gate → LIVE → deploy).
 
 **Onest (advisor point 4):** acoperirea de CONȚINUT (regulamente proprii + generare validată pe toate materiile × 16 nivele) e **multi-sesiune/multi-lună** — nu o promit într-o sesiune. Dar „100% skeleton" (arborele complet de selecție, verificat) e livrat în F0. F0 dă prima valoare reală + dovedește mașinăria; restul e repetiție a aceluiași tipar.
 

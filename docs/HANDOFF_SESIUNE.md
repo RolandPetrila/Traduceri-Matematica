@@ -6,9 +6,11 @@
 
 ---
 
-## ▶️ REIA DE AICI (2026-08-08, sesiune nouă) — C/F3 (Primar) ✅ DEPLOYAT v47 + AUDIT DOC COMPLET; URMĂTORUL = F2
+## ▶️ REIA DE AICI (2026-08-08, sesiune nouă) — C/F3 (Primar) ✅ DEPLOYAT v47 + AUDIT DOC COMPLET; URMĂTORUL = F4 (Grădiniță)
 
-> ✅✅ **PROD = v47-20260808.** C/F3 (Primar Cl.0-4) DEPLOYAT + verificat end-to-end pe alias `traduceri-frontend.vercel.app` (`sw.js`=v47, cele 21 regulamente 200, homepage 200, generare AI reală Clasa IV Mate prin `/api/proxy` prod: runaway=0, finish=STOP, aliniată curricular). Backend `traduceri-api` NEATINS. Auditul de documentație = COMPLET (vezi mai jos + PLAN_MASTER §CURENT). **Următorul: F2** (Gimnaziu, materie nouă non-mate).
+> ✅✅ **PROD = v47-20260808.** C/F3 (Primar Cl.0-4) DEPLOYAT + verificat end-to-end pe alias `traduceri-frontend.vercel.app` (`sw.js`=v47, cele 21 regulamente 200, homepage 200, generare AI reală Clasa IV Mate prin `/api/proxy` prod: runaway=0, finish=STOP, aliniată curricular). Backend `traduceri-api` NEATINS. Auditul de documentație = COMPLET (vezi mai jos + PLAN_MASTER §CURENT).
+>
+> 🎯 **URMĂTORUL = F4 (Grădiniță, toate domeniile — 12 noduri).** **Scope REVIZUIT (Roland, 2026-08-08, vezi PLAN_DECISIONS D52 + PLAN_SCOLARE §7):** toate materiile/domeniile DOAR pt Grădiniță + Primar 0-4 (Primar = FĂCUT la F3). Gimnaziu + Liceu = doar Matematică acum. **VIITOR, la cererea lui Roland (documentat, gata de executat): Cl.5-12 toate materiile non-mate** — skeleton-ul le are deja ca noduri, lipsește doar conținutul (tipar F3). F4 e tractabil: Carla are regulamente per-domeniu (DLC/DS/DEC/DOS + Cunoașterea Mediului) pe cele 3 grupe; sursare Carla + Curriculum educație timpurie OMEN 4694/2019; schema dual-shape „domeniu" (verificatorul o testează aici). `refToFile("gradinita/grupa-mica/comunicare")` → `gradinita_grupa-mica_comunicare.md`.
 
 > ⚠️ **Blocurile de mai jos sunt JURNAL ACRETIV (istoric).** Status-urile, „URMĂTORUL C", „NEDEPLOYAT" și „main=vNN" din blocurile vechi pot fi STALE — **sursa autoritară = ACEST bloc de sus + `docs/PLAN_MASTER.md` §CURENT.** Nu acționa pe status-uri per-item din secțiunile istorice fără să confirmi aici. (Audit doc 2026-08-08: cauza-rădăcină a staleness-ului = adnotările scrise la livrare, nerevizitate după deploy.)
 
