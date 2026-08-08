@@ -1,8 +1,30 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-08 (C/F1 DEPLOYAT v46). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-08 (C/F3 Primar LIVRAT, NEDEPLOYAT; F1 v46 LIVE). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 > ⚠️ **Corecție de dată (2026-08-07):** fișierul `docs/PROMPT_SESIUNE_NOUA_2026-08-09.md` (folosit ca prompt de pornire al acestei sesiuni) era mislabelat — creat de fapt pe 2026-08-07 (verificat: `git log` pe commit-ul `cd6fd2a`, ora sistemului), nu pe 08-09. Toate referirile „2026-08-09" din munca acestei sesiuni au fost corectate la data reală 2026-08-07. Vezi memoria [[finding_ocr_map_inline_vs_displaystyle_2026_08_07]].
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
+
+---
+
+## ▶️ REIA DE AICI (2026-08-08, sesiune nouă) — C/F3 (Primar Cl.0-4) LIVRAT + AUDIT DOC în curs
+
+**Decizie de coadă C (Roland, AskUserQuestion 2026-08-08):** rulează **F3 → F2 → F4 secvențial** (una după alta, finalizată+testată); **F5 (Liceu) DOAR după** ce F3+F2+F4 sunt „funcțional perfect". (Opțiunile: 1=F3 Primar, 2=F2 Gimnaziu materie nouă, 3=F4 Grădiniță, 4=F5 Liceu.)
+
+**Cerință nouă Roland (2026-08-08):** audit COMPLET al tuturor fișierelor cu cerințe + planuri de execuție + toată documentația → identifică probleme, remediază, îmbunătățește, unifică, execută restanțele necesare. **Scope decis (AskUserQuestion):** (Q1) finalizează F3 întâi, apoi audit; (Q2) execut docuri + leftover-uri mici clar necesare; **fazele mari (F2/F4/F5) + itemii /improve amânați = listă prioritizată cu recomandare, pt go-ul lui Roland** (respectă gate-urile per-fază). → După acest handoff urmează AUDITUL.
+
+### C/F3 — Primar (Cl.0-4) LIVRAT (2026-08-08), NEDEPLOYAT
+
+- **21 regulamente proprii** `frontend/public/scolare/regulamente/primar_*.md` (Cl.0-4 × materiile lor) + `regulament_ref`+`capitole` pe toate 21 nodurile din `curriculum/primar.ts` (id/nume/sursa_nume neatinse → verificatorul de completitudine rămâne verde). Commit `60236fa` pe `faza-g-editor`.
+- **Sursare (D5):** derivate din regulamentele Carla ale lui Roland, ALINIATE la programa oficială. **Verificare la SURSA PRIMARĂ cu 7 subagenți paraleli** (OMEN 3418/2013 CP-II + OMEN 5003/2014 III-IV, secțiunile „Conținuturi", cu URL+pagină). **Carla = generat de Gemini, NEverificat curricular** — au fost prinse fabricații reale, corectate: MEM CP **0-31** (nu 0-20) + cu trecere peste ordin; **Științe FĂRĂ sisteme corp uman** (sunt la gimnaziu-Biologie); LR **fără „numeral"**; Istorie **tematică, fără ani impuși** (medievalii = exemple recomandate; obligatoriu doar Epoca modernă); Ed.Civică simboluri țării la **Cl.4** (nu Cl.3), fără „instituții ale statului"; MEM Cl.2/Mate Cl.3 **introduc fracții**. (Detaliu: `scratchpad/f3_corectii_curriculum.md` + memoria.)
+- **4 capcane advisor rezolvate:** (a) plafon regulament 4000→8000 în `prompt.ts` — **bug LIVE real: gimnaziu clasa6/7 (4251/4120 char) erau tăiate silențios în v46**, pierdeau Interdicții/Densitate; (b) `refToFile` extras în `ref.ts` PARTAJAT app+test; (c) gate cu dinți `regulament-files.test.ts` (fiecare ref → fișier existent/ne-gol/sub plafon + control negativ); (d) `describeGroundedCoverage()` — bannerul „nod ne-ghidat" derivat LIVE din skeleton (nu mai minte „doar Clasa 5").
+- **2 bug-uri prinse la proba LIVE + fixate:** (a) `verify-fisa.ts` fals-pozitiv pe `□ \div 3 - 15 = 65` (operand după comandă LaTeX = graniță murdară) + test regresie; (b) **runaway de „linii de completat"** — LR Cl.4 a generat 90k „_" → `sanitize.ts` NOU (colapsează determinist, protejează randare/verificare/editor) + instrucție în prompt.
+- **Gate: `tsc 0 · jest 242/242 · build OK` (build curat SOLO, 8 rute, inclusiv trace-collection).** Notă onestă: „Collecting build traces" pică DOAR sub concurență (build rulat în paralel cu dev/alt node pe același `.next` → EPERM/kill) — environmental, NU cod; build-ul rulat singur trece complet.
+- **✅ Validat LIVE pe prod** (`/api/proxy` real, Gemini) pe **6 din 21 noduri-eșantion** (MEM Cl.0, Mate Cl.4, Comunicare Cl.1, Științe Cl.3, Istorie Cl.4, LR Cl.4): conținut aliniat curricular, **0 scurgeri** (fără sisteme corp uman/numeral/ani), **0 fals-pozitive**, 0 ziduri post-sanitize.
+- ⚠️ **Reziduuri oneste (NU „totul perfect"):**
+  1. **LIVE = 6/21 noduri** (prin design — restul: Arte×3, DP, Joc — cele mai subțiri regulamente, unde o fișă A4 tipăribilă pt o activitate practică e conceptual mai șubredă). „100%" = skeleton (mărginit), nu conținut.
+  2. **LR Cl.4 poate atinge MAX_TOKENS** (a recurat pe ambele încercări chiar cu prompt-ul întărit): sanitizer-ul curăță zidul vizual, DAR **baremul poate fi trunchiat** → profesorul poate tipări o fișă fără cheia de răspunsuri. Mitigare: „Continuă răspunsul" / re-roll / mai puține exerciții. Known residual, nu rezolvat.
+  3. **D7 (verificare aritmetică) e aproape inert pe primar:** `binRe` din verify-fisa NU prinde `\times`/`\div` (comenzi LaTeX), iar AI-ul scrie aritmetica primar aproape integral în LaTeX → „re-eval numerică la mate" se declanșează pe aproape nimic (`checked=0` pe 5/6 noduri). Bannerul rămâne onest („0 egalități verificate"), dar e o gaură mai mare decât „edge case de sufix". → **ITEM DE AUDIT, nu de fixat în F3.**
+- ➡️ **URMĂTORUL C (după audit): F2** (Gimnaziu, materie nouă non-mate — probează pipeline-ul unde nu există aritmetică de verificat).
 
 ---
 

@@ -1,4 +1,9 @@
-import { getCycle, getLevel, getNode } from "./curriculum";
+import {
+  getCycle,
+  getLevel,
+  getNode,
+  describeGroundedCoverage,
+} from "./curriculum";
 import { buildScolarePrompt } from "./prompt";
 import {
   signature,
@@ -191,5 +196,63 @@ describe("sanitizeFisa (colapsare linii de completat runaway, proba LIVE F3)", (
   test("șir absurd de „.” sau „-” → colapsat la 6", () => {
     expect(sanitizeFisa("a" + ".".repeat(50) + "b")).toBe("a......b");
     expect(sanitizeFisa("c" + "-".repeat(50) + "d")).toBe("c------d");
+  });
+});
+
+describe("describeGroundedCoverage (banner anti-stale, dinți)", () => {
+  // Mecanismul există FIINDCĂ bannerul hardcodat a devenit stale după F1. Un mecanism
+  // anti-staleness netestat e exact cum s-a întâmplat asta — deci îl testăm.
+  test("descrie acoperirea REALĂ derivată din skeleton (F3: Primar complet, Gimnaziu doar Mate)", () => {
+    const s = describeGroundedCoverage();
+    expect(s).toContain("Primar (toate materiile)");
+    expect(s).toContain("Gimnaziu (Matematică)");
+    // ciclurile FĂRĂ noduri ghidate sunt OMISE (grădiniță + liceu, în F3)
+    expect(s).not.toContain("Grădiniță");
+    expect(s).not.toContain("Liceu");
+  });
+
+  test("ciclu injectat: 0 ghidate → omis; toate ghidate → «toate materiile»", () => {
+    const fake = [
+      {
+        id: "gol",
+        nume: "CicluGol",
+        sursa_url: "",
+        data_extragere: "",
+        nivele: [
+          {
+            id: "n",
+            nume: "N",
+            sursa_cheie: "N",
+            tip: "materie" as const,
+            noduri: [{ id: "a", nume: "A", sursa_nume: "A" }],
+          },
+        ],
+      },
+      {
+        id: "plin",
+        nume: "CicluPlin",
+        sursa_url: "",
+        data_extragere: "",
+        nivele: [
+          {
+            id: "m",
+            nume: "M",
+            sursa_cheie: "M",
+            tip: "materie" as const,
+            noduri: [
+              {
+                id: "b",
+                nume: "B",
+                sursa_nume: "B",
+                regulament_ref: "plin/m/b",
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const s = describeGroundedCoverage(fake);
+    expect(s).not.toContain("CicluGol");
+    expect(s).toContain("CicluPlin (toate materiile)");
   });
 });
