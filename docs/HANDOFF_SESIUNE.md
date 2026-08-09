@@ -1,6 +1,6 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-09 (motor de desen determinist Școlare LIVRAT, NEDEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-09 (motor de desen determinist Școlare — DEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
 ## ▶️ REIA DE AICI (2026-08-09, sesiune nouă) — Motor de desen determinist Școlare (grădiniță + primar cl.0-1) ✅ LIVRAT, NEDEPLOYAT
 
@@ -38,8 +38,11 @@
 > fără descriere redundantă a vizualului în text. Promptul funcționează empiric pe modelul
 > real, nu doar teoretic.
 >
-> ⚠️ **NEDEPLOYAT** — cod+prompt gata, verificate vizual ȘI empiric; așteaptă doar
-> confirmarea explicită de deploy a lui Roland (R-DEPLOY).
+> ✅✅ **DEPLOYAT (2026-08-09, confirmat Roland „fă deploy acum")**. Commit `022d49b` (push pe
+> `faza-g-editor`), `cd frontend && vercel deploy --prod --yes` → `dpl_D5Ri4Cw9MGX4gN2Gkks49BpEq4u3`
+> READY/production, aliasat pe `traduceri-frontend.vercel.app`. Verificat: homepage 200 +
+> regulamentul `gradinita_grupa-mica_educatie-plastica.md` 200 pe alias. Backend
+> `traduceri-api` NEATINS (modificare frontend-only — prompt+randare, nimic server-side).
 
 ---
 

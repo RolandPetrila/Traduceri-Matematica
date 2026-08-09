@@ -145,5 +145,8 @@ parametri corecți, pe rândul lui, FĂRĂ să mai descrie vizualul redundant î
 pe un sample complet — enunț scurt + marker curat). Confirmă empiric că promptul funcționează
 pe modelul real, nu doar teoretic.
 
-✅ **Status final: gata de deploy** (cod + prompt verificate, cerea de confirmare de deploy
-rămâne la Roland — R-DEPLOY).
+✅✅ **DEPLOYAT (2026-08-09, confirmat Roland „fă deploy acum")**. Commit `022d49b` (push
+`faza-g-editor`), `vercel deploy --prod --yes` din `frontend/` →
+`dpl_D5Ri4Cw9MGX4gN2Gkks49BpEq4u3` READY/production, alias `traduceri-frontend.vercel.app`.
+Verificat live: homepage 200 + regulamentul `gradinita_grupa-mica_educatie-plastica.md` 200.
+Backend `traduceri-api` neatins (modificare frontend-only).
