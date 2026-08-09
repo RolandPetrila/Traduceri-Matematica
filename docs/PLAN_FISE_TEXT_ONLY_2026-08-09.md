@@ -66,7 +66,7 @@
     NU trata `🍎🍎🍎 de mai jos` ca bug — vizualul EXISTĂ ca glifă.
   - Reziduu onest: 1 eveniment stocastic izolat (exit 1 la prima rulare combinată, nereprodus în
     32 mostre) — plasa de siguranță rămâne bannerul „verifică înainte de tipărire". (DONE)
-- [~] F6 — Handoff + PLAN_MASTER + memorie la zi; commit + push. **Deploy = confirmare Roland** (NEDEPLOYAT).
+- [x] F6 — Handoff + memorie la zi; commit + push; DEPLOYAT v49-20260809 (confirmat Roland). (DONE)
 
 ## Non-regresie / capcane
 

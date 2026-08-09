@@ -41,8 +41,11 @@
 > - nodul EXACT din screenshot, confirmat și prin eyeball uman pe raw dumps. Repro rezolvat: acum
 >   „Desenează un fluture întreg cu aripile simetrice" în loc de „Privește fluturele din imagine".
 >
-> ⚠️ **NEDEPLOYAT** — commit pe `faza-g-editor`; deploy grupat (bump `CACHE_VERSION`) = confirmarea
-> explicită a lui Roland. Fișierele fiind în `frontend/public` + `frontend/src`, un deploy le duce live.
+> ✅✅ **DEPLOYAT v49-20260809** (2026-08-09, confirmat Roland „fa deploy"). `traduceri-frontend`
+> `vercel deploy --prod`, `dpl_44Ne9US7AWyyniwBrueHYmeidN4Q` READY/production. Verificat pe alias:
+> `sw.js`=v49, regulamentul ed-plastică mijlocie LIVE conține fix-ul („Desenează un fluture întreg"),
+> 0 „din imagine"/„completează cealaltă jumătate". Backend `traduceri-api` neatins (frontend-only).
+> Commit-uri: `d3decfb` (fix), `95d3dfe` (bump sw v49 + track `AUDIT_COMPLET_2026-08-08.md`).
 > Reziduu onest: pe model stocastic (temp 0.3) o scurgere rară rămâne posibilă teoretic — plasa de
 > siguranță = bannerul permanent „⚠ verifică înainte de tipărire".
 > **DECIZIE de reținut:** emoji/Unicode inline (🍎🍎🍎, ◯□△, „MELC — 🐌") = text-autonom (se randează
