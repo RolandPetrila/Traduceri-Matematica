@@ -6,7 +6,7 @@
 
 ---
 
-## ▶️ REIA DE AICI (2026-08-09) — + Research upgrade-uri (Gemini 3.6-flash, Convertor real, securitate, code review complet 6 bug-uri fixate); NEDEPLOYAT
+## ▶️ REIA DE AICI (2026-08-09) — + Research upgrade-uri (Gemini 3.6-flash, Convertor real, securitate, code review complet 6 bug-uri fixate) — ✅✅ DEPLOYAT v48-20260809
 
 > ✅✅ **Continuare directă a sesiunii de mai jos (Școlare 4/4 cicluri), în aceeași sesiune: `/research` „upgrade-uri funcții existente" + code review complet whole-repo (workflow separat, 24 agenți, efort max).**
 >
@@ -29,7 +29,16 @@
 > 5. `chat-providers.ts sendChat()`: timeout-ul nu acoperea citirea corpului răspunsului — un provider care îngheață mid-body putea bloca UI-ul permanent.
 >    **7 nefixate, documentate** (feature-scope — Tavily deep-research pierdut la migrarea Chat AI; edge-case-uri înguste — `ocr-map.ts` headings/captions; refactor mai mare amânat conștient — duplicare cod în `TestePanel.tsx`/`app.js`/`CalculatorPanel.tsx`; inconsistență sistemică preexistentă — comentarii RO vs R-LANG).
 >
-> **Gate final (după toate cele de mai sus): `tsc 0 · jest 330/330 · build OK · pytest 54/54`.** Commit-uri: `d54836a` (Convertor), `519fb01` (Gemini), `d11748b` (deps Python), `d5d8a5a` (fix-uri code review), `bbedebb` (raport research). Toate **NEDEPLOYATE** — deploy grupat v48 așteaptă confirmarea explicită a lui Roland.
+> **Gate final (după toate cele de mai sus): `tsc 0 · jest 330/330 · build OK · pytest 54/54`.** Commit-uri: `d54836a` (Convertor), `519fb01` (Gemini), `d11748b` (deps Python), `d5d8a5a` (fix-uri code review), `bbedebb` (raport research), `80b08e5` (docs), `43addcd` (bump CACHE_VERSION v48).
+>
+> ✅✅ **DEPLOYAT v48-20260809 (2026-08-09, confirmat Roland „confirm deploy grupat v48").** Backend `traduceri-api` — `vercel deploy --prod --yes` din rădăcina repo, deployment `dpl_7QRrRGW4iznbbX2vqjg6YSnkKksz` READY/production, alias `traduceri-api.vercel.app`. Frontend `traduceri-frontend` — `cd frontend && vercel deploy --prod --yes`, deployment `dpl_9ePxY3wQH9dwmfd4pqLV8gQodtwb` READY/production, alias `traduceri-frontend.vercel.app`. **Verificat live:**
+>
+> - `sw.js` = `v48-20260809` (curl pe alias), homepage + `/editor-nou` = 200.
+> - Regulamente noi live: `gimnaziu_clasa5_istorie.md` + `liceu_clasa9_matematica.md` = 200 (confirmă cele 75 de fișiere noi Gimnaziu+Liceu au ajuns pe prod).
+> - `traduceri-api.vercel.app/api/health` → `build_version:"43addcd"` (ultimul commit înainte de deploy, confirmă codul corect e live) + `/api/deepl-usage` = 200.
+> - **Generare AI REALĂ pe prod prin `/api/proxy`** (curl direct, Origin=alias, payload identic `buildGeminiPayload`): răspuns 200, `"modelVersion":"gemini-3.6-flash"` — confirmă modelul nou e live în producție, nu doar în dev.
+>
+> Toate cele 6 clase de fix-uri din această sesiune (curriculum Gimnaziu+Liceu, 4 bug-uri audit, 6 bug-uri code review, upgrade Gemini 3.6-flash + fix fallback OCR, Convertor real, securitate npm/pip) sunt acum **LIVE**. Coada Școlare (D52) rămâne complet consumată — nu există o fază „următoare" documentată.
 
 ---
 
