@@ -49,8 +49,7 @@ Materia e predominant PRACTICĂ (construirea de machete reale, măsurători pe t
 generează DOAR fișe TEXT tipărite. Exercițiile sunt reformulate în variantă text-based: calcule de
 scară/proporții (numeric, nu executarea fizică a machetei), asociere denumire-rol pentru rețele de
 utilități, ordonare de etape descrise, identificare de materiale din liste. Planurile/schemele
-menționate în exerciții sunt descrise textual sau reprezentate prin forme CSS simple (dreptunghiuri,
-grile), nu ca desene tehnice complexe.
+menționate în exerciții sunt descrise textual (fără randare grafică), nu ca desene tehnice complexe.
 
 ## Densitate și layout
 

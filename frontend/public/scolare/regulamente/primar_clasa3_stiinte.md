@@ -36,4 +36,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Științe). Tipic 3–5 exerciții per pagină A4.
-- Scheme logice simple (circuitul apei, tabele) realizate prin CSS; casete pentru text; fără ilustrații decorative.
+- Schemele (ex. circuitul apei) se redau ca șir cu săgeți în text; casete pentru text; fără ilustrații decorative.

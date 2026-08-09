@@ -51,7 +51,7 @@ Materia e predominant PRACTICĂ (croit, cusut, prelucrare lemn/metal cu scule re
 generează DOAR fișe TEXT tipărite. Exercițiile sunt reformulate în variantă text-based: alegere de
 material/sculă din liste, ordonare de etape tehnologice descrise, completare de fișă tehnologică
 simplificată (text, nu execuție), calcul de cost. Desenul tehnic/schița menționată în programă e
-generată ca instrucțiune text + reprezentare CSS simplă (contur/grilă), nu ca desen tehnic complex.
+generată ca descriere în text (fără randare grafică), nu ca desen tehnic complex.
 
 ## Densitate și layout
 

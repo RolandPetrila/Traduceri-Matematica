@@ -37,4 +37,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Educație Civică). Tipic 3–5 exerciții per pagină A4.
-- Tabele de asociere; casete pentru text; forme CSS pentru însemne (drapel din dreptunghiuri colorate).
+- Tabele de asociere; casete pentru text; însemnele se descriu în cuvinte (ex. culorile drapelului), nu se desenează pe fișă.

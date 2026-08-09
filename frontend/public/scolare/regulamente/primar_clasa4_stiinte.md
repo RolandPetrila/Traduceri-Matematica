@@ -40,4 +40,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Științe). Tipic 3–5 exerciții per pagină A4.
-- Scheme (lanț trofic, Sistemul Solar), tabele realizate prin CSS; fără ilustrații decorative.
+- Schemele (lanț trofic etc.) se redau ca șir cu săgeți în text; fără ilustrații decorative.

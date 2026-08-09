@@ -7,7 +7,7 @@
 ## Domenii de conținut permise (programa oficială)
 
 - **Silabisire complexă**: cuvinte de 3-4 silabe (D.3.2 — discriminare fonetică extinsă).
-- **Sunet inițial ȘI sunet final** al cuvântului (D.3.2) — identificare orală, cu marcare pe imagine/literă, FĂRĂ scriere de cuvinte.
+- **Sunet inițial ȘI sunet final** al cuvântului (D.3.2) — identificare orală, cu marcare pe litera scrisă, FĂRĂ scriere de cuvinte.
 - **Propoziții scurte, analizate STRICT ORAL** (D.1, D.2 — comunicare clară a ideilor, respectarea regulilor de exprimare corectă): numărarea cuvintelor dintr-o propoziție rostită de adult, cu sprijin (jetoane, puncte desenate) — fără citire sau scriere de propoziții.
 - **Rime** (extindere firească față de Grupa Mijlocie, perechi mai puțin evidente).
 - **Litere MARI de tipar**, set extins față de Grupa Mică/Mijlocie (D.3.3, D.3.4): recunoaștere și completare a unui cuvânt afișat cu litera lipsă, prin alegere din 2-3 variante — tot vizual, NU scriere de mână.
@@ -15,16 +15,16 @@
 ## Tipuri de exerciții acceptate
 
 - Identificarea sunetului final al unui cuvânt și încercuirea literei corespunzătoare.
-- Unirea cuvintelor/imaginilor ale căror nume rimează.
+- Unirea cuvintelor scrise ale căror nume rimează.
 - Completarea unui cuvânt afișat cu litera mare de tipar lipsă, prin alegere din 2-3 variante.
-- Găsirea drumului (labirint simplu) către litera sau imaginea cerută.
+- Trasarea unei linii de la un cuvânt-start către litera cerută (ex. litera cu care începe/se termină cuvântul).
 - Numărarea orală a cuvintelor dintr-o propoziție scurtă rostită de adult, cu marcare prin jetoane/puncte desenate (nu scriere).
 - Despărțirea în silabe a unor cuvinte mai lungi (3-4 silabe).
 
 ## Exemple concrete de format
 
 1. „Cu ce sunet se termină cuvântul BANANĂ? Încercuiește litera."
-2. „Găsește drumul mărului către litera A." (labirint)
+2. „Trasează o linie de la cuvântul MĂR la litera cu care începe: M."
 3. „Unește obiectele care rimează: BALON — AVION."
 4. „Câte cuvinte are propoziția «Ana are o minge»? Numără și desenează tot atâtea puncte."
 5. „Completează cuvântul MA_INĂ cu litera lipsă: Ș sau F?"
@@ -40,5 +40,5 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Comunicare/DLC). 6 exerciții integrate pe O SINGURĂ pagină A4 (densitate mai mare decât Mică/Mijlocie — copiii de 5-6 ani sunt aproape de Clasa Pregătitoare).
-- Fiecare exercițiu compact (instrucțiune de 1-2 rânduri + suport vizual mic, nu text lung), fonturi mari dar spațiu per exercițiu redus comparativ cu Mică/Mijlocie.
+- Fiecare exercițiu compact (instrucțiune de 1-2 rânduri + cuvinte/litere-suport scrise, nu text lung), fonturi mari dar spațiu per exercițiu redus comparativ cu Mică/Mijlocie; fișa e text-only, fără imagini reale generate.
 - Fără ilustrații decorative fără scop didactic.

@@ -24,7 +24,7 @@
 ## Tipuri de exerciții acceptate
 
 - Completare propoziții (fill-in-the-blank) cu forma corectă a verbului la Present Simple sau Present Continuous.
-- Potrivire cuvânt-imagine/definiție (matching) pe vocabular tematic (familie, animale de companie, mâncare, obiecte școlare, sărbători).
+- Potrivire cuvânt-definiție (matching) pe vocabular tematic (familie, animale de companie, mâncare, obiecte școlare, sărbători).
 - Tradu cuvinte simple RO→EN sau EN→RO (8-12 cuvinte din temele permise, într-un singur exercițiu).
 - Formare/transformare de propoziții la Imperative (comenzi și instrucțiuni simple).
 - Scurte dialoguri de completat (saluturi, prezentare personală, cerere de indicații — „How can I get to...?").

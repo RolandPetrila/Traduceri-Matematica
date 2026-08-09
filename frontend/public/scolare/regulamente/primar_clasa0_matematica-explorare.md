@@ -14,7 +14,7 @@
 
 ## Tipuri de exerciții acceptate
 
-- Adunări/scăderi în 0–31 cu suport de imagini (ex. mere, baloane).
+- Adunări/scăderi în 0–31 cu suport de context concret descris în text (ex. „4 mere și încă 2 mere").
 - Scrierea vecinilor unui număr; comparare/ordonare de numere.
 - Continuarea unui șir logic (formă/culoare/număr).
 - Identificarea și denumirea formelor geometrice; asocieri simple (obiect–formă).
@@ -25,7 +25,7 @@
 1. `4 + 2 = ___` (însoțit de „4 mere și încă 2 mere").
 2. „Scrie vecinii numărului 15: ___ , 15 , ___."
 3. „Desenează ce urmează în șir: cerc, pătrat, cerc, ___."
-4. „Colorează toate triunghiurile din desen."
+4. „Desenează un triunghi, un pătrat și un cerc. Colorează doar triunghiul."
 
 ## Interdicții explicite
 
@@ -37,5 +37,5 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (MEM). Tipic 3–5 exerciții per pagină A4, cu spațiu generos.
-- Predominant TEXT, cu forme geometrice simple (desen/CSS) unde ajută; fără ilustrații decorative.
+- Predominant TEXT, cu formele desenate de elev din descrierea din text; fără ilustrații decorative.
 - Enunțuri scurte, clare, adecvate vârstei; simboluri intuitive pentru suport.

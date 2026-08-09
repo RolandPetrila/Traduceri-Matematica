@@ -7,28 +7,28 @@
 ## Domenii de conținut permise (programa oficială)
 
 - **Ascultare activă și vocabular oral** (D.1 — mesaje orale în contexte cunoscute): ascultarea unei instrucțiuni scurte sau a unei povești foarte scurte, cu răspuns printr-o acțiune simplă (arată, colorează).
-- **Identificarea sunetului inițial** (D.3.2 — discriminare fonetică, formă simplificată pentru 3-4 ani): recunoașterea sunetului cu care începe un cuvânt cunoscut, cu sprijin vizual (imagine), FĂRĂ analiză a sunetului de mijloc sau final (acestea apar de la Grupa Mare).
+- **Identificarea sunetului inițial** (D.3.2 — discriminare fonetică, formă simplificată pentru 3-4 ani): recunoașterea sunetului cu care începe un cuvânt cunoscut, scris ca text (citit de adult), FĂRĂ analiză a sunetului de mijloc sau final (acestea apar de la Grupa Mare).
 - **Recunoaștere vizuală a literelor MARI de tipar** (D.3.3 — identifică prezența mesajului scris): un set restrâns de litere frecvente — A, M, S, O — ca simbol grafic, NU ca citire.
 - **Cuvinte foarte simple, familiare** (D.1, D.2): MAMA, CASA, MAR — cuvinte scurte, concrete, din universul apropiat al copilului (familie, obiecte cunoscute).
-- **Elemente grafice de pre-scriere, la scară mare** (D.3.4 — asimilează unele elemente ale scrisului): trasare de contur gros, pe repere punctate mari — pregătire motrică, NU scriere propriu-zisă.
+- **Elemente grafice de pre-scriere, la scară mare** (D.3.4 — asimilează unele elemente ale scrisului): copierea unor linii și forme grafice mari (linii, bucle, cârlige) după un model afișat ca text, la scară mare — pregătire motrică, NU scriere propriu-zisă.
 
 ## Tipuri de exerciții acceptate
 
-- Identificarea sunetului inițial al unui cuvânt, cu imagine-suport (fără scriere).
-- Colorarea imaginii sau a literei corespunzătoare sunetului ori cuvântului dat.
-- Unirea cu o linie a literei/cuvântului cu imaginea potrivită.
+- Identificarea sunetului inițial al unui cuvânt scris/rostit (citit de adult), fără scriere.
+- Colorarea literei corespunzătoare sunetului ori cuvântului dat.
+- Unirea cu o linie a literei cu cuvântul potrivit care începe cu acea literă.
 - Încercuirea literei cerute dintr-un grup de 3-4 litere mari, vizual distincte.
-- Trasarea conturului unei litere mari de tipar, pe linie punctată groasă și mare (motricitate, nu scriere).
-- Recunoașterea aceleiași litere repetate în mai multe cuvinte-imagine (identificare vizuală globală, fără citire).
+- Scrierea (copierea) unei litere mari de tipar la dimensiune mare, după un model-literă afișat ca text (motricitate, nu scriere cursivă).
+- Recunoașterea aceleiași litere repetate în mai multe cuvinte scrise (identificare vizuală globală a literei, fără citire).
 
 ## Exemple concrete de format
 
-1. „Colorează mărul dacă cuvântul MĂR începe cu sunetul M." _(corectat față de sursa Carla: exemplul original „…dacă începe cu sunetul A" era incoerent — MĂR începe cu sunetul M, nu A.)_
-2. „Unește litera M cu imaginea MAMEI."
+1. „Colorează cuvântul MĂR dacă începe cu sunetul M." _(corectat față de sursa Carla: exemplul original „…dacă începe cu sunetul A" era incoerent — MĂR începe cu sunetul M, nu A.)_
+2. „Unește litera M cu cuvântul MAMA."
 3. „Încercuiește litera O din cuvântul OU."
 4. „Colorează litera A cu galben și litera M cu roșu, oriunde le găsești pe fișă."
-5. „Trasează cu creionul conturul literei S, pe linia punctată groasă."
-6. „Arată/colorează animalul din poveste, după ce asculți povestea scurtă spusă de educatoare."
+5. „Scrie litera mare S de câteva ori, cât mai mare, după acest model: S."
+6. „Ascultă povestea scurtă spusă de educatoare, apoi spune și desenează animalul despre care a fost vorba."
 
 ## Interdicții explicite
 
@@ -41,5 +41,5 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Comunicare/DLC). EXACT 3 exerciții per pagină A4.
-- Fonturi foarte mari, litere de tipar clare; spații mari de colorat/încercuit/trasat; accent maxim pe imagini, text minim (doar instrucțiunea, scurtă, citită de adult — copiii de 3-4 ani nu citesc încă).
+- Fonturi foarte mari, litere de tipar clare; spații mari de colorat/încercuit/scris; accent pe litere și cuvinte scrise mari, text minim (doar instrucțiunea, scurtă, citită de adult — copiii de 3-4 ani nu citesc încă); fișa e text-only, fără imagini reale generate.
 - Fără ilustrații decorative fără scop didactic.

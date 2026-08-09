@@ -11,26 +11,26 @@
 - **Colorat în contur**: exersarea motricității fine de bază — mâna și degetele utilizate în
   manipularea creionului/carioca, corelat cu Domeniul A, dimensiunea „Motricitate grosieră și
   motricitate fină” („Utilizează mâinile și degetele pentru realizarea de activități variate”).
-- **Completarea desenelor simple**: adăugarea a 1-2 elemente lipsă la un desen deja schițat (fără
-  compoziție proprie de la zero).
-- **Trasare simplă**: unirea a puncte rare (2-4) pentru a forma o linie dreaptă sau ușor curbă —
+- **Completarea unui desen din instrucțiune text**: copilul desenează un obiect simplu descris în enunț,
+  apoi adaugă 1-2 elemente cerute (ex. „desenează o casă, apoi adaugă-i o ușă și o fereastră”).
+- **Trasare simplă**: trasarea unei linii drepte sau ușor curbe între două repere pe care copilul le marchează el (ex. de la o steluță la alta) —
   pregătire pentru coordonare ochi-mână, NU pregătire de scriere cursivă.
 
 ## Tipuri de exerciții acceptate
 
-- Colorat după model (o singură culoare indicată explicit per element).
-- Completat puncte rare pentru a forma o linie simplă (traseu scurt, drept sau ușor curbat).
-- Decorare de forme geometrice de bază deja desenate (cerc, pătrat) prin colorare.
+- Desenarea unui element simplu descris în enunț, apoi colorarea lui cu o singură culoare indicată explicit.
+- Trasarea unei linii simple (dreaptă sau ușor curbată) între două repere marcate de copil — traseu scurt.
+- Desenarea unor forme geometrice de bază (cerc, pătrat) de către copil, apoi decorarea lor prin colorare.
 
 ## Exemple concrete de format
 
-1. „Colorează soarele cu galben.”
-2. „Unește punctele pentru a ajuta albina să ajungă la floare.”
-3. „Colorează doar frunzele copacului cu verde, fără să ieși din contur.”
+1. „Desenează un soare și colorează-l cu galben.”
+2. „Desenează o albină și o floare, apoi trasează o linie de la albină la floare.”
+3. „Desenează un copac, apoi colorează-i doar frunzele cu verde.”
 
 ## Interdicții explicite
 
-- NU se cer compoziții proprii (desen liber de la zero) — doar completare/colorare de modele date.
+- NU se cere desen liber complet din imaginație fără reper TEXTUAL — mereu cu ghidaj în TEXT (ce să deseneze, ce culoare, câte elemente, descrise în cuvinte); NU se presupune un model/contur deja tipărit pe fișă.
 - NU se cere amestec de culori (secundare) — doar culori primare, aplicate direct.
 - NU se cer trasee complexe (labirinturi dese, curbe multiple) — motricitatea fină e la început;
   traseu scurt și simplu.

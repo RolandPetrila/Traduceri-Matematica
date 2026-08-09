@@ -16,13 +16,13 @@
 ## Tipuri de exerciții acceptate (instrucțiuni; fișă predominant text)
 
 - Desen tematic cu instrucțiuni despre tehnici (hașurare, stilizare).
-- Completarea simetriei unei forme; combinarea formelor.
+- Desenarea unei forme și completarea ei simetric (elevul desenează ambele jumătăți identice); combinarea formelor desenate.
 - Instrucțiuni pentru un colaj sau un obiect decorativ.
 
 ## Exemple concrete de format
 
 1. „Desenează un peisaj de toamnă folosind doar culori calde."
-2. „Completează cealaltă jumătate a modelului (simetrie)."
+2. „Desenează o formă și apoi oglindește-o: desenează aceeași formă simetric, ca cele două jumătăți să fie identice."
 3. „Realizează un colaj decorativ prin împletirea benzilor de hârtie."
 
 ## Interdicții explicite
@@ -33,4 +33,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Arte Vizuale). Tipic 3–4 sarcini per pagină A4.
-- Text + forme CSS (grid pentru simetrie); fișa ghidează activitatea; fără ilustrații decorative complexe.
+- Numai TEXT; simetria se realizează de elev pe caietul lui; fișa ghidează activitatea; fără ilustrații decorative complexe.

@@ -24,7 +24,7 @@
 ## Tipuri de exerciții acceptate
 
 - Completare propoziții (fill-in-the-blank) cu Present Perfect Simple/Continuous sau cu forma corectă de viitor (going to / will / present continuous).
-- Potrivire cuvânt-imagine/definiție (matching) pe vocabular tematic (profesii, tehnologie, mijloace de comunicare, obiceiuri sănătoase).
+- Potrivire cuvânt-definiție (matching) pe vocabular tematic (profesii, tehnologie, mijloace de comunicare, obiceiuri sănătoase).
 - Conjugare verbe la Present Perfect (afirmativ/negativ/interogativ) cu for/since.
 - Tradu propoziții scurte sau expresii RO→EN / EN→RO din temele permise.
 - Scurte dialoguri de completat (interviu despre planuri de viitor, discuție despre un eveniment recent — „Have you ever...?").

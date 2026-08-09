@@ -4,7 +4,11 @@ import {
   getNode,
   describeGroundedCoverage,
 } from "./curriculum";
-import { buildScolarePrompt } from "./prompt";
+import {
+  buildScolarePrompt,
+  buildScolareSystemPrompt,
+  IMAGE_AUTONOMY_RULE,
+} from "./prompt";
 import {
   signature,
   isDuplicate,
@@ -69,6 +73,33 @@ describe("buildScolarePrompt (pilot Clasa 5 Matematică)", () => {
       dificultate: "Standard",
     });
     expect(prompt.toLowerCase()).toContain("reform");
+  });
+
+  // Bug 2026-08-09: fișele conțineau exerciții care operează pe imagini inexistente
+  // („Privește fluturele din imagine"). Regula de autonomie prin text TREBUIE injectată
+  // în prompt ȘI plasată DUPĂ blocul de regulament (ca să câștige contestul de
+  // specificitate contra „Respectă STRICT regulamentul"). Vezi docs/PLAN_FISE_TEXT_ONLY.
+  test("include regula de autonomie prin text, DUPĂ blocul de regulament", () => {
+    const p = pilot();
+    const prompt = buildScolarePrompt({
+      ...p,
+      dificultate: "Standard",
+      regulament: "REGULA-TEST: doar puteri.",
+    });
+    expect(prompt).toContain(IMAGE_AUTONOMY_RULE);
+    // regula vine DUPĂ excerpt-ul de regulament (recency + override)
+    expect(prompt.indexOf(IMAGE_AUTONOMY_RULE)).toBeGreaterThan(
+      prompt.indexOf("REGULA-TEST"),
+    );
+    // conținut minim al regulii (interdicție + redirect)
+    expect(IMAGE_AUTONOMY_RULE).toContain("100% autonomă prin text");
+    expect(IMAGE_AUTONOMY_RULE.toLowerCase()).toContain("deseneze");
+  });
+
+  test("system prompt Școlare menționează autonomia prin text", () => {
+    const sys = buildScolareSystemPrompt();
+    expect(sys.toLowerCase()).toContain("text");
+    expect(sys.toLowerCase()).toContain("deseneze");
   });
 });
 

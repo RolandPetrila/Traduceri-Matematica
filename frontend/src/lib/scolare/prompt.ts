@@ -19,6 +19,24 @@ export type Dificultate = (typeof DIFICULTATI)[number];
  */
 export const MAX_REGULAMENT_CHARS = 8000;
 
+/**
+ * Regulă de AUTONOMIE PRIN TEXT. Modulul generează DOAR text + LaTeX (renderul e
+ * `renderMathText` → text/KaTeX; nu există canvas/SVG/figuri/chenare — verificat în cod).
+ * Fără această regulă, AI-ul imita exercițiile „din imagine/desen" modelate în unele
+ * regulamente și producea fișe cu referințe la vizuale inexistente („Privește fluturele
+ * din imagine", „Colorează căsuța din imagine") — bug arhitectural raportat 2026-08-09.
+ * E un BAN + REDIRECT (nu doar interdicție): un ban gol ar face modelul să renunțe la
+ * tipul de exercițiu (ar goli Educație Plastică); redirect-ul cere ca ELEVUL să creeze
+ * vizualul din descrierea text. Exportată ca să o poată referi testele/verificarea.
+ */
+export const IMAGE_AUTONOMY_RULE = [
+  "REGULĂ ABSOLUTĂ — fișă 100% autonomă prin text (are PRIORITATE peste orice exemplu, formulare sau cerință de mai sus, inclusiv peste regulament):",
+  "Fișa se tipărește ca TEXT simplu — aplicația NU poate reda imagini, desene, figuri, hărți, scheme, tablouri, fotografii sau chenare grafice.",
+  "NU formula exerciții care presupun un element vizual pe care elevul îl privește sau pe care operează. INTERZIS: referiri la un vizual pre-existent — „din imagine/desen/figură/tablou/hartă/schemă/chenar”, „de mai jos”/„alăturat”/„de lângă”/„arătat” când trimit la un vizual, „privește/observă imaginea”, „completează cealaltă jumătate a” unui obiect deja desenat, „colorează/numără/încercuiește ... din imagine/desen”, „decupează forma din chenar”.",
+  "Dacă o sarcină ar avea nevoie de un vizual, REFORMULEAZ-O astfel încât ELEVUL să deseneze/creeze el vizualul după descrierea din text, apoi să lucreze pe propria lui lucrare. Exemple: în loc de „completează jumătatea fluturelui din imagine” → „desenează un fluture cu aripile identice (simetrice)”; în loc de „numără florile din desen” → „desenează 3 flori, apoi încă 2, și scrie câte sunt în total”; în loc de „colorează căsuța din imagine după cod” → „desenează o căsuță și coloreaz-o: acoperișul roșu, pereții galbeni, ușa albastră”.",
+  "Toate datele necesare (numere, culori, poziții, dimensiuni) se dau în TEXT, niciodată printr-un vizual.",
+].join(" ");
+
 export interface PromptInput {
   cycle: CurriculumCycle;
   level: CurriculumLevel;
@@ -40,6 +58,7 @@ export function buildScolareSystemPrompt(): string {
     "Ești un cadru didactic din România care creează fișe de lucru pentru elevi, aliniate la programa școlară oficială aprobată.",
     "Generezi conținut ORIGINAL, corect și adecvat vârstei/clasei. Nu copiezi din manuale.",
     "Scrii formulele matematice în LaTeX între semne de dolar ($...$).",
+    "Fișa se tipărește ca TEXT (aplicația nu redă imagini/desene/figuri) — nu formula exerciții care presupun un vizual pe care elevul îl privește sau pe care operează; dacă o sarcină ar cere un vizual, reformuleaz-o astfel încât elevul să-l deseneze el din descrierea din text.",
     "Răspunzi DOAR cu fișa (fără introduceri, fără comentarii meta).",
   ].join(" ");
 }
@@ -114,6 +133,11 @@ export function buildScolarePrompt(input: PromptInput): string {
     // tokeni și trunchiază fișa (baremul dispare) — prins la proba LIVE F3.
     "Pentru spațiile de răspuns folosește un marcaj SCURT (de exemplu «______» de cel mult ~10 caractere, «□» sau «(...)»). NU genera linii sau zone goale de scriere pentru elev (elevul scrie pe caiet) și NU repeta niciun caracter de mai mult de 10 ori la rând.",
   );
+
+  // Regula de autonomie prin text — plasată ULTIMA (recency) și marcată explicit ca având
+  // prioritate peste regulament + cerința utilizatorului, ca să câștige contestul de
+  // specificitate contra blocului „Respectă STRICT regulamentul" de mai sus. Vezi runda advisor.
+  lines.push(IMAGE_AUTONOMY_RULE);
 
   return lines.join("\n");
 }

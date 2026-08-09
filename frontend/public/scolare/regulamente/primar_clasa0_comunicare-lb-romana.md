@@ -14,15 +14,15 @@
 ## Tipuri de exerciții acceptate
 
 - Identificarea poziției unui sunet într-un cuvânt (început/mijloc/sfârșit).
-- Unirea cuvântului cu imaginea potrivită.
+- Unirea cuvântului cu emoji-ul/simbolul potrivit, redat ca text (ex. MELC — 🐌, ALBINĂ — 🐝, PEȘTE — 🐟).
 - Despărțirea în silabe (bătăi din palme) și numărarea silabelor.
 - Scrierea/„desenarea" unei litere de tipar pe spațiu punctat.
-- Formularea unei propoziții simple după imagine.
+- Formularea unei propoziții simple pornind de la un cuvânt/temă dat(ă) în text (ex. „Alcătuiește o propoziție despre un MELC").
 
 ## Exemple concrete de format
 
 1. „Unde se aude sunetul A în cuvântul MARE? (început, mijloc, sfârșit)"
-2. „Unește cuvântul MELC cu imaginea potrivită."
+2. „Unește fiecare cuvânt cu emoji-ul potrivit (redat ca text): MELC — 🐌 ; ALBINĂ — 🐝 ; PEȘTE — 🐟."
 3. „Câte silabe are cuvântul FLU-TU-RE? Scrie numărul."
 4. „Scrie litera S pe spațiul punctat."
 
@@ -36,4 +36,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (CLR). Tipic 3–5 sarcini per pagină A4, cu spațiu de scris punctat.
-- Predominant TEXT, cu câteva iconuri de suport la nevoie; fără ilustrații decorative.
+- Predominant TEXT, eventual cu emoji Unicode ca suport (redate ca text); fără ilustrații decorative.

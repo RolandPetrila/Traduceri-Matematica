@@ -36,4 +36,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (CLR). Tipic 3–5 exerciții per pagină A4.
-- Predominant TEXT, cu liniatură tip dictando realizată prin CSS; fără ilustrații decorative.
+- Predominant TEXT, scrierea se face de elev pe caietul/liniatura lui; fără ilustrații decorative.

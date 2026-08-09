@@ -34,7 +34,7 @@
   în progresie (n≥3).
 - **Funcții; lecturi grafice**: reper cartezian, produs cartezian de mulțimi numerice;
   funcții numerice `f:D→ℝ`; rezolvări grafice ale ecuațiilor `f(x)=g(x)`; proprietăți
-  citite din grafic (mărginire, monotonie, paritate/imparitate, periodicitate); compunerea
+  determinate prin studiul funcției date în enunț (mărginire, monotonie, paritate/imparitate, periodicitate); compunerea
   funcțiilor.
 - **Funcția de gradul I și a II-a** (nivel de aprofundare liceu, dincolo de Gimnaziu
   Cl.VIII): monotonia funcției de gradul I prin semnul raportului

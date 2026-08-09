@@ -23,7 +23,7 @@
 ## Tipuri de exerciții acceptate
 
 - Completare propoziții (fill-in-the-blank) alegând între Present Simple și Present Continuous, sau conjugând verbul la Past Simple (regulat/neregulat).
-- Potrivire cuvânt-imagine/definiție (matching) pe vocabular tematic (anotimpuri, vreme, mijloace de transport, sporturi, țări).
+- Potrivire cuvânt-definiție (matching) pe vocabular tematic (anotimpuri, vreme, mijloace de transport, sporturi, țări).
 - Conjugare verbe la Past Simple (afirmativ/negativ/interogativ) pentru verbe regulate și neregulate uzuale.
 - Tradu cuvinte sau expresii simple RO→EN / EN→RO (8-12 cuvinte din temele permise).
 - Scurte dialoguri de completat (planuri de weekend, obiceiuri zilnice, cereri politicoase — „Can you help me, please?").
@@ -33,7 +33,7 @@
 
 1. „Completează cu Present Simple sau Present Continuous: Look! She ___ (write) a letter right now, but she usually ___ (write) emails."
 2. „Conjugă verbul la Past Simple: Yesterday, they ___ (go) to the cinema and ___ (watch) a great film."
-3. „Potrivește cuvântul cu imaginea/definiția: spring / summer / autumn / winter → «the season when leaves fall»."
+3. „Potrivește cuvântul cu definiția: spring / summer / autumn / winter → «the season when leaves fall»."
 4. „Tradu: ieri = ___, săptămâna trecută = ___, întotdeauna = ___, niciodată = ___."
 5. „Completează dialogul: A: What did you do last weekend? B: I ___ (visit) my grandparents. A: Sounds nice! Did you ___ (have) fun?"
 6. „Formează gradul comparativ: good → ___, bad → ___, far → ___."

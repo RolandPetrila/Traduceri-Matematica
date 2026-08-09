@@ -14,15 +14,15 @@
 
 ## Tipuri de exerciții acceptate
 
-- Orientarea cu punctele cardinale pe o hartă schematică.
+- Orientarea cu punctele cardinale prin raționament din text (ex. „Dacă Soarele răsare în est, în ce parte e nordul?"), sau: elevul desenează o hartă simplă a clasei/traseului și marchează punctele cardinale.
 - Asocierea unei forme de relief cu o treaptă (munte/deal/câmpie).
 - Completarea unui enunț despre orizontul local sau despre România.
-- Identificarea vecinilor României ori a continentelor pe planiglob.
+- Numirea vecinilor României și enumerarea continentelor (din memorie / din enunț), fără a citi de pe o hartă.
 
 ## Exemple concrete de format
 
 1. „Numește cele trei trepte principale de relief, de la cea mai înaltă la cea mai joasă."
-2. „Completează punctele cardinale lipsă pe roza vânturilor: N, ___, S, ___."
+2. „Completează punctele cardinale lipsă, în ordine (în sensul acelor de ceasornic): N, ___, S, ___."
 3. „Pe ce treaptă de relief se află Delta Dunării?"
 
 ## Interdicții explicite
@@ -34,4 +34,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Geografie). Tipic 3–5 exerciții per pagină A4.
-- Hartă schematică (div-uri colorate pe trepte de relief) și roza vânturilor realizate prin CSS; tabele.
+- Numai TEXT; harta/roza vânturilor nu se pot reda — datele se dau în text, iar elevul desenează el schema dacă e nevoie.

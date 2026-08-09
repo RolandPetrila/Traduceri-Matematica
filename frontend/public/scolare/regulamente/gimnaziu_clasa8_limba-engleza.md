@@ -28,7 +28,7 @@
 ## Tipuri de exerciții acceptate
 
 - Completare propoziții (fill-in-the-blank) cu Past Perfect Simple/Continuous sau cu forma corectă la diateza pasivă.
-- Potrivire cuvânt-imagine/definiție (matching) pe vocabular tematic (civilizații pierdute, comunitate, monumente, personalități).
+- Potrivire cuvânt-definiție (matching) pe vocabular tematic (civilizații pierdute, comunitate, monumente, personalități).
 - Transformare de propoziții din vorbire directă în vorbire indirectă (Reported Speech).
 - Tradu propoziții scurte sau expresii RO→EN / EN→RO din temele permise.
 - Scurte dialoguri de completat (exprimarea unei opinii pro/contra, sfat cu should/shouldn't).

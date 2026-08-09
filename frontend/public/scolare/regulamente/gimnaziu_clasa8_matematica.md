@@ -19,7 +19,7 @@
 - Rezolvarea de inecuații liniare și reprezentarea soluției pe intervale.
 - Aplicarea formulelor de calcul prescurtat și descompuneri în factori.
 - Rezolvarea ecuațiilor de gradul II (`ax²+bx+c=0`) cu coeficienți numerici simpli.
-- Citirea graficului unei funcții liniare `f(x)=ax+b`; calcul de statistică descriptivă (medie, mediană, mod).
+- Determinarea valorilor și a punctelor de intersecție cu axele pentru o funcție liniară `f(x)=ax+b` dată prin formulă sau printr-un tabel de valori scris în text; calcul de statistică descriptivă (medie, mediană, mod).
 - Calculul ariilor și volumelor pentru corpuri geometrice uzuale (cub, paralelipiped, prismă, piramidă, cilindru, con, sferă).
 
 ## Exemple concrete de format

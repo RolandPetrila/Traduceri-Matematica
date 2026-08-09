@@ -41,4 +41,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Matematică). Tipic 3–5 exerciții per pagină A4.
-- Predominant TEXT; casete cu chenar pentru enunțurile problemelor; forme CSS pentru figuri (dreptunghi/pătrat).
+- Predominant TEXT; datele figurilor (laturi, dimensiuni) se dau în enunț, iar elevul desenează figura pe caietul lui.

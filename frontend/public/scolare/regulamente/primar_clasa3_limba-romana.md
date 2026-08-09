@@ -34,4 +34,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Limba Română). Tipic 3–5 exerciții per pagină A4.
-- Text-suport în casete cu chenar/border-left pentru citire; spațiu amplu pentru redactare.
+- Text-suport dat integral în enunț pentru citire; spațiu amplu pentru redactare.

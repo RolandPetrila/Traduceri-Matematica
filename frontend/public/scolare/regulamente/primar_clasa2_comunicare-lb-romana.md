@@ -14,7 +14,7 @@
 ## Tipuri de exerciții acceptate
 
 - Formularea de propoziții; ordonarea propozițiilor pentru a forma un text coerent.
-- Scrierea unui text scurt (3–7 enunțuri) după imagini sau întrebări-suport.
+- Scrierea unui text scurt (3–7 enunțuri) pornind de la un șir de întrebări-suport date în text (ex. Cine? Unde? Ce face? Cum se termină?).
 - Identificarea grupurilor de litere; folosirea corectă a semnelor de punctuație.
 - Completarea sau continuarea unui dialog.
 
@@ -22,7 +22,7 @@
 
 1. „Formulează o propoziție exclamativă despre primăvară."
 2. „Ordonează propozițiile pentru a forma un text coerent."
-3. „Scrie un text de 3–7 enunțuri cu titlul «Prietenul meu», după imagine."
+3. „Scrie un text de 3–7 enunțuri cu titlul «Prietenul meu», răspunzând la întrebările: Cum îl cheamă? Cum arată? Ce vă place să faceți împreună?"
 4. „Pune semnele de punctuație potrivite: «Ce frumos e afară___»"
 
 ## Interdicții explicite
@@ -35,4 +35,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (CLR). Tipic 3–5 exerciții per pagină A4.
-- Predominant TEXT, cu casete cu chenar pentru textele-suport și spațiu amplu de scris; fără ilustrații decorative.
+- Predominant TEXT, cu textele-suport date integral în enunț și spațiu amplu de scris; fără ilustrații decorative.

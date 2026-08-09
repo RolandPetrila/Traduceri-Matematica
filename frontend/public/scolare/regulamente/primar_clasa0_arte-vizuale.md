@@ -16,13 +16,13 @@
 ## Tipuri de exerciții acceptate (instrucțiuni; fișă predominant text)
 
 - Desenarea unui obiect folosind forme geometrice simple.
-- Colorarea după o regulă dată.
+- Desenarea unor obiecte simple și colorarea lor după o regulă dată în text (ex. cercurile mari — roșii, cele mici — albastre).
 - Instrucțiuni pas cu pas pentru un colaj sau un origami simplu.
 
 ## Exemple concrete de format
 
 1. „Desenează o casă folosind un pătrat și un triunghi."
-2. „Colorează florile cu roșu și frunzele cu verde."
+2. „Desenează câteva flori cu frunze, apoi colorează florile cu roșu și frunzele cu verde."
 3. „Rupe hârtie colorată și lipește-o pentru a face un copac."
 
 ## Interdicții explicite
@@ -34,4 +34,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Arte Vizuale). Tipic 3–4 sarcini per pagină A4.
-- Predominant TEXT (instrucțiuni), cu forme geometrice simple ca suport; fișa ghidează activitatea, nu tipărește lucrarea finală; fără ilustrații decorative complexe.
+- Predominant TEXT (instrucțiuni), cu formele desenate de elev din text; fișa ghidează activitatea, nu tipărește lucrarea finală; fără ilustrații decorative complexe.

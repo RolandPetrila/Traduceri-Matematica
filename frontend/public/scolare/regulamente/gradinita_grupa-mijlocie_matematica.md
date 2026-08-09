@@ -15,18 +15,18 @@
 ## Tipuri de exerciții acceptate
 
 - Identificarea vecinilor unei cifre (scrie cifra dinainte și cifra de după).
-- Ordonarea unui set de 3-4 obiecte desenate (crescător sau descrescător, după mărime sau cantitate).
-- Sortarea/categorizarea unor elemente desenate după un criteriu (ex. animale de pădure vs. animale domestice, fructe vs. legume).
-- Numărarea obiectelor (1-7) și scrierea cifrei corespunzătoare.
-- Identificarea/colorarea unei forme geometrice cerute.
+- Desenarea unui set de 3-4 obiecte de mărimi diferite, apoi ordonarea lor (crescător sau descrescător, după mărime sau cantitate).
+- Sortarea/categorizarea unor elemente numite în enunț după un criteriu (ex. animale de pădure vs. animale domestice, fructe vs. legume).
+- Desenarea unei cantități de obiecte spuse în enunț (1-7), numărarea lor și scrierea cifrei corespunzătoare.
+- Desenarea și colorarea unei forme geometrice cerute (dintr-un set de forme desenate de copil).
 
 ## Exemple concrete de format
 
 1. „Scrie vecinii cifrei 5: ___, 5, ___."
-2. „Ordonează merele de la cel mai mic la cel mai mare."
-3. „Încercuiește doar animalele de pădure din imagine."
-4. „Numără fluturii din desen și scrie cifra potrivită în pătrățel."
-5. „Colorează doar formele dreptunghiulare din desen."
+2. „Desenează 4 mere de mărimi diferite, apoi numerotează-le de la cel mai mic la cel mai mare."
+3. „Dintre animalele numite — urs, vacă, vulpe, pisică — încercuiește doar animalele de pădure."
+4. „Desenează 5 fluturi, numără-i și scrie cifra potrivită în pătrățel."
+5. „Desenează un dreptunghi, un cerc și un triunghi. Colorează doar dreptunghiul."
 
 ## Interdicții explicite
 
@@ -39,7 +39,7 @@
 
 - O SINGURĂ materie per fișă (Matematică/DS). EXACT 3 exerciții per pagină A4.
 - Exemplele de mai sus sunt un REZERVOR de formate (nu un set fix) — se aleg 3 dintre ele (sau variante similare, în limitele domeniilor permise) la fiecare generare, variate între fișe succesive, pentru a evita repetarea identică.
-- Desene clare, obiecte ușor de numărat/comparat (nu aglomerate), enunțuri scurte (copiii încep să recunoască litere, dar instrucțiunea rămâne simplă și e susținută vizual de un desen).
+- Enunțuri scurte (copiii încep să recunoască litere, dar instrucțiunea rămâne simplă și e citită de adult); fișa e text-only (fără imagini reale generate), obiectele de numărat/comparat sunt desenate de copil conform instrucțiunii.
 - Fără ilustrații decorative fără scop didactic.
 
 > Asset separat de skeleton (docs/PLAN_SCOLARE_2026-08-07.md §4.2).

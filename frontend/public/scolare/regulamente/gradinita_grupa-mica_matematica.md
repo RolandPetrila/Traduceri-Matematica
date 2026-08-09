@@ -13,18 +13,18 @@
 
 ## Tipuri de exerciții acceptate
 
-- Numărare obiecte (1-5) și încercuirea/scrierea cifrei corespunzătoare.
-- Asocierea cifrei cu grupul de obiecte care are exact acea cantitate (unește cu o linie).
-- Identificarea și colorarea unei forme geometrice cerute (cerc/pătrat/triunghi) dintr-un desen cu forme amestecate.
-- Compararea a două grupe de obiecte desenate: încercuirea grupului cu MAI MULTE / MAI PUȚINE elemente.
+- Desenarea unei cantități de obiecte spuse în enunț (1-5), numărarea lor și încercuirea/scrierea cifrei corespunzătoare.
+- Desenarea, lângă o cifră dată, a grupului de obiecte cu exact acea cantitate (unește cifra cu grupul desenat printr-o linie).
+- Desenarea mai multor forme geometrice amestecate (cerc/pătrat/triunghi) de către copil, apoi colorarea doar a formei cerute.
+- Compararea a două cantități spuse în enunț: copilul desenează cele două grupe, apoi încercuiește grupul cu MAI MULTE / MAI PUȚINE elemente.
 
 ## Exemple concrete de format
 
-1. „Numără baloanele și scrie cifra în cerc."
-2. „Unește cifra 3 cu grupa care are 3 flori."
-3. „Colorează doar cercurile din desen."
-4. „Încercuiește grupa cu MAI MULTE fluturi."
-5. „Colorează toate pătratele cu galben și toate cercurile cu roșu."
+1. „Desenează 4 baloane, apoi numără-le și scrie cifra în cerc."
+2. „Desenează 3 flori, apoi unește-le printr-o linie cu cifra 3."
+3. „Desenează un cerc, un pătrat și un triunghi. Colorează doar cercul."
+4. „Desenează două grupe de fluturi, una cu mai mulți și una cu mai puțini, apoi încercuiește grupa cu MAI MULȚI fluturi."
+5. „Desenează câteva pătrate și câteva cercuri, apoi colorează pătratele cu galben și cercurile cu roșu."
 
 ## Interdicții explicite
 
@@ -38,7 +38,7 @@
 
 - O SINGURĂ materie per fișă (Matematică/DS). EXACT 3 exerciții per pagină A4.
 - Exemplele de mai sus sunt un REZERVOR de formate (nu un set fix) — se aleg 3 dintre ele (sau variante similare, în limitele domeniilor permise) la fiecare generare, variate între fișe succesive, pentru a evita repetarea identică.
-- Spațiu generos între exerciții, desene simple și mari (cerc/pătrat/triunghi ușor de recunoscut, prin CSS sau simboluri), enunțuri foarte scurte — copiii de 3-4 ani nu citesc încă, instrucțiunea e citită de adult, desenul trebuie să se explice singur.
+- Spațiu generos între exerciții, enunțuri foarte scurte — copiii de 3-4 ani nu citesc încă, instrucțiunea e citită de adult; fișa e text-only (fără imagini reale generate), copilul realizează el desenul cerut de instrucțiune.
 - Fără text lung, fără ilustrații decorative fără scop didactic.
 
 > Asset separat de skeleton (docs/PLAN_SCOLARE_2026-08-07.md §4.2).

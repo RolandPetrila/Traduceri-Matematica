@@ -36,4 +36,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Istorie). Tipic 3–5 exerciții per pagină A4.
-- Axă a timpului (linie cu repere) realizată prin CSS; casete cu text-suport; tabele pentru asocieri.
+- „Axa timpului" se redă ca ordonare de evenimente în text; casete cu text-suport; tabele pentru asocieri.

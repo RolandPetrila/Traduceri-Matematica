@@ -17,14 +17,14 @@
 - Calcule în coloană (0–100), cu și fără trecere peste ordin.
 - Aflarea termenului necunoscut (ex. 12 + ___ = 20).
 - Probleme cu plan simplu de rezolvare (1–2 operații).
-- Citirea ceasului (ora fixă/jumătate); măsurări simple cu rigla.
+- Ceasul (ora fixă/jumătate): elevul desenează pe un cadran acele care arată ora dată, sau scrie ora pornind de la poziția acelor descrisă în text; măsurări simple cu rigla, pe obiecte reale din jur.
 
 ## Exemple concrete de format
 
 1. `23 + 15 = ___` (așezat în coloană).
 2. „Află termenul necunoscut: 12 + ___ = 20."
 3. „Într-un coș sunt 10 mere roșii și 5 mere verzi. Câte mere sunt în total?"
-4. „Scrie ora indicată de ceas: 7:30."
+4. „Desenează pe cadranul unui ceas acele care arată ora 7:30 (acul mic între 7 și 8, acul mare la 6)."
 
 ## Interdicții explicite
 
@@ -36,4 +36,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (MEM). Tipic 3–5 exerciții per pagină A4.
-- Predominant TEXT, cu forme CSS (rețele de pătrățele / linii tip caiet) unde ajută; fără ilustrații decorative.
+- Predominant TEXT, iar calculul în coloană/rețelele se scriu de elev pe caietul lui; fără ilustrații decorative.

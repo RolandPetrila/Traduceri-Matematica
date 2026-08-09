@@ -6,6 +6,53 @@
 
 ---
 
+## ▶️ REIA DE AICI (2026-08-09, sesiune 2) — Bug arhitectural „fișe cu imagini inexistente" (Școlare) FIXAT, NEDEPLOYAT
+
+> 🐛 **Bug raportat de Roland (screenshot):** fișele Școlare conțineau exerciții care operează pe un
+> vizual inexistent — „Privește fluturele din imagine", „Colorează căsuța din imagine respectând codul
+> de culori" (Grădiniță/Grupa Mijlocie/Educație Plastică). Modulul generează DOAR text+LaTeX
+> (`renderMathText` → text/KaTeX; **0 canvas/svg/figuri**, confirmat prin grep), deci referințele erau
+> moarte. Plan scris: `docs/PLAN_FISE_TEXT_ONLY_2026-08-09.md`.
+>
+> **Cauză dublă (confirmată în cod):** (1) `prompt.ts` nu avea nicio interdicție de imagini; (2)
+> regulamentele MODELAU exercițiul cu imagini — nu doar în „Exemple", ci și în Domenii/Tipuri/
+> **Interdicții** (care uneori _mandatau_ bug-ul: „doar completare/colorare de modele date") + **Notă**
+> (afirmații FALSE „chenare/forme generate prin CSS" — nimic nu randează CSS).
+>
+> **Fix (2 straturi):**
+>
+> 1. **`prompt.ts` (backstop global, acoperă toate 112 nodurile):** `IMAGE_AUTONOMY_RULE` — ban + REDIRECT
+>    („dacă o sarcină ar cere un vizual, reformuleaz-o ca ELEVUL să-l deseneze el din text"). Plasat
+>    ULTIMA în `buildScolarePrompt` (recency + override explicit peste blocul „Respectă STRICT
+>    regulamentul") + linie condensată în `buildScolareSystemPrompt`. 2 teste noi (`content.test.ts`).
+> 2. **Regulamente (elimină contra-presiunea):** **37 fișiere, 145 Edit-uri, 0 eșecuri** (audit +
+>    rewrite cu 4 subagenți per ciclu, read-only audit → aplicare cu VERBATIM byte-exact). Regula de
+>    transformare: copilul CREEAZĂ vizualul din text, nu operează pe unul tipărit. HARD CONSTRAINT:
+>    doar livrarea schimbată, conceptul curricular + citatele OMEN + intervalele numerice PĂSTRATE
+>    (garda anti-aritmetică grădiniță verificată manual = intactă). Count real: ~26 infractori pe
+>    exerciții + afirmații-CSS false (delta vs „34" estimat de Roland: criteriu strict — date-în-text
+>    și elev-desenează-singur = CURAT).
+>
+> **Gate: `tsc 0 · jest 332/332 (+2) · next build OK`** (pytest neafectat, frontend-only).
+> **Verificare LIVE prin regenerare reală** (`scratchpad/text_only_live.mjs`, /api/proxy prod, Gemini):
+> control negativ (prompt+regulament VECHI din `git HEAD`) → regexul PRINDE bug-ul pe nodul repro
+> (dovada că are dinți); pozitiv (prompt+regulament NOU) → **32/32 mostre CURATE** pe toate 4 ciclurile
+>
+> - nodul EXACT din screenshot, confirmat și prin eyeball uman pe raw dumps. Repro rezolvat: acum
+>   „Desenează un fluture întreg cu aripile simetrice" în loc de „Privește fluturele din imagine".
+>
+> ⚠️ **NEDEPLOYAT** — commit pe `faza-g-editor`; deploy grupat (bump `CACHE_VERSION`) = confirmarea
+> explicită a lui Roland. Fișierele fiind în `frontend/public` + `frontend/src`, un deploy le duce live.
+> Reziduu onest: pe model stocastic (temp 0.3) o scurgere rară rămâne posibilă teoretic — plasa de
+> siguranță = bannerul permanent „⚠ verifică înainte de tipărire".
+> **DECIZIE de reținut:** emoji/Unicode inline (🍎🍎🍎, ◯□△, „MELC — 🐌") = text-autonom (se randează
+> ca text) — permis deliberat, NEdetectat deliberat de regexul de verificare. NU confunda `🍎🍎🍎 de
+mai jos` + glife cu bug-ul (vizualul EXISTĂ ca glifă, nu e referință moartă).
+> ⚠️ La rădăcina repo există `AUDIT_COMPLET_2026-08-08.md` UNTRACKED (predatează această sesiune, nu
+> l-am creat/atins) — de decis cu Roland (commit sau șters).
+
+---
+
 ## ▶️ REIA DE AICI (2026-08-09) — + Research upgrade-uri (Gemini 3.6-flash, Convertor real, securitate, code review complet 6 bug-uri fixate) — ✅✅ DEPLOYAT v48-20260809
 
 > ✅✅ **Continuare directă a sesiunii de mai jos (Școlare 4/4 cicluri), în aceeași sesiune: `/research` „upgrade-uri funcții existente" + code review complet whole-repo (workflow separat, 24 agenți, efort max).**

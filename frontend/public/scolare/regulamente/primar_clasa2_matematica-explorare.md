@@ -18,15 +18,15 @@
 
 - Calcule cu trecere peste ordin; înmulțiri/împărțiri din tablă (concentrul 0–100).
 - Probleme cu plan de rezolvare (2 operații).
-- Citirea ceasului (ore, jumătăți, sferturi); transformări simple de unități.
-- Recunoașterea fracțiilor ½ și ¼ (jumătate/sfert dintr-un întreg).
+- Ceasul (ore, jumătăți, sferturi): elevul desenează acele pe un cadran pentru ora dată, sau scrie ora pornind de la poziția acelor descrisă în text; transformări simple de unități.
+- Fracțiile ½ și ¼: elevul desenează un întreg (ex. un dreptunghi), îl împarte în părți egale și hașurează jumătatea/sfertul.
 
 ## Exemple concrete de format
 
 1. „Efectuează: `35 + 18 = ___` ; `7 × 8 = ___` ; `48 : 6 = ___`."
 2. „Un țăran are 24 de oi și cu 15 mai multe vaci. Câte animale are în total? (scrie planul de rezolvare)."
-3. „Colorează ½ din prima figură, apoi ¼ din a doua figură."
-4. „Scrie ora indicată de ceas: 8:15."
+3. „Desenează două dreptunghiuri egale. Împarte primul în 2 părți egale și colorează ½; împarte al doilea în 4 părți egale și colorează ¼."
+4. „Desenează pe cadranul unui ceas acele care arată ora 8:15 (acul mic puțin după 8, acul mare la 3)."
 
 ## Interdicții explicite
 
@@ -38,4 +38,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (MEM). Tipic 3–5 exerciții per pagină A4.
-- Predominant TEXT, cu forme CSS (ceas analogic din cerc + linii, tabele, axă); fără ilustrații decorative.
+- Predominant TEXT, iar ceasul/axele/figurile le desenează elevul din descrierea din enunț; fără ilustrații decorative.

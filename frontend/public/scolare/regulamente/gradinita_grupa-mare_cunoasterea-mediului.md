@@ -56,6 +56,6 @@
 - O SINGURĂ materie per fișă (Cunoașterea Mediului). 6 exerciții integrate pe O SINGURĂ
   pagină A4 (densitate mare, conform cerinței de grupă mare — copii 5-6 ani, atenție mai
   lungă decât la grupele mici/mijlocii).
-- Ilustrații simple/scheme prin CSS (cercuri, casete de asociere, checkbox-uri mari);
+- Casete de asociere și checkbox-uri mari (elemente de text/layout, fără ilustrații reale);
   text minim, instrucțiuni scurte și clare, potrivite pentru citire de către un adult
-  (copiii de această vârstă sunt de regulă pre-cititori).
+  (copiii de această vârstă sunt de regulă pre-cititori); fișa e text-only, fără imagini reale generate.

@@ -49,7 +49,7 @@ generează DOAR fișe TEXT tipărite — nu poate produce obiecte fizice și nu 
 folosirea uneltelor. Exercițiile sunt reformulate în variantă text-based: ordonare de etape descrise
 (nu execuție reală), identificare/clasificare din liste, completare de scheme simple (meniu, plan de
 grădină) și întrebări de siguranță. Desenul geometric aplicat (drepte, unghiuri) e generat ca
-instrucțiune text + reprezentare CSS simplă (chenar/grilă), nu ca ilustrație complexă.
+descriere în text (fără randare grafică), nu ca ilustrație complexă.
 
 ## Densitate și layout
 

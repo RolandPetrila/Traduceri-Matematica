@@ -20,14 +20,14 @@
 - Calcule cu toate operațiile și paranteze (rotunde și pătrate).
 - Probleme cu 3–4 operații (metoda figurativă/comparației/mers invers).
 - Aflarea numărului necunoscut.
-- Perimetru și arie (estimare cu rețea de pătrate); transformări de unități.
+- Perimetru și arie (estimare prin numărarea pătratelor pe caietul de matematică al elevului); transformări de unități.
 - Operații cu fracții cu același numitor; procente 25%, 50%, 75%.
 
 ## Exemple concrete de format
 
 1. `[ (12 500 + 3 400) × 2 ] − 1 000 = ___`.
 2. „Află numărul necunoscut: □ × 4 + 125 = 245 (metoda mersului invers)."
-3. „Aria unui dreptunghi cu lungimea 12 cm și lățimea 7 cm, estimată cu rețeaua de pătrate, este ___ cm²."
+3. „Desenează pe caietul tău de matematică (cu pătrățele) un dreptunghi de 12 cm × 7 cm și numără câte pătrate de 1 cm încap în el. Aria este ___ cm²."
 4. „Calculează: 3/8 + 2/8 = ___ ; scrie 50% ca fracție."
 
 ## Interdicții explicite
@@ -40,4 +40,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Matematică). Tipic 4–6 exerciții per pagină A4.
-- Predominant TEXT; tabele pentru date; forme CSS (rețea de pătrate pentru arie, dreptunghi).
+- Predominant TEXT; tabele pentru date; rețeaua de pătrate/figurile le desenează elevul pe caietul lui de matematică.

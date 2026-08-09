@@ -11,29 +11,29 @@
 - **Amestecul culorilor**: culori secundare simple obținute din primare (roșu amestecat cu galben
   → portocaliu etc.) — extensie firească a culorilor primare de la Grupa Mică, corelat cu Domeniul C
   („Manifestă creativitate în activități diverse”).
-- **Desen tematic**: completarea unui desen pe o temă dată (anotimp, animal, obiect cunoscut) cu
-  1-2 elemente adăugate de copil.
-- **Simetrie simplă**: completarea celei de-a doua jumătăți a unui desen simetric (fluture, floare,
+- **Desen tematic**: desenarea de către copil a unei teme date (anotimp, animal, obiect cunoscut) și
+  adăugarea a 1-2 elemente cerute în enunț.
+- **Simetrie simplă**: desenarea unui obiect simetric întreg (fluture, floare,
   casă) — corelat cu Domeniul A („Utilizează mâinile și degetele pentru realizarea de activități
   variate”), coordonare ochi-mână mai avansată decât la Grupa Mică.
-- **Colorare pe coduri**: asocierea unui număr/simbol cu o culoare, apoi colorare conform codului
+- **Colorare pe coduri**: asocierea unui număr/simbol cu o culoare, apoi desenarea de către copil a câtorva forme, marcarea fiecăreia cu un cod și colorarea conform codului
   (NU introduce operații aritmetice, doar corespondență simbol-culoare).
 
 ## Tipuri de exerciții acceptate
 
-- Completarea celei de-a doua jumătăți a unui desen (simetrie orizontală sau verticală simplă).
-- Colorare pe coduri de numere (cod 1 → roșu, cod 2 → galben etc.) — maximum 4 coduri diferite
+- Desenarea unui obiect simetric întreg, cu cele două jumătăți identice (simetrie orizontală sau verticală simplă).
+- Colorare pe coduri de numere (cod 1 → roșu, cod 2 → galben etc.), pe forme desenate și marcate cu cod de către copil — maximum 4 coduri diferite
   per exercițiu.
-- Colorare cu amestec: „colorează cu culoarea obținută din roșu amestecat cu galben”, cu culoarea
+- Colorare cu amestec: copilul desenează un obiect simplu și îl colorează „cu culoarea obținută din roșu amestecat cu galben”, cu culoarea
   rezultat indicată sau ușor deductibilă.
-- Desen tematic ghidat: adăugarea a 1-2 elemente lipsă pe o temă dată (ex. completează grădina cu
+- Desen tematic ghidat: desenarea unei teme date, apoi adăugarea a 1-2 elemente cerute (ex. desenează o grădină și adaugă-i
   încă o floare și un fluture).
 
 ## Exemple concrete de format
 
-1. „Completează cealaltă jumătate a fluturelui, astfel încât aripile să fie identice.”
-2. „Colorează fiecare zonă conform codului: cod 1 → roșu, cod 2 → galben, cod 3 → albastru.”
-3. „Amestecă în minte roșu cu galben — ce culoare obții? Colorează soarele cu acea culoare.”
+1. „Desenează un fluture întreg cu cele două aripi la fel (simetrice) — partea stângă identică cu partea dreaptă.”
+2. „Desenează 3 forme, scrie pe fiecare un cod (1, 2 sau 3), apoi colorează-le: cod 1 → roșu, cod 2 → galben, cod 3 → albastru.”
+3. „Amestecă în minte roșu cu galben — ce culoare obții? Desenează un soare și colorează-l cu acea culoare.”
 
 ## Interdicții explicite
 
@@ -49,8 +49,8 @@
 
 Fișa e generată ca TEXT cu instrucțiuni de desen/colorat/completare simetrică (AI-ul redactează
 instrucțiunea, NU produce o imagine reală). Exercițiul descrie o activitate plastică executată de
-copil pe fișa tipărită — ex. „Desenează jumătatea lipsă a florii, astfel încât să fie identică cu
-partea deja desenată.” NU se așteaptă generare de imagine reală, doar text descriptiv al sarcinii.
+copil pe fișa tipărită — ex. „Desenează o floare întreagă cu cele două jumătăți la fel (simetrice).”
+NU se așteaptă generare de imagine reală, doar text descriptiv al sarcinii; nu se presupune niciun desen deja tipărit pe fișă.
 
 ## Densitate și layout
 

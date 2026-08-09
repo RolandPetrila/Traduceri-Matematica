@@ -16,13 +16,13 @@
 ## Tipuri de exerciții acceptate (instrucțiuni; fișă predominant text)
 
 - Trasarea de linii modulate / hașuri după model (pregătire pentru scris).
-- Simetrie: completarea celeilalte jumătăți a unui desen pe caiet de pătrățele.
+- Simetrie: elevul desenează o formă pe caietul de pătrățele, apoi desenează cealaltă jumătate simetric, astfel încât cele două jumătăți să fie identice.
 - Instrucțiuni pentru un obiect din cercuri/forme (ex. o omidă).
 
 ## Exemple concrete de format
 
 1. „Desenează un brad pe caietul de pătrățele, respectând simetria."
-2. „Completează cealaltă jumătate a fluturelui."
+2. „Desenează un fluture cu aripile identice (simetrice): desenează o aripă, apoi oglindește-o de partea cealaltă."
 3. „Realizează o omidă din cercuri colorate."
 
 ## Interdicții explicite
@@ -34,4 +34,4 @@
 ## Densitate și layout
 
 - O SINGURĂ materie per fișă (Arte Vizuale și Abilități Practice). Tipic 3–4 sarcini per pagină A4.
-- Text + grid de pătrățele (CSS) pentru simetrie/desen; fișa ghidează activitatea; fără ilustrații decorative complexe.
+- Numai TEXT; simetria/desenul se fac de elev pe caietul lui de pătrățele; fișa ghidează activitatea; fără ilustrații decorative complexe.
