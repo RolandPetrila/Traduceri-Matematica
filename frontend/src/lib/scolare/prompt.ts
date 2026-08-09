@@ -5,6 +5,7 @@
  * Vezi docs/PLAN_SCOLARE_2026-08-07.md §4.3.
  */
 import type { CurriculumCycle, CurriculumLevel, CurriculumNode } from "./types";
+import { isDrawingEligible, DRAWING_RULE } from "./drawing/drawing-rule";
 
 export const DIFICULTATI = ["Ușor", "Standard", "Avansat"] as const;
 export type Dificultate = (typeof DIFICULTATI)[number];
@@ -53,12 +54,18 @@ export interface PromptInput {
 }
 
 /** Prompt de sistem specific fișelor școlare (peste buildSystemPrompt din chat-context). */
-export function buildScolareSystemPrompt(): string {
+export function buildScolareSystemPrompt(
+  cycle?: CurriculumCycle,
+  level?: CurriculumLevel,
+): string {
+  const desenElig = cycle && level && isDrawingEligible(cycle, level);
   return [
     "Ești un cadru didactic din România care creează fișe de lucru pentru elevi, aliniate la programa școlară oficială aprobată.",
     "Generezi conținut ORIGINAL, corect și adecvat vârstei/clasei. Nu copiezi din manuale.",
     "Scrii formulele matematice în LaTeX între semne de dolar ($...$).",
-    "Fișa se tipărește ca TEXT (aplicația nu redă imagini/desene/figuri) — nu formula exerciții care presupun un vizual pe care elevul îl privește sau pe care operează; dacă o sarcină ar cere un vizual, reformuleaz-o astfel încât elevul să-l deseneze el din descrierea din text.",
+    desenElig
+      ? "Aplicația poate desena AUTOMAT, dar DOAR prin marcaje exacte [[DESEN ...]] (vezi instrucțiunea de mai jos) — nu descrie tu vizualul în text."
+      : "Fișa se tipărește ca TEXT (aplicația nu redă imagini/desene/figuri) — nu formula exerciții care presupun un vizual pe care elevul îl privește sau pe care operează; dacă o sarcină ar cere un vizual, reformuleaz-o astfel încât elevul să-l deseneze el din descrierea din text.",
     "Răspunzi DOAR cu fișa (fără introduceri, fără comentarii meta).",
   ].join(" ");
 }
@@ -134,10 +141,16 @@ export function buildScolarePrompt(input: PromptInput): string {
     "Pentru spațiile de răspuns folosește un marcaj SCURT (de exemplu «______» de cel mult ~10 caractere, «□» sau «(...)»). NU genera linii sau zone goale de scriere pentru elev (elevul scrie pe caiet) și NU repeta niciun caracter de mai mult de 10 ori la rând.",
   );
 
-  // Regula de autonomie prin text — plasată ULTIMA (recency) și marcată explicit ca având
-  // prioritate peste regulament + cerința utilizatorului, ca să câștige contestul de
-  // specificitate contra blocului „Respectă STRICT regulamentul" de mai sus. Vezi runda advisor.
-  lines.push(IMAGE_AUTONOMY_RULE);
+  // Regula de desen/autonomie prin text — plasată ULTIMA (recency) și marcată explicit ca
+  // având prioritate peste regulament + cerința utilizatorului, ca să câștige contestul de
+  // specificitate contra blocului „Respectă STRICT regulamentul" de mai sus. Vezi runda
+  // advisor. Cele două reguli sunt MUTUAL EXCLUSIVE (nu se adaugă amândouă — un model care
+  // primește simultan „nu te referi NICIODATĂ la un vizual" și „emite un marcaj pentru un
+  // vizual" se contrazice): DRAWING_RULE doar pt nodurile eligibile (grădiniță + primar
+  // cl.0-1, vezi drawing-rule.ts), IMAGE_AUTONOMY_RULE neschimbată pt restul.
+  lines.push(
+    isDrawingEligible(cycle, level) ? DRAWING_RULE : IMAGE_AUTONOMY_RULE,
+  );
 
   return lines.join("\n");
 }

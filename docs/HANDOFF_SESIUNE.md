@@ -1,6 +1,48 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-08 (C/F3 Primar LIVRAT, NEDEPLOYAT; F1 v46 LIVE). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-09 (motor de desen determinist Școlare LIVRAT, NEDEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+## ▶️ REIA DE AICI (2026-08-09, sesiune nouă) — Motor de desen determinist Școlare (grădiniță + primar cl.0-1) ✅ LIVRAT, NEDEPLOYAT
+
+> Bug raportat de Roland: fișele Școlare la grădiniță/domenii vizuale erau 100% text (fix-ul
+> din sesiunea anterioară — `IMAGE_AUTONOMY_RULE` — era o plasă de siguranță, nu o rezolvare
+> a cauzei: lipsa unui motor de desen real, ca aplicația veche Carla). Detaliu complet:
+> `docs/PLAN_SCOLARE_DESEN_2026-08-09.md`.
+>
+> **Scope confirmat (AskUserQuestion, Roland):** Grădiniță (toate 3 grupe) + Primar cl.0-1
+> (nu tot Primar), TOATE materiile/domeniile (nu doar Educație Plastică), 5 primitive de
+> desen, AI alege primitivă+parametri dintr-un enum fix (marker text, NU SVG brut generat
+> de AI — respins explicit ca nefiabil).
+>
+> **Arhitectură (verificată în cod, nu presupusă):** conținutul fișei e text liber (nu JSON),
+> randat prin `renderMathText`; print = `window.print()` direct pe DOM. Deci motorul de desen
+> a fost implementat minim-invaziv: AI emite markere `[[DESEN tip=... cheie=valoare ...]]`,
+> un parser nou (`frontend/src/lib/scolare/drawing/parse-render.ts`) le înlocuiește cu SVG
+> generat determinist dintr-un catalog fix (`catalog.ts`) — Chat/Teste (`renderMathText`
+> direct) rămân NEATINSE. `IMAGE_AUTONOMY_RULE` (prompt.ts) e acum XOR cu `DRAWING_RULE` pe
+> baza `isDrawingEligible(cycle, level)` — nu amândouă simultan (s-ar contrazice).
+>
+> **Fișiere noi:** `frontend/src/lib/scolare/drawing/{catalog,primitives,parse-render,drawing-rule}.ts`
+>
+> - `parse-render.test.ts`. Modificate: `prompt.ts`, `ScolarePanel.tsx`, `content.test.ts`.
+>
+> **Gate: `tsc 0 · jest 346/346 · next build OK`.** Verificare vizuală: extensia Chrome
+> indisponibilă (ca sesiunea anterioară) — eyeball prin HTML real generat din
+> `renderScolareContent()`, salvat la `scratchpad/eyeball_desen_output.html` (deschide direct
+> în browser pt verificarea finală a lui Roland — geometria SVG a fost verificată manual, dar
+> NU s-a văzut randat vizual în browser real).
+>
+> ✅ **Confirmat de Roland vizual** („sunt bune") + **probă LIVE reală prin `/api/proxy`**
+> (PROD, Gemini, `scratchpad/desen_live_probe.mjs`) pe 4 noduri eligibile, 2 mostre fiecare:
+> **23/23 markere emise = valide**, toate cele 5 primitive folosite din proprie inițiativă,
+> fără descriere redundantă a vizualului în text. Promptul funcționează empiric pe modelul
+> real, nu doar teoretic.
+>
+> ⚠️ **NEDEPLOYAT** — cod+prompt gata, verificate vizual ȘI empiric; așteaptă doar
+> confirmarea explicită de deploy a lui Roland (R-DEPLOY).
+
+---
+
 > ⚠️ **Corecție de dată (2026-08-07):** fișierul `docs/PROMPT_SESIUNE_NOUA_2026-08-09.md` (folosit ca prompt de pornire al acestei sesiuni) era mislabelat — creat de fapt pe 2026-08-07 (verificat: `git log` pe commit-ul `cd6fd2a`, ora sistemului), nu pe 08-09. Toate referirile „2026-08-09" din munca acestei sesiuni au fost corectate la data reală 2026-08-07. Vezi memoria [[finding_ocr_map_inline_vs_displaystyle_2026_08_07]].
 > ✅ **RESTANȚĂ MANUALĂ ROLAND ÎNCHISĂ (2026-08-07):** serviciul Render vechi „Traduceri-Matematica" a fost dezactivat de Roland (emailurile `no-reply@render.com` „build failed" nu ar mai trebui să apară). Nu mai e cod de scris pentru asta.
 

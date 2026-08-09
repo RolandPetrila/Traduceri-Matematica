@@ -103,6 +103,59 @@ describe("buildScolarePrompt (pilot Clasa 5 Matematică)", () => {
   });
 });
 
+describe("Motor de desen (grădiniță + primar cl.0-1) — regulile sunt mutual exclusive", () => {
+  test("grădiniță → DRAWING_RULE (marcaj [[DESEN), NU IMAGE_AUTONOMY_RULE", () => {
+    const prompt = buildScolarePrompt({
+      cycle: getCycle("gradinita")!,
+      level: getLevel("gradinita", "grupa-mica")!,
+      node: getNode("gradinita", "grupa-mica", "educatie-plastica")!,
+      dificultate: "Standard",
+    });
+    expect(prompt).toContain("[[DESEN");
+    expect(prompt).not.toContain(IMAGE_AUTONOMY_RULE);
+  });
+
+  test("primar clasa 0/1 → DRAWING_RULE; clasa 2 → IMAGE_AUTONOMY_RULE (nu tot Primar)", () => {
+    const p0 = buildScolarePrompt({
+      cycle: getCycle("primar")!,
+      level: getLevel("primar", "clasa-0")!,
+      node: getNode("primar", "clasa-0", "matematica-explorare")!,
+      dificultate: "Standard",
+    });
+    expect(p0).toContain("[[DESEN");
+
+    const p2 = buildScolarePrompt({
+      cycle: getCycle("primar")!,
+      level: getLevel("primar", "clasa-2")!,
+      node: getNode("primar", "clasa-2", "matematica-explorare")!,
+      dificultate: "Standard",
+    });
+    expect(p2).toContain(IMAGE_AUTONOMY_RULE);
+    expect(p2).not.toContain("[[DESEN");
+  });
+
+  test("gimnaziu (pilotul existent) rămâne pe IMAGE_AUTONOMY_RULE — comportament neschimbat", () => {
+    const prompt = buildScolarePrompt({ ...pilot(), dificultate: "Standard" });
+    expect(prompt).toContain(IMAGE_AUTONOMY_RULE);
+    expect(prompt).not.toContain("[[DESEN");
+  });
+
+  test("system prompt: eligibil → menționează marcajul; neeligibil → autonomie text (neschimbat)", () => {
+    const sysDesen = buildScolareSystemPrompt(
+      getCycle("gradinita")!,
+      getLevel("gradinita", "grupa-mica")!,
+    );
+    expect(sysDesen).toContain("[[DESEN");
+
+    const sysText = buildScolareSystemPrompt(
+      getCycle("gimnaziu")!,
+      getLevel("gimnaziu", "clasa-5")!,
+    );
+    expect(sysText.toLowerCase()).toContain("deseneze");
+    expect(sysText).not.toContain("[[DESEN");
+  });
+});
+
 describe("anti-repetare (semnătură + istoric)", () => {
   beforeEach(() => clearHistory());
 

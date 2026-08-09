@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { sendChat, type ChatMessage } from "@/lib/chat-providers";
-import { renderMathText } from "@/lib/math-html";
+import { renderScolareContent } from "@/lib/scolare/drawing/parse-render";
 import {
   CURRICULUM,
   describeGroundedCoverage,
@@ -145,7 +145,7 @@ export function ScolarePanel({
         nrExercitii: nrEx,
       });
       const initial: ChatMessage[] = [{ role: "user", content: prompt }];
-      const r = await sendChat(initial, buildScolareSystemPrompt());
+      const r = await sendChat(initial, buildScolareSystemPrompt(cycle, level));
       if (!r.ok) {
         setStatus("error");
         setNote(r.error);
@@ -178,7 +178,7 @@ export function ScolarePanel({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
-    const r = await sendChat(next, buildScolareSystemPrompt());
+    const r = await sendChat(next, buildScolareSystemPrompt(cycle, level));
     if (r.ok) {
       const merged = sanitizeFisa(result + "\n" + r.reply);
       // Bug găsit la code review: continueGenerate() nu apela record(), deci
@@ -387,7 +387,9 @@ export function ScolarePanel({
 
           {/* Previzualizare A4 (alb/negru pt tipărire) — zona care se printează. */}
           <div className="scolare-print-area rounded-md border border-dashed border-chalk-white/30 bg-white p-4 text-sm text-black">
-            <div dangerouslySetInnerHTML={{ __html: renderMathText(result) }} />
+            <div
+              dangerouslySetInnerHTML={{ __html: renderScolareContent(result) }}
+            />
           </div>
 
           <div className="flex flex-wrap gap-2">
