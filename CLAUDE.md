@@ -1,13 +1,14 @@
 # Sistem Traduceri Matematica — CLAUDE.md
 
-# Versiune: 4.1 | Data: 2026-08-08
+# Versiune: 4.2 | Data: 2026-08-10 (curatare documentatie stale — modul Traduceri retras din UI la F7, iframe /asistent retras, model OCR actualizat)
 
 ## Overview
 
 Aplicatie web (PWA) centrata pe matematica. Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
-Flow unic: Upload fisier → (rasterizare pdf.js in browser) → Gemini OCR per-pagina (text + bbox figuri + LaTeX)
-→ Afisare in pagina web ca original (A4, paginat) → Traducere ON-DEMAND prin switch limba (doar textul;
-elementele matematice raman intacte) → Editare live persistenta → Export PDF/DOCX/HTML.
+Flow unic (livrat prin modulul Editor, nu un tab „Traduceri" separat — vezi §Module):
+Import fisier in Editor (rasterizare pdf.js in browser pt PDF) → Gemini OCR per-pagina (text + bbox figuri + LaTeX)
+→ continut editabil in editorul TipTap → Traducere ON-DEMAND prin switch de limba RO|SK|EN|DE (F8, doar textul;
+elementele matematice raman intacte, cache persistent per limba) → Editare live persistenta → Export PDF/DOCX/HTML.
 
 ## Status
 
@@ -16,7 +17,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
   - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
   - Deploy real = confirmare explicita de la Roland (linkare conturi + env vars).
-- **Ultima sesiune**: 2026-08-08 — PROD `v46`. C/F3 (Școlare Primar Cl.0-4, 21 regulamente) LIVRAT NEDEPLOYAT + audit complet documentație. Coada C: F3→F2→F4→F5 (următorul F2). Detaliu curent: `docs/HANDOFF_SESIUNE.md` + `docs/PLAN_MASTER.md` §CURENT (nu mai lista aici starea volatilă — driftează).
+- **Ultima sesiune**: vezi `docs/HANDOFF_SESIUNE.md` (intrarea de sus, „REIA DE AICI") + `docs/PLAN_MASTER.md` §CURENT — starea volatilă (versiune PROD, coadă module) NU se listează aici intenționat, driftează.
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 
@@ -31,7 +32,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 
 - Frontend: Next.js 15 + Tailwind CSS + TypeScript (deploy Vercel)
 - Backend: Python serverless stdlib (`api/*.py`, handlere Vercel) + shared lib (`api/lib/`) — apeluri urllib, fara framework
-- AI OCR: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode) → fallback Mistral OCR — text + bbox figuri
+- AI OCR: Gemini 3.6 Flash → 3.5 Flash-Lite → 2.5 Flash (JSON mode; `gemini-2.5-pro` scos din lanț 2026-08-09, devenit paid-only) → fallback Mistral OCR — text + bbox figuri
 - AI Traducere: DeepL Free (principal) → NLLB / OpenRouter / Gemini / Groq (lanturi fallback)
 - Figuri: crop bbox din imaginea originala (Pillow)
 - Rasterizare PDF: in browser cu pdf.js (o pagina/invocare → procesare per-pagina, comod sub `maxDuration` 300s)
@@ -53,7 +54,7 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - `api/lib/math_protect.py` — protectie formule la traducere
 - `api/lib/translation_router.py` — provideri traducere (DeepL/Gemini/Groq/NLLB/OpenRouter)
 - `api/lib/supabase_client.py` — wrapper Supabase (log-uri + contor Gemini)
-- `frontend/src/components/traduceri/DocumentViewer.tsx` — viewer 3 pasi + editare + export
+- `frontend/src/components/editor/LanguageSwitch.tsx` + `editor-translate.ts`/`editor-translate-state.tsx` — F8, switch de limba RO|SK|EN|DE in editor (inlocuieste vechiul viewer 3 pasi, retras la F7)
 - `frontend/src/lib/monitoring.ts` — logging + coduri eroare (client)
 
 ## Conventions
@@ -69,43 +70,51 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - Serverless: procesare grea per-pagina (limita `maxDuration` 300s pe Hobby, setat in vercel.json — per-pagina ramane buna practica); fara stare in memorie intre invocari (contoare in Supabase)
 - Commit/push: dupa modificari; deploy real doar cu confirmare (outward-facing)
 
-## Flow UNIC traducere — Metoda unificata 3 pasi (definitiva)
+## Flow UNIC traducere — livrat prin Editor + F8 (2 stări, nu 3 pași separați)
+
+> Metoda originală era 3 pași (Original read-only → RO → tradus, tab „Traduceri" dedicat). Pasul
+> „Original read-only" a dispărut (F7/G4) — originalul rămâne accesibil ca thumbnail+lightbox de
+> verificare (`SourcePreview`), nu ca pas de flux separat. Vezi `docs/PLAN_MASTER.md` §9 pt istoric.
 
 ```
-[UPLOAD] Cristina incarca fisier (JPEG/PDF/DOCX)
-  |  (PDF → rasterizat in browser cu pdf.js, o pagina/PNG)
+[IMPORT] Cristina incarca fisier (JPEG/PDF/DOCX) in Editor
+  |  (PDF → rasterizat in browser cu pdf.js, o pagina/PNG; thumbnail-uri sursă păstrate pt verificare)
   v
-[PAS 1] ORIGINAL — Imaginea/fisierul incarcat, afisat ca atare (100% fidel, read-only)
+[CONTINUT] Reconstructie OCR per-pagina (Gemini: text + bbox figuri + LaTeX), EDITABIL + persistent,
+           limba curentă = limba documentului importat
   v
-[PAS 2] HTML RO — Reconstructie OCR per-pagina (Gemini: text + bbox figuri + LaTeX), EDITABIL + persistent
-  v
-[PAS 3] HTML TRADUS — Traducere on-demand (DeepL), EDITABIL + persistent
-          Doar textul tradus (SK/EN). Figuri + formule LaTeX + layout = INTACTE.
-          Export: PDF (print vectorial) / DOCX (backend) / HTML — din continut EDITAT.
+[TRADUCERE F8] Switch de limbă on-demand (buton RO|SK|EN|DE) — traduce doar textul (DeepL implicit),
+               EDITABIL + persistent, cache per limbă (reveniri instant, fără re-consum cotă).
+               Figuri + formule LaTeX + layout = INTACTE.
+               Export: PDF (print vectorial) / DOCX (backend) / HTML — din continut EDITAT.
 ```
 
-### Butoane in toolbar: `Original` | `RO` | `SK` | `EN` + navigare pagina 1/N
+### Butoane in toolbar: `RO` | `SK` | `EN` | `DE` (F8, `LanguageSwitch.tsx`)
 
-### Editare: pasii 2 si 3 sunt editabili (contentEditable, persistat) — pasul 1 e read-only
+### Editare: continutul e editabil (contentEditable, persistat) in orice limbă selectată
 
 ### Ce se traduce vs ce ramane intact (la switch RO → SK)
 
-| Element                       | Pas 2 (RO)         | Pas 3 (SK)       |
+| Element                       | Limba RO (import)  | Limba SK (F8)    |
 | ----------------------------- | ------------------ | ---------------- |
 | Text paragraf/titluri         | Original, editabil | TRADUS, editabil |
 | Formule LaTeX                 | INTACT             | INTACT           |
 | Figuri (crop bbox)            | INTACT             | INTACT           |
 | Structura (ol/ul) + Layout A4 | INTACT             | INTACT           |
 
-## Module planificate (6+ total)
+## Module (7 total)
 
-1. **Traduceri** — prioritar, in executie
-2. **Convertor fisiere** — functional, de polish
-3. **Editor matematic** (gimnaziu+liceu) — LIVRAT: **nativ TipTap** (iframe-ul vechi retras la F6), tema verde, quickbar + search matematic, 334+ formule V-XII
-4. **Asistent Text AI** — INTEGRAT (Faza G): iframe `/asistent` (drop-in), proxy AI same-origin (`/api/proxy`)
-5. **Chat AI · Calculator · Corectare-Generare teste (Teste)** — LIVRATE + DEPLOYATE (v30/v31/v32, 2026-08-04)
-6. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
-7. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — F0/F1 DEPLOYATE (v45/v46), F3 (Primar) LIVRAT; coadă F3→F2→F4→F5
+> Modulul „Traduceri" original (viewer 3 pași: Original→RO→SK, tab dedicat) a fost RETRAS din UI la F7
+> (commit `2891d00`) — funcționalitatea a fost absorbită de Editor: import+OCR la import, traducere
+> on-demand prin F8 (switch limbă RO|SK|EN|DE, cache persistent). Backend-ul de translate/OCR a rămas,
+> doar tab-ul separat a dispărut. NU re-propune reintroducerea lui fără cerere explicită.
+
+1. **Convertor fisiere** — functional, de polish
+2. **Editor matematic** (gimnaziu+liceu) — LIVRAT: **nativ TipTap** (iframe-ul vechi retras la F6), tema verde, quickbar + search matematic, 334+ formule V-XII; include import/OCR + traducere on-demand F8 (fostul modul Traduceri)
+3. **Chat AI** — panou nativ (`ChatPanel.tsx`), tab id „asistent" păstrat doar pt continuitatea `localStorage["activeTab"]` (fostul iframe `/asistent` a fost șters la /improve #16, 2026-08-07)
+4. **Calculator · Corectare-Generare teste (Teste)** — LIVRATE + DEPLOYATE (v30/v31/v32, 2026-08-04)
+5. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
+6. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — 112/112 noduri (grădiniță→liceu) grounded, deployat v49; motor de desen determinist (grădiniță+primar cl.0-1) deployat 2026-08-09
 
 ## Important
 
@@ -114,4 +123,4 @@ elementele matematice raman intacte) → Editare live persistenta → Export PDF
 - Utilizator principal: Cristina; owner proiect: Roland (petrilarolly@gmail.com)
 - Limbi: RO -> SK (principal), RO -> EN (secundar), DE (germana, ex. rapoarte/documente oficiale), extensibil
 - Toate serviciile: GRATUIT, fara exceptie
-- Editor matematic: NATIV TipTap (iframe-ul vechi retras la F6). Asistent_Text_AI: modul iframe. Vezi `docs/PLAN_MASTER.md`
+- Editor matematic: NATIV TipTap (iframe-ul vechi retras la F6). Chat AI: panou nativ (iframe-ul `/asistent` retras la /improve #16, 2026-08-07). Vezi `docs/PLAN_MASTER.md`

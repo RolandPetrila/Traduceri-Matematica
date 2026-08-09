@@ -47,8 +47,10 @@ Deploy-ul real (linkare conturi, env vars) necesita confirmare explicita de la R
 
 ## R-EDIT: Editare live persistenta
 
-Pasii 2 (RO) si 3 (SK) sunt editabili. Editarile contentEditable TREBUIE salvate in state
-(cacheRef) — sa supravietuiasca la switch de limba SI in toate export-urile. Pasul 1 (original) read-only.
+Continutul e editabil in orice limba (RO import + orice limba tradusa prin F8, switch RO|SK|EN|DE
+in Editor). Editarile contentEditable TREBUIE salvate in state (cacheRef) — sa supravietuiasca la
+switch de limba SI in toate export-urile. Sursa originala (thumbnail+lightbox `SourcePreview`)
+ramane read-only, doar ca verificare vizuala — nu mai e un „pas" separat de flux (retras F7/G4).
 
 ## R-EXPORT: Export din continut editat
 
