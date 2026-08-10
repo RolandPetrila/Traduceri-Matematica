@@ -50,4 +50,33 @@ describe("sanitizeHtml", () => {
     expect(out).toContain('stroke-dasharray="5,3"');
     expect(out).toContain('fill="#e8f0fe"');
   });
+
+  // L-security (audit 2026-07-09): <image>/<use> href restricted to internal refs
+  // (#id) + embedded data: URIs — external http(s) would load a remote resource
+  // (tracking pixel) from a sanitized OCR figure.
+  it("strips external href from <image> but keeps data: URIs", () => {
+    const withExternal = sanitizeHtml(
+      '<svg><image href="https://evil.example/track.png" width="10" height="10"/></svg>',
+    );
+    expect(withExternal).not.toContain("evil.example");
+
+    const withData = sanitizeHtml(
+      '<svg><image href="data:image/png;base64,iVBOR" width="10" height="10"/></svg>',
+    );
+    expect(withData).toContain("data:image/png");
+  });
+
+  it("keeps internal fragment href on <use> (defs reuse)", () => {
+    const out = sanitizeHtml(
+      '<svg><defs><circle id="c1" r="5"/></defs><use href="#c1"/></svg>',
+    );
+    expect(out).toContain('href="#c1"');
+  });
+
+  it("strips external xlink:href from <use>", () => {
+    const out = sanitizeHtml(
+      '<svg><use xlink:href="https://evil.example/x.svg#y"/></svg>',
+    );
+    expect(out).not.toContain("evil.example");
+  });
 });

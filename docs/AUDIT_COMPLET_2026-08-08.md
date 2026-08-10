@@ -1,5 +1,12 @@
 # Audit complet — Sistem Traduceri Matematica
 
+> ⚠️ **STARE VERIFICATĂ (2026-08-10):** doc istoric, mutat din rădăcina repo (era untracked) —
+> conținutul de mai jos NU e rescris. **L4** (Content-Disposition necurățat) — **REZOLVAT**
+> azi în `api/convert.py` (`_safe_header_filename`). **M2** (`ALLOWED_ORIGIN` cade pe `*`) —
+> risc deja ACCEPTAT conștient (vezi `docs/PLAN_MASTER.md`, „S7 ALLOWED_ORIGIN=*"), nu e stale.
+> Restul constatărilor (M1/M3/M4/L1/L2/L3/L5/L6/L7) rămân neatinse — nu erau în scope-ul
+> verificării de azi (cerere separată dacă se dorește).
+
 **Data:** 2026-08-08 · **Locație:** `C:\Proiecte\Traduceri_Matematica` · **Versiune proiect:** v4.1 (PROD v46)
 
 Audit static realizat prin citirea codului (backend Python, frontend Next.js, config, docs). Nu s-au putut rula comenzi (npm/pip/teste) — mediul Linux izolat nu a fost disponibil; concluziile sunt din analiza codului.
@@ -12,14 +19,14 @@ Proiect **matur, bine structurat și documentat neobișnuit de onest**. Practici
 
 **Scor pe zone (1–5):**
 
-| Zonă | Scor | Comentariu |
-|---|---|---|
-| Arhitectură | 5/5 | Coerentă cu constrângerile (serverless, per-pagină, free tier) |
-| Securitate | 4/5 | Secrete curate, anteturi bune; câteva fallback-uri permisive |
-| Calitatea codului | 4.5/5 | Curat, comentat, ~28 fișiere de test; fără CI |
-| Gestionarea erorilor | 5/5 | Coduri de eroare, fail-open, fallback-uri în lanț |
-| Documentație | 5/5 | Excelentă, cu slăbiciunile notate explicit |
-| Dependențe | 4/5 | Versiuni recente; lipsă audit automat |
+| Zonă                 | Scor  | Comentariu                                                     |
+| -------------------- | ----- | -------------------------------------------------------------- |
+| Arhitectură          | 5/5   | Coerentă cu constrângerile (serverless, per-pagină, free tier) |
+| Securitate           | 4/5   | Secrete curate, anteturi bune; câteva fallback-uri permisive   |
+| Calitatea codului    | 4.5/5 | Curat, comentat, ~28 fișiere de test; fără CI                  |
+| Gestionarea erorilor | 5/5   | Coduri de eroare, fail-open, fallback-uri în lanț              |
+| Documentație         | 5/5   | Excelentă, cu slăbiciunile notate explicit                     |
+| Dependențe           | 4/5   | Versiuni recente; lipsă audit automat                          |
 
 ---
 
@@ -63,44 +70,44 @@ Fluxul unic în 3 pași (Original → OCR RO editabil → Traducere on-demand) c
 
 **M1. Divergență de nume de variabile de mediu între cele două proiecte Vercel.**
 Backend-ul Python (OCR/traducere) citește `GOOGLE_AI_API_KEY`, în timp ce proxy-ul frontend (`frontend/src/app/api/proxy/route.ts`, modulele Chat/Asistent) citește `GOOGLE_API_KEY` / `GOOGLE_API_KEY_2`. Sunt proiecte Vercel separate, deci tehnic e valid, dar **aceeași cheie Google trebuie introdusă sub două nume diferite** — footgun clasic de configurare; dacă unul lipsește, providerul pică silențios pe fallback.
-*Recomandare:* documentează explicit maparea (ex. tabel „env var per proiect") în `docs/DEPLOY_VERCEL.md` și verifică setările reale în ambele proiecte Vercel.
-*Notă pozitivă:* pentru DeepL, backend-ul acceptă deja **ambele** nume (`DEEPL_API_KEY_2` OR `DEEPL_API_KEY2`) — robustețe bună; același tratament ar ajuta la Google.
+_Recomandare:_ documentează explicit maparea (ex. tabel „env var per proiect") în `docs/DEPLOY_VERCEL.md` și verifică setările reale în ambele proiecte Vercel.
+_Notă pozitivă:_ pentru DeepL, backend-ul acceptă deja **ambele** nume (`DEEPL_API_KEY_2` OR `DEEPL_API_KEY2`) — robustețe bună; același tratament ar ajuta la Google.
 
 **M2. `ALLOWED_ORIGIN` cade pe `*`.** Toate handlerele Python trimit `Access-Control-Allow-Origin: *` dacă env-ul nu e setat. Fără cookies/auth impactul e limitat, dar înseamnă CORS deschis.
-*Recomandare:* setează explicit `ALLOWED_ORIGIN` la domeniul frontend în producție; opțional, refuză request-urile cu origine necunoscută în loc de `*`.
+_Recomandare:_ setează explicit `ALLOWED_ORIGIN` la domeniul frontend în producție; opțional, refuză request-urile cu origine necunoscută în loc de `*`.
 
 **M3. CSP conține `'unsafe-inline'` și `'unsafe-eval'` în `script-src`.** Probabil necesare pentru MathJax/KaTeX/TipTap/pdf.js, dar lărgesc suprafața XSS. Risc atenuat (un singur utilizator, fără auth, fără date sensibile).
-*Recomandare:* datorie tehnică — de investigat trecerea la nonce/hash CSP dacă bibliotecile permit.
+_Recomandare:_ datorie tehnică — de investigat trecerea la nonce/hash CSP dacă bibliotecile permit.
 
 **M4. `/diagnostics` și `GET /api/logs` sunt publice.** Orice vizitator poate citi log-urile diagnostice din Supabase (mesaje de eroare, context, stack, info device). Nu sunt secrete, dar e o divulgare de informații interne pe o aplicație fără auth.
-*Recomandare:* protejează diagnosticele cu un token simplu (query param secret) sau restricționează la un IP; alternativ, plafonează câmpurile de context expuse.
+_Recomandare:_ protejează diagnosticele cu un token simplu (query param secret) sau restricționează la un IP; alternativ, plafonează câmpurile de context expuse.
 
 ### Prioritate scăzută
 
 **L1. Rate-limiting in-memory best-effort pe serverless** — starea e per instanță warm, deci slabă împotriva abuzului distribuit. Upstash Redis e integrat opțional (fallback in-memory dacă lipsește). Deja documentat onest.
-*Recomandare:* activează Upstash dacă apar abuzuri reale ale cotei AI gratuite.
+_Recomandare:_ activează Upstash dacă apar abuzuri reale ale cotei AI gratuite.
 
 **L2. Fără CI/CD gate.** Nu există GitHub Actions sau pre-push hooks; lint e `ignoreDuringBuilds: true` cu ~12 erori preexistente. Gate-ul real (`tsc --noEmit` + `jest` + `next build`) rămâne manual.
-*Recomandare:* un workflow minim care rulează `tsc` + `jest` la push (curăță întâi cele 12 erori de lint).
+_Recomandare:_ un workflow minim care rulează `tsc` + `jest` la push (curăță întâi cele 12 erori de lint).
 
 **L3. Parsere multipart scrise de mână** (`ocr.py`, `convert.py`) în loc de bibliotecă. Funcționale și cu body plafonat la 4 MB, dar mai fragile la edge-cases (boundary-uri neobișnuite, câmpuri lipsă).
-*Recomandare:* opțional, unifică într-un singur parser testat în `api/lib/multipart.py`.
+_Recomandare:_ opțional, unifică într-un singur parser testat în `api/lib/multipart.py`.
 
 **L4. `Content-Disposition` cu nume de fișier necurățat** (`convert.py`, linia ~669): `filename="{result['filename']}"` derivă din numele încărcat de utilizator. Un nume cu `"` sau CRLF ar putea rupe/injecta antetul.
-*Recomandare:* sanitizează numele (elimină `"`, `\r`, `\n`, path separators) înainte de a-l pune în antet.
+_Recomandare:_ sanitizează numele (elimină `"`, `\r`, `\n`, path separators) înainte de a-l pune în antet.
 
 **L5. `public/planse/app.js` folosește `innerHTML` extensiv** cu conținut generat local (planșe offline). Ocolind React, dar datele sunt auto-generate (nu vin din surse externe) → risc XSS minim.
-*Recomandare:* de reținut; menține conținutul strict auto-generat.
+_Recomandare:_ de reținut; menține conținutul strict auto-generat.
 
 **L6. Fără audit automat de dependențe.** Versiunile sunt recente (Next 15.5, React 18.3, dompurify 3.3.3, pdfjs-dist 4.10.38; Python: pypdf 6.15, PyMuPDF 1.28.2, Pillow 12.3) și fără CVE-uri cunoscute la aceste versiuni, dar nu există `npm audit`/`pip-audit` în flux.
-*Recomandare:* rulează periodic `npm audit` și `pip-audit`; adaugă Dependabot.
+_Recomandare:_ rulează periodic `npm audit` și `pip-audit`; adaugă Dependabot.
 
 **L7. `scratchpad/` conține scripturi de probă** (folosesc `eval`, `subprocess`, `innerHTML`). Nu fac parte din bundle-ul aplicației, dar unele sunt comise în repo.
-*Recomandare:* mută-le sub `.gitignore` sau șterge-le pentru curățenie.
+_Recomandare:_ mută-le sub `.gitignore` sau șterge-le pentru curățenie.
 
 ### De verificat manual (nu am putut din mediul curent)
 
-- **Istoricul git** — confirmă că `.env` nu a fost niciodată comis accidental (`.gitignore` e corect *acum*, dar nu pot inspecta istoricul). Rulează: `git log --all --full-history -- .env`.
+- **Istoricul git** — confirmă că `.env` nu a fost niciodată comis accidental (`.gitignore` e corect _acum_, dar nu pot inspecta istoricul). Rulează: `git log --all --full-history -- .env`.
 - **RLS Supabase** — `CLAUDE.md` menționează „Supabase fără auth, RLS strict". Verifică în dashboard-ul Supabase că politicile RLS pe tabelele `logs`/`gemini_counter` chiar restricționează scrierile la service-role (cheia anon publică nu trebuie să poată insera/citi liber).
 - **Rularea testelor** — `cd frontend && npm test` și testele Python; nu le-am putut executa.
 

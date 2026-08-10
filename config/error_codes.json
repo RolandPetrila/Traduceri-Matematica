@@ -81,11 +81,6 @@
       "severity": "warn",
       "area": "network"
     },
-    "E-SUPA-001": {
-      "message": "Scriere Supabase esuata (fail-open, fluxul continua)",
-      "severity": "warn",
-      "area": "infra"
-    },
     "E-APP-001": {
       "message": "Eroare aplicatie (ErrorBoundary)",
       "severity": "error",

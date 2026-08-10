@@ -24,6 +24,7 @@ import os
 import sys
 import urllib.request
 import urllib.error
+import urllib.parse
 
 
 def _base() -> tuple[str, str] | None:
@@ -102,11 +103,14 @@ def log_error(error_code: str, message: str, source: str = "backend",
 def get_logs(limit: int = 200, level: str | None = None,
              error_code: str | None = None) -> list:
     """Fetch recent logs, newest first. Returns [] on any failure."""
-    params = [f"select=*", f"order=created_at.desc", f"limit={max(1, min(limit, 1000))}"]
+    # URL-encode filter values — PostgREST uses `&`/`.`/`,` as syntax in the query
+    # string, so an unencoded value (this is caller-controlled, from /diagnostics)
+    # could alter the filter structure rather than just matching it literally.
+    params = ["select=*", "order=created_at.desc", f"limit={max(1, min(limit, 1000))}"]
     if level:
-        params.append(f"level=eq.{level}")
+        params.append(f"level=eq.{urllib.parse.quote(level, safe='')}")
     if error_code:
-        params.append(f"error_code=eq.{error_code}")
+        params.append(f"error_code=eq.{urllib.parse.quote(error_code, safe='')}")
     res = _request("GET", "/rest/v1/logs?" + "&".join(params))
     return res if isinstance(res, list) else []
 
@@ -125,7 +129,7 @@ def increment_counter(date: str) -> bool:
 
 def get_counter(date: str) -> int | None:
     """Read today's Gemini count. Returns None if Supabase is unavailable."""
-    res = _request("GET", f"/rest/v1/gemini_counter?select=count&date=eq.{date}")
+    res = _request("GET", f"/rest/v1/gemini_counter?select=count&date=eq.{urllib.parse.quote(date, safe='')}")
     if isinstance(res, list) and res:
         try:
             return int(res[0].get("count", 0))

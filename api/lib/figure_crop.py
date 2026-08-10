@@ -9,7 +9,14 @@ from __future__ import annotations
 import base64
 import io
 import sys
-from PIL import Image
+from PIL import Image, ImageChops
+
+# DoS guard: reject synthetic gigapixel images (Pillow "decompression bomb" — a
+# small file that declares an enormous pixel grid). `image_bytes` here can be a
+# direct user upload (JPEG/PNG) — 64MP is well above any real phone photo
+# (12-48MP) or scanned page (~35MP at 600dpi), far below attack scale. Set once
+# at module load; PIL.Image is a singleton module, so this is process-wide.
+Image.MAX_IMAGE_PIXELS = 64_000_000
 
 
 PLACEHOLDER_B64 = None  # Lazy-generated placeholder for invalid crops
@@ -190,15 +197,24 @@ def crop_figure(
     else:
         bg_r, bg_g, bg_b = 245, 245, 245
 
-    # Replace background with white
-    px = cropped.load()
-    for py_ in range(ch):
-        for px_ in range(cw):
-            r, g, b, a = px[px_, py_]
-            if (abs(r - bg_r) < tolerance and
-                abs(g - bg_g) < tolerance and
-                abs(b - bg_b) < tolerance):
-                px[px_, py_] = (*target_bg, 255)
+    # Replace background with white — vectorized via PIL band math (was a pure-Python
+    # per-pixel loop, O(cw*ch) in the interpreter; the 3-band distance+threshold+AND
+    # below does the same work in PIL's C core, no new dependency). Semantics unchanged:
+    # a pixel becomes target_bg (alpha forced 255) iff ALL 3 channels are within
+    # `tolerance` of the detected background color.
+    r_band, g_band, b_band = cropped.split()[:3]
+    close_r = ImageChops.difference(r_band, Image.new("L", cropped.size, bg_r)).point(
+        lambda p: 255 if p < tolerance else 0
+    )
+    close_g = ImageChops.difference(g_band, Image.new("L", cropped.size, bg_g)).point(
+        lambda p: 255 if p < tolerance else 0
+    )
+    close_b = ImageChops.difference(b_band, Image.new("L", cropped.size, bg_b)).point(
+        lambda p: 255 if p < tolerance else 0
+    )
+    bg_mask = ImageChops.darker(ImageChops.darker(close_r, close_g), close_b)
+    solid_bg = Image.new("RGBA", cropped.size, (*target_bg, 255))
+    cropped = Image.composite(solid_bg, cropped, bg_mask)
 
     # Encode as PNG base64
     final = cropped.convert("RGB")

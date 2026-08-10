@@ -25,11 +25,34 @@ try:
 except ImportError:
     from api.lib.multipart import parse_boundary, log_to_file
 
+# DoS guard: reject synthetic gigapixel images (Pillow "decompression bomb" — a
+# small file that declares an enormous pixel grid). 64MP is well above any real
+# phone photo (12-48MP) or scanned page (~35MP at 600dpi), far below attack scale.
+# Set once at module load (cold start) — PIL.Image is a singleton module, so this
+# affects every Image.open() call in this process, including the function-local
+# `from PIL import Image` imports below.
+from PIL import Image as _PILImage
+
+_PILImage.MAX_IMAGE_PIXELS = 64_000_000
+
+# Same guard for PyMuPDF pixmap rendering (pdf_to_image) — a PDF can declare an
+# arbitrarily large page (MediaBox), which at a fixed DPI would still allocate a
+# huge pixmap regardless of file size. Checked per-page before rendering.
+_MAX_PIXMAP_PIXELS = 64_000_000
+
 
 # --- Helpers ---
 
 def _stem(name: str) -> str:
     return name.rsplit(".", 1)[0] if "." in name else name
+
+
+def _safe_header_filename(name: str) -> str:
+    """Strip CR/LF/quotes/path separators before a filename enters an HTTP header
+    (Content-Disposition). `name` derives from the user-uploaded filename — without
+    this, a crafted name (e.g. containing `"` or CRLF) could break or inject into
+    the response header."""
+    return re.sub(r'[\r\n"\\/]', "_", name)
 
 
 # --- Conversion functions ---
@@ -114,6 +137,20 @@ def image_convert(data: bytes, name: str, target: str) -> dict:
     return {"data": buf.getvalue(), "mime": mime, "filename": f"{_stem(name)}.{target}"}
 
 
+def _check_page_pixmap_size(page, dpi: int, page_num: int) -> None:
+    """Guard contra unei pagini PDF cu MediaBox uriaș — la un DPI fix, un fisier
+    MIC poate declara o pagina fizica enorma si tot forta alocarea unui pixmap
+    urias (varianta „decompression bomb" pt randarea PDF->imagine, nu doar Pillow
+    pe imagini directe)."""
+    px_w = page.rect.width * dpi / 72
+    px_h = page.rect.height * dpi / 72
+    if px_w * px_h > _MAX_PIXMAP_PIXELS:
+        raise ValueError(
+            f"Pagina {page_num} are dimensiuni prea mari pt randare la {dpi}dpi "
+            f"({int(px_w)}x{int(px_h)}px, plafon {_MAX_PIXMAP_PIXELS}px)"
+        )
+
+
 def pdf_to_image(data: bytes, name: str, target_format: str, dpi: int = 150, max_pages: int = 30) -> dict:
     """Randeaza fiecare pagina PDF ca imagine. PyMuPDF e deja dependinta de
     PRODUCTIE (requirements.txt) — acelasi tipar ca api/ocr.py._pdf_to_images
@@ -141,12 +178,14 @@ def pdf_to_image(data: bytes, name: str, target_format: str, dpi: int = 150, max
             raise ValueError(f"PDF cu {total} pagini depaseste plafonul de {max_pages} pagini pt conversie in imagini")
 
         if total == 1:
+            _check_page_pixmap_size(doc[0], dpi, 1)
             pix = doc[0].get_pixmap(dpi=dpi)
             return {"data": pix.tobytes(ext), "mime": mime, "filename": f"{stem}.{ext}"}
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             for i in range(total):
+                _check_page_pixmap_size(doc[i], dpi, i + 1)
                 pix = doc[i].get_pixmap(dpi=dpi)
                 zf.writestr(f"{stem}_pagina{i + 1:02d}.{ext}", pix.tobytes(ext))
         return {"data": buf.getvalue(), "mime": "application/zip", "filename": f"{stem}_pagini.zip"}
@@ -630,7 +669,11 @@ class handler(BaseHTTPRequestHandler):
 
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length > MAX_BODY_SIZE:
-                error_body = json.dumps({"error": "Fisierul depaseste limita de 4MB", "status": "error"}).encode()
+                error_body = json.dumps({
+                    "error": "Fisierul depaseste limita de 4MB",
+                    "error_code": "E-APP-001",
+                    "status": "error",
+                }).encode()
                 self.send_response(413)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
@@ -666,7 +709,8 @@ class handler(BaseHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header("Content-Type", result["mime"])
-            self.send_header("Content-Disposition", f'attachment; filename="{result["filename"]}"')
+            safe_filename = _safe_header_filename(result["filename"])
+            self.send_header("Content-Disposition", f'attachment; filename="{safe_filename}"')
             self.send_header("Content-Length", str(len(out_data)))
             self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
             self.send_header("Access-Control-Expose-Headers", "Content-Disposition, Content-Length")

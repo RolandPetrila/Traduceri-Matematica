@@ -4,10 +4,10 @@ POST /api/ocr
 Accepts: multipart/form-data with image/PDF files + source_lang
 Returns: JSON {html, structured_pages, pages, duration_ms, status, source_lang}
 
-This is the first step of the 3-step method (D23):
-  Step 1: Original (uploaded image, read-only)
-  Step 2: HTML RO (this endpoint — OCR result, editable)
-  Step 3: HTML translated (via /api/translate-text, on-demand)
+Called on import in the Editor (F8/F9): this endpoint produces the editable
+OCR reconstruction; translation happens on-demand via /api/translate-text when
+the user switches language (RO|SK|EN|DE) — the old standalone "Traduceri" tab
+(3-step Original/RO/translated flow) was retired from the UI at F7.
 """
 
 from __future__ import annotations
@@ -28,6 +28,12 @@ from lib.ocr_structured import ocr_structured
 from lib.azure_layout import azure_layout
 from lib.figure_crop import embed_crops_in_sections
 from lib.multipart import parse_boundary, log_to_file
+
+# DoS guard (decompression-bomb variant for PDF rendering): a small PDF can
+# declare an enormous MediaBox, which at a fixed DPI would still force
+# PyMuPDF to allocate a huge pixmap regardless of file size. Same cap as
+# api/convert.py's pdf_to_image (independent processes, independent constant).
+_MAX_PIXMAP_PIXELS = 64_000_000
 
 
 def _has_table(sections: list) -> bool:
@@ -70,11 +76,10 @@ def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str)
 def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150, max_pages: int = 1) -> list[tuple[bytes, str]]:
     """Convert PDF pages to PNG images using PyMuPDF (DPI 150).
 
-    Renders at most `max_pages` pages. On Vercel each /api/ocr invocation must
-    stay under 60s, so server-side we only ever process ONE page per call; the
-    browser (pdf-rasterize.ts) is responsible for splitting multi-page PDFs and
-    POSTing one page image per request. This server-side path is a safety
-    fallback only — capping the render also keeps PyMuPDF memory well under limit.
+    Renders at most `max_pages` pages. Server-side rendering is a safety fallback
+    only — the browser (editor-import.tsx) rasterizes PDFs client-side and POSTs
+    one page image per request as the primary path; capping the render here also
+    keeps PyMuPDF memory bounded regardless of `maxDuration`.
     """
     try:
         import pymupdf
@@ -94,6 +99,15 @@ def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150, max_pages: int = 1) -> list
             )
         for page_num in range(min(total, max_pages)):
             page = doc[page_num]
+            px_w = page.rect.width * dpi / 72
+            px_h = page.rect.height * dpi / 72
+            if px_w * px_h > _MAX_PIXMAP_PIXELS:
+                print(
+                    f"[OCR] Page {page_num + 1} too large to render at {dpi}dpi "
+                    f"({int(px_w)}x{int(px_h)}px, cap {_MAX_PIXMAP_PIXELS}px) — skipped",
+                    file=sys.stderr,
+                )
+                continue
             pix = page.get_pixmap(dpi=dpi)
             img_bytes = pix.tobytes("png")
             pages.append((img_bytes, "image/png"))
