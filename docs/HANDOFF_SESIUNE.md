@@ -1,6 +1,42 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-10 (curățare documentație stale + 6 fix-uri de securitate/performanță + merge `faza-g-editor`→`main`). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+## ▶️ REIA DE AICI (2026-08-10, continuare) — `/audit full` (94/100) + remediere 4 HIGH + 8 MEDIUM
+
+> Continuare directă a sesiunii de mai jos (curățare docs + 6 fix-uri securitate + merge main),
+> în aceeași sesiune: `/audit full` (18 domenii, 7 agenți paraleli) → raport complet
+> `.claude-outputs/audit/2026-08-10_042523/` (gitignored, local).
+>
+> **Găsit ȘI fixat pe loc, în timpul auditului** (nu a scăzut scorul): un test jest picase
+> (`regulament-files.test.ts`, 348/349) — cauza NU era conținut, ci CRLF introdus local de
+> `git checkout`-urile de la merge-ul de mai devreme (Windows `core.autocrlf=true`). Fix
+> permanent: `.gitattributes` (`eol=lf`, commit `6b02bd1`) + renormalizare 228 fișiere (0
+> schimbare de conținut față de HEAD).
+>
+> **Scor: 94/100**, 0 CRITICA. 4 HIGH + 8 MEDIUM fixate (commit `5691caa`): README.md stale,
+> `convert.py` scurgea `str(e)` brut, `HistoryDetail.tsx` înghițea eroare DOCX silențios,
+> `next.config.js images.unoptimized` (mitigare npm CVE sharp/postcss), numărătoare module
+> CLAUDE.md, `openrouter/auto` fără cost-cap, `GET /api/logs` fără rate-limit, select-uri
+> Școlare neblocate în timpul generării, `error_code` lipsă pe 3 răspunsuri, re-decodare
+> imagine per figură în `figure_crop.py`, `aria-live`/`aria-label` pe 4 panouri + 2 butoane.
+>
+> **Bonus:** `edit_pdf()` (`convert.py`) split per acțiune (5 funcții + dispatch dict) — extragerea
+> a scos empiric un bug real (watermark folosea `PdfReader` fără import în noul scop, `NameError`)
+> — prins prin verificare manuală ÎNAINTE de commit (0 teste existau), fixat + acoperit cu
+> `api/tests/test_edit_pdf.py` (8 teste noi).
+>
+> **Sărit deliberat** (risc > beneficiu pt execuție autonomă fără plasă de teste): extragere
+> `ScolarePanel.tsx` în hook-uri, unificare parsere multipart `ocr.py`/`convert.py`, concurență
+> pe bucla OCR PDF din `editor-import.tsx`. **NEATINS conștient** (decizii deja documentate,
+> nu scăpări): `ALLOWED_ORIGIN` wildcard + CSP `unsafe-inline`/`unsafe-eval` (`PLAN_MASTER` §2 S7).
+> **`.env.example`** — blocat de hook-ul `guard-sensitive.sh` (fișier `.env*`), necesită editare
+> manuală de Roland (lipsesc `GOOGLE_API_KEY*`/`TAVILY_API_KEY`/`UPSTASH_*`, `DEEPL_API_KEY_2`
+> scris inconsistent cu/fără underscore).
+>
+> **Gate: `tsc 0 · jest 349/349 · pytest 62/62 (+8 noi) · next build OK`.** Backlog rămas (npm
+> Next 16 pt fix real CVE sharp/postcss, CSP nonce-based, unificare multipart, concurență OCR) —
+> vezi raportul complet pt detaliu per item.
 
 ## ▶️ REIA DE AICI (2026-08-10) — verificare+curățare documentație, 6 fix-uri securitate LOW, merge main
 
