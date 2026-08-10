@@ -1,6 +1,40 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-09 (motor de desen determinist Școlare — DEPLOYAT). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-08-10 (curățare documentație stale + 6 fix-uri de securitate/performanță + merge `faza-g-editor`→`main`). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+
+## ▶️ REIA DE AICI (2026-08-10) — verificare+curățare documentație, 6 fix-uri securitate LOW, merge main
+
+> La cererea lui Roland: verificare directă în cod (nu doar în rapoarte) a restanțelor din
+> `.claude-outputs/improve/` + audit-urile vechi de iulie + `AUDIT_COMPLET_2026-08-08.md`, apoi
+> implementarea tuturor recomandărilor rezultate, apoi `/audit full` (rezultat mai jos/separat).
+>
+> **Curățare documentație** (commit `b68cbcc`): `CLAUDE.md` + `.claude/rules/project_rules.md`
+> descriau un modul „Traduceri" (viewer 3 pași, tab dedicat) și un iframe `/asistent` — **ambele
+> retrase din cod** (F7, respectiv `/improve #16`). Corectate la starea reală: traducerea trăiește
+> în Editor prin F8, Chat AI e panou nativ. Lanț model OCR actualizat (gemini-3.6-flash).
+>
+> **6 fix-uri de securitate/performanță** (commit `442f19a`), toate reconfirmate ca reale înainte
+> de fix: `figure_crop.py` bucla per-pixel → vectorizată (PIL band math, zero dependințe noi);
+> `Image.MAX_IMAGE_PIXELS` + gardă pixmap PyMuPDF (decompression bomb, `api/convert.py`+`api/ocr.py`);
+> `E-SUPA-001` (cod mort) șters din `config/error_codes.json`; `get_logs`/`get_counter` →
+> parametri URL-encodați (`urllib.parse.quote`); `Content-Disposition` filename sanitizat +
+> `error_code` pe 413-ul hand-rolled din `convert.py`; sanitize SVG — hook DOMPurify scopat la
+> `<image>`/`<use>` care respinge `href` extern (permite doar `#fragment` + `data:image/`).
+> Gate: `tsc 0 · jest 349/349 · pytest 54/54`. Verificat cu obiecte fake că gărzile chiar prind
+> atacul (nu doar sintaxă corectă) — vezi commit pt detalii.
+>
+> **`AUDIT_COMPLET_2026-08-08.md`** (era untracked la rădăcină) — mutat în `docs/`, cu status
+> adăugat (L4 rezolvat azi, M2 deja risc acceptat per S7). Restul constatărilor (M1/M3/M4/L1-L3/L5-L7)
+> NEATINSE — nu erau în scope.
+>
+> **Merge `faza-g-editor` → `main`** (commit `31413dc` pt doc): fast-forward curat, 0 conflicte
+> (`main` era strict ancestor, 0 commituri proprii). `main` acum identic cu `faza-g-editor`.
+>
+> **NEFĂCUT, conștient:** V2 (`PLAN_MASTER.md` §8 — verificarea matematică de domeniu a celor
+> 334+ formule) — necesită judecata Cristinei/Roland, nu poate fi automatizată. Constatările
+> M1/M3/M4/L1/L2/L3/L5/L6/L7 din `AUDIT_COMPLET_2026-08-08.md` — nu erau în scope-ul cererii.
+
+---
 
 ## ▶️ REIA DE AICI (2026-08-09, sesiune nouă) — Motor de desen determinist Școlare (grădiniță + primar cl.0-1) ✅ LIVRAT, NEDEPLOYAT
 
