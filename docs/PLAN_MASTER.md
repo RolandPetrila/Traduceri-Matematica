@@ -13,7 +13,7 @@
 
 > ⚠️ **Citește ASTA prima.** Snapshot-ul §0 de mai jos e din 2026-07-30 (înghețat, istoric). Adnotările „NEDEPLOYAT" din §2–§6 sunt scrise la momentul livrării și NU se revizitează după deploy — **nu le crede pe cele individuale; sursa de deploy e mai jos + git.**
 
-- **PROD = `v48-20260809`** pe `traduceri-frontend.vercel.app`, deploy din branch **`faza-g-editor`**. `main` = mult în urmă (~v36, nedeployat) — deploy-urile NU se fac din main.
+- **PROD** pe `traduceri-frontend.vercel.app`, deploy din branch **`faza-g-editor`** (deploy-urile se fac explicit prin CLI, nu din git push). `main` a fost adus la zi 2026-08-10 (fast-forward, `git merge-base` = `main`, 0 divergență) — nu mai e stale, dar deploy-ul tot pornește din `faza-g-editor`.
 - **Frontend:** tot ce e `[x]` e LIVE prin batch-urile `CACHE_VERSION` (RUNDĂ MODULE v29-v32; R7/R8 v24-v25; /improve v42-v44; A v40; B v41; C/F0 v45; C/F1 v46; C/F3 v47; **C/F4+Gimnaziu+Liceu+audit+research+code review v48**). **Backend `traduceri-api`: DEPLOYAT 2026-08-09** (`dpl_7QRrRGW4iznbbX2vqjg6YSnkKksz`) — `/api/health` build `43addcd`, deps Python la zi (PyMuPDF 1.28.2 etc.), `pdf_to_image()` live. **Deploy v48 verificat end-to-end pe alias 2026-08-09:** `sw.js`=v48-20260809, homepage+`/editor-nou`=200, regulamente noi Gimnaziu+Liceu=200, **generare AI reală prin `/api/proxy` pe prod confirmă `modelVersion:"gemini-3.6-flash"` live** (nu doar dev). Nimic nedeployat acum.
 - **Module LIVE (8):** Traduceri (backend, tab retras), Convertor (+PDF→JPG/PNG real din v48), Editor TipTap nativ (F1-F9, F6 iframe retras), Asistent AI (fuzionat cu Chat AI — vezi audit), Chat AI (model `gemini-3.6-flash` din v48), Calculator, Teste, Planșe (6/6 generatoare + coș P4), Școlare 🌐 (**TOATE 4 cicluri complete — vezi mai jos**).
 - **Coada §6b — CONSUMATĂ INTEGRAL:** A ✅ DEPLOYAT v40 · B ✅ DEPLOYAT v41 · C (Școlare) F0 v45, F1 v46, F3 (Primar) v47, **F4 (Grădiniță) + Gimnaziu toate materiile + Liceu toate materiile ✅ DEPLOYATE v48 (2026-08-09)** · D (bug `\lim`) ✅ REZOLVAT+DEPLOYAT v44.
@@ -305,17 +305,17 @@
 ## §7. BACKLOG — NU în execuție (decizia Roland: listate, nu implementate)
 
 > **Corectate 2026-08-07** (găsite stale la audit `/improve`): rândurile „Modul Chat AI / Calculator / Corectare-Generare teste" ziceau „0%" deși toate 3 au fost LIVRATE în sesiunea „RUNDĂ MODULE" din 2026-08-04 (deployate v30/v31/v32) — vezi `components/chat/ChatPanel.tsx`, `components/calculator/CalculatorPanel.tsx`, `components/teste/TestePanel.tsx`. §7 nu fusese actualizat după livrare. Șterse de aici; rămân valide doar itemii de mai jos.
+> **Corectate 2026-08-10:** „Merge `faza-g-editor` → `main`" — FĂCUT (fast-forward curat, 0 conflicte, `main` era strict ancestor). `pages/api/proxy.js` — calea e stale, migrat la `frontend/src/app/api/proxy/route.ts` (App Router) la o sesiune anterioară.
 
-| Item                                                             | Stare                                                                                                             | Efort          |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------- |
-| Next 15 → 16                                                     | `next: ^15.5.20`                                                                                                  | mare           |
-| Tailwind v3 → v4                                                 | `tailwindcss: ^3.4.0`                                                                                             | mediu          |
-| **Merge `faza-g-editor` → `main`**                               | `main..faza-g-editor` = **~69 commituri** (2026-08-08); producția se deployează din `faza-g-editor`, main e stale | mediu (review) |
-| Quota hard-cap + Upstash (rate-limit distribuit)                 | `rate_limiter.py` e in-memory per-instanță; precedent existent: `pages/api/proxy.js:72-74`                        | mediu          |
-| PDF >20 pagini în loturi                                         | azi = plafonare la 20 cu mesaj onest, nu batching                                                                 | mediu          |
-| Export HTML interactiv multi-limbă                               | `data-i` = 0 hituri                                                                                               | mediu          |
-| SW auto-versioning                                               | `sw.js:3` încă manual                                                                                             | mic            |
-| Logging JSON structurat / bundle analyzer / dicționar math în UI | —                                                                                                                 | mic-mediu      |
+| Item                                                             | Stare                                                                                                 | Efort     |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------- |
+| Next 15 → 16                                                     | `next: ^15.5.20`                                                                                      | mare      |
+| Tailwind v3 → v4                                                 | `tailwindcss: ^3.4.0`                                                                                 | mediu     |
+| Quota hard-cap + Upstash (rate-limit distribuit)                 | `rate_limiter.py` e in-memory per-instanță; precedent existent: `frontend/src/app/api/proxy/route.ts` | mediu     |
+| PDF >20 pagini în loturi                                         | azi = plafonare la 20 cu mesaj onest, nu batching                                                     | mediu     |
+| Export HTML interactiv multi-limbă                               | `data-i` = 0 hituri                                                                                   | mediu     |
+| SW auto-versioning                                               | `sw.js:3` încă manual                                                                                 | mic       |
+| Logging JSON structurat / bundle analyzer / dicționar math în UI | —                                                                                                     | mic-mediu |
 
 ---
 
