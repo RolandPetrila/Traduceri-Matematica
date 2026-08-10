@@ -1,0 +1,9 @@
+# Normalizeaza EOL la LF pt fisiere text, indiferent de core.autocrlf local (Windows).
+# Fara asta, un `git checkout` intre branch-uri poate rescrie fisiere text pe disc cu
+# CRLF (autocrlf=true), umfland numarul de caractere citit de teste/cod care fac
+# text.length pe continut (gasit 2026-08-10: un regulament Scolare a picat un test de
+# plafon de caractere DOAR din cauza CRLF-ului local, fara nicio schimbare de continut).
+* text=auto eol=lf
+
+# Scripturile Windows raman CRLF (asteptate de cmd.exe).
+*.bat text eol=crlf
