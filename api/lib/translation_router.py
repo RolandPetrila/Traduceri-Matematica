@@ -155,10 +155,12 @@ def translate_with_nllb(text: str, source_lang: str, target_lang: str, dict_term
 
 
 def translate_with_openrouter(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
-    """G4 — Translate via OpenRouter with automatic free model fallback.
+    """G4 — Translate via OpenRouter (explicit free model, R-COST).
 
-    Uses openrouter/auto which selects the best available free model.
-    Fallback chain: Llama 3.3 70B -> DeepSeek V3 -> Gemma 3 27B.
+    M2 (audit 2026-08-10): era `openrouter/auto`, care alege dintre TOATE
+    modelele disponibile pe cont (nu doar cele gratuite) — fara cost-cap,
+    contrazicea R-COST. Model explicit, acelasi din whitelist-ul deja folosit
+    de `frontend/src/app/api/proxy/route.ts` (`MODEL_ALLOW.openrouter`).
     50 req/day free (no balance), 1000 req/day with $10 balance.
     """
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
@@ -185,7 +187,7 @@ def translate_with_openrouter(text: str, source_lang: str, target_lang: str, dic
     )
 
     payload = json.dumps({
-        "model": "openrouter/auto",
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": text},

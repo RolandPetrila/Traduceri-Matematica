@@ -241,6 +241,7 @@ export function ScolarePanel({
             value={cycleId}
             onChange={(e) => onCycle(e.target.value)}
             className={selectCls}
+            disabled={status === "loading"}
           >
             {CURRICULUM.map((c) => (
               <option key={c.id} value={c.id}>
@@ -255,6 +256,7 @@ export function ScolarePanel({
             value={level.id}
             onChange={(e) => onLevel(e.target.value)}
             className={selectCls}
+            disabled={status === "loading"}
           >
             {cycle.nivele.map((l) => (
               <option key={l.id} value={l.id}>
@@ -269,6 +271,7 @@ export function ScolarePanel({
             value={node.id}
             onChange={(e) => setNodeId(e.target.value)}
             className={selectCls}
+            disabled={status === "loading"}
           >
             {level.noduri.map((n) => (
               <option key={n.id} value={n.id}>
@@ -283,6 +286,7 @@ export function ScolarePanel({
             value={nrEx}
             onChange={(e) => setNrEx(Number(e.target.value))}
             className={selectCls}
+            disabled={status === "loading"}
           >
             {NR_OPTIONS.map((n) => (
               <option key={n} value={n}>
@@ -347,6 +351,8 @@ export function ScolarePanel({
 
       {note && (
         <p
+          role={status === "error" ? "alert" : "status"}
+          aria-live={status === "error" ? "assertive" : "polite"}
           className={`mt-2 text-xs ${status === "error" ? "text-red-300" : "text-chalk-white/70"}`}
         >
           {note}
@@ -357,6 +363,8 @@ export function ScolarePanel({
         <div className="mt-3 flex flex-col gap-2">
           {/* Banner de verificare — MEREU prezent (fișele AI nu au garanție). */}
           <div
+            role="status"
+            aria-live="polite"
             className={`rounded-md border p-2 text-xs ${
               verify && verify.issues.length
                 ? "border-red-400/60 bg-red-500/10 text-red-200"

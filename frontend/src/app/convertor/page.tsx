@@ -495,6 +495,8 @@ export default function ConvertorPage() {
       {/* Result message */}
       {result && (
         <div
+          role={result.success ? "status" : "alert"}
+          aria-live={result.success ? "polite" : "assertive"}
           className={`rounded-lg p-4 text-center ${
             result.success
               ? "bg-green-900/20 border border-green-700/30"

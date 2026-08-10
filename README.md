@@ -16,7 +16,7 @@ Utilizator principal: Cristina (profesoara de matematica la sectia slovaca).
 
 - **Frontend**: Next.js 15 + Tailwind CSS + TypeScript (deploy Vercel)
 - **Backend**: Python serverless (`api/*.py`, handlere Vercel) + shared lib (`api/lib/`)
-- **AI OCR**: Gemini 2.5 Flash → Flash-Lite → Pro (JSON mode), fallback Mistral OCR
+- **AI OCR**: Gemini 3.6 Flash → 3.5 Flash-Lite → 2.5 Flash (JSON mode), fallback Mistral OCR
 - **AI Traducere**: DeepL Free (principal) → NLLB / OpenRouter / Gemini / Groq (fallback)
 - **Figuri**: Crop din original cu Pillow (bbox de la OCR)
 - **Log-uri + coduri eroare**: Supabase (tabele `logs`, `gemini_counter`)
@@ -65,24 +65,29 @@ vercel.json           Config functii Python (maxDuration 300s)
 
 ## API Endpoints
 
-| Endpoint              | Metoda   | Descriere                                      |
-| --------------------- | -------- | ---------------------------------------------- |
-| `/api/health`         | GET      | Health check + versiune                        |
-| `/api/ocr`            | POST     | OCR o pagina (fara traducere) — pas 2 din flow |
-| `/api/translate-text` | POST     | Traducere text on-demand (fara OCR) — pas 3    |
-| `/api/convert`        | POST     | Conversie fisiere (PDF/DOCX/HTML/MD/IMG)       |
-| `/api/deepl-usage`    | GET      | Cota DeepL combinata (2 chei)                  |
-| `/api/gemini-usage`   | GET      | Cota Gemini (contor Supabase)                  |
-| `/api/logs`           | GET/POST | Log-uri diagnostic (via Supabase)              |
+| Endpoint              | Metoda   | Descriere                                     |
+| --------------------- | -------- | --------------------------------------------- |
+| `/api/health`         | GET      | Health check + versiune                       |
+| `/api/ocr`            | POST     | OCR o pagina la import in Editor (F9)         |
+| `/api/translate-text` | POST     | Traducere text on-demand la switch limba (F8) |
+| `/api/convert`        | POST     | Conversie fisiere (PDF/DOCX/HTML/MD/IMG)      |
+| `/api/deepl-usage`    | GET      | Cota DeepL combinata (2 chei)                 |
+| `/api/gemini-usage`   | GET      | Cota Gemini (contor Supabase)                 |
+| `/api/logs`           | GET/POST | Log-uri diagnostic (via Supabase)             |
 
-> **Notă:** modulele AI (Chat / Asistent / Școlare) folosesc o rută **frontend** App Router
+> **Notă:** modulele AI (Chat AI / Școlare) folosesc o rută **frontend** App Router
 > `frontend/src/app/api/proxy/route.ts` (same-origin, chei server-side, rate-limit + cost-cap) —
 > nu handlerul Python de mai sus.
 
 ## Module (LIVE)
 
-Traduceri (backend, tab retras) · Convertor · Editor matematic (nativ TipTap) · Asistent AI ·
-Chat AI · Calculator · Teste · Planșe (6 generatoare + coș) · Școlare 🌐 (fișe curriculare AI).
+Convertor · Editor matematic (nativ TipTap, include import/OCR + traducere on-demand F8) ·
+Chat AI · Calculator · Teste · Istoric · Planșe (6 generatoare + coș) ·
+Școlare 🌐 (fișe curriculare AI, grădiniță→liceu, motor de desen determinist).
+
+> Modulul „Traduceri" original (tab dedicat, viewer 3 pași) a fost retras din UI la F7 —
+> funcționalitatea a fost absorbită de Editor. Iframe-ul „Asistent AI" a fost retras la
+> /improve #16, 2026-08-07 — Chat AI e azi panou nativ.
 
 ## Licenta
 

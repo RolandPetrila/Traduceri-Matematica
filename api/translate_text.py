@@ -206,7 +206,7 @@ class handler(BaseHTTPRequestHandler):
             engine = data.get("translate_engine", "gemini")
 
             if not sections:
-                self._send_json(400, {"error": "No text_sections provided"}, origin)
+                self._send_json(400, {"error": "No text_sections provided", "error_code": "E-APP-001", "status": "error"}, origin)
                 return
 
             t0 = time.time()
@@ -314,7 +314,7 @@ class handler(BaseHTTPRequestHandler):
             }, origin)
 
         except json.JSONDecodeError:
-            self._send_json(400, {"error": "Invalid JSON"}, origin)
+            self._send_json(400, {"error": "Invalid JSON", "error_code": "E-APP-001", "status": "error"}, origin)
         except Exception as e:
             print(f"[TRANSLATE-TEXT] Error: {e}", file=sys.stderr)
             from lib.exceptions import error_response

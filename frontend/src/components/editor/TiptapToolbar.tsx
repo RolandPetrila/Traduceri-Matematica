@@ -313,6 +313,7 @@ export function TiptapToolbar({
               size="sm"
               className="h-8 gap-1 px-2"
               title="Culoare text"
+              aria-label="Culoare text"
             >
               <Baseline className="h-4 w-4 text-red-500" />▾
             </Button>
@@ -339,6 +340,7 @@ export function TiptapToolbar({
               size="sm"
               className="h-8 gap-1 px-2"
               title="Evidențiere"
+              aria-label="Evidențiere"
             >
               <Highlighter className="h-4 w-4" />▾
             </Button>

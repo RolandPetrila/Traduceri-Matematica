@@ -60,7 +60,9 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 ## Conventions
 
 - Limba interfata/documentatie: ROMANA
-- Limba cod/comentarii: ENGLEZA
+- Limba cod: ENGLEZA (identificatori, nume de funcții/variabile). Comentarii: engleză în `api/*.py`
+  (backend); comentarii de context/decizie în română sunt tolerate în `frontend/src/**` (convenție
+  de facto, verificată la audit 2026-08-10 — nu o regulă strict binară cum spunea versiunea veche)
 - API keys: doar in .env / env Vercel, niciodata in cod
 - Tema UI: tabla verde (#2d5016) + text creta (alb/galben); butoane vizibile (contrast WCAG AA)
 - Servicii: GRATUITE prioritar (DeepL free, Gemini free, Vercel Hobby, Supabase free)
@@ -102,7 +104,7 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 | Figuri (crop bbox)            | INTACT             | INTACT           |
 | Structura (ol/ul) + Layout A4 | INTACT             | INTACT           |
 
-## Module (7 total)
+## Module (8 total)
 
 > Modulul „Traduceri" original (viewer 3 pași: Original→RO→SK, tab dedicat) a fost RETRAS din UI la F7
 > (commit `2891d00`) — funcționalitatea a fost absorbită de Editor: import+OCR la import, traducere
@@ -112,9 +114,11 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 1. **Convertor fisiere** — functional, de polish
 2. **Editor matematic** (gimnaziu+liceu) — LIVRAT: **nativ TipTap** (iframe-ul vechi retras la F6), tema verde, quickbar + search matematic, 334+ formule V-XII; include import/OCR + traducere on-demand F8 (fostul modul Traduceri)
 3. **Chat AI** — panou nativ (`ChatPanel.tsx`), tab id „asistent" păstrat doar pt continuitatea `localStorage["activeTab"]` (fostul iframe `/asistent` a fost șters la /improve #16, 2026-08-07)
-4. **Calculator · Corectare-Generare teste (Teste)** — LIVRATE + DEPLOYATE (v30/v31/v32, 2026-08-04)
-5. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
-6. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — 112/112 noduri (grădiniță→liceu) grounded, deployat v49; motor de desen determinist (grădiniță+primar cl.0-1) deployat 2026-08-09
+4. **Calculator** — LIVRAT + DEPLOYAT (v30, 2026-08-04)
+5. **Corectare-Generare teste (Teste)** — LIVRAT + DEPLOYAT (v31/v32, 2026-08-04)
+6. **Istoric** — jurnal local (conversii Convertor + traduceri vechi, dacă există intrări legacy)
+7. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
+8. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — 112/112 noduri (grădiniță→liceu) grounded, deployat v49; motor de desen determinist (grădiniță+primar cl.0-1) deployat 2026-08-09
 
 ## Important
 

@@ -177,6 +177,16 @@ export async function POST(request: NextRequest) {
 // Cross-device diagnostics: read recent logs from Supabase.
 // Query params: level, error_code, limit.
 export async function GET(request: NextRequest) {
+  // M6 (audit 2026-08-10): doar POST era plafonat — GET putea fi apelat nelimitat
+  // (citește cu service-role key, până la 1000 rânduri/apel din Supabase).
+  // Reutilizează același bucket per-IP ca la POST — telemetria legitimă (un om
+  // pe /diagnostics) rămâne larg sub 120/min.
+  if (rateLimited(clientIp(request))) {
+    return NextResponse.json(
+      { status: "rate_limited", total: 0, logs: [] },
+      { status: 429 },
+    );
+  }
   if (!supabaseReady) {
     return NextResponse.json({
       total: 0,

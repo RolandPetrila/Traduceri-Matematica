@@ -88,7 +88,7 @@ def _generate_placeholder() -> str:
 
 
 def crop_figure(
-    image_bytes: bytes,
+    image: bytes | Image.Image,
     bbox: dict,
     target_bg: tuple[int, int, int] = (255, 255, 255),
     tolerance: int = 40,
@@ -97,7 +97,10 @@ def crop_figure(
     """Crop a figure from an image and return as base64 PNG.
 
     Args:
-        image_bytes: Original page image bytes
+        image: Original page image — raw bytes, OR an already-decoded PIL Image
+               (P1, audit 2026-08-10: a page with N figures used to decode the SAME
+               page image N times; callers that loop over multiple figures should
+               decode once and pass the Image object through).
         bbox: {"x": float, "y": float, "w": float, "h": float} — fractions 0.0-1.0
         target_bg: Target background color (default white)
         tolerance: Color tolerance for background detection
@@ -110,13 +113,16 @@ def crop_figure(
     """
     global PLACEHOLDER_B64
 
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-    except Exception as e:
-        print(f"[CROP] Cannot open image: {e}", file=sys.stderr)
-        if PLACEHOLDER_B64 is None:
-            PLACEHOLDER_B64 = _generate_placeholder()
-        return PLACEHOLDER_B64
+    if isinstance(image, Image.Image):
+        img = image
+    else:
+        try:
+            img = Image.open(io.BytesIO(image))
+        except Exception as e:
+            print(f"[CROP] Cannot open image: {e}", file=sys.stderr)
+            if PLACEHOLDER_B64 is None:
+                PLACEHOLDER_B64 = _generate_placeholder()
+            return PLACEHOLDER_B64
 
     w, h = img.size
 
@@ -243,13 +249,27 @@ def embed_crops_in_sections(
     Returns:
         New list of sections with 'img_b64' added to figure sections.
     """
+    # P1 (audit 2026-08-10): decodează o singură dată — o pagină cu N figuri nu
+    # mai reface Image.open() de N ori (bytes rămân disponibili ca fallback de
+    # placeholder dacă decodarea eșuează).
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+    except Exception as e:
+        print(f"[CROP] Cannot open page image: {e}", file=sys.stderr)
+        img = None
+    return _embed_crops(img if img is not None else image_bytes, sections, snap)
+
+
+def _embed_crops(
+    image: bytes | Image.Image, sections: list[dict], snap: bool
+) -> list[dict]:
     result = []
     for section in sections:
         s = dict(section)
         if s.get("type") == "figure":
             bbox = s.get("bbox")
             if bbox and isinstance(bbox, dict):
-                b64 = crop_figure(image_bytes, bbox, snap=snap)
+                b64 = crop_figure(image, bbox, snap=snap)
                 s["img_b64"] = b64
                 s.pop("bbox", None)
             else:
@@ -261,8 +281,8 @@ def embed_crops_in_sections(
                 s.pop("bbox", None)
                 print("[CROP] Figure has no bbox, using placeholder", file=sys.stderr)
         elif s.get("type") == "two_column":
-            s["left"] = embed_crops_in_sections(image_bytes, s.get("left", []), snap)
-            s["right"] = embed_crops_in_sections(image_bytes, s.get("right", []), snap)
+            s["left"] = _embed_crops(image, s.get("left", []), snap)
+            s["right"] = _embed_crops(image, s.get("right", []), snap)
         result.append(s)
     return result
 

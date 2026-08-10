@@ -156,7 +156,7 @@ class handler(BaseHTTPRequestHandler):
             files = parts.get("files", [])
 
             if not files:
-                self._send_json(400, {"error": "Nu au fost trimise fisiere", "status": "error"})
+                self._send_json(400, {"error": "Nu au fost trimise fisiere", "error_code": "E-APP-001", "status": "error"})
                 return
 
             t0 = time.time()

@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import type { HistoryEntry } from "@/lib/types";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { logAction } from "@/lib/monitoring";
+import { logAction, logError } from "@/lib/monitoring";
 import { API_URL } from "@/lib/api-url";
 
 interface HistoryDetailProps {
@@ -10,6 +11,11 @@ interface HistoryDetailProps {
   onBack: () => void;
 }
 
+// H3 (audit 2026-08-10): fostul fallback ("catch { descarcă HTML brut cu
+// extensia .docx }") mascase orice eroare de server — userul primea un fișier
+// stricat, deschis greșit de Word, fără nicio explicație. Acum propagă eroarea
+// reală (mesajul din corpul JSON, dacă serverul îl trimite) — apelantul decide
+// ce arată userului, nu mai există fallback silențios.
 async function downloadAsDocx(html: string, filename: string) {
   const formData = new FormData();
   const htmlBlob = new Blob([html], { type: "text/html" });
@@ -17,32 +23,32 @@ async function downloadAsDocx(html: string, filename: string) {
   formData.append("operation", "convert");
   formData.append("target_format", "docx");
 
-  try {
-    const res = await fetch(`${API_URL}/api/convert`, {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) throw new Error(`Server error: ${res.status}`);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch {
-    // Fallback: download as HTML with .docx extension
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+  const res = await fetch(`${API_URL}/api/convert`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    let message = `Eroare server: ${res.status}`;
+    try {
+      const data = await res.json();
+      if (data?.error) message = data.error;
+    } catch {
+      /* corpul nu era JSON — păstrează mesajul generic de mai sus */
+    }
+    throw new Error(message);
   }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
+  const [docxError, setDocxError] = useState<string | null>(null);
+
   const handleDownloadHtml = () => {
     if (!entry.html) return;
     const blob = new Blob([entry.html], { type: "text/html" });
@@ -57,8 +63,17 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
 
   const handleDownloadDocx = async () => {
     if (!entry.html) return;
-    await downloadAsDocx(entry.html, `traducere_${entry.id}.docx`);
-    logAction("Re-download DOCX din istoric", { entryId: entry.id });
+    setDocxError(null);
+    try {
+      await downloadAsDocx(entry.html, `traducere_${entry.id}.docx`);
+      logAction("Re-download DOCX din istoric", { entryId: entry.id });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Eroare necunoscuta";
+      setDocxError(message);
+      logError(`Re-download DOCX esuat: ${message}`, {
+        context: { entryId: entry.id },
+      });
+    }
   };
 
   const handlePrintPdf = () => {
@@ -95,6 +110,15 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
           </div>
         )}
       </div>
+
+      {docxError && (
+        <div
+          role="alert"
+          className="rounded-md border border-red-400/60 bg-red-500/10 p-2 text-sm text-red-200"
+        >
+          ⚠ Export DOCX esuat: {docxError}
+        </div>
+      )}
 
       {/* Details card */}
       <div className="bg-white/5 rounded-lg p-4 space-y-2">

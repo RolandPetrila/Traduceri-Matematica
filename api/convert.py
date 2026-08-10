@@ -493,6 +493,78 @@ def compress_pdf(data: bytes, name: str) -> dict:
 
 # --- PDF Edit operations ---
 
+def _pdf_action_rotate(reader, writer, total, kwargs):
+    angle = int(kwargs.get("rotate_angle", "90"))
+    indices = _parse_page_range(kwargs.get("page_range", "all"), total)
+    for i in range(total):
+        page = reader.pages[i]
+        if i in indices:
+            page.rotate(angle)
+        writer.add_page(page)
+
+
+def _pdf_action_delete(reader, writer, total, kwargs):
+    indices = _parse_page_range(kwargs.get("page_range", ""), total)
+    if not indices:
+        raise ValueError("Specifica paginile de sters")
+    keep = [i for i in range(total) if i not in indices]
+    if not keep:
+        raise ValueError("Nu poti sterge toate paginile")
+    for i in keep:
+        writer.add_page(reader.pages[i])
+
+
+def _pdf_action_reorder(reader, writer, total, kwargs):
+    seq_str = kwargs.get("reorder_sequence", "")
+    if not seq_str:
+        raise ValueError("Specifica ordinea paginilor (ex: 3,1,2,5,4)")
+    order = [int(x.strip()) - 1 for x in seq_str.split(",") if x.strip().isdigit()]
+    order = [i for i in order if 0 <= i < total]
+    if not order:
+        raise ValueError("Secventa de reordonare invalida")
+    for i in order:
+        writer.add_page(reader.pages[i])
+
+
+def _pdf_action_optimize(reader, writer, total, kwargs):
+    for page in reader.pages:
+        writer.add_page(page)
+    writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+
+
+def _pdf_action_watermark(reader, writer, total, kwargs):
+    from pypdf import PdfReader
+
+    wm_text = kwargs.get("watermark_text", "WATERMARK")
+    # Create watermark page using fpdf2
+    from fpdf import FPDF
+    wm_pdf = FPDF()
+    wm_font = _load_dejavu_font(wm_pdf)
+    wm_pdf.add_page()
+    wm_pdf.set_font(wm_font, "B", 50)
+    wm_pdf.set_text_color(200, 200, 200)
+    wm_pdf.rotate(45, wm_pdf.w / 2, wm_pdf.h / 2)
+    wm_pdf.text(wm_pdf.w / 4, wm_pdf.h / 2, wm_text)
+    wm_bytes = wm_pdf.output()
+    wm_reader = PdfReader(io.BytesIO(wm_bytes))
+    wm_page = wm_reader.pages[0]
+    for page in reader.pages:
+        page.merge_page(wm_page)
+        writer.add_page(page)
+
+
+# M9 (audit 2026-08-10): edit_pdf() era o singura functie cu 5 ramuri if/elif —
+# dispatch dict + o functie per actiune, comportament identic, mai usor de
+# adaugat o actiune noua fara sa atingi restul.
+_PDF_ACTIONS = {
+    "rotate": _pdf_action_rotate,
+    "delete": _pdf_action_delete,
+    "reorder": _pdf_action_reorder,
+    "optimize": _pdf_action_optimize,
+    "watermark": _pdf_action_watermark,
+}
+
+
 def edit_pdf(data: bytes, name: str, **kwargs) -> dict:
     """Handle PDF edit operations: rotate, delete, reorder, optimize, watermark."""
     from pypdf import PdfReader, PdfWriter
@@ -500,66 +572,14 @@ def edit_pdf(data: bytes, name: str, **kwargs) -> dict:
     action = kwargs.get("pdf_action", "")
     if not action:
         raise ValueError("Specifica o operatie PDF (rotate/delete/reorder/optimize/watermark)")
+    handler = _PDF_ACTIONS.get(action)
+    if handler is None:
+        raise ValueError(f"Operatie PDF necunoscuta: {action}")
 
     reader = PdfReader(io.BytesIO(data))
     total = len(reader.pages)
     writer = PdfWriter()
-
-    if action == "rotate":
-        angle = int(kwargs.get("rotate_angle", "90"))
-        indices = _parse_page_range(kwargs.get("page_range", "all"), total)
-        for i in range(total):
-            page = reader.pages[i]
-            if i in indices:
-                page.rotate(angle)
-            writer.add_page(page)
-
-    elif action == "delete":
-        indices = _parse_page_range(kwargs.get("page_range", ""), total)
-        if not indices:
-            raise ValueError("Specifica paginile de sters")
-        keep = [i for i in range(total) if i not in indices]
-        if not keep:
-            raise ValueError("Nu poti sterge toate paginile")
-        for i in keep:
-            writer.add_page(reader.pages[i])
-
-    elif action == "reorder":
-        seq_str = kwargs.get("reorder_sequence", "")
-        if not seq_str:
-            raise ValueError("Specifica ordinea paginilor (ex: 3,1,2,5,4)")
-        order = [int(x.strip()) - 1 for x in seq_str.split(",") if x.strip().isdigit()]
-        order = [i for i in order if 0 <= i < total]
-        if not order:
-            raise ValueError("Secventa de reordonare invalida")
-        for i in order:
-            writer.add_page(reader.pages[i])
-
-    elif action == "optimize":
-        for page in reader.pages:
-            writer.add_page(page)
-        writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
-
-    elif action == "watermark":
-        wm_text = kwargs.get("watermark_text", "WATERMARK")
-        # Create watermark page using fpdf2
-        from fpdf import FPDF
-        wm_pdf = FPDF()
-        wm_font = _load_dejavu_font(wm_pdf)
-        wm_pdf.add_page()
-        wm_pdf.set_font(wm_font, "B", 50)
-        wm_pdf.set_text_color(200, 200, 200)
-        wm_pdf.rotate(45, wm_pdf.w / 2, wm_pdf.h / 2)
-        wm_pdf.text(wm_pdf.w / 4, wm_pdf.h / 2, wm_text)
-        wm_bytes = wm_pdf.output()
-        wm_reader = PdfReader(io.BytesIO(wm_bytes))
-        wm_page = wm_reader.pages[0]
-        for page in reader.pages:
-            page.merge_page(wm_page)
-            writer.add_page(page)
-
-    else:
-        raise ValueError(f"Operatie PDF necunoscuta: {action}")
+    handler(reader, writer, total, kwargs)
 
     buf = io.BytesIO()
     writer.write(buf)
@@ -728,10 +748,21 @@ class handler(BaseHTTPRequestHandler):
                 supabase_client.log_error("E-CONV-001", error_msg, source="convert")
             except Exception:
                 pass
-            error_body = json.dumps({"error": error_msg, "error_code": "E-CONV-001", "status": "error"}).encode()
-            self.send_response(400 if isinstance(e, ValueError) else 500)
+            # H2 (audit 2026-08-10): singurul handler care trimitea str(e) brut la
+            # client pt ORICE exceptie (contrazice S6 din exceptions.py — un mesaj
+            # de librarie neasteptat poate contine detalii interne). ValueError e
+            # tot validare asteptata (input utilizator: "PDF-ul nu are pagini" etc.)
+            # -> mesajul ramane sigur de aratat, statusul 400 e pastrat neschimbat;
+            # orice altceva trece prin error_response() (mesaj generic, ca la
+            # ocr.py/translate_text.py).
+            from lib.exceptions import error_response, AppError
+            if isinstance(e, ValueError) and not isinstance(e, AppError):
+                status, body = 400, {"error": error_msg, "error_code": "E-CONV-001", "status": "error"}
+            else:
+                status, body = error_response(e, default_code="E-CONV-001")
+            self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
             self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
             self.end_headers()
-            self.wfile.write(error_body)
+            self.wfile.write(json.dumps(body).encode())

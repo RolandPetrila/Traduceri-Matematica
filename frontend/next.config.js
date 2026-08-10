@@ -9,6 +9,13 @@ const connectSrc = ["'self'", apiUrl, supabaseUrl, "https://*.supabase.co"]
 
 const nextConfig = {
   reactStrictMode: true,
+  // H4 (audit 2026-08-10): `next/image`/`/_next/image` nu sunt folosite nicaieri in
+  // aplicatie (toate imaginile sunt data-URI generate runtime din OCR/crop, sau
+  // asset-uri statice servite direct) — dar ruta de optimizare ramane activa implicit,
+  // aducand `sharp` (CVE-2026-33327/33328/35590/35591, fix real doar via Next 16) in
+  // suprafata de atac fara beneficiu. Dezactivare explicita = mitigare imediata,
+  // fara sa astepte upgrade-ul major (deja backlog constient, PLAN_MASTER §7).
+  images: { unoptimized: true },
   // NU seta outputFileTracingRoot la părinte (încercat 2026-08-07, revert imediat):
   // rezolvă warning-ul cosmetic de workspace-root LOCAL, dar rupe deploy-ul real pe
   // Vercel (ENOENT .next/path0/path0/routes-manifest.json — Root Directory-ul

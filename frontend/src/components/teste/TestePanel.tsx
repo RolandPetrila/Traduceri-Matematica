@@ -277,6 +277,8 @@ function GenerateTab({
       </Button>
       {note && (
         <p
+          role={status === "error" ? "alert" : "status"}
+          aria-live={status === "error" ? "assertive" : "polite"}
           className={`text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}
         >
           {note}
@@ -497,6 +499,8 @@ function CorrectTab({
       </div>
       {note && (
         <p
+          role={status === "error" ? "alert" : "status"}
+          aria-live={status === "error" ? "assertive" : "polite"}
           className={`text-xs ${status === "error" ? "text-destructive" : "text-muted-foreground"}`}
         >
           {note}

@@ -251,7 +251,13 @@ export function ChatPanel({
             </div>
           )}
         {note && (
-          <p className="text-center text-xs text-muted-foreground">{note}</p>
+          <p
+            role={status === "error" ? "alert" : "status"}
+            aria-live={status === "error" ? "assertive" : "polite"}
+            className="text-center text-xs text-muted-foreground"
+          >
+            {note}
+          </p>
         )}
       </div>
 
