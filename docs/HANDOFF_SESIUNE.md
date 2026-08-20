@@ -2,6 +2,34 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
+## ▶️ REIA DE AICI (2026-08-20, continuare) — Azure Translator în lanț (4M chars/lună free) + inventar AI-uri gratuite
+
+> **Cerere Roland:** limitele AI se epuizau la testare → inventariază toate AI-urile free deținute
+> (`.api-keys`) + cablează-le ca să nu mai atingi limitele. AskUserQuestion → **opțiunea 1** (traducere)
+>
+> - salvează inventarul în proiect.
+>
+> **Diagnoză:** traducerea (F8) rula pe DeepL = 500K chars/lună (cel mai mic tier). Roland are un
+> arsenal free neatins — cel mai mare: **Azure Translator 2M × 2 chei = 4M chars/lună**.
+>
+> **Livrat + LIVE (deploy backend `traduceri-api`, build `8a93060`):**
+>
+> - **Azure Translator cablat** în lanț: DeepL → **Azure** → NLLB → OpenRouter → Gemini
+>   (`translation_router.py::translate_with_azure`, protejează inline-math cu `__MATH_N__`; failover
+>   KEY→KEY_2; regiune via `AZURE_TRANSLATOR_REGION`). Lanțul imbricat de 60 linii → helper ordonat
+>   `_run_translation_chain` (testabil). Groq scos (mort 404).
+> - **DeepL cheia 2** (failover) era DEJA cablat (`deepl_client.py`) — nimic de făcut.
+> - **Chei Azure provisionate în Vercel `traduceri-api`** (KEY, KEY_2, REGION=westeurope) — fără valori
+>   afișate (stdin→vercel, R-SEC + excepția `.api-keys`).
+> - **Verificat LIVE:** Azure direct RO→SK corect (200, 1.07s); endpoint `/api/translate_text` RO→SK
+>   200 provider DeepL (lanțul refactorizat merge). Azure = plasă de 4M/lună când DeepL (456) se epuizează.
+> - **Inventar salvat:** `docs/AI_PROVIDERS_FREE_INVENTORY.md` — toate AI-urile free (traducere/OCR/chat/
+>   căutare), status cablat/necablat, comenzi de provisionare. Descoperiri notabile NEcablate încă:
+>   Azure Doc Intelligence (1000 pag/lună OCR), Google Translate (1M), Cohere/SambaNova/Fireworks (chat).
+>
+> **Gate: `pytest 67/67` (+5 `test_translate_chain`).** Commit `8a93060`. Deploy `traduceri-api` READY.
+> **Notă:** `groq`/`cerebras` rămân morți (404/402) — re-adăugarea cere chei free noi valide (flux `.api-keys`).
+
 ## ▶️ REIA DE AICI (2026-08-20) — Tipografie clasică lizibilă (telefon) + diagnoză log-uri prod (5 fix-uri) + R-DIAG-AUTO
 
 > **Cerere Roland:** (1) format text „clasic/profesionist/lizibil pe telefon"; (2) diagnoză din log-urile
@@ -17,6 +45,7 @@
 > fallback — fără @import), Planșe (6 generatoare + `style.css`).
 >
 > **2+3. Diagnoză log-uri prod (300 intrări) → 5 fix-uri:**
+>
 > - **Chat lent ~40s/mesaj:** sondă LIVE pe prod (`scratchpad/provider_health.mjs`) a dovedit
 >   `cerebras` **402** (cotă free epuizată — R-COST) + `groq` **404** (ambele modele, cont fără acces)
 >   = morți; Gemini e SĂNĂTOS+rapid (1.7s), dar timeout-ul de 20s tăia răspunsurile LUNGI fix la finish
