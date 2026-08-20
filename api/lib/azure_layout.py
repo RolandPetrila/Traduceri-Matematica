@@ -44,8 +44,11 @@ def azure_layout(image_bytes: bytes, mime_type: str, source_lang: str = "ro") ->
     (api/ocr.py) falls back to Gemini so a page is never lost (R-MATH).
     """
     endpoint = os.environ.get("AZURE_DOC_INTEL_ENDPOINT", "").strip().rstrip("/")
-    key = os.environ.get("AZURE_DOC_INTEL_KEY", "").strip()
-    if not endpoint or not key:
+    # Failover pe 2 chei (2026-08-20): fiecare cheie F0 are 500 pagini/lună → ×2 = 1000.
+    # Când KEY1 e epuizată (403/429) sau invalidă (401), trecem la KEY2 fără să pierdem pagina.
+    key1 = os.environ.get("AZURE_DOC_INTEL_KEY", "").strip()
+    key2 = os.environ.get("AZURE_DOC_INTEL_KEY_2", "").strip()
+    if not endpoint or (not key1 and not key2):
         raise RuntimeError("AZURE_DOC_INTEL_ENDPOINT / AZURE_DOC_INTEL_KEY not set")
 
     b64 = base64.b64encode(image_bytes).decode("utf-8")
@@ -54,49 +57,57 @@ def azure_layout(image_bytes: bytes, mime_type: str, source_lang: str = "ro") ->
         f"prebuilt-layout:analyze?api-version={_API_VERSION}"
     )
     body = json.dumps({"base64Source": b64}).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Ocp-Apim-Subscription-Key": key,
-        },
-    )
 
     print(f"[AZURE] Analyze: {len(image_bytes)} bytes, {mime_type}", file=sys.stderr)
-    try:
+
+    def _analyze_with_key(key: str) -> dict:
+        """Submit + poll cu o cheie dată. Întoarce payload-ul 'succeeded'."""
+        req = urllib.request.Request(
+            url,
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Ocp-Apim-Subscription-Key": key,
+            },
+        )
         with urllib.request.urlopen(req, timeout=_ANALYZE_TIMEOUT) as resp:
             op_location = resp.headers.get("Operation-Location")
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode("utf-8", errors="replace")[:300]
-        raise RuntimeError(f"Azure analyze HTTP {e.code}: {detail}")
-
-    if not op_location:
-        raise RuntimeError("Azure analyze: missing Operation-Location header")
-
-    # Poll the async operation until succeeded, within a hard deadline.
-    deadline = time.time() + _TOTAL_DEADLINE
-    data = None
-    poll_req = urllib.request.Request(
-        op_location, headers={"Ocp-Apim-Subscription-Key": key}
-    )
-    while time.time() < deadline:
-        time.sleep(_POLL_INTERVAL)
-        try:
+        if not op_location:
+            raise RuntimeError("Azure analyze: missing Operation-Location header")
+        deadline = time.time() + _TOTAL_DEADLINE
+        poll_req = urllib.request.Request(
+            op_location, headers={"Ocp-Apim-Subscription-Key": key}
+        )
+        while time.time() < deadline:
+            time.sleep(_POLL_INTERVAL)
             with urllib.request.urlopen(poll_req, timeout=_POLL_TIMEOUT) as presp:
                 data = json.loads(presp.read().decode("utf-8"))
+            status = (data or {}).get("status")
+            if status == "succeeded":
+                return data
+            if status == "failed":
+                err = (data.get("error") or {}).get("message", "unknown")
+                raise RuntimeError(f"Azure analyze failed: {err}")
+            # status in {"notStarted","running"} → keep polling
+        raise RuntimeError(f"Azure layout timeout after {_TOTAL_DEADLINE}s")
+
+    data = None
+    last_err: Exception | None = None
+    for kn, key in (("KEY1", key1), ("KEY2", key2)):
+        if not key:
+            continue
+        try:
+            data = _analyze_with_key(key)
+            break
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", errors="replace")[:200]
-            raise RuntimeError(f"Azure poll HTTP {e.code}: {detail}")
-        status = (data or {}).get("status")
-        if status == "succeeded":
-            break
-        if status == "failed":
-            err = (data.get("error") or {}).get("message", "unknown")
-            raise RuntimeError(f"Azure analyze failed: {err}")
-        # status in {"notStarted","running"} → keep polling
-    else:
-        raise RuntimeError(f"Azure layout timeout after {_TOTAL_DEADLINE}s")
+            if e.code in (401, 403, 429):  # invalid / cotă epuizată / rate-limit → cheia următoare
+                print(f"[AZURE] {kn} HTTP {e.code} (cotă/auth), trying next key", file=sys.stderr)
+                last_err = RuntimeError(f"Azure HTTP {e.code}: {detail}")
+                continue
+            raise RuntimeError(f"Azure HTTP {e.code}: {detail}")
+    if data is None:
+        raise last_err or RuntimeError("Azure layout: all keys exhausted/invalid")
 
     result = (data or {}).get("analyzeResult") or {}
     sections = _result_to_sections(result)
