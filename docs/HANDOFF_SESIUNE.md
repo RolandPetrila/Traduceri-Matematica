@@ -30,13 +30,22 @@
 > **Gate: `tsc 0 · jest 356/356 (+2 capitole) · build ...`.** NEDEPLOYAT încă (frontend — panouri +
 > proxy). **Verificare vizuală reală (browser) recomandată** — extensia Chrome n-a fost folosită.
 >
-> **⏳ COADĂ (2 cereri MARI, fiecare = o sesiune):**
+> **✅ #3 Sursare manuale — FĂCUT (2026-08-20).** Decizie Roland (AskUserQuestion): descărcare LOCALĂ,
+> doar matematică, toate clasele. Livrat: **9 manuale reale** (primar I-IV + gimnaziu V-VIII COMPLET +
+> liceu XI, 275MB) în `manuale_matematica_local/` (GITIGNORED — copyright, necomis) + `README.md` index.
+> Surse legale: manuale.edu.ro + download.intuitext.ro + edituraedu.ro. **Goluri oneste (NU există liber
+> legal; refuzat piraterie scribd/pdfcoffee):** CP (setul MEM începe de la Cl.I) + Liceu IX/X/XII
+> (copyright Burtea/Carminis — programul gratuit a acoperit I-VIII). README listează sursele legale.
+> Pattern util: `download.intuitext.ro/manuale/Intuitext_Manual_{MAT|MEM}_cls_N.pdf`. NU reface — complet
+> cât se poate legal.
 >
-> 1. **Audit + maximizare TOATE modulele** („valid pt elevi conform programei") — parțial
->    NEautomatizabil: validitatea curriculară a conținutului cere judecata Cristinei/Roland.
-> 2. **Sursare PDF/manuale per clasă** — CLARIFICARE necesară: aplicația are _programă_ (OMEN,
->    `sursa_url` per ciclu în `curriculum/*.ts`), NU _manuale_ (textbook = problemă de copyright).
->    De stabilit ce vrea Roland: verificare `sursa_url` per clasă (ieftin) vs. descărcare manuale reale.
+> **⏳ COADĂ RĂMASĂ — 1 cerere MARE (sesiune dedicată):**
+>
+> - **#4 Audit + maximizare TOATE modulele** („valid pt elevi conform programei") — de pornit DUPĂ ce
+>   Roland testează live #1+#2. Parțial NEautomatizabil: validitatea curriculară cere judecata Cristinei/Roland.
+>   Abordare aleasă (AskUserQuestion): sesiune dedicată focusată (module, dovezi file:line, plan remediere).
+> - **DE TESTAT de Roland (vizual, telefon):** Școlare (selector capitole + 20 exerciții), Teste
+>   (auto-continuare), tipografia nouă. Extensia Chrome n-a fost folosită → verificare vizuală reală lipsă.
 
 > **Cerere Roland:** limitele AI se epuizau la testare → inventariază toate AI-urile free deținute
 > (`.api-keys`) + cablează-le ca să nu mai atingi limitele. AskUserQuestion → **opțiunea 1** (traducere)

@@ -22,14 +22,14 @@
 
 ## 🔤 TRADUCERE (F8) — caractere/lună
 
-| Serviciu                       | Env var(s)                                 | Capacitate free           | Status                                                                 |
-| ------------------------------ | ------------------------------------------ | ------------------------- | ---------------------------------------------------------------------- |
+| Serviciu                       | Env var(s)                                 | Capacitate free           | Status                                                                                      |
+| ------------------------------ | ------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------- |
 | **Azure Translator**           | `AZURE_TRANSLATOR_KEY` (+`_2`, +`_REGION`) | **2M × 2 chei = 4M/lună** | ✅ **cablat + activ** (2026-08-20): DeepL → Azure → …; chei în Vercel, verificat live RO→SK |
-| DeepL                          | `DEEPL_API_KEY` (+`_2`)                    | 500K × 2 = 1M/lună        | ✅ cablat (principal, cu failover cheia 2)                             |
-| Google Translate               | `GOOGLE_API_KEY` (+`_2`)                   | 500K × 2 = 1M/lună        | ⬜ necablat (API separat pe cheile Gemini)                             |
-| HF NLLB-200                    | `HF_TOKEN`                                 | 1000 req/zi               | ✅ cablat (fallback)                                                   |
-| OpenRouter (LLM)               | `OPENROUTER_API_KEY`                       | 50 req/zi (fără sold)     | ✅ cablat (fallback slab)                                              |
-| Cloudflare Workers AI (m2m100) | `CF_AI_TOKEN`                              | 10.000 neurons/zi         | ⬜ necablat                                                            |
+| DeepL                          | `DEEPL_API_KEY` (+`_2`)                    | 500K × 2 = 1M/lună        | ✅ cablat (principal, cu failover cheia 2)                                                  |
+| Google Translate               | `GOOGLE_API_KEY` (+`_2`)                   | 500K × 2 = 1M/lună        | ⬜ necablat (API separat pe cheile Gemini)                                                  |
+| HF NLLB-200                    | `HF_TOKEN`                                 | 1000 req/zi               | ✅ cablat (fallback)                                                                        |
+| OpenRouter (LLM)               | `OPENROUTER_API_KEY`                       | 50 req/zi (fără sold)     | ✅ cablat (fallback slab)                                                                   |
+| Cloudflare Workers AI (m2m100) | `CF_AI_TOKEN`                              | 10.000 neurons/zi         | ⬜ necablat                                                                                 |
 
 **Lanț actual (după 2026-08-20):** DeepL → **Azure** → NLLB → OpenRouter → Gemini.
 **Total disponibil dacă se cablează tot: ~6M caractere/lună** (≈ 2000-3000 pagini text) = practic nelimitat pt 1 profesoară.
