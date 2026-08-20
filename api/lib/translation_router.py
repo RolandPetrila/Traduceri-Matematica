@@ -23,11 +23,17 @@ try:
 except ImportError:
     from lib.retry import retry_with_backoff
 
+try:
+    from .math_protect import protect_with_placeholders, restore_from_placeholders
+except ImportError:
+    pass
+
 
 __all__ = [
     "translate_with_groq",
     "translate_with_nllb",
     "translate_with_openrouter",
+    "translate_with_azure",
 ]
 
 
@@ -94,6 +100,79 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
         error_body = e.read().decode("utf-8", errors="replace")
         print(f"[GROQ ERROR] Status {e.code}: {error_body[:500]}", file=sys.stderr)
         raise RuntimeError(f"Groq API error {e.code}: {error_body[:200]}")
+
+
+def translate_with_azure(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
+    """Azure Translator (NMT) — 2M caractere/lună/cheie GRATUIT (×2 chei = 4M/lună).
+
+    Cel mai mare tier gratuit de traducere pe care-l deține Roland — adăugat 2026-08-20
+    ca să nu se mai epuizeze DeepL (500K/cheie). Protejează inline LaTeX/SVG cu
+    placeholdere `__MATH_N__` (NMT pur, fără prompt). Failover AZURE_TRANSLATOR_KEY →
+    _2 pe eroare de autentificare. Regiunea resursei via AZURE_TRANSLATOR_REGION
+    (default 'global' — resursele Translator globale; pt o resursă regională setează
+    ex. 'westeurope'). Limită Azure: 50.000 caractere/cerere.
+
+    NECESITĂ în env Vercel (traduceri-api): AZURE_TRANSLATOR_KEY [+ _2] [+ _REGION].
+    Fără cheie → RuntimeError (prins de lanț, trece la următorul provider).
+    """
+    key1 = os.environ.get("AZURE_TRANSLATOR_KEY", "").strip()
+    key2 = os.environ.get("AZURE_TRANSLATOR_KEY_2", "").strip()
+    if not key1 and not key2:
+        raise RuntimeError("AZURE_TRANSLATOR_KEY not set — Azure translation unavailable")
+    region = os.environ.get("AZURE_TRANSLATOR_REGION", "global").strip() or "global"
+
+    lang_map = {"ro": "ro", "sk": "sk", "en": "en", "de": "de"}
+    src = lang_map.get(source_lang, source_lang)
+    tgt = lang_map.get(target_lang, target_lang)
+
+    # Protecție inline-math (Azure e NMT pur — fără promptul care ține LaTeX-ul intact).
+    protected, mapping = protect_with_placeholders(text)
+    if len(protected) > 50000:
+        raise RuntimeError(f"Azure: text prea lung ({len(protected)} > 50000 chars) — trece la fallback")
+
+    url = (
+        "https://api.cognitive.microsofttranslator.com/translate"
+        f"?api-version=3.0&from={src}&to={tgt}"
+    )
+    body = json.dumps([{"Text": protected}]).encode("utf-8")
+
+    print(f"[TRANSLATE] Azure: {src} -> {tgt}, {len(text)} chars, region={region}", file=sys.stderr)
+
+    def _call(k: str):
+        req = urllib.request.Request(
+            url,
+            data=body,
+            headers={
+                "Ocp-Apim-Subscription-Key": k,
+                "Ocp-Apim-Subscription-Region": region,
+                "Content-Type": "application/json; charset=UTF-8",
+            },
+        )
+        # timeout < maxDuration 60s; Azure e rapid (<3s tipic).
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    last_err: Exception | None = None
+    for kn, key in [("KEY1", key1), ("KEY2", key2)]:
+        if not key:
+            continue
+        try:
+            data = retry_with_backoff(lambda k=key: _call(k), max_retries=1, base_delay=2.0)
+            translated = data[0]["translations"][0]["text"]
+            return restore_from_placeholders(translated, mapping)
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="replace")[:200]
+            if e.code in (401, 403):
+                print(f"[AZURE] {kn} auth error {e.code}, trying next key", file=sys.stderr)
+                last_err = RuntimeError(f"Azure auth {e.code}")
+                continue
+            print(f"[AZURE] {kn} error {e.code}: {err_body}", file=sys.stderr)
+            raise RuntimeError(f"Azure API error {e.code}: {err_body}")
+        except Exception as e:
+            last_err = e
+            print(f"[AZURE] {kn} error: {e}", file=sys.stderr)
+            continue
+    raise last_err or RuntimeError("Azure translation failed (all keys)")
 
 
 def translate_with_nllb(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:

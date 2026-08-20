@@ -27,7 +27,12 @@ except ImportError:
     _HAS_DEEPL = False
 
 try:
-    from lib.translation_router import translate_with_nllb, translate_with_openrouter, translate_with_groq
+    from lib.translation_router import (
+        translate_with_nllb,
+        translate_with_openrouter,
+        translate_with_groq,
+        translate_with_azure,
+    )
     _HAS_EXTRA_PROVIDERS = True
 except ImportError:
     _HAS_EXTRA_PROVIDERS = False
@@ -45,6 +50,58 @@ def _collect_texts_recursive(sections: list) -> list:
         else:
             texts.append(s.get("content", ""))
     return texts
+
+
+def _run_translation_chain(batch: str, source_lang: str, target_lang: str, engine: str):
+    """Lanț de traducere ordonat. Întoarce (translated, provider_name); ridică ultima
+    eroare dacă toți providerii cad.
+
+    engine 'deepl' (default F8): DeepL → Azure → NLLB → OpenRouter → Gemini.
+    altfel:                      Gemini → Azure → NLLB.
+
+    Azure Translator (2026-08-20) adaugă 4M caractere/lună gratuit → plafonul DeepL de
+    1M nu mai e gâtuire. Fiecare provider se auto-protejează pe cheie lipsă (ridică →
+    trece la următorul). Refactor dintr-un if/else imbricat de 60 de linii (mai ușor de
+    întreținut + testabil — vezi api/tests/test_translate_chain.py). Groq scos din lanț
+    (mort 404, verificat live 2026-08-20)."""
+    def _deepl():
+        protected = protect_for_deepl(batch)
+        return restore_from_deepl(_deepl_translate(protected, target_lang, source_lang))
+
+    def _env(name: str) -> bool:
+        return bool(os.environ.get(name, "").strip())
+
+    deepl_ok = _HAS_DEEPL and (_env("DEEPL_API_KEY") or _env("DEEPL_API_KEY_2"))
+    azure_ok = _HAS_EXTRA_PROVIDERS and (_env("AZURE_TRANSLATOR_KEY") or _env("AZURE_TRANSLATOR_KEY_2"))
+    hf_ok = _HAS_EXTRA_PROVIDERS and _env("HF_TOKEN")
+    or_ok = _HAS_EXTRA_PROVIDERS and _env("OPENROUTER_API_KEY")
+
+    azure = ("Azure Translator", azure_ok, lambda: translate_with_azure(batch, source_lang, target_lang))
+    nllb = ("NLLB", hf_ok, lambda: translate_with_nllb(batch, source_lang, target_lang))
+    gemini = ("Gemini", True, lambda: _gemini_translate(batch, source_lang, target_lang))
+
+    if engine == "deepl":
+        candidates = [
+            ("DeepL", deepl_ok, _deepl),
+            azure,
+            nllb,
+            ("OpenRouter", or_ok, lambda: translate_with_openrouter(batch, source_lang, target_lang)),
+            ("Gemini (fallback)", True, lambda: _gemini_translate(batch, source_lang, target_lang)),
+        ]
+    else:
+        candidates = [gemini, azure, nllb]
+
+    last_err: Exception | None = None
+    for name, ok, fn in candidates:
+        if not ok:
+            continue
+        try:
+            return fn(), name
+        except Exception as e:  # noqa: BLE001 — colectăm + trecem la următorul provider
+            last_err = e
+            print(f"[TRANSLATE-TEXT] {name} failed: {e}", file=sys.stderr)
+            continue
+    raise last_err or RuntimeError("Niciun provider de traducere disponibil")
 
 
 def _apply_translations_recursive(sections: list, parts_iter) -> list:
@@ -216,58 +273,13 @@ class handler(BaseHTTPRequestHandler):
             texts = _collect_texts_recursive(sections)
             batch = SEP.join(texts)
 
-            # Translate — chain: DeepL → NLLB → OpenRouter → Gemini → Groq
+            # Translate — lanț ordonat (vezi _run_translation_chain):
+            # engine 'deepl': DeepL → Azure → NLLB → OpenRouter → Gemini.
             prov = "unknown"
             try:
-                if engine == "deepl" and _HAS_DEEPL and os.environ.get("DEEPL_API_KEY", "").strip():
-                    try:
-                        protected = protect_for_deepl(batch)
-                        translated = _deepl_translate(protected, target_lang, source_lang)
-                        translated = restore_from_deepl(translated)
-                        prov = "DeepL"
-                    except Exception as deepl_err:
-                        print(f"[TRANSLATE-TEXT] DeepL failed: {deepl_err}, trying NLLB", file=sys.stderr)
-                        if _HAS_EXTRA_PROVIDERS and os.environ.get("HF_TOKEN", "").strip():
-                            try:
-                                translated = translate_with_nllb(batch, source_lang, target_lang)
-                                prov = "NLLB"
-                            except Exception as nllb_err:
-                                print(f"[TRANSLATE-TEXT] NLLB failed: {nllb_err}, trying OpenRouter", file=sys.stderr)
-                                if os.environ.get("OPENROUTER_API_KEY", "").strip():
-                                    try:
-                                        translated = translate_with_openrouter(batch, source_lang, target_lang)
-                                        prov = "OpenRouter"
-                                    except Exception as or_err:
-                                        print(f"[TRANSLATE-TEXT] OpenRouter failed: {or_err}, using Gemini", file=sys.stderr)
-                                        translated = _gemini_translate(batch, source_lang, target_lang)
-                                        prov = "Gemini (fallback)"
-                                else:
-                                    translated = _gemini_translate(batch, source_lang, target_lang)
-                                    prov = "Gemini (fallback)"
-                        else:
-                            translated = _gemini_translate(batch, source_lang, target_lang)
-                            prov = "Gemini (fallback)"
-                else:
-                    try:
-                        translated = _gemini_translate(batch, source_lang, target_lang)
-                        prov = "Gemini"
-                    except Exception as gem_err:
-                        print(f"[TRANSLATE-TEXT] Gemini failed: {gem_err}, trying NLLB", file=sys.stderr)
-                        if _HAS_EXTRA_PROVIDERS and os.environ.get("HF_TOKEN", "").strip():
-                            try:
-                                translated = translate_with_nllb(batch, source_lang, target_lang)
-                                prov = "NLLB"
-                            except Exception:
-                                if _HAS_EXTRA_PROVIDERS:
-                                    translated = translate_with_groq(batch, source_lang, target_lang)
-                                    prov = "Groq (fallback)"
-                                else:
-                                    raise
-                        elif _HAS_EXTRA_PROVIDERS:
-                            translated = translate_with_groq(batch, source_lang, target_lang)
-                            prov = "Groq (fallback)"
-                        else:
-                            raise
+                translated, prov = _run_translation_chain(
+                    batch, source_lang, target_lang, engine
+                )
             except Exception as e:
                 try:
                     from lib import supabase_client
