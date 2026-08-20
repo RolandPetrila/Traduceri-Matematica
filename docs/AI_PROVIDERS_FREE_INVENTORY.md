@@ -24,7 +24,7 @@
 
 | Serviciu                       | Env var(s)                                 | Capacitate free           | Status                                                                 |
 | ------------------------------ | ------------------------------------------ | ------------------------- | ---------------------------------------------------------------------- |
-| **Azure Translator**           | `AZURE_TRANSLATOR_KEY` (+`_2`, +`_REGION`) | **2M × 2 chei = 4M/lună** | 🟡 **cod cablat 2026-08-20, așteaptă cheia în Vercel `traduceri-api`** |
+| **Azure Translator**           | `AZURE_TRANSLATOR_KEY` (+`_2`, +`_REGION`) | **2M × 2 chei = 4M/lună** | ✅ **cablat + activ** (2026-08-20): DeepL → Azure → …; chei în Vercel, verificat live RO→SK |
 | DeepL                          | `DEEPL_API_KEY` (+`_2`)                    | 500K × 2 = 1M/lună        | ✅ cablat (principal, cu failover cheia 2)                             |
 | Google Translate               | `GOOGLE_API_KEY` (+`_2`)                   | 500K × 2 = 1M/lună        | ⬜ necablat (API separat pe cheile Gemini)                             |
 | HF NLLB-200                    | `HF_TOKEN`                                 | 1000 req/zi               | ✅ cablat (fallback)                                                   |
@@ -36,13 +36,13 @@
 
 ## 📄 OCR (import documente) — pagini/lună
 
-| Serviciu                        | Env var(s)                                  | Capacitate free                                           | Status                                               |
-| ------------------------------- | ------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------- |
-| Gemini (multimodal)             | `GOOGLE_API_KEY` (+`_2`)                    | ~1000 req/zi Flash × 2 chei                               | ✅ cablat (principal)                                |
-| Mistral OCR (Pixtral)           | `MISTRAL_API_KEY` (+`_2`)                   | 1 MILIARD tokens/lună (2 req/min)                         | ✅ cablat (fallback)                                 |
+| Serviciu                        | Env var(s)                                  | Capacitate free                                           | Status                                                                                                                                                                                                  |
+| ------------------------------- | ------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gemini (multimodal)             | `GOOGLE_API_KEY` (+`_2`)                    | ~1000 req/zi Flash × 2 chei                               | ✅ cablat (principal)                                                                                                                                                                                   |
+| Mistral OCR (Pixtral)           | `MISTRAL_API_KEY` (+`_2`)                   | 1 MILIARD tokens/lună (2 req/min)                         | ✅ cablat (fallback)                                                                                                                                                                                    |
 | **Azure Document Intelligence** | `AZURE_DOC_INTEL_KEY` (+`_2`, +`_ENDPOINT`) | **500 × 2 = 1000 pagini/lună** (layout HQ: tabele/figuri) | ✅ **cablat + activ** (R7.5): import PDF → `engine=azure` (`azure_layout.py`), gardă R-MATH (fără tabel → fallback Gemini). Failover KEY→KEY_2 adăugat 2026-08-20 (×2 = 1000 pag/lună). Verificat live. |
-| Google Document AI              | `GOOGLE_API_KEY` (+`_2`)                    | 1000 pagini/lună × 2                                      | ⬜ necablat                                          |
-| Adobe Acrobat Services          | `ADOBE_API_KEY` + `ADOBE_CLIENT_SECRET`     | 500 tranzacții/lună                                       | ⬜ necablat                                          |
+| Google Document AI              | `GOOGLE_API_KEY` (+`_2`)                    | 1000 pagini/lună × 2                                      | ⬜ necablat                                                                                                                                                                                             |
+| Adobe Acrobat Services          | `ADOBE_API_KEY` + `ADOBE_CLIENT_SECRET`     | 500 tranzacții/lună                                       | ⬜ necablat                                                                                                                                                                                             |
 
 ## 💬 CHAT AI / LLM general
 
