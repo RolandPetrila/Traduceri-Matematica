@@ -3,7 +3,11 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { sendChat, type ChatMessage } from "@/lib/chat-providers";
+import {
+  sendChat,
+  GENERATION_OPTS,
+  type ChatMessage,
+} from "@/lib/chat-providers";
 import { buildSystemPrompt } from "@/lib/chat-context";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
@@ -142,13 +146,40 @@ function GenerateTab({
     );
     const initial: ChatMessage[] = [{ role: "user", content: prompt }];
     try {
-      const r = await sendChat(initial, buildSystemPrompt());
+      const r = await sendChat(initial, buildSystemPrompt(), GENERATION_OPTS);
       if (r.ok) {
-        setResult(r.reply);
+        // Auto-continuare: baremul/cheia de răspunsuri e la FINAL — dacă răspunsul
+        // s-a truncat, completăm automat (max 2 runde) ca testul să fie complet =
+        // valid pt tipărire la elevi, fără click manual „Continuă".
+        let full = r.reply;
+        let msgs: ChatMessage[] = [
+          ...initial,
+          { role: "assistant", content: r.reply },
+        ];
+        let wasTruncated = r.truncated;
+        let provider = r.provider;
+        for (let round = 0; wasTruncated && round < 2; round++) {
+          setNote(`Completez testul (partea ${round + 2})…`);
+          const cont = await sendChat(
+            [...msgs, { role: "user", content: CONTINUE_PROMPT }],
+            buildSystemPrompt(),
+            GENERATION_OPTS,
+          );
+          if (!cont.ok) break;
+          full = full + "\n" + cont.reply;
+          msgs = [
+            ...msgs,
+            { role: "user", content: CONTINUE_PROMPT },
+            { role: "assistant", content: cont.reply },
+          ];
+          wasTruncated = cont.truncated;
+          provider = cont.provider;
+        }
+        setResult(full);
         setStatus("idle");
-        setNote(`Generat cu ${r.provider}.`);
-        setTruncated(r.truncated);
-        setHistory([...initial, { role: "assistant", content: r.reply }]);
+        setNote(`Generat cu ${provider}.`);
+        setTruncated(wasTruncated);
+        setHistory(msgs);
       } else {
         setStatus("error");
         setNote(r.error);
@@ -169,7 +200,7 @@ function GenerateTab({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
-    const r = await sendChat(nextHistory, buildSystemPrompt());
+    const r = await sendChat(nextHistory, buildSystemPrompt(), GENERATION_OPTS);
     if (r.ok) {
       setResult((prev) => prev + "\n" + r.reply);
       setStatus("idle");
@@ -369,7 +400,7 @@ function CorrectTab({
       const initial: ChatMessage[] = [
         { role: "user", content: buildCorrectPrompt(text) },
       ];
-      const r = await sendChat(initial, buildSystemPrompt());
+      const r = await sendChat(initial, buildSystemPrompt(), GENERATION_OPTS);
       if (r.ok) {
         setResult(r.reply);
         setStatus("idle");
@@ -432,7 +463,7 @@ function CorrectTab({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
-    const r = await sendChat(nextHistory, buildSystemPrompt());
+    const r = await sendChat(nextHistory, buildSystemPrompt(), GENERATION_OPTS);
     if (r.ok) {
       setResult((prev) => prev + "\n" + r.reply);
       setStatus("idle");

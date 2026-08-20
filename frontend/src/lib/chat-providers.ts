@@ -74,18 +74,26 @@ export const PROVIDER_TIMEOUT_MS = 40000;
  * lanț e mărginit la ~50s, nu 160s. */
 export const CHAIN_BUDGET_MS = 50000;
 
+/** Plafon implicit de tokeni de ieșire (Chat). Teste/Școlare cer explicit mai mult
+ * (16384) pt fișe lungi — vezi DEFAULT_MAX_TOKENS vs override-ul din opts. Măsurat
+ * 2026-08-20 (scratchpad/token_probe.mjs): o fișă de 20 exerciții cu barem = ~4000
+ * tokeni (finish=STOP), deci 8192 nu truncase deja; 16384 = headroom pt conținut
+ * rar-verbos. Constrângerea reală e TIMPUL (~35s/20 ex.), nu tokenii — vezi opts.timeoutMs. */
+export const DEFAULT_MAX_TOKENS = 8192;
+
 /** Payload pentru Gemini (`contents` + `systemInstruction`, roluri user/model). */
-export function buildGeminiPayload(system: string, messages: ChatMessage[]) {
+export function buildGeminiPayload(
+  system: string,
+  messages: ChatMessage[],
+  maxTokens: number = DEFAULT_MAX_TOKENS,
+) {
   return {
     systemInstruction: { parts: [{ text: system }] },
     contents: messages.map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
     })),
-    // 8192 (plafonul proxy MAX_TOKENS_CAP) — raspunsuri lungi (ex. 9 limite
-    // pas-cu-pas) nu se mai taie la ~2048. Backstop pt orice lungime = butonul
-    // „Continua" (vezi isTruncated). Modelele suporta 8192 (Gemini 2.5 Flash 65k).
-    generationConfig: { maxOutputTokens: 8192, temperature: 0.3 },
+    generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 },
   };
 }
 
@@ -94,6 +102,7 @@ export function buildOpenAiPayload(
   model: string,
   system: string,
   messages: ChatMessage[],
+  maxTokens: number = DEFAULT_MAX_TOKENS,
 ) {
   return {
     model,
@@ -101,7 +110,10 @@ export function buildOpenAiPayload(
       { role: "system", content: system },
       ...messages.map((m) => ({ role: m.role, content: m.content })),
     ],
-    max_tokens: 8192, // plafonul proxy; vezi nota din buildGeminiPayload
+    // Notă: pt providerii OpenAI-compatibili (Mistral) proxy-ul clampează la
+    // MAX_TOKENS_CAP (8192) în MODEL_ALLOW — un maxTokens mai mare aici e onorat
+    // doar de Gemini (care NU e în MODEL_ALLOW). Vezi route.ts.
+    max_tokens: maxTokens,
     temperature: 0.3,
   };
 }
@@ -145,16 +157,42 @@ export function isTruncated(providerId: string, json: unknown): boolean {
  * Fiecare apel are timeout propriu (AbortController): un provider care atârnă nu
  * blochează restul lanțului.
  */
+/** Opțiuni per-apel. Chat = default-uri; Teste/Școlare cer mai mult (fișe lungi):
+ * maxTokens 16384 + timeout/buget mai mari (sub plafonul hard 60s al proxy-ului). */
+export interface SendChatOptions {
+  maxTokens?: number;
+  /** Timeout per provider (ms). Default PROVIDER_TIMEOUT_MS (40s). */
+  timeoutMs?: number;
+  /** Buget total pe lanț (ms). Default CHAIN_BUDGET_MS (50s). TREBUIE ≥ timeoutMs. */
+  budgetMs?: number;
+}
+
+/** Opțiuni pt GENERAREA de fișe/teste (Școlare, Teste): mai mulți tokeni + mai mult
+ * timp decât la Chat, sub plafonul hard de 60s al proxy-ului (maxDuration). Măsurat:
+ * o fișă de 20 exerciții+barem ~35s. Beyond ~20-25 exerciții → auto-continuare (baremul
+ * ajunge mereu — fișă validă pt elevi). */
+export const GENERATION_OPTS: SendChatOptions = {
+  maxTokens: 16384,
+  timeoutMs: 52000,
+  budgetMs: 58000,
+};
+
 export async function sendChat(
   messages: ChatMessage[],
   system: string,
+  opts: SendChatOptions = {},
 ): Promise<ChatResult> {
+  const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
+  const stepTimeout = opts.timeoutMs ?? PROVIDER_TIMEOUT_MS;
+  // Bugetul nu poate fi sub timeout-ul unui pas (altfel garda l-ar ucide înainte
+  // să apuce să ruleze) — vezi capcana prinsă de advisor 2026-08-20.
+  const budget = Math.max(opts.budgetMs ?? CHAIN_BUDGET_MS, stepTimeout + 3000);
   const errors: string[] = [];
   const chainStart = Date.now();
   for (const step of CHAIN) {
     // Buget total pe lanț: dacă timpul rămas e prea mic pt o încercare utilă,
     // oprim în loc să lăsăm worst-case-ul să crească nemărginit (mobil epuizat).
-    const remaining = CHAIN_BUDGET_MS - (Date.now() - chainStart);
+    const remaining = budget - (Date.now() - chainStart);
     if (remaining <= 1000) {
       errors.push("buget lanț depășit");
       break;
@@ -162,13 +200,13 @@ export async function sendChat(
     try {
       const body =
         step.format === "gemini"
-          ? buildGeminiPayload(system, messages)
-          : buildOpenAiPayload(step.model || "", system, messages);
+          ? buildGeminiPayload(system, messages, maxTokens)
+          : buildOpenAiPayload(step.model || "", system, messages, maxTokens);
       const ctrl = new AbortController();
       // Per-pas = min(timeout provider, timp rămas din bugetul total).
       const timer = setTimeout(
         () => ctrl.abort(),
-        Math.min(PROVIDER_TIMEOUT_MS, remaining),
+        Math.min(stepTimeout, remaining),
       );
       let res: Response;
       let json: unknown;

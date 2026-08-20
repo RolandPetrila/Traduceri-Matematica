@@ -52,6 +52,30 @@ describe("buildScolarePrompt (pilot Clasa 5 Matematică)", () => {
     expect(prompt).toContain("REGULA-TEST");
   });
 
+  test("selecție de capitole → fișa acoperă DOAR temele alese (2026-08-20)", () => {
+    const p = pilot();
+    const chosen = p.node.capitole!.slice(0, 2);
+    const prompt = buildScolarePrompt({
+      ...p,
+      dificultate: "Standard",
+      capitole: chosen,
+    });
+    expect(prompt).toContain("DOAR aceste teme");
+    chosen.forEach((c) => expect(prompt).toContain(c));
+    // override activ → NU mai folosește formularea implicită „toate capitolele"
+    expect(prompt).not.toContain("Acoperă teme din programa oficială");
+  });
+
+  test("capitole gol → comportament implicit (toate capitolele)", () => {
+    const p = pilot();
+    const prompt = buildScolarePrompt({
+      ...p,
+      dificultate: "Standard",
+      capitole: [],
+    });
+    expect(prompt).toContain("Acoperă teme din programa oficială");
+  });
+
   test("include lista de evitat + cerința specifică", () => {
     const p = pilot();
     const prompt = buildScolarePrompt({

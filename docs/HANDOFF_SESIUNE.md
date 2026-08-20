@@ -2,7 +2,41 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI (2026-08-20, continuare) — Azure Translator în lanț (4M chars/lună free) + inventar AI-uri gratuite
+## ▶️ REIA DE AICI (2026-08-20, continuare) — Teste/Școlare: plafon tokeni ↑ + auto-continuare + opțiuni Școlare (capitole + până la 20 exerciții)
+
+> **Cerere Roland:** ridică plafonul (opțiunea A) pt Teste/Școlare; la Școlare — opțiuni multiple per
+> materie/clasă (alege exact ce generează) + nr. exerciții nelimitat la 8. (+ 2 cereri MARI puse în
+> coadă: audit+maximizare toate modulele; sursare PDF/manuale per clasă — vezi mai jos.)
+>
+> **Măsurat înainte de a decide** (`scratchpad/token_probe.mjs`, prod): o fișă de 20 exerciții+barem =
+> ~4000 tokeni / ~35s, `finishReason=STOP` — deci 8192 NU truncase; constrângerea reală e **TIMPUL**
+> (~35s, plafon hard 60s proxy), nu tokenii. Advisor a corectat 2 capcane: `MAX_TOKENS_CAP` NU
+> limitează Gemini (nu e în MODEL_ALLOW → limita reală = literalul 8192 din payload); și „20 exerciții"
+> fără a rezolva truncherea baremului = fișă fără cheie de răspunsuri = INVALIDĂ pt elevi.
+>
+> **Livrat:**
+>
+> - `chat-providers.ts`: `buildGeminiPayload`/`buildOpenAiPayload`/`sendChat` acceptă `maxTokens` +
+>   `SendChatOptions{maxTokens,timeoutMs,budgetMs}`; `GENERATION_OPTS = {16384, 52s, 58s}` (sub 60s proxy;
+>   gardă buget ≥ timeout+3s — capcana advisor). Chat rămâne pe default 8192/40s/50s.
+> - `route.ts`: `MAX_TOKENS_CAP` 8192→16384 (afectează doar fallback Mistral; Gemini nu-i clampat).
+> - **Auto-continuare** în Teste + Școlare: dacă `truncated`, completează automat (max 2 runde) →
+>   baremul/cheia ajunge MEREU = fișă validă pt tipărire. Butonul manual „Continuă" rămâne backstop.
+> - **Școlare UI:** `NR_OPTIONS` [3-8]→[4,6,8,10,12,15,20]; **selector de capitole** (checkbox din
+>   `node.capitole`; gol=toate, selecție=DOAR acele teme, override în `prompt.ts` cu `capitole?`).
+> - Teste: `GENERATION_OPTS` pe toate apelurile (generare+corectare+continuare). Teste avea deja
+>   selecție de tipuri+count/tip (cap 15) — flexibil, neatins structural.
+>
+> **Gate: `tsc 0 · jest 356/356 (+2 capitole) · build ...`.** NEDEPLOYAT încă (frontend — panouri +
+> proxy). **Verificare vizuală reală (browser) recomandată** — extensia Chrome n-a fost folosită.
+>
+> **⏳ COADĂ (2 cereri MARI, fiecare = o sesiune):**
+>
+> 1. **Audit + maximizare TOATE modulele** („valid pt elevi conform programei") — parțial
+>    NEautomatizabil: validitatea curriculară a conținutului cere judecata Cristinei/Roland.
+> 2. **Sursare PDF/manuale per clasă** — CLARIFICARE necesară: aplicația are _programă_ (OMEN,
+>    `sursa_url` per ciclu în `curriculum/*.ts`), NU _manuale_ (textbook = problemă de copyright).
+>    De stabilit ce vrea Roland: verificare `sursa_url` per clasă (ieftin) vs. descărcare manuale reale.
 
 > **Cerere Roland:** limitele AI se epuizau la testare → inventariază toate AI-urile free deținute
 > (`.api-keys`) + cablează-le ca să nu mai atingi limitele. AskUserQuestion → **opțiunea 1** (traducere)

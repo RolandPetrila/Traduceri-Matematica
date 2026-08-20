@@ -179,7 +179,10 @@ const MODEL_ALLOW: Record<string, string[]> = {
   cerebras: ["gpt-oss-120b"],
   openrouter: ["meta-llama/llama-3.3-70b-instruct:free"],
 };
-const MAX_TOKENS_CAP = 8192;
+// 16384 (ridicat de la 8192, 2026-08-20): fișe lungi Teste/Școlare. Afectează DOAR
+// providerii din MODEL_ALLOW (Mistral fallback) — Gemini nu e clampat aici (vezi mai jos).
+// Single-user + origin allowlist + rate-limit → cost-cap-ul rămâne suficient.
+const MAX_TOKENS_CAP = 16384;
 const MAX_RESULTS_CAP = 10;
 
 // Durata maximă — păstrată identică cu `pages/api/proxy.js` (config.maxDuration=60)

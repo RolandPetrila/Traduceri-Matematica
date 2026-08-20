@@ -51,6 +51,10 @@ export interface PromptInput {
   avoid?: string[];
   /** Câte exerciții să conțină fișa (implicit 5). */
   nrExercitii?: number;
+  /** Teme (capitole) alese explicit de profesor din programa nodului. Gol/absent =
+   * toate capitolele nodului (comportament implicit). Când e setat, fișa acoperă
+   * DOAR aceste teme. */
+  capitole?: string[];
 }
 
 /** Prompt de sistem specific fișelor școlare (peste buildSystemPrompt din chat-context). */
@@ -81,6 +85,7 @@ export function buildScolarePrompt(input: PromptInput): string {
     cerintaSpecifica,
     avoid,
     nrExercitii = 5,
+    capitole,
   } = input;
 
   const tipNod =
@@ -94,12 +99,23 @@ export function buildScolarePrompt(input: PromptInput): string {
     `Fișa are exact ${nrExercitii} exerciții, numerotate de la 1 la ${nrExercitii}.`,
   );
 
-  if (node.capitole && node.capitole.length) {
-    lines.push(
-      "Acoperă teme din programa oficială (variază între ele, nu toate din același capitol): " +
-        node.capitole.join("; ") +
-        ".",
-    );
+  // Teme alese de profesor (subset) au prioritate; altfel toate capitolele nodului.
+  const chosen = capitole && capitole.length ? capitole : node.capitole;
+  if (chosen && chosen.length) {
+    if (capitole && capitole.length) {
+      // Selecție explicită → fișa acoperă DOAR aceste teme.
+      lines.push(
+        "Toate exercițiile trebuie să acopere DOAR aceste teme alese de profesor (variază între ele): " +
+          capitole.join("; ") +
+          ".",
+      );
+    } else {
+      lines.push(
+        "Acoperă teme din programa oficială (variază între ele, nu toate din același capitol): " +
+          node.capitole!.join("; ") +
+          ".",
+      );
+    }
   }
 
   if (regulament && regulament.trim()) {

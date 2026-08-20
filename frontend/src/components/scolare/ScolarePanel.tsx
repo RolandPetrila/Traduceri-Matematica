@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { sendChat, type ChatMessage } from "@/lib/chat-providers";
+import {
+  sendChat,
+  GENERATION_OPTS,
+  type ChatMessage,
+} from "@/lib/chat-providers";
 import { renderScolareContent } from "@/lib/scolare/drawing/parse-render";
 import {
   CURRICULUM,
@@ -38,7 +42,11 @@ import { fetchWithRetry } from "@/lib/fetch-retry";
  * editor". Vezi docs/PLAN_SCOLARE_2026-08-07.md. Temă cretă.
  */
 
-const NR_OPTIONS = [3, 4, 5, 6, 8];
+// Ridicat de la max 8 → max 20 (2026-08-20). Măsurat (token_probe.mjs): 20 exerciții
+// + barem complet = ~4000 tokeni / ~35s (finish=STOP), încap într-o generare; peste
+// asta intervine auto-continuarea (baremul ajunge mereu). „Maximul AI-ului" e mărginit
+// de plafonul 60s al proxy-ului, nu de tokeni — 20 e pragul sigur pt o singură rulare.
+const NR_OPTIONS = [4, 6, 8, 10, 12, 15, 20];
 const CONTINUE_PROMPT =
   "Continuă exact de unde ai rămas, fără să reiei ce ai scris deja.";
 
@@ -99,6 +107,9 @@ export function ScolarePanel({
   const [dificultate, setDificultate] = useState<Dificultate>("Standard");
   const [nrEx, setNrEx] = useState(5);
   const [cerinta, setCerinta] = useState("");
+  // Capitole (teme) selectate din programa nodului. Gol = TOATE (comportament vechi).
+  // Când Cristina bifează unele → generarea acoperă exact acele teme.
+  const [selectedCapitole, setSelectedCapitole] = useState<string[]>([]);
 
   const [result, setResult] = useState("");
   const [history, setHistory] = useState<ChatMessage[]>([]);
@@ -114,12 +125,18 @@ export function ScolarePanel({
     setCycleId(id);
     setLevelId(c.nivele[0].id);
     setNodeId(c.nivele[0].noduri[0].id);
+    setSelectedCapitole([]); // capitolele depind de nod → resetăm la schimbare
   };
   const onLevel = (id: string) => {
     const l = getLevel(cycleId, id);
     if (!l) return;
     setLevelId(id);
     setNodeId(l.noduri[0].id);
+    setSelectedCapitole([]);
+  };
+  const onNode = (id: string) => {
+    setNodeId(id);
+    setSelectedCapitole([]);
   };
 
   const generate = async () => {
@@ -143,9 +160,14 @@ export function ScolarePanel({
         cerintaSpecifica: cerinta,
         avoid,
         nrExercitii: nrEx,
+        capitole: selectedCapitole,
       });
       const initial: ChatMessage[] = [{ role: "user", content: prompt }];
-      const r = await sendChat(initial, buildScolareSystemPrompt(cycle, level));
+      const r = await sendChat(
+        initial,
+        buildScolareSystemPrompt(cycle, level),
+        GENERATION_OPTS,
+      );
       if (!r.ok) {
         setStatus("error");
         setNote(r.error);
@@ -160,13 +182,40 @@ export function ScolarePanel({
         setNote("Fișă deja generată — reîncerc cu alta…");
         continue;
       }
-      record(bucket, sig, extractStems(reply));
-      setResult(reply);
-      setHistory([...initial, { role: "assistant", content: reply }]);
-      setTruncated(r.truncated);
-      setVerify(verifyArithmetic(reply));
+      // Auto-continuare: baremul e la FINALUL fișei — dacă răspunsul s-a truncat,
+      // completăm automat (max 2 runde) ca fișa (inclusiv cheia de răspunsuri) să
+      // ajungă completă = validă pt tipărire la elevi, fără click manual „Continuă".
+      let fullReply = reply;
+      let msgs: ChatMessage[] = [
+        ...initial,
+        { role: "assistant", content: reply },
+      ];
+      let wasTruncated = r.truncated;
+      let provider = r.provider;
+      for (let round = 0; wasTruncated && round < 2; round++) {
+        setNote(`Completez fișa (partea ${round + 2})…`);
+        const cont = await sendChat(
+          [...msgs, { role: "user", content: CONTINUE_PROMPT }],
+          buildScolareSystemPrompt(cycle, level),
+          GENERATION_OPTS,
+        );
+        if (!cont.ok) break;
+        fullReply = sanitizeFisa(fullReply + "\n" + cont.reply);
+        msgs = [
+          ...msgs,
+          { role: "user", content: CONTINUE_PROMPT },
+          { role: "assistant", content: sanitizeFisa(cont.reply) },
+        ];
+        wasTruncated = cont.truncated;
+        provider = cont.provider;
+      }
+      record(bucket, signature(fullReply), extractStems(fullReply));
+      setResult(fullReply);
+      setHistory(msgs);
+      setTruncated(wasTruncated);
+      setVerify(verifyArithmetic(fullReply));
       setStatus("idle");
-      setNote(`Generat cu ${r.provider}.`);
+      setNote(`Generat cu ${provider}.`);
       return;
     }
   };
@@ -178,7 +227,11 @@ export function ScolarePanel({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
-    const r = await sendChat(next, buildScolareSystemPrompt(cycle, level));
+    const r = await sendChat(
+      next,
+      buildScolareSystemPrompt(cycle, level),
+      GENERATION_OPTS,
+    );
     if (r.ok) {
       const merged = sanitizeFisa(result + "\n" + r.reply);
       // Bug găsit la code review: continueGenerate() nu apela record(), deci
@@ -269,7 +322,7 @@ export function ScolarePanel({
           {level.tip === "domeniu" ? "Domeniu" : "Materie"}
           <select
             value={node.id}
-            onChange={(e) => setNodeId(e.target.value)}
+            onChange={(e) => onNode(e.target.value)}
             className={selectCls}
             disabled={status === "loading"}
           >
@@ -311,6 +364,52 @@ export function ScolarePanel({
           </label>
         ))}
       </div>
+
+      {node.capitole && node.capitole.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1 text-xs text-chalk-white/80">
+          <span>
+            Teme din programă{" "}
+            <span className="text-chalk-white/50">
+              (bifează exact ce vrei să genereze; gol = toate cele{" "}
+              {node.capitole.length})
+            </span>
+          </span>
+          <div className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-md border border-chalk-white/20 bg-black/20 p-2">
+            {node.capitole.map((cap) => {
+              const on = selectedCapitole.includes(cap);
+              return (
+                <label
+                  key={cap}
+                  className="flex cursor-pointer items-start gap-2 text-chalk-white"
+                >
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    disabled={status === "loading"}
+                    onChange={() =>
+                      setSelectedCapitole((prev) =>
+                        on ? prev.filter((c) => c !== cap) : [...prev, cap],
+                      )
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>{cap}</span>
+                </label>
+              );
+            })}
+          </div>
+          {selectedCapitole.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSelectedCapitole([])}
+              className="self-start text-chalk-yellow/80 underline"
+            >
+              Deselectează tot ({selectedCapitole.length} bifate → folosește
+              toate temele)
+            </button>
+          )}
+        </div>
+      )}
 
       <label className="mt-2 flex flex-col gap-1 text-xs text-chalk-white/80">
         Cerință specifică (opțional)
