@@ -78,6 +78,16 @@ export function norm(s: string): string {
     .replace(/≠/g, "\\ne ")
     .replace(/±/g, "\\pm ")
     .replace(/π/g, "\\pi ");
+  // Plasă de siguranță radical: un glif-radical TRAILING (ex. `∛` tastat singur,
+  // mid-editare) ar ajunge brut la KaTeX → „No character metrics for '∛'". Îl
+  // convertim la forma LaTeX validă cu radicand gol. ANCORAT la sfârșit (`\s*$`):
+  // un `√`/`∛` urmat de un radicand ne-recunoscut de RADICAND (ex. `√\frac…`,
+  // `∛\pi`) rămâne NEATINS — altfel am muta radicandul AFARĂ din radical (corupere
+  // R-MATH). Rămâne doar warning-ul KaTeX pt acel caz, nu o formulă greșită.
+  out = out
+    .replace(/∛\s*$/, "\\sqrt[3]{}")
+    .replace(/∜\s*$/, "\\sqrt[4]{}")
+    .replace(/√\s*$/, "\\sqrt{}");
   return out.trim();
 }
 

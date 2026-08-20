@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");
+/* Fonturile (Atkinson Hyperlegible = UI, STIX Two Text = document/matematic) sunt
+   încărcate self-hosted prin next/font în layout.tsx și expuse ca --font-ui / --font-doc. */
 
 @layer base {
   :root {
@@ -46,7 +47,20 @@
     );
     color: var(--chalk-white);
     min-height: 100vh;
-    font-family: "Patrick Hand", cursive;
+    /* UI = Atkinson Hyperlegible (lizibilitate maximă pe telefon). */
+    font-family:
+      var(--font-ui),
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      sans-serif;
+    /* Bază lizibilă pe mobil: 16px previne zoom-ul automat iOS pe input-uri;
+       line-height generos + antialiasing pt text clar pe ecran mic. */
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* Mobile safety: never allow the whole page to scroll sideways (the cause of
@@ -206,9 +220,10 @@
   box-shadow: 0 3px 14px rgba(0, 0, 0, 0.3);
   min-height: 60vh;
   padding: 22px 18px; /* mobil: foaie fluidă, lizibilă (NU A4 micșorat) */
-  font-family: "Times New Roman", Georgia, serif;
+  /* Document = STIX Two Text (grad publicație, se potrivește cu formulele KaTeX). */
+  font-family: var(--font-doc), Georgia, "Times New Roman", serif;
   font-size: 12pt;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 /* Desktop: metrici A4 REALE, identice cu documentul exportat (@page A4, margin 20mm 18mm)
    → linia „Pagina N" cade exact unde se rupe PDF-ul la print. */

@@ -25,8 +25,9 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 1. Citeste `docs/PLAN_MASTER.md` — **SURSA UNICA** de adevar (cerintele R1-R4, securitate, regresii, backlog, reguli de execuzie). Planurile vechi sunt stale.
 2. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
 3. Citeste `.claude/memory/*` si `.claude/rules/project_rules.md`
-4. Continua cu primul task [ ] nemarcat din planul activ
-5. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` + planul (bifeaza [x] cu data) + memoria; commit/push (deploy = outward-facing, cu confirmare)
+4. **(R-DIAG-AUTO)** Verifica log-urile de eroare recente (Supabase tabela `logs` / `/api/logs` / ce lipeste Roland), grupeaza pe `error_code`, confirma cauza in cod si remediaza proactiv — NU astepta ca Roland sa raporteze. Vezi `config/error_codes.json` (`cause`/`fix`).
+5. Continua cu primul task [ ] nemarcat din planul activ
+6. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` + planul (bifeaza [x] cu data) + memoria; commit/push (deploy = outward-facing, cu confirmare)
 
 ## Stack v4.0
 

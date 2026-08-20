@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LogLevel } from "@/lib/monitoring";
 import { getLocalLogs } from "@/lib/monitoring";
+import { getErrorInfo } from "@/lib/error-catalog";
 
 type FilterLevel = "all" | LogLevel;
 type LogSource = "server" | "local";
@@ -434,6 +435,20 @@ export default function DiagnosticsPage() {
                     <p className="text-chalk-white text-sm mb-1">
                       {log.message}
                     </p>
+                    {(() => {
+                      const info = getErrorInfo(log.errorCode);
+                      if (!info) return null;
+                      return (
+                        <div className="mt-1 mb-1 rounded-md border border-chalk-yellow/30 bg-chalk-yellow/5 px-2.5 py-1.5 text-xs">
+                          <p className="text-chalk-yellow/90">
+                            <strong>Cauză probabilă:</strong> {info.cause}
+                          </p>
+                          <p className="text-chalk-white/80 mt-1">
+                            <strong>Ce faci:</strong> {info.fix}
+                          </p>
+                        </div>
+                      );
+                    })()}
                     {log.context && Object.keys(log.context).length > 0 && (
                       <div className="text-xs text-chalk-white/50 mb-1">
                         {Object.entries(log.context).map(([k, v]) => (

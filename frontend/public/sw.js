@@ -1,6 +1,6 @@
 // Service Worker — Sistem Traduceri Matematica
 // Cache version auto-generated from build timestamp
-const CACHE_VERSION = "v49-" + "20260809";
+const CACHE_VERSION = "v50-" + "20260820";
 const CACHE_NAME = "sistem-traduceri-" + CACHE_VERSION;
 const STATIC_ASSETS = [
   "/manifest.json",
@@ -74,9 +74,13 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // NEVER cache API calls — always go to network
+  // NEVER cache API calls — lasă cererea să meargă NATIV la rețea, fără să o
+  // trecem prin SW. `event.respondWith(fetch(...))` (varianta veche) doar
+  // re-împacheta cererea, dar convertea orice abort/eroare de rețea în
+  // „FetchEvent.respondWith received an error: TypeError: Load failed" (vizibil
+  // în log-urile iOS Safari) și putea interfera cu AbortController-ul clientului.
+  // `return` fără respondWith = browserul face fetch-ul direct (bypass SW).
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(fetch(event.request));
     return;
   }
 

@@ -581,9 +581,9 @@
   }
 
   var PRINT_CSS =
-    '  @import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");\n' +
+    '  @import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap");\n' +
     "  * { box-sizing:border-box; margin:0; padding:0; }\n" +
-    "  body { font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
+    "  body { font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
     "  @page { size:A4; margin:0mm; }\n" +
     "  @media print {\n" +
     "    body { margin:0 !important; padding:0 !important; }\n" +
@@ -606,7 +606,7 @@
     "  .cauta-word::before { content:'\\2610  '; }";
 
   var INTERACTIVE_CSS =
-    ".cauta-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; overflow:auto; font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
+    ".cauta-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; overflow:auto; font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
     ".cauta-sheet .cauta-head { display:flex; justify-content:space-between; align-items:baseline; font-weight:bold; margin-bottom:6px; }\n" +
     ".cauta-sheet .cauta-sub { font-size:0.9rem; color:#333; margin-bottom:10px; }\n" +
     ".cauta-sheet .cauta-grid { display:grid; margin:0 auto; border:2px solid #000; }\n" +

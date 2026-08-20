@@ -17,6 +17,19 @@ describe("norm() — intrare prietenoasă → LaTeX", () => {
     expect(norm("sqrt(2+3)")).toBe("\\sqrt{2+3}");
   });
 
+  it("radical bare/trailing → radical gol (fix KaTeX '∛' 2026-08-20)", () => {
+    expect(norm("∛")).toBe("\\sqrt[3]{}");
+    expect(norm("∜")).toBe("\\sqrt[4]{}");
+    expect(norm("x=√")).toBe("x=\\sqrt{}");
+  });
+
+  it("radical urmat de radicand ne-recunoscut NU e corupt (nu mută radicandul afară)", () => {
+    // Ancorat la sfârșit: `√\frac…`, `∛\pi` rămân neatinse (warning KaTeX, dar
+    // NU o formulă greșită cu radicand relocat afară din radical — R-MATH).
+    expect(norm("√\\frac{1}{2}")).not.toContain("\\sqrt{}");
+    expect(norm("∛\\pi")).not.toContain("\\sqrt[3]{}");
+  });
+
   it("radicali de ordin 3 și 4 (∛ ∜)", () => {
     expect(norm("∛8")).toBe("\\sqrt[3]{8}");
     expect(norm("∜16")).toBe("\\sqrt[4]{16}");

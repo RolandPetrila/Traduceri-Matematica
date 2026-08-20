@@ -521,7 +521,13 @@ export function EditorImportProvider({
       } catch (err) {
         if ((err as Error)?.name !== "AbortError") {
           setError((err as Error)?.message || "Importul a eșuat.");
-          trackEditor("ocr_import_error", {});
+          // Detaliu real în log (înainte era `{}` — imposibil de diagnosticat DE CE
+          // a eșuat OCR-ul). Acum capturăm mesajul, tipul și durata până la eșec.
+          trackEditor("ocr_import_error", {
+            message: (err as Error)?.message || String(err),
+            name: (err as Error)?.name || "Error",
+            elapsed_ms: Date.now() - startedAt,
+          });
           if (Date.now() - startedAt > 8000) {
             notifyIfHidden(
               "Import eșuat",

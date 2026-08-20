@@ -61,8 +61,19 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        chalk: ['"Patrick Hand"', "cursive"],
-        math: ['"Cambria Math"', "Cambria", "serif"],
+        // UI (implicit): Atkinson Hyperlegible — lizibilitate maximă pe telefon.
+        sans: [
+          "var(--font-ui)",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "sans-serif",
+        ],
+        // `chalk` păstrat ca alias pt orice utilizare legacy → acum tot font-ul UI.
+        chalk: ["var(--font-ui)", "system-ui", "sans-serif"],
+        // Document/matematic: STIX Two Text (grad publicație, pereche cu KaTeX).
+        doc: ["var(--font-doc)", "Georgia", '"Times New Roman"', "serif"],
+        math: ["var(--font-doc)", '"Cambria Math"', "Cambria", "serif"],
       },
       backgroundImage: {
         "chalkboard-texture":

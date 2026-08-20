@@ -625,9 +625,9 @@
   }
 
   var PRINT_CSS =
-    '  @import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");\n' +
+    '  @import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap");\n' +
     "  * { box-sizing:border-box; margin:0; padding:0; }\n" +
-    "  body { font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
+    "  body { font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
     "  @page { size:A4; margin:0mm; }\n" +
     "  @media print {\n" +
     "    body { margin:0 !important; padding:0 !important; }\n" +
@@ -653,7 +653,7 @@
     "  .dict-draw.show-solution .sol-line { display:inline; }";
 
   var INTERACTIVE_CSS =
-    ".dict-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
+    ".dict-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
     ".dict-sheet .dict-head { display:flex; justify-content:space-between; align-items:baseline; font-weight:bold; margin-bottom:6px; }\n" +
     ".dict-sheet .dict-sub { font-size:0.9rem; color:#333; margin-bottom:10px; }\n" +
     ".dict-sheet .dict-steps { columns:3; column-gap:16px; margin:0 0 12px 18px; font-size:0.95rem; line-height:1.5; }\n" +

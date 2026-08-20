@@ -61,20 +61,20 @@ describe("chat-providers · payloads", () => {
     expect(isTruncated("groq", {})).toBe(false);
   });
 
-  it("CHAIN = Gemini → Gemini2 → Cerebras → Groq → Mistral → Mistral2 (fără OpenRouter mort)", () => {
+  it("CHAIN = Gemini → Gemini2 → Mistral → Mistral2 (cerebras 402 + groq 404 scoși 2026-08-20)", () => {
     expect(CHAIN.map((c) => c.id)).toEqual([
       "gemini",
       "gemini2",
-      "cerebras",
-      "groq",
       "mistral",
       "mistral2",
     ]);
-    expect(CHAIN.some((c) => c.id === "openrouter")).toBe(false); // slug :free = 404, scos
-    expect(CHAIN.find((c) => c.id === "groq")?.model).toBe(
-      "llama-3.3-70b-versatile",
+    // Morți verificați live pe prod (scratchpad/provider_health.mjs): scoși din lanț.
+    expect(CHAIN.some((c) => c.id === "cerebras")).toBe(false); // 402 Payment required (R-COST)
+    expect(CHAIN.some((c) => c.id === "groq")).toBe(false); // 404 model_not_found (cont fără acces)
+    expect(CHAIN.some((c) => c.id === "openrouter")).toBe(false); // slug :free = 404, scos anterior
+    expect(CHAIN.find((c) => c.id === "mistral")?.model).toBe(
+      "mistral-large-latest",
     );
-    expect(CHAIN.find((c) => c.id === "cerebras")?.model).toBe("gpt-oss-120b");
     // fiecare treaptă are format explicit (gemini vs openai)
     expect(
       CHAIN.every((c) => c.format === "gemini" || c.format === "openai"),

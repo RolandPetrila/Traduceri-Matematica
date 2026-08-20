@@ -1632,9 +1632,9 @@
     "  .ig-fill { color:#1a7a3a; background:#e8ffe8; }\n";
 
   var PRINT_CSS =
-    '  @import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");\n' +
+    '  @import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap");\n' +
     "  * { box-sizing:border-box; margin:0; padding:0; }\n" +
-    "  body { font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
+    "  body { font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
     "  @page { size:A4; margin:0mm; }\n" +
     "  @media print {\n" +
     "    body { margin:0 !important; padding:0 !important; }\n" +
@@ -1652,7 +1652,7 @@
     GRID_CSS;
 
   var INTERACTIVE_CSS =
-    ".integrama-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; overflow:auto; font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
+    ".integrama-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; overflow:auto; font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
     ".integrama-sheet .integrama-head { display:flex; justify-content:space-between; align-items:baseline; font-weight:bold; margin-bottom:6px; }\n" +
     ".integrama-sheet .integrama-sub { font-size:0.85rem; color:#333; margin-bottom:14px; }\n" +
     ".integrama-sheet .ig-grid { display:grid; grid-auto-rows:38px 22px 38px 22px 38px 22px 38px 22px 38px; margin:0 auto; }\n" +

@@ -331,9 +331,9 @@
   }
 
   var PRINT_CSS =
-    '  @import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");\n' +
+    '  @import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap");\n' +
     "  * { box-sizing:border-box; margin:0; padding:0; }\n" +
-    "  body { font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
+    "  body { font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; color:#111; background:#fff; }\n" +
     "  @page { size:A4; margin:0mm; }\n" +
     "  @media print {\n" +
     "    body { margin:0 !important; padding:0 !important; }\n" +
@@ -351,12 +351,12 @@
     "  .unaste-draw { width:170mm; max-width:100%; }\n" +
     "  .unaste-svg { display:block; width:100%; height:auto; }\n" +
     "  .unaste-svg .dot { fill:#111; }\n" +
-    "  .unaste-svg .num { font-size:3.2px; fill:#111; font-family:'Patrick Hand', sans-serif; }\n" +
+    "  .unaste-svg .num { font-size:3.2px; fill:#111; font-family:'Atkinson Hyperlegible', sans-serif; }\n" +
     "  .unaste-svg .sol-line { fill:none; stroke:#1a7a3a; stroke-width:0.7; stroke-linejoin:round; display:none; }\n" +
     "  .unaste-draw.show-solution .sol-line { display:inline; }";
 
   var INTERACTIVE_CSS =
-    ".unaste-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; font-family:'Patrick Hand', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
+    ".unaste-sheet { background:#fff; color:#111; border-radius:10px; padding:16px; margin:0 auto; max-width:100%; font-family:'Atkinson Hyperlegible', ui-rounded, 'Segoe UI', system-ui, sans-serif; }\n" +
     ".unaste-sheet .unaste-head { display:flex; justify-content:space-between; align-items:baseline; font-weight:bold; margin-bottom:6px; }\n" +
     ".unaste-sheet .unaste-sub { font-size:0.9rem; color:#333; margin-bottom:10px; }\n" +
     ".unaste-sheet .unaste-draw { width:min(420px,100%); margin:0 auto; }\n" +

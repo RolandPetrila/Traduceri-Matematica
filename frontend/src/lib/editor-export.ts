@@ -61,9 +61,13 @@ const DOCUMENT_CSS = `
   html, body { margin: 0; padding: 0; background: #ffffff; }
   body {
     color: #111827;
-    font-family: "Times New Roman", Georgia, serif;
+    /* Fișierul rămâne self-contained (fără @import extern, ca să fie portabil +
+       ca print-ul PDF să nu depindă de un race de încărcare a fontului): STIX Two
+       Text DOAR dacă e instalat pe sistem, altfel Georgia — serif clasic, lizibil
+       la print, disponibil universal. Pe ecran, editorul folosește STIX via next/font. */
+    font-family: "STIX Two Text", Georgia, "Times New Roman", serif;
     font-size: 12pt;
-    line-height: 1.5;
+    line-height: 1.55;
   }
   .page {
     max-width: 210mm;

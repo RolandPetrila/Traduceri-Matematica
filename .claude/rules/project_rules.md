@@ -61,6 +61,26 @@ reflecta continutul EDITAT de utilizator, nu datele OCR originale.
 
 Fiecare eroare are un cod (`E-<ARIE>-<NNN>`, vezi config/error_codes.json), logat in Supabase,
 vizibil live cross-device pe /diagnostics. Apelurile Supabase sunt fail-open (nu blocheaza fluxul).
+Fiecare cod are `cause` (cauza probabila) + `fix` (ce faci) in `config/error_codes.json` — oglindit
+in `frontend/src/lib/error-catalog.ts` (test anti-drift `error-catalog.test.ts`), afisate pe /diagnostics.
+
+## R-DIAG-AUTO: Verificare + remediere automata a erorilor la FIECARE sesiune (OBLIGATORIU)
+
+Scopul (cerut de Roland, 2026-08-20): NU astepta ca Roland sa raporteze erori. La FIECARE sesiune,
+proactiv:
+
+1. **La START (dupa onboard):** citeste log-urile de eroare recente — Supabase (tabela `logs`, prin
+   MCP `claude_ai_Supabase` sau `GET /api/logs`) SAU log-urile pe care Roland le lipeste. Filtreaza
+   nivelele `ERROR`/`WARN` cu `error_code`.
+2. **Grupeaza + diagnostica** pe cod de eroare: pentru fiecare, citeste `cause`/`fix` din
+   `config/error_codes.json` + confirma cauza IN COD (nu presupune). Provideri morti/limite active
+   (timeout, rate-limit, model 404/402) = candidati de remediere.
+3. **Remediaza automat** ce e clar si sigur (bug evident, provider mort, limita gresit calibrata);
+   pentru decizii cu compromis (calitate vs viteza, eliminare limita) → AskUserQuestion cu Roland.
+4. **Verifica live** inainte de a declara reparat (proba pe prod prin `/api/proxy`, ca
+   `scratchpad/provider_health.mjs`), apoi gate (`tsc`/`jest`/`build`) + handoff + memorie.
+5. Nu inchide o eroare fara sa fi confirmat cauza reala si fixul empiric. Un log de eroare ignorat
+   = regresie tacuta pt utilizatorul real (Cristina).
 
 ## R-HANDOFF: Context transferabil intre sesiuni (OBLIGATORIU)
 

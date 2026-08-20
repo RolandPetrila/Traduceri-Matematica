@@ -105,6 +105,24 @@ export default function ConvertorPage() {
 
   const handleProcess = async () => {
     if (files.length === 0) return;
+
+    // Gardă de format — operațiile pe PDF cer input PDF. Fără asta, dacă schimbi
+    // fișierul pe un .docx dar operația rămâne edit-pdf/split/merge, backendul
+    // răspunde cu un text non-JSON (CORS/edge) și clientul crăpa cu „Access-Con...".
+    // Mesaj clar, în locul unei erori criptice (fix diagnostic 2026-08-20).
+    const PDF_ONLY: Record<string, string> = {
+      "edit-pdf": "Editarea PDF",
+      split: "Împărțirea (Split)",
+      merge: "Combinarea (Merge)",
+    };
+    if (PDF_ONLY[operation] && detectedFormat !== "pdf") {
+      setResult({
+        success: false,
+        message: `${PDF_ONLY[operation]} funcționează doar pe fișiere PDF. Ai încărcat un „.${detectedFormat || "?"}". Convertește-l întâi în PDF (operația „Conversie"), apoi reia.`,
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setResult(null);
     setProgress(0);
@@ -168,14 +186,19 @@ export default function ConvertorPage() {
       });
 
       if (!res.ok) {
-        const contentType = res.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          const data = await res.json();
-          throw new Error(data.error || `Eroare server: ${res.status}`);
+        // Parsare robustă: citim corpul ca text ÎNTÂI, apoi încercăm JSON pe el.
+        // (Un răspuns cu Content-Type: application/json dar corp CORS/edge —
+        // „Access-Control-…" — spărgea res.json() cu o eroare criptică.)
+        const raw = await res.text();
+        let msg = "";
+        try {
+          const data = JSON.parse(raw);
+          msg = data.error || data.detail || "";
+        } catch {
+          /* corp non-JSON — folosim textul brut, tăiat */
         }
-        const text = await res.text();
         throw new Error(
-          `Eroare conversie: ${res.status} — ${text.substring(0, 200)}`,
+          msg || `Eroare conversie (${res.status}): ${raw.substring(0, 200)}`,
         );
       }
 

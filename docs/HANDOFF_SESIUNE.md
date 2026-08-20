@@ -2,6 +2,47 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
+## ▶️ REIA DE AICI (2026-08-20) — Tipografie clasică lizibilă (telefon) + diagnoză log-uri prod (5 fix-uri) + R-DIAG-AUTO
+
+> **Cerere Roland:** (1) format text „clasic/profesionist/lizibil pe telefon"; (2) diagnoză din log-urile
+> de prod cu remediere; (3) sistem de diagnostic mai bun; (4) regulă persistentă „verifică+repară
+> erorile la fiecare sesiune". Toate confirmate prin AskUserQuestion (opțiunile recomandate).
+>
+> **1. Tipografie (întreaga aplicație).** Cauza „se citește greu pe telefon" = fontul `Patrick Hand`
+> (handwriting) pe tot UI-ul (`body`). Înlocuit, self-hosted prin `next/font`:
+> **UI → `Atkinson Hyperlegible`** (Braille Institute, lizibilitate maximă), **document/matematic →
+> `STIX Two Text`** (grad publicație, pereche nativă cu KaTeX). Tema „tablă verde" PĂSTRATĂ (doar
+> tipografia + reglaje mobil: 16px anti-zoom iOS, line-height 1.55, antialiasing). Atins: `layout.tsx`,
+> `globals.css`, `tailwind.config.ts`, `editor-export.ts` (export HTML/PDF, self-contained cu Georgia
+> fallback — fără @import), Planșe (6 generatoare + `style.css`).
+>
+> **2+3. Diagnoză log-uri prod (300 intrări) → 5 fix-uri:**
+> - **Chat lent ~40s/mesaj:** sondă LIVE pe prod (`scratchpad/provider_health.mjs`) a dovedit
+>   `cerebras` **402** (cotă free epuizată — R-COST) + `groq` **404** (ambele modele, cont fără acces)
+>   = morți; Gemini e SĂNĂTOS+rapid (1.7s), dar timeout-ul de 20s tăia răspunsurile LUNGI fix la finish
+>   (18-21s) → 2×20s aborturi. **Fix (`chat-providers.ts`):** CHAIN = gemini→gemini2→mistral→mistral2
+>   (scos cerebras+groq); `PROVIDER_TIMEOUT_MS` 20s→40s + **buget total lanț 50s** (worst-case mobil
+>   ~50s, nu ~160s). `chat.test.ts` actualizat.
+> - **Convertor `E-CONV-001` „Access-Con..."**: edit-pdf pe `.docx`. **Fix (`convertor/page.tsx`):**
+>   gardă de format (edit-pdf/split/merge cer PDF — verificat că `merge_pdfs` folosește `PdfReader`) +
+>   parsare robustă (text-întâi→JSON).
+> - **KaTeX `∛` fără metrici:** glif-radical trailing. **Fix (`math-input.ts` `norm()`):** fallback
+>   ANCORAT la sfârșit (`∛\s*$`→`\sqrt[3]{}`) — NU corupe un radicand ce urmează (R-MATH). 2 teste noi.
+> - **`ocr_import_error` loga `{}`:** acum message+name+elapsed_ms (`editor-import.tsx`).
+> - **iOS `TypeError: Load failed`:** SW-ul re-împacheta `/api/` cu `respondWith(fetch)`. **Fix
+>   (`sw.js`):** bypass nativ (`return`) + bump `CACHE_VERSION` v49→**v50-20260820** (altfel fontul nou
+>   nu ajunge pe telefon).
+> - **Sistem diagnostic:** `config/error_codes.json` are acum `cause`+`fix` per cod, oglindit în
+>   `frontend/src/lib/error-catalog.ts` (test anti-drift `error-catalog.test.ts`), afișate pe /diagnostics.
+>
+> **4. Regulă persistentă R-DIAG-AUTO** (`.claude/rules/project_rules.md` + pas 4 în `CLAUDE.md`
+> PRIMA ACTIUNE + memorie `feedback_auto_error_check`): la FIECARE sesiune verific log-urile de eroare
+> (Supabase/`/api/logs`) și remediez proactiv, fără să aștept cererea.
+>
+> **Gate: `tsc 0 · jest 354/354 · next build OK`.** Rundă advisor a prins 2 regresii înainte de livrare
+> (fallback `√` care corupea `√\frac`, lipsa bugetului total pe mobil) + bump-ul sw.js — toate rezolvate.
+> **DEPLOY: cerut explicit de Roland („fă-o live să pot testa") — vezi mai jos statusul.**
+
 ## ▶️ REIA DE AICI (2026-08-10, continuare) — `/audit full` (94/100) + remediere 4 HIGH + 8 MEDIUM
 
 > Continuare directă a sesiunii de mai jos (curățare docs + 6 fix-uri securitate + merge main),

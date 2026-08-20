@@ -36,21 +36,15 @@ export type ProviderStep = {
  * OpenAI-compatibile trebuie să fie în `MODEL_ALLOW` din `app/api/proxy/route.ts`
  * (migrat din `pages/api/proxy.js` la App Router, 2026-08-07, prerequisit Next 16).
  */
+// Lanț rescris (2026-08-20) pe baza unei sonde LIVE pe prod (scratchpad/provider_health.mjs):
+//   gemini 200/1.7s · gemini2 200/0.9s · mistral 200/0.7s · mistral2 200/0.6s  → SĂNĂTOASE
+//   cerebras 402 "Payment required" (cotă free epuizată → încalcă R-COST) → SCOS
+//   groq 404 "model does not exist / no access" pe AMBELE modele (cheie/cont fără acces) → SCOS
+// Cei 4 rămași acoperă 2 vendori × 2 chei (GOOGLE_API_KEY/_2, MISTRAL_API_KEY/_2) = reziliență reală.
+// Re-adăugarea groq/cerebras necesită chei free VALIDE noi (flux .api-keys) — vezi PROVIDERS din route.ts.
 export const CHAIN: ProviderStep[] = [
   { id: "gemini", label: "Gemini Flash", format: "gemini" },
   { id: "gemini2", label: "Gemini Flash (2)", format: "gemini" },
-  {
-    id: "cerebras",
-    label: "Cerebras 120B",
-    model: "gpt-oss-120b",
-    format: "openai",
-  },
-  {
-    id: "groq",
-    label: "Groq 70B",
-    model: "llama-3.3-70b-versatile",
-    format: "openai",
-  },
   {
     id: "mistral",
     label: "Mistral Large",
@@ -65,8 +59,20 @@ export const CHAIN: ProviderStep[] = [
   },
 ];
 
-/** Timeout per provider — un provider blocat nu mai mănâncă bugetul întregului lanț. */
-export const PROVIDER_TIMEOUT_MS = 20000;
+/** Timeout per provider — un provider blocat nu mai mănâncă bugetul întregului lanț.
+ * Ridicat 20s→40s (2026-08-20): log-urile de prod arătau Gemini terminând răspunsuri
+ * LUNGI (ex. 9 limite pas-cu-pas) la 18–21s, iar plafonul de 20s le tăia fix pe linie
+ * („signal is aborted"), forțând o a doua încercare gemini2 (încă 20s) = ~40s pierduți
+ * degeaba. La 40s prima încercare se termină → răspuns în ~15–25s, o singură dată.
+ * Sub maxDuration=60 al proxy-ului. Interogările normale rămân rapide (1–3s). */
+export const PROVIDER_TIMEOUT_MS = 40000;
+
+/** Buget TOTAL pt întregul lanț (2026-08-20). Fără el, un lanț complet epuizat
+ * (ex. mobil pe rețea proastă: toți cei 4 provideri ating timeout-ul) ar aștepta
+ * 4×40s = ~160s de mort. Cu buget de 50s, per-pas = min(40s, rămas): prima
+ * încercare (Gemini) încă are 40s pt un răspuns lung, dar worst-case-ul întregului
+ * lanț e mărginit la ~50s, nu 160s. */
+export const CHAIN_BUDGET_MS = 50000;
 
 /** Payload pentru Gemini (`contents` + `systemInstruction`, roluri user/model). */
 export function buildGeminiPayload(system: string, messages: ChatMessage[]) {
@@ -144,14 +150,26 @@ export async function sendChat(
   system: string,
 ): Promise<ChatResult> {
   const errors: string[] = [];
+  const chainStart = Date.now();
   for (const step of CHAIN) {
+    // Buget total pe lanț: dacă timpul rămas e prea mic pt o încercare utilă,
+    // oprim în loc să lăsăm worst-case-ul să crească nemărginit (mobil epuizat).
+    const remaining = CHAIN_BUDGET_MS - (Date.now() - chainStart);
+    if (remaining <= 1000) {
+      errors.push("buget lanț depășit");
+      break;
+    }
     try {
       const body =
         step.format === "gemini"
           ? buildGeminiPayload(system, messages)
           : buildOpenAiPayload(step.model || "", system, messages);
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), PROVIDER_TIMEOUT_MS);
+      // Per-pas = min(timeout provider, timp rămas din bugetul total).
+      const timer = setTimeout(
+        () => ctrl.abort(),
+        Math.min(PROVIDER_TIMEOUT_MS, remaining),
+      );
       let res: Response;
       let json: unknown;
       // `finally` acoperă fetch() ȘI res.json() — găsit la code review:
