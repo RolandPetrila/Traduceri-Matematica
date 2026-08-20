@@ -29,6 +29,14 @@
 >
 > **Gate: `pytest 67/67` (+5 `test_translate_chain`).** Commit `8a93060`. Deploy `traduceri-api` READY.
 > **Notă:** `groq`/`cerebras` rămân morți (404/402) — re-adăugarea cere chei free noi valide (flux `.api-keys`).
+>
+> **OCR Azure Doc Intelligence (2026-08-20, continuare):** cerut „cablează OCR Azure" — descoperit că era
+> DEJA cablat complet (R7.5: `azure_layout.py` + `ocr.py` import PDF `engine=azure` + gardă R-MATH
+> fallback Gemini + chei KEY/ENDPOINT în Vercel). Verificat LIVE (imagine test → heading + tabel corect).
+> Adăugat REAL: **failover KEY→KEY_2** în `azure_layout.py` (500→1000 pag/lună) + `AZURE_DOC_INTEL_KEY_2`
+> provisionat în Vercel. Inventarul corectat (era greșit „necablat"). Deploy `traduceri-api` build
+> `8c90eb6` LIVE. Commit-uri `8c90eb6`+`452b889`. **Lecție:** verifică în COD înainte de a presupune că
+> ceva „nu e cablat" — catalogul/inventarul pot minți în ambele sensuri.
 
 ## ▶️ REIA DE AICI (2026-08-20) — Tipografie clasică lizibilă (telefon) + diagnoză log-uri prod (5 fix-uri) + R-DIAG-AUTO
 
