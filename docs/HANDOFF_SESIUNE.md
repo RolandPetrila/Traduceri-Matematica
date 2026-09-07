@@ -44,9 +44,16 @@
 > `c140b5b`+`ca4892c`, frontend v52 + backend live, verificat. Detalii: [[finding_f5_button_audit_2026_09_07]].
 > Reziduu Convertor: `\r\n` inițial + cold-start = artefact runtime Vercel (poate afecta descărcări binare).
 >
-> **URMĂTORUL PAS (autonom):** reziduuri minore F5 (Școlare `[[DESEN]]` în editor; Planșe `remember()` dedup;
-> buget OCR 60s→270s) · **F4 rest** V4 (PDF multi-pag scanat) · **F6** boundary uman (V2 corectitudine math /
-> perceptual export / curricular Școlare — cer ochiul Cristinei). Fiecare fază verde = commit+push+deploy auto.
+> **REMEDIERE REZIDUURI R1-R9 — FĂCUT + DEPLOYAT (2026-09-07).** Raport+checklist: `docs/RAPORT_F5_AUDIT_2026-09-07.md`.
+> R1 docs stale (KaTeX/DOCX client). R2 Școlare parseParams liste-cu-spații. R3 controale disabled la loading.
+> R4 loadRegulament avertisment + Bug#2-Școlare (notă onestă barem). R5 „➕ În editor" randează `[[DESEN]]` ca imagini SVG.
+> R6 Planșe `remember()` la Print direct (unicitate fără coș). R7 Font/Mărime reflectă valoarea. R8 buget OCR pe 300s.
+> R9 Convertor framing binar (client-side `stripVercelFraming`). Gate: `tsc 0 · jest 357/357 · pytest 75/75`.
+> Frontend **v54** + backend `a7304a2` live. Commit-uri `e7379e2`→`b6b5b09`.
+>
+> **RĂMAS (decizii Roland + verificare):** R10 Convertor PDF↔DOCX text-only (documentare vs pipeline OCR) ·
+> R11 Chat context-document + butoane Șterge/Copiere (dacă se adaugă) · R12 F4 V4 PDF multi-pag scanat (test browser) ·
+> **F6** boundary uman (V2 corectitudine math / perceptual export / curricular — ochiul Cristinei).
 
 ## ▶️ REIA DE AICI (2026-08-20, continuare) — Teste/Școlare: plafon tokeni ↑ + auto-continuare + opțiuni Școlare (capitole + până la 20 exerciții)
 

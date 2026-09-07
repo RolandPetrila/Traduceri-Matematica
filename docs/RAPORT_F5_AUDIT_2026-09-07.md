@@ -76,7 +76,9 @@ Gate: `tsc 0 · jest 356/356 · build OK · pytest 75/75`. Frontend v52 + backen
 
 **RĂMASE (de decis cu Roland / verificare):**
 
-- [ ] **R9** Convertor framing binar (`\r\n` inițial + cold-start Vercel) — investigație mecanism răspuns.
+- [x] **R9** Convertor framing binar CONFIRMAT (warm `0d 0a`+PNG, cold „x-vercel-timing"+PNG → fișiere
+      binare corupte). FIX client-side `stripVercelFraming` (sare la prima semnătură PNG/JPG/PDF/ZIP);
+      verificat logic (warm+cold+curat+html). Backend-ul tot scurge (artefact runtime Vercel) — mitigat la client.
 - [ ] **R10** Convertor PDF↔DOCX/HTML text-only — DECIZIE: documentare UI vs pipeline OCR (efort mare).
 - [ ] **R11** Chat: context-document + butoane Șterge/Copiere — DECIZIE dacă se adaugă.
 - [ ] **R12** F4 V4 — verificare PDF multi-pagină scanat.
