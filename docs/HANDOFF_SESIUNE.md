@@ -2,6 +2,77 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
+## ▶️ REIA DE AICI (2026-09-08) — ⚠️ AUDITUL A FOST INFIRMAT DE REALITATE · program de reparație în 6 faze, DRAFT
+
+> **CITEȘTE ÎNTÂI:** `docs/completari_pt_reparatie.md` (cele 8 puncte scrise de Roland) +
+> `docs/Fazele.md` (cele 6 faze explicate) + `docs/PROMPT_SESIUNE_NOUA_REPARATIE.md` (prompt de pornire).
+>
+> ### Ce s-a întâmplat (pe scurt, dar exact)
+>
+> Sesiunea 2026-09-07 a livrat mult (vezi blocul de mai jos: F5 audit butoane + R1-R12 remediate +
+> deployate). A declarat **„toate butoanele execută comanda reală"**. Roland a deschis aplicația,
+> a apăsat **SK** (traducere slovacă) pe documentul rămas în editor și **a primit eroare imediat**.
+> **Concluzie de metodă:** `docs/RAPORT_F5_AUDIT_2026-09-07.md` se tratează de acum ca
+> **INVENTAR de butoane cu verdicte NEVERIFICATE**, NU ca audit terminat. Verdictele „✓" au venit
+> din citire de cod + probe API cu payload minimal (un paragraf), nu din click real pe document realist.
+>
+> ### 🔴 BUG DESCHIS #1 — traducerea SK (funcția centrală pt Cristina) — NEREPARAT
+>
+> Simptome **confirmate live** (reproduse în browser pe prod, în această sesiune):
+>
+> - Eșuează **înainte de orice apel de rețea** — 0 cereri `/api/translate-text` în network panel.
+> - Mesajul „Traducerea a eșuat. Verifică internetul" **e înșelător** (nicio cerere n-a plecat).
+> - După eșec, butonul **SK rămâne DEZACTIVAT** (gri) → utilizatorul nu poate reîncerca fără reload.
+>   (Am dat 3 click-uri pe SK: 0 cereri, 0 log-uri noi, 0 erori consolă — butonul era inert.)
+> - Documentul declanșator: import OCR cu **tabel + întrerupere de pagină + `[Pagina 1: OCR eșuat]`**.
+> - Suspect de cod: `extractTranslatable` / `editor-translate.ts` pe noduri `table`/`pageBreak`,
+>   sau mașina de stări care blochează limba după eșec. EN/DE probabil au același defect (același cod).
+>
+> ### 🔴 BUG DESCHIS #2 — orbire diagnostică (clasă întreagă de erori invizibile) — NEREPARAT
+>
+> Eroarea SK **a fost logată**, dar inutil: `editor:translate_error`, **level `action`**,
+> **`error_code = null`**, context doar `{"to":"sk"}` — fără status, fără cauză, fără stack.
+> Consecințe dovedite: invizibilă pe `/diagnostics`, invizibilă la gruparea pe cod, **și invizibilă
+> la R-DIAG-AUTO** (care filtrează `level in ('error','warn')`) → la începutul sesiunii am raportat
+> **„zero erori active"** în timp ce eroarea lui Roland stătea în log **de 3 ori** (10:09, 10:27, 15:33 UTC).
+> **Regula R-DIAG-AUTO trebuie extinsă să citească TOATE nivelele de log.**
+>
+> ### 📋 Programul de reparație — 6 faze, DRAFT NECONFIRMAT
+>
+> `docs/Fazele.md` conține cele 6 faze, fiecare explicată (ce e stricat → exemplu real → analogie →
+> de ce contează → ce face concret → **ce are Roland de decis**), cu **18 puncte de decizie** (1a…6c):
+> **F1** repară orbirea diagnostică · **F2** bug SK + reîncercare · **F3** caiet de sarcini
+> (modul→submodul→funcție→buton) · **F4** audit REAL in-browser cu documente realiste, modul cu modul ·
+> **F5** unificarea documentației în `Plan_Finalizat.md` + `Plan_in_Lucru.md` · **F6** automatizarea procesului.
+>
+> `docs/Fazele.html` = pagină interactivă (deschisă local) unde Roland scrie mențiuni la fiecare fază
+> și punct, bifează varianta aleasă și dictează vocal; exportă `Fazele_mentiuni_Roland.md`.
+>
+> ⚠️ **NIMIC din aceste faze nu e confirmat de Roland încă.** Sesiunea nouă NU execută fazele înainte
+> de a primi mențiunile lui (fișierul exportat) SAU confirmarea explicită de a folosi variantele
+> marcate `[recomandat]`.
+>
+> ### Decizii deja luate de Roland (valabile)
+>
+> - **Agenți:** subagenți **secvențiali per modul** (NU fan-out paralel).
+> - **`Plan_in_Lucru.md`:** sesiunea **propune** itemii găsiți; **Roland aprobă**; se execută doar ce confirmă el.
+> - **Deploy:** autorizat automat după fiecare fază verde („întotdeauna live").
+> - **`docs/completari_pt_reparatie.md`** = caietul lui Roland pentru probleme/erori găsite pe parcurs;
+>   se citește la fiecare sesiune.
+>
+> ### Scripturi de diagnostic lăsate pe disc (necomise, în `scratchpad/`)
+>
+> `chat_providers_probe.mjs` (sănătate provideri chat, direct cu cheile), `provider_health.mjs` (prin proxy),
+> `ocr_fidelity_probe.mjs` + `ocr_figure_dump.mjs` (OCR real pe prod), `f5_live_probe.mjs`
+> (translate/convert/generare), `convert_verify.mjs` + `convert_binary_check.mjs` (Convertor, inclusiv binar).
+>
+> ### Stare LIVE la finalul sesiunii
+>
+> Frontend **v55** · backend **`a7304a2`** · gate `tsc 0 · jest 357/357 · pytest 75/75` ·
+> git sincron (`c3ab5fd` + commit-ul acestei sesiuni).
+
+---
+
 ## ▶️ REIA DE AICI (2026-09-07) — PROGRAM „totul funcțional + mereu live" (F0-F6) · fix major limite AI
 
 > **Cerere Roland:** totul funcțional pe fiecare modul fără erori, OCR fidel la layout (focus math),

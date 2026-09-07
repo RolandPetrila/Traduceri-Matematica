@@ -1,0 +1,1712 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FAZELE — mențiunile lui Roland</title>
+    <style>
+      :root {
+        --bg: #1e3a12;
+        --panel: #2d5016;
+        --panel2: #24400f;
+        --line: #4a7c2a;
+        --chalk: #f4f4ef;
+        --chalk-dim: #cfe0c0;
+        --yellow: #ffd75e;
+        --red: #ff8a7a;
+        --green: #8fe07a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--chalk);
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        line-height: 1.6;
+        font-size: 16px;
+      }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: var(--panel2);
+        border-bottom: 2px solid var(--line);
+        padding: 10px 16px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      header h1 {
+        font-size: 17px;
+        margin: 0;
+        flex: 1 1 260px;
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 16px 16px 80px;
+      }
+      .intro {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 22px;
+      }
+      .faza {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px 18px;
+        margin: 22px 0;
+      }
+      .faza h2 {
+        color: var(--yellow);
+        margin: 0 0 6px;
+        font-size: 21px;
+      }
+      .faza h3 {
+        color: var(--chalk);
+        font-size: 15px;
+        margin: 16px 0 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        opacity: 0.85;
+      }
+      .faza p {
+        margin: 8px 0;
+      }
+      .ex {
+        border-left: 3px solid var(--yellow);
+        padding: 6px 12px;
+        margin: 10px 0;
+        background: rgba(255, 215, 94, 0.07);
+        border-radius: 0 6px 6px 0;
+      }
+      .analog {
+        border-left: 3px solid var(--chalk-dim);
+        padding: 6px 12px;
+        margin: 10px 0;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 0 6px 6px 0;
+        font-style: italic;
+      }
+      ul {
+        margin: 6px 0 6px 18px;
+        padding: 0;
+      }
+      li {
+        margin: 4px 0;
+      }
+      code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      .decizie {
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin: 14px 0;
+      }
+      .decizie h4 {
+        margin: 0 0 8px;
+        color: var(--yellow);
+        font-size: 16px;
+      }
+      .opt {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        margin: 6px 0;
+        padding: 7px 9px;
+        border-radius: 7px;
+        cursor: pointer;
+      }
+      .opt:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .opt input {
+        margin-top: 5px;
+        flex: 0 0 auto;
+        width: 17px;
+        height: 17px;
+        accent-color: var(--yellow);
+        cursor: pointer;
+      }
+      .opt span {
+        flex: 1;
+      }
+      .rec {
+        color: var(--green);
+        font-weight: 600;
+      }
+      .noteBox {
+        margin-top: 10px;
+      }
+      .noteBox label {
+        display: block;
+        font-size: 13px;
+        color: var(--chalk-dim);
+        margin-bottom: 4px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      textarea {
+        flex: 1;
+        min-height: 74px;
+        background: rgba(0, 0, 0, 0.28);
+        color: var(--chalk);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 11px;
+        font-family: inherit;
+        font-size: 15px;
+        resize: vertical;
+      }
+      textarea:focus {
+        outline: 2px solid var(--yellow);
+        outline-offset: 1px;
+      }
+      .mic {
+        flex: 0 0 auto;
+        width: 44px;
+        height: 44px;
+        border-radius: 9px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--chalk);
+        font-size: 19px;
+        cursor: pointer;
+      }
+      .mic:hover {
+        background: #37611c;
+      }
+      .mic.on {
+        background: #7a1f1f;
+        border-color: #ff8a7a;
+        animation: pulse 1.1s infinite;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.55;
+        }
+      }
+      button.act {
+        background: var(--yellow);
+        color: #1e2a10;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button.act:hover {
+        filter: brightness(1.08);
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--chalk);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 14px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button.ghost:hover {
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .status {
+        font-size: 13px;
+        color: var(--chalk-dim);
+      }
+      .toc {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+        margin: 10px 0 0;
+      }
+      .toc a {
+        color: var(--yellow);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 11px;
+        font-size: 13px;
+      }
+      .toc a:hover {
+        background: rgba(255, 215, 94, 0.14);
+      }
+      .fapte {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin-bottom: 22px;
+      }
+      .warn {
+        color: var(--red);
+      }
+      footer {
+        margin-top: 26px;
+        padding-top: 14px;
+        border-top: 1px solid var(--line);
+        font-size: 13px;
+        color: var(--chalk-dim);
+      }
+      @media (max-width: 640px) {
+        .mic {
+          width: 52px;
+          height: 52px;
+        }
+        body {
+          font-size: 17px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>📍 FAZELE — scrie mențiunile tale</h1>
+      <span class="status" id="status">se salvează automat…</span>
+      <button class="act" id="btnSave">💾 Descarcă mențiunile</button>
+      <button class="ghost" id="btnCopy">📋 Copiază tot</button>
+      <button class="ghost" id="btnClear">🗑 Șterge tot</button>
+    </header>
+
+    <div class="wrap">
+      <div class="intro">
+        <p>
+          <strong>Cum folosești pagina:</strong> la fiecare fază ai o casetă de
+          mențiuni generale, iar la fiecare punct de decizie (1a…6c) poți
+          <strong>bifa varianta aleasă</strong> și scrie de ce. Apasă
+          <strong>🎤</strong> lângă orice casetă ca să dictezi în loc să scrii
+          (română).
+        </p>
+        <p>
+          Tot ce scrii se salvează <strong>automat în browser</strong>. La final
+          apasă <strong>„Descarcă mențiunile"</strong> — obții un fișier text pe
+          care mi-l dai mie.
+        </p>
+        <div class="toc">
+          <a href="#f1">FAZA 1</a><a href="#f2">FAZA 2</a
+          ><a href="#f3">FAZA 3</a> <a href="#f4">FAZA 4</a
+          ><a href="#f5">FAZA 5</a><a href="#f6">FAZA 6</a
+          ><a href="#final">Final</a>
+        </div>
+      </div>
+
+      <div class="fapte">
+        <h3 style="margin-top: 0; color: var(--yellow)">
+          Ce s-a dovedit deja (fapte verificate live)
+        </h3>
+        <ul>
+          <li>
+            <strong>Bug SK:</strong> eșuează
+            <strong>înainte de orice apel de rețea</strong> (0 cereri către
+            server); mesajul „verifică internetul" e înșelător; după eșec
+            butonul SK <strong>rămâne dezactivat</strong>; documentul
+            declanșator avea
+            <strong
+              >tabel + întrerupere de pagină + „[Pagina 1: OCR eșuat]"</strong
+            >.
+          </li>
+          <li>
+            <strong>Orbire diagnostică:</strong> eroarea s-a logat ca nivel
+            <code>action</code>, fără cod și fără cauză (doar
+            <code>{"to":"sk"}</code>) → invizibilă pe /diagnostics și la
+            verificarea automată.
+          </li>
+          <li>
+            <strong>Lecția de metodă:</strong> auditul anterior a citit cod și a
+            probat endpoint-uri cu payload minimal; tu ai apăsat un buton real
+            pe un document real → eroare imediată. Raportul de audit se tratează
+            ca <strong>inventar cu verdicte neverificate</strong>.
+          </li>
+          <li>
+            <strong>Decizii deja luate de tine:</strong> subagenți
+            <strong>secvențiali</strong> per modul;
+            <code>Plan_in_Lucru.md</code> = sesiunea propune, tu aprobi.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ============ FAZA 1 ============ -->
+      <section class="faza" id="f1">
+        <h2>FAZA 1 — „Repară orbirea diagnostică"</h2>
+
+        <h3>Ce e stricat acum</h3>
+        <p>
+          Când ceva pică, aplicația <strong>șoptește</strong> eroarea într-un
+          mod în care nimeni n-o aude.
+        </p>
+        <div class="ex">
+          <strong>Exemplul tău:</strong> ai apăsat SK, ai văzut „Traducerea a
+          eșuat. Verifică internetul". În log s-a scris <em>doar</em>
+          <code>editor:translate_error</code> + <code>{"to":"sk"}</code>. Nimic
+          despre <strong>de ce</strong>.
+        </div>
+        <div class="analog">
+          <strong>Analogie:</strong> bordul aprinde un bec generic „defecțiune",
+          iar în carnetul de service scrie doar „șoferul voia să vireze la
+          stânga". Mecanicul nu poate ști dacă a fost bateria, frâna sau
+          direcția.
+        </div>
+
+        <h3>De ce contează — situații reale</h3>
+        <p>
+          <strong>1. Cristina, la școală, cu 5 minute înainte de oră.</strong>
+          Nu-i merge o fișă și te sună. <em>Azi:</em> îi poți spune doar „mai
+          încearcă". <em>După Faza 1:</em> ea îți citește un cod (ex.
+          <code>E-TRAD-002</code>), tu deschizi /diagnostics și vezi instant
+          cauza și ora. Diferența dintre a ghici și a ști.
+        </p>
+        <p>
+          <strong>2. Ce s-a întâmplat efectiv cu mine:</strong> ți-am raportat
+          „zero erori active" în timp ce eroarea ta stătea în log
+          <strong>de 3 ori</strong> — fiindcă era la nivel <code>action</code>,
+          iar verificarea mea filtra doar <code>error</code>.
+          <span class="warn"
+            >Orbirea m-a făcut să-ți dau un raport fals-liniștitor.</span
+          >
+        </p>
+
+        <h3>Ce face concret faza</h3>
+        <p>
+          Fiecare eșec de flux (traducere, import/OCR, export, generare,
+          conversie, print) capătă <strong>cod</strong>,
+          <strong>cauză reală în clar</strong> și <strong>locul</strong> —
+          vizibile, filtrabile și grupabile în /diagnostics.
+        </p>
+
+        <div class="noteBox">
+          <label
+            >Mențiunile tale la FAZA 1 (orice observație despre explicație sau
+            despre fază)</label
+          >
+          <div class="row">
+            <textarea
+              data-k="f1_general"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic" title="Dictează">🎤</button>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(1a) Pe ce fluxuri aplicăm diagnoza corectă?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1a"
+              value="Toate fluxurile, toate modulele"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Toate fluxurile, toate modulele</strong> — traducere,
+              import/OCR, export, generare Teste/Școlare, conversii, print,
+              dictare. Dacă peste 2 luni pică exportul DOCX, afli imediat de
+              ce.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1a"
+              value="Doar fluxurile AI/retea"
+            /><span
+              ><strong>Doar fluxurile care ating AI/rețea</strong> — traducere,
+              OCR, generare, chat. Astea pică cel mai des; restul sunt
+              locale.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1a"
+              value="Doar traducerea (minim)"
+            /><span
+              ><strong>Doar traducerea</strong> (minim, ca să reparăm SK) —
+              restul aplicației rămâne oarbă.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 1a</label>
+            <div class="row">
+              <textarea
+                data-k="n1a"
+                placeholder="De ce ai ales varianta asta / ce vrei altfel…"
+              ></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(1b) Ce vede Cristina pe ecran când pică ceva?</h4>
+          <label class="opt"
+            ><input type="radio" name="d1b" value="Mesaj + cod vizibil" /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Mesaj clar + cod vizibil</strong> — ex. „Traducerea a
+              eșuat (E-TRAD-002)". Ea ți-l citește la telefon.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1b"
+              value="Mesaj + cod + buton Copiaza detaliile"
+            /><span
+              ><strong>Mesaj + cod + buton „Copiază detaliile"</strong> — îți
+              trimite pe WhatsApp textul complet (cod, oră, cauză). Cel mai bun
+              la distanță, dar adaugă un buton.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1b"
+              value="Doar mesaj prietenos, fara cod"
+            /><span
+              ><strong>Doar mesaj prietenos, fără cod</strong> — interfață mai
+              curată, dar tu nu afli nimic de la ea.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 1b</label>
+            <div class="row">
+              <textarea data-k="n1b" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(1c) Cât din conținutul care a picat se salvează în log?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1c"
+              value="Cod + cauza + fragment scurt"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Cod + cauză + fragment scurt</strong> (ex. ~200 caractere
+              sau „tabel cu 4 coloane") — permite reproducerea fără să-i ceri
+              fișierul Cristinei. Rămâne în baza ta privată.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d1c"
+              value="Doar cod + cauza, fara fragment"
+            /><span
+              ><strong>Doar cod + cauză, fără niciun fragment</strong> —
+              discreție maximă, dar reproducerea e mai grea.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 1c</label>
+            <div class="row">
+              <textarea data-k="n1c" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FAZA 2 ============ -->
+      <section class="faza" id="f2">
+        <h2>FAZA 2 — „Bug SK: reparare + posibilitatea de a reîncerca"</h2>
+
+        <h3>Ce e stricat acum</h3>
+        <p>
+          Traducerea în slovacă <strong>pică pe un document real</strong> și,
+          mai rău, <strong>se blochează</strong>: după eșec butonul SK devine
+          gri și nu mai poți încerca fără reload.
+        </p>
+        <div class="ex">
+          <strong>Exemplul tău:</strong> ai apăsat SK pe documentul cu conținut
+          OCR, <strong>tabel</strong> și întrerupere de pagină → eroare. Când am
+          încercat eu să reproduc, am dat click de <strong>trei ori</strong> pe
+          SK și <strong>nu s-a întâmplat nimic</strong> — butonul era deja
+          dezactivat de la eșecul tău.
+        </div>
+        <div class="analog">
+          <strong>Analogie:</strong> un întrerupător care, după o apăsare
+          nereușită, se blochează în poziția „stins", iar pe el scrie
+          „verificați rețeaua electrică" — deși firul spre rețea n-a fost
+          niciodată atins.
+        </div>
+
+        <h3>De ce contează — situații reale</h3>
+        <p>
+          <strong>1.</strong> Traducerea RO→SK este
+          <strong>funcția centrală</strong> pentru Cristina (predă la secția
+          slovacă). Dacă pică fix pe documentele cu <strong>tabele</strong> —
+          iar tabelele sunt peste tot la matematică (tabele de valori, de
+          variație) — aplicația își ratează scopul principal exact pe
+          materialele cele mai folosite.
+        </p>
+        <p>
+          <strong>2. Blocajul e mai rău decât eroarea.</strong> O eroare o mai
+          încerci o dată. Un buton gri îi spune „gata, nu se mai poate" — și
+          scrie fișa de mână.
+        </p>
+
+        <h3>Ce face concret faza</h3>
+        <p>
+          Reproducere → cauza reală în cod → reparare →
+          <strong>mesaj corect</strong> → <strong>buton reîncercabil</strong> →
+          test de regresie pe document cu tabel + întrerupere de pagină, ca să
+          nu revină.
+        </p>
+
+        <div class="noteBox">
+          <label>Mențiunile tale la FAZA 2</label>
+          <div class="row">
+            <textarea
+              data-k="f2_general"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(2a) Cât de departe merge reparația?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d2a"
+              value="Sa nu mai crape (sare peste noduri)"
+            /><span
+              ><strong>Să nu mai crape</strong> — traduce ce poate și sare peste
+              nodurile problematice. Rapid și sigur, dar tabelul rămâne în
+              română.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d2a"
+              value="Suport complet, traduce si tabelele"
+            /><span
+              ><span class="rec">[recomandat pt. matematică]</span>
+              <strong>Suport complet</strong> — traduce inclusiv textul din
+              celulele tabelului („Valoare", „Rezultat" apar în slovacă). Mai
+              mult de lucru, dar tabelele sunt frecvente.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 2a</label>
+            <div class="row">
+              <textarea data-k="n2a" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(2b) Ce se întâmplă la eșec?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d2b"
+              value="Buton Incearca din nou"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Buton „Încearcă din nou"</strong> — utilizatorul nu rămâne
+              blocat.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d2b"
+              value="Reincercare automata o data"
+            /><span
+              ><strong>Reîncercare automată o dată</strong>, în tăcere — dacă a
+              doua oară merge, ea nici nu află că a fost o problemă.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d2b" value="Doar mesaj clar" /><span
+              ><strong>Doar mesaj clar</strong>, fără reîncercare.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 2b</label>
+            <div class="row">
+              <textarea data-k="n2b" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(2c) Ce limbi acoperim?</h4>
+          <label class="opt"
+            ><input type="radio" name="d2c" value="Doar SK" /><span
+              ><strong>Doar SK</strong> — reparăm exact ce ai găsit.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d2c" value="SK + EN + DE" /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Și EN + DE</strong> — folosesc același cod, deci foarte
+              probabil au exact același defect.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 2c</label>
+            <div class="row">
+              <textarea data-k="n2c" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FAZA 3 ============ -->
+      <section class="faza" id="f3">
+        <h2>FAZA 3 — „Caiet de sarcini" (desfășurătorul aplicației)</h2>
+
+        <h3>Ce lipsește acum</h3>
+        <p>
+          <strong
+            >Nu există niciun document care să spună, buton cu buton, ce trebuie
+            să facă aplicația.</strong
+          >
+          Fără el nimeni — nici tu, nici eu, nici o sesiune viitoare — nu poate
+          verifica „funcționează cum trebuie?".
+        </p>
+        <div class="ex">
+          <strong>Exemplul concret:</strong> auditul a declarat „~73 de butoane
+          funcționează". Dar nimeni nu scrisese ce ar TREBUI să facă fiecare —
+          așa că „funcționează" a însemnat „codul pare conectat", nu „face ce
+          promite". Butonul SK a fost declarat verde; tu l-ai spart în 10
+          secunde.
+        </div>
+        <div class="analog">
+          <strong>Analogie:</strong> o clădire fără proiect tehnic. Nu poți face
+          recepția — poți doar să te plimbi prin ea și să speri că observi
+          crăpăturile. Caietul de sarcini ESTE proiectul tehnic.
+        </div>
+
+        <h3>De ce contează — situații reale</h3>
+        <p>
+          <strong>1.</strong> Poți testa
+          <strong>singur, metodic, fără mine</strong>: iei lista și bifezi.
+          <strong>2.</strong> Cristina raportează precis: „butonul X nu face ce
+          scrie la punctul Y". <strong>3.</strong> Orice sesiune viitoare
+          verifică pe același document, fără să reinventeze totul.
+        </p>
+
+        <h3>Ce face concret faza</h3>
+        <p>
+          Un document <code>CAIET_DE_SARCINI.md</code>:
+          <strong>modul → submodul → funcție → buton</strong>. Pentru fiecare:
+          ce execută, ce input realist cere, cum se testează pas cu pas,
+          rezultatul așteptat, ce cod de eroare dă la eșec, cum se vede în
+          diagnoză. Acoperă toate cele 8 module + Setări + /diagnostics.
+        </p>
+
+        <div class="noteBox">
+          <label>Mențiunile tale la FAZA 3</label>
+          <div class="row">
+            <textarea
+              data-k="f3_general"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(3a) Cât de amănunțit? (granularitatea)</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d3a"
+              value="Absolut fiecare buton"
+            /><span
+              ><strong>Absolut fiecare buton</strong>, inclusiv formatarea
+              (Bold, Italic, aliniere). Complet, dar lung.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d3a"
+              value="Doar butoanele de executie"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Doar butoanele „de execuție"</strong> — cele care
+              generează, transformă, salvează, trimit. Formatarea o vezi instant
+              pe ecran; generarea unei fișe, nu.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 3a</label>
+            <div class="row">
+              <textarea data-k="n3a" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(3b) Cum se construiește?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d3b"
+              value="Din inventarul existent"
+            /><span
+              ><strong>Din inventarul existent</strong> (raportul de audit) —
+              rapid, dar moștenește ce am inventariat eu.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d3b"
+              value="Deschizand live fiecare modul"
+            /><span
+              ><strong>Deschizând live fiecare modul</strong> și notând ce se
+              vede — mai lent, dar prinde submodulele pe care nimeni nu le-a
+              deschis (exact ce ai întrebat la punctul 2).</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d3b"
+              value="Ambele: inventar + confirmare live"
+            /><span
+              ><span class="rec">[recomandat]</span> <strong>Ambele</strong> —
+              pornim de la inventar, dar confirmăm live fiecare modul.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 3b</label>
+            <div class="row">
+              <textarea data-k="n3b" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(3c) Forma documentului</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d3c"
+              value="Un singur fisier mare"
+            /><span
+              ><strong>Un singur fișier mare</strong> — cauți ușor cu
+              Ctrl+F.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d3c" value="Un fisier per modul" /><span
+              ><strong>Un fișier per modul</strong> — mai ușor de citit și de
+              bifat pe rând.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 3c</label>
+            <div class="row">
+              <textarea data-k="n3c" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FAZA 4 ============ -->
+      <section class="faza" id="f4">
+        <h2>FAZA 4 — „Auditul real, în browser, modul cu modul"</h2>
+
+        <h3>Ce e stricat acum</h3>
+        <p>
+          Auditul precedent a fost făcut <strong>citind cod</strong> și
+          trimițând <strong>cereri de probă simple</strong>. A declarat verde
+          exact butonul pe care tu l-ai spart la primul click.
+        </p>
+        <div class="ex">
+          <strong>Diferența, concret:</strong> proba mea a trimis
+          <strong>un singur paragraf</strong> → răspuns 200 → „funcționează".
+          Documentul tău avea
+          <strong>OCR + tabel + întrerupere de pagină</strong> → crăpat. Ambele
+          vorbeau despre „traducere", dar numai a ta vorbea despre realitate.
+        </div>
+        <div class="analog">
+          <strong>Analogie:</strong> verifici mașina pornind motorul în garaj și
+          declari „merge" — fără s-o scoți pe drum, încărcată, în pantă.
+        </div>
+
+        <h3>De ce contează — situații reale</h3>
+        <p>
+          <strong>1.</strong> Ăsta e răspunsul la reproșul tău nr. 1. La final
+          ai un verdict per modul <strong>cu dovadă</strong> (captură, log,
+          status) — nu cuvântul meu. <strong>2.</strong> Găsești defectele
+          înaintea Cristinei: un buton spart găsit de mine costă o oră; găsit de
+          ea, în fața clasei, costă lecția.
+        </p>
+
+        <h3>Ce face concret faza</h3>
+        <p>
+          Modul cu modul, secvențial: un subagent pregătește planul de test din
+          caiet, iar sesiunea principală
+          <strong>execută click real în browser</strong>, cu conținut realist,
+          citind consola, rețeaua și log-urile. Raport după fiecare modul.
+          Defectele găsite intră în <code>Plan_in_Lucru.md</code> ca propuneri
+          pe care le aprobi tu.
+        </p>
+
+        <div class="noteBox">
+          <label>Mențiunile tale la FAZA 4</label>
+          <div class="row">
+            <textarea
+              data-k="f4_general"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(4a) Cu ce date testăm?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d4a"
+              value="Fisiere sintetice generate de Claude"
+            /><span
+              ><strong>Fișiere sintetice</strong> generate de mine — rapid, dar
+              artificial.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d4a"
+              value="Fisiere reale de la Cristina"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Fișiere reale de-ale Cristinei</strong> — o poză de
+              manual, un .docx cu tabel, un PDF scanat. Azi s-a văzut clar:
+              PDF-ul sintetic a trecut, cel realist a spart traducerea.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d4a" value="Amestecat" /><span
+              ><strong>Amestecat</strong> — sintetice pentru volum, reale pentru
+              cazurile critice.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label
+              >Mențiune la 4a (dacă dai fișiere reale, spune-mi unde le
+              pui)</label
+            >
+            <div class="row">
+              <textarea data-k="n4a" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(4b) În ce ordine luăm modulele?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d4b"
+              value="De la cel mai folosit la cel mai rar"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>De la cel mai folosit la cel mai rar</strong>: Editor →
+              Școlare → Teste → Chat → Convertor → Planșe → Calculator.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d4b" value="In ordinea din meniu" /><span
+              ><strong>În ordinea din meniu</strong> — sistematic, ușor de
+              urmărit.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d4b"
+              value="Ordinea o stabileste Roland"
+            /><span
+              ><strong>Ordinea o dai tu</strong> — scrie-o în mențiune.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 4b</label>
+            <div class="row">
+              <textarea data-k="n4b" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(4c) Ce fac când găsesc un defect?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d4c"
+              value="Opresc si repar imediat"
+            /><span
+              ><strong>Mă opresc și repar imediat</strong> — vezi rezultate pe
+              loc, dar auditul durează mai mult.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d4c"
+              value="Notez si continui, reparam la final"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Notez și continui</strong>, reparăm la final pe listă
+              aprobată de tine — vezi întâi tabloul complet, apoi decizi
+              prioritățile.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 4c</label>
+            <div class="row">
+              <textarea data-k="n4c" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FAZA 5 ============ -->
+      <section class="faza" id="f5">
+        <h2>FAZA 5 — „Unificarea documentației în două fișiere vii"</h2>
+
+        <h3>Ce e stricat acum</h3>
+        <p>
+          Documentația e împrăștiată în 18 fișiere, plus memorie, plus rapoarte
+          — și <strong>o parte din ea minte</strong>. Un document învechit e mai
+          periculos decât lipsa lui, fiindcă îl crezi.
+        </p>
+        <div class="ex">
+          <strong>Exemple din chiar sesiunea asta:</strong> handoff-ul scria
+          „NEDEPLOYAT" despre o funcție deja live (era să redeployez degeaba);
+          documentația scria „MathJax" deși codul folosește KaTeX de mult; un
+          audit întreg s-a construit pe un raport cu verdicte neverificate.
+        </div>
+        <div class="analog">
+          <strong>Analogie:</strong> o firmă cu 18 versiuni ale aceleiași
+          proceduri în sertare diferite. Angajatul nou o citește pe cea greșită
+          și face munca de două ori.
+        </div>
+
+        <h3>De ce contează — situații reale</h3>
+        <p>
+          <strong>1.</strong> Vezi într-un singur loc tot ce s-a făcut vreodată
+          — util când te întrebi „am făcut noi X?". <strong>2.</strong> Într-un
+          singur loc, exact ce a rămas, cu căsuțe pe care
+          <strong>doar tu</strong> le aprobi. <strong>3.</strong> O sesiune nouă
+          citește <strong>două</strong> fișiere, nu optsprezece.
+        </p>
+
+        <h3>Ce face concret faza</h3>
+        <p>
+          <code>Plan_Finalizat.md</code> (tot istoricul, cu dovadă, fișier viu)
+          + <code>Plan_in_Lucru.md</code> (ce a rămas, cu căsuțe bifate doar
+          când e finalizat + verificat + testat live; la final de fază, bifatele
+          se transferă în Plan_Finalizat).
+          <code>completari_pt_reparatie.md</code> rămâne neatins — e caietul tău
+          de reclamații.
+        </p>
+
+        <div class="noteBox">
+          <label>Mențiunile tale la FAZA 5</label>
+          <div class="row">
+            <textarea
+              data-k="f5_general"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(5a) Ce se întâmplă cu documentele vechi?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d5a"
+              value="Se sterg (git pastreaza istoricul)"
+            /><span
+              ><strong>Se șterg</strong> — git păstrează oricum istoricul.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d5a"
+              value="Se muta in docs/arhiva/"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Se mută în <code>docs/arhiva/</code></strong> — le poți
+              răsfoi oricând, dar nu mai încurcă.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d5a"
+              value="Raman pe loc, marcate ISTORIC"
+            /><span
+              ><strong>Rămân pe loc</strong>, marcate „ISTORIC — nu te baza pe
+              ele".</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 5a</label>
+            <div class="row">
+              <textarea data-k="n5a" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(5b) Cât de detaliat e Plan_Finalizat.md?</h4>
+          <label class="opt"
+            ><input type="radio" name="d5b" value="Fiecare commit" /><span
+              ><strong>Fiecare commit</strong> — foarte detaliat, dar greu de
+              citit.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d5b"
+              value="Rezumat per faza/sesiune cu linkuri"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Rezumat per fază/sesiune</strong>, cu link la commit-uri —
+              se citește în 5 minute.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d5b" value="Doar titluri de faze" /><span
+              ><strong>Doar titluri de faze</strong> — foarte scurt, dar pierzi
+              „ce anume s-a făcut".</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 5b</label>
+            <div class="row">
+              <textarea data-k="n5b" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(5c) Cum se ordonează istoricul?</h4>
+          <label class="opt"
+            ><input type="radio" name="d5c" value="Cronologic" /><span
+              ><strong>Cronologic</strong> — vezi evoluția în timp.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d5c" value="Pe module" /><span
+              ><strong>Pe module</strong> — găsești repede „ce s-a făcut la
+              Școlare".</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d5c"
+              value="Cronologic + index pe module"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong>Cronologic + index pe module</strong> la început — ai și
+              povestea, și căutarea rapidă.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 5c</label>
+            <div class="row">
+              <textarea data-k="n5c" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FAZA 6 ============ -->
+      <section class="faza" id="f6">
+        <h2>FAZA 6 — „Automatizarea procesului" (ca să nu se piardă)</h2>
+
+        <h3>Ce lipsește acum</h3>
+        <p>
+          Tot ce stabilim aici ține
+          <strong>doar cât își aduce cineva aminte</strong>. Sesiunea următoare
+          pornește cu context curat — dacă regula nu e scrisă în locul potrivit,
+          dispare.
+        </p>
+        <div class="ex">
+          <strong>Exemplul dureros:</strong> regula de verificare automată a
+          erorilor <strong>exista deja</strong>, dar era scrisă îngust („citește
+          erorile de nivel error/warn"), iar eroarea ta era la nivel
+          <code>action</code>. Regula a fost respectată <em>la literă</em> și a
+          produs un raport fals. Nimeni n-a confruntat regula cu realitatea.
+        </div>
+        <div class="analog">
+          <strong>Analogie:</strong> o procedură bună care trăiește doar în
+          capul unui angajat. Când pleacă el (= sesiune nouă, context curat),
+          pleacă și procedura.
+        </div>
+
+        <h3>De ce contează — situații reale</h3>
+        <p>
+          <strong>1.</strong> Peste o lună, o sesiune nouă pornește corect fără
+          să-i explici tu totul de la capăt. <strong>2.</strong> Nu mai primești
+          „verde" nesusținut — regula cere dovadă live.
+          <strong>3.</strong> Fișierul tău de reclamații e citit
+          <strong>automat</strong> la fiecare pornire.
+        </p>
+
+        <h3>Ce face concret faza</h3>
+        <p>
+          Reguli scrise în regulamentul proiectului + memorie: la start se
+          citesc <code>Plan_in_Lucru.md</code> și
+          <code>completari_pt_reparatie.md</code>; după fiecare fază se bifează,
+          se transferă bifatele, se actualizează documentele, commit+push; nimic
+          nu se declară „funcțional" fără dovadă live; verificarea de erori
+          citește <strong>toate</strong> nivelele de log.
+        </p>
+
+        <div class="noteBox">
+          <label>Mențiunile tale la FAZA 6</label>
+          <div class="row">
+            <textarea
+              data-k="f6_general"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(6a) Cât de strictă e regula dovezii?</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d6a"
+              value="Nimic gata fara dovada live in browser"
+            /><span
+              ><span class="rec">[recomandat]</span>
+              <strong
+                >Nimic nu se declară gata fără dovadă live în browser</strong
+              >
+              — exact ce a lipsit. Mai lent, dar onest.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d6a"
+              value="Dovada live doar pt fluxurile Cristinei"
+            /><span
+              ><strong
+                >Dovadă live doar pentru fluxurile pe care le atinge
+                Cristina</strong
+              >
+              — compromis între viteză și siguranță.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d6a"
+              value="Dovada live doar la cerere"
+            /><span
+              ><strong>Dovadă live doar când o cer eu</strong> — cel mai rapid,
+              dar te întorci la situația de azi.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 6a</label>
+            <div class="row">
+              <textarea data-k="n6a" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(6b) Ritmul raportării</h4>
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d6b"
+              value="Raport dupa fiecare faza"
+            /><span
+              ><strong>După fiecare fază</strong> — mai puține
+              întreruperi.</span
+            ></label
+          >
+          <label class="opt"
+            ><input
+              type="radio"
+              name="d6b"
+              value="Raport dupa fiecare modul"
+            /><span
+              ><strong>După fiecare modul</strong> — vezi progresul mai des, dar
+              primești mai multe mesaje.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 6b</label>
+            <div class="row">
+              <textarea data-k="n6b" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="decizie">
+          <h4>(6c) Vrei o „listă de pornire" la începutul fiecărei sesiuni?</h4>
+          <label class="opt"
+            ><input type="radio" name="d6c" value="Da, lista de pornire" /><span
+              ><span class="rec">[recomandat]</span> <strong>Da</strong> — în
+              primul mesaj îți arăt ce am citit (plan, reclamații, stare) și ce
+              urmează. E verificarea ta că procesul chiar rulează.</span
+            ></label
+          >
+          <label class="opt"
+            ><input type="radio" name="d6c" value="Nu e nevoie" /><span
+              ><strong>Nu e nevoie</strong> — treci direct la treabă.</span
+            ></label
+          >
+          <div class="noteBox">
+            <label>Mențiune la 6c</label>
+            <div class="row">
+              <textarea data-k="n6c" placeholder="…"></textarea
+              ><button class="mic">🎤</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ FINAL ============ -->
+      <section class="faza" id="final">
+        <h2>Mențiuni finale / faze lipsă</h2>
+        <p>
+          Aici scrie orice nu se încadrează mai sus: faze pe care le vrei
+          <strong>adăugate</strong>, faze pe care le vrei
+          <strong>scoase</strong>, altă <strong>ordine</strong> a fazelor, sau
+          orice altceva ți-a scăpat pe parcurs.
+        </p>
+        <div class="noteBox">
+          <label>Mențiuni generale</label>
+          <div class="row">
+            <textarea
+              data-k="final_general"
+              style="min-height: 150px"
+              placeholder="Scrie sau dictează…"
+            ></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+        <div class="noteBox">
+          <label
+            >Ordinea fazelor — o vrei altfel? (ex. „2 înaintea lui 1")</label
+          >
+          <div class="row">
+            <textarea data-k="final_ordine" placeholder="…"></textarea
+            ><button class="mic">🎤</button>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Generat din <code>docs/Fazele.md</code> · Tot ce scrii se salvează
+        automat în acest browser. Apasă
+        <strong>„Descarcă mențiunile"</strong> ca să obții fișierul pe care mi-l
+        dai mie.
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+        var KEY = "fazele_mentiuni_v1";
+        var statusEl = document.getElementById("status");
+
+        function allFields() {
+          return Array.prototype.slice.call(
+            document.querySelectorAll("textarea[data-k]"),
+          );
+        }
+        function allRadioNames() {
+          var names = {};
+          Array.prototype.forEach.call(
+            document.querySelectorAll("input[type=radio]"),
+            function (r) {
+              names[r.name] = 1;
+            },
+          );
+          return Object.keys(names);
+        }
+
+        function collect() {
+          var data = { texts: {}, choices: {} };
+          allFields().forEach(function (t) {
+            if (t.value.trim()) data.texts[t.dataset.k] = t.value;
+          });
+          allRadioNames().forEach(function (n) {
+            var sel = document.querySelector('input[name="' + n + '"]:checked');
+            if (sel) data.choices[n] = sel.value;
+          });
+          return data;
+        }
+
+        function save() {
+          try {
+            localStorage.setItem(KEY, JSON.stringify(collect()));
+            var d = new Date();
+            statusEl.textContent = "salvat " + d.toLocaleTimeString("ro-RO");
+          } catch (e) {
+            statusEl.textContent = "nu pot salva local (mod privat?)";
+          }
+        }
+
+        function restore() {
+          var raw;
+          try {
+            raw = localStorage.getItem(KEY);
+          } catch (e) {
+            return;
+          }
+          if (!raw) return;
+          var data;
+          try {
+            data = JSON.parse(raw);
+          } catch (e) {
+            return;
+          }
+          allFields().forEach(function (t) {
+            if (data.texts && data.texts[t.dataset.k])
+              t.value = data.texts[t.dataset.k];
+          });
+          if (data.choices)
+            Object.keys(data.choices).forEach(function (n) {
+              var el = document.querySelector(
+                'input[name="' +
+                  n +
+                  '"][value="' +
+                  data.choices[n].replace(/"/g, '\\"') +
+                  '"]',
+              );
+              if (el) el.checked = true;
+            });
+          statusEl.textContent = "mențiuni restaurate";
+        }
+
+        // ---- etichete lizibile pentru raportul descărcat
+        var LABEL = {
+          f1_general: "FAZA 1 — mențiuni generale",
+          n1a: "1a — acoperirea diagnozei",
+          n1b: "1b — ce vede Cristina",
+          n1c: "1c — detaliu în log",
+          f2_general: "FAZA 2 — mențiuni generale",
+          n2a: "2a — cât de departe merge reparația",
+          n2b: "2b — comportament la eșec",
+          n2c: "2c — limbi acoperite",
+          f3_general: "FAZA 3 — mențiuni generale",
+          n3a: "3a — granularitate",
+          n3b: "3b — cum se construiește",
+          n3c: "3c — forma documentului",
+          f4_general: "FAZA 4 — mențiuni generale",
+          n4a: "4a — date de test",
+          n4b: "4b — ordinea modulelor",
+          n4c: "4c — ce fac la defect",
+          f5_general: "FAZA 5 — mențiuni generale",
+          n5a: "5a — documentele vechi",
+          n5b: "5b — detaliu Plan_Finalizat",
+          n5c: "5c — ordonarea istoricului",
+          f6_general: "FAZA 6 — mențiuni generale",
+          n6a: "6a — strictețea dovezii",
+          n6b: "6b — ritmul raportării",
+          n6c: "6c — listă de pornire",
+          final_general: "MENȚIUNI FINALE",
+          final_ordine: "ORDINEA FAZELOR",
+        };
+        var CHOICE_LABEL = {
+          d1a: "1a acoperire",
+          d1b: "1b mesaj utilizator",
+          d1c: "1c detaliu log",
+          d2a: "2a profunzimea reparației",
+          d2b: "2b la eșec",
+          d2c: "2c limbi",
+          d3a: "3a granularitate",
+          d3b: "3b construcție",
+          d3c: "3c formă",
+          d4a: "4a date de test",
+          d4b: "4b ordinea modulelor",
+          d4c: "4c la defect",
+          d5a: "5a documente vechi",
+          d5b: "5b detaliu istoric",
+          d5c: "5c ordonare",
+          d6a: "6a strictețea dovezii",
+          d6b: "6b ritm raportare",
+          d6c: "6c listă de pornire",
+        };
+        var ORDER = [
+          "d1a",
+          "d1b",
+          "d1c",
+          "d2a",
+          "d2b",
+          "d2c",
+          "d3a",
+          "d3b",
+          "d3c",
+          "d4a",
+          "d4b",
+          "d4c",
+          "d5a",
+          "d5b",
+          "d5c",
+          "d6a",
+          "d6b",
+          "d6c",
+        ];
+
+        function buildReport() {
+          var d = collect(),
+            out = [];
+          out.push("# MENTIUNILE LUI ROLAND pe FAZE");
+          out.push("");
+          out.push("Generat: " + new Date().toLocaleString("ro-RO"));
+          out.push("");
+          out.push("## Variante alese");
+          out.push("");
+          var any = false;
+          ORDER.forEach(function (n) {
+            if (d.choices[n]) {
+              any = true;
+              out.push("- **" + (CHOICE_LABEL[n] || n) + "**: " + d.choices[n]);
+            }
+          });
+          if (!any) out.push("_(nicio variantă bifată)_");
+          out.push("");
+          out.push("## Mentiuni scrise");
+          out.push("");
+          var anyT = false;
+          Object.keys(LABEL).forEach(function (k) {
+            if (d.texts[k]) {
+              anyT = true;
+              out.push("### " + LABEL[k]);
+              out.push("");
+              out.push(d.texts[k]);
+              out.push("");
+            }
+          });
+          if (!anyT) out.push("_(nicio mentiune scrisa)_");
+          return out.join("\n");
+        }
+
+        document
+          .getElementById("btnSave")
+          .addEventListener("click", function () {
+            var txt = buildReport();
+            var blob = new Blob([txt], { type: "text/markdown;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "Fazele_mentiuni_Roland.md";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () {
+              URL.revokeObjectURL(url);
+            }, 1000);
+            statusEl.textContent = "descărcat";
+          });
+
+        document
+          .getElementById("btnCopy")
+          .addEventListener("click", function () {
+            var txt = buildReport();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(txt).then(
+                function () {
+                  statusEl.textContent = "copiat în clipboard";
+                },
+                function () {
+                  statusEl.textContent = "nu pot copia";
+                },
+              );
+            } else {
+              statusEl.textContent = "clipboard indisponibil";
+            }
+          });
+
+        document
+          .getElementById("btnClear")
+          .addEventListener("click", function () {
+            if (!confirm("Sigur ștergi TOATE mențiunile și bifele?")) return;
+            allFields().forEach(function (t) {
+              t.value = "";
+            });
+            Array.prototype.forEach.call(
+              document.querySelectorAll("input[type=radio]"),
+              function (r) {
+                r.checked = false;
+              },
+            );
+            try {
+              localStorage.removeItem(KEY);
+            } catch (e) {}
+            statusEl.textContent = "șters";
+          });
+
+        // autosave
+        var t = null;
+        document.addEventListener("input", function () {
+          clearTimeout(t);
+          t = setTimeout(save, 500);
+        });
+        document.addEventListener("change", function () {
+          save();
+        });
+        window.addEventListener("beforeunload", save);
+
+        // ---------- DICTARE (speech to text) ----------
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        var activeBtn = null,
+          rec = null;
+
+        function stopRec() {
+          if (rec) {
+            try {
+              rec.stop();
+            } catch (e) {}
+          }
+          if (activeBtn) {
+            activeBtn.classList.remove("on");
+            activeBtn.textContent = "🎤";
+          }
+          activeBtn = null;
+          rec = null;
+        }
+
+        function startRec(btn, target) {
+          if (!SR) {
+            alert(
+              "Dictarea nu e suportată de acest browser.\nFolosește Google Chrome sau Microsoft Edge.",
+            );
+            return;
+          }
+          rec = new SR();
+          rec.lang = "ro-RO";
+          rec.continuous = true;
+          rec.interimResults = true;
+          var base = target.value;
+          rec.onresult = function (ev) {
+            var finalTxt = "",
+              interim = "";
+            for (var i = ev.resultIndex; i < ev.results.length; i++) {
+              var r = ev.results[i];
+              if (r.isFinal) finalTxt += r[0].transcript;
+              else interim += r[0].transcript;
+            }
+            if (finalTxt) {
+              base =
+                (base ? base.replace(/\s*$/, "") + " " : "") + finalTxt.trim();
+            }
+            target.value = (base + (interim ? " " + interim : ""))
+              .replace(/\s+/g, " ")
+              .trim();
+            clearTimeout(t);
+            t = setTimeout(save, 600);
+          };
+          rec.onerror = function (ev) {
+            statusEl.textContent =
+              "eroare dictare: " + (ev.error || "necunoscută");
+            if (ev.error === "not-allowed")
+              alert("Trebuie să permiți accesul la microfon în browser.");
+            stopRec();
+          };
+          rec.onend = function () {
+            if (activeBtn === btn) stopRec();
+          };
+          try {
+            rec.start();
+          } catch (e) {
+            statusEl.textContent = "nu pot porni dictarea";
+            return;
+          }
+          activeBtn = btn;
+          btn.classList.add("on");
+          btn.textContent = "⏹";
+          target.focus();
+          statusEl.textContent = "ascult… (apasă ⏹ ca să oprești)";
+        }
+
+        Array.prototype.forEach.call(
+          document.querySelectorAll("button.mic"),
+          function (btn) {
+            btn.addEventListener("click", function () {
+              var target = btn.parentElement.querySelector("textarea");
+              if (!target) return;
+              if (activeBtn === btn) {
+                stopRec();
+                statusEl.textContent = "dictare oprită";
+                return;
+              }
+              stopRec();
+              startRec(btn, target);
+            });
+          },
+        );
+
+        if (!SR) {
+          Array.prototype.forEach.call(
+            document.querySelectorAll("button.mic"),
+            function (b) {
+              b.title =
+                "Dictarea nu e suportată de acest browser (folosește Chrome/Edge)";
+              b.style.opacity = ".45";
+            },
+          );
+        }
+
+        restore();
+      })();
+    </script>
+  </body>
+</html>
