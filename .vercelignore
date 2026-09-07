@@ -3,6 +3,8 @@
 # altfel bundle-ul depășește 225 MB (ex. 99_Roland_Work = 314 MB manuale gitignored).
 99_Roland_Work/
 99_Plan_vs_Audit/
+manuale_matematica_local/
+.venv/
 frontend/
 scratchpad/
 docs/
