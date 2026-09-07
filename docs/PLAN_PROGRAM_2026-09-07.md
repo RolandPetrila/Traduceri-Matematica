@@ -81,13 +81,22 @@
 
 > Golurile sunt deja enumerate; rulez verificările nerulate ca ele să definească munca reală.
 
-- [x] **V3 măsurat (API-level, prod, `scratchpad/ocr_fidelity_probe.mjs`):** math TEXT = **bun**
-      (2.0_test_page_1.jpeg → 35 formule corecte, ordine + pași P1-P4 la locul lor; limite eroare = doar
-      cold-start tranzitoriu, retry 200×2). **PROBLEMĂ: figuri nefiabile** — apeluri repetate pe ACEEAȘI
-      pagină de geometrie dau ba 5 `figure` cu `bbox=null`, ba **0 figuri** (non-determinism Gemini) →
-      diagramele geometrice se pierd. Candidați fix: retry pe figuri lipsă / prompt figuri mai ferm /
-      temperature 0 / rutează IMAGINI cu figuri prin Azure `figures[]` (nu doar PDF). **CALIBRARE ROLAND:**
-      cât de important e desenul geometric la import vs textul+formulele (care merg)? — oricum V3 perceptual = F6.
+- [x] **V3 măsurat + CAUZĂ REALĂ găsită (log-uri prod `traduceri-api`).** ⚠️ **Corecție onestă:** ambele
+      mele „constatări" despre figuri (bbox=null ȘI 0 figuri) erau **ARTEFACTE DE SONDĂ** — nu știam că
+      `embed_crops_in_sections` înlocuiește `bbox`→`img_b64` după crop. **Figurile FUNCȚIONEAZĂ**: log-urile
+  - JSON-ul salvat (run3) arată **6 figuri, fiecare cu `img_b64` = PNG valid**, bbox-uri reale
+    (`[CROP] Figure: bbox=(0.15,0.17,...) -> 365x360px`), structură bogată (6 pași, 3 two_column). Deci
+    premisa întrebării „investește în figuri" era GREȘITĂ → NU s-a construit merge-ul Azure (ar rezolva
+    o non-problemă + risc cotă).
+- [x] **Cauza reală a OCR-ului nefidel = HTTP 503.** `gemini-3.6-flash` întorcea **503 „high demand" la
+      ~jumătate din cereri**, iar 503 NU declanșa fallback (doar 429/404) → pagina eșua/degenera (run cu 1
+      paragraf). **Fix (`c3ecf3b`):** 500/502/503/529 → fallback la modelul următor (3.5-flash-lite →
+      2.5-flash → Mistral) + `temperature:0` (taie răspunsurile degenerate). 2 teste noi. pytest 69/69.
+- [x] **DEPLOY backend `traduceri-api`** (`6b0b065`) + **verificat LIVE**: log-uri = zid de reușite
+      (16-25s, 6 figuri + img_b64 fiecare); direct 3/4 rulări bogate. 2 fix-uri: 503→fallback (`c3ecf3b`) +
+      read-timeout→fallback (`6b0b065`) + `.vercelignore` bundle (`860d143`). Reziduu: cold-start Vercel
+      (1/4 prima rulare = non-JSON platformă, nu ajunge la handler) — prins de `fetchWithRetry` client (2×5xx).
+- [x] **Figuri = confirmat funcționale** (nu era nevoie de Azure-merge; premisa era artefact de sondă).
 - [ ] **V4** (§8): PDF multi-pagină scanat (buclă per-pagină + plafon 20 + marcaj `[Pagina N: OCR eșuat]`)
 - [ ] Gol R7.4 `[~]`: calea PDF-cu-text-BUN (`rawTextToBlocks`) nu extrage figuri
 - [ ] Gol R3.9 ETAPA B: liste numerotate DOCX → paragrafe; tabele → aplatizate

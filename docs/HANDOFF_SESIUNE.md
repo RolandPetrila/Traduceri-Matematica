@@ -26,9 +26,19 @@
 > `--cwd "C:/Proiecte/Traduceri_Matematica/frontend"` (rădăcina e linkată la `traduceri-api`).
 > Detalii: [[finding_dell_laptop_env_setup_2026_09_07]].
 >
-> **URMĂTORUL PAS (autonom):** **F4 OCR fidelitate** — rulează V3 (OCR real din browser pe prod, poză
-> manual) + V4 (PDF multi-pag scanat) + golurile R7.4 (figuri pe cale PDF-text-bun) / R3.9 ETAPA B (liste/tabele
-> DOCX). Apoi **F5 audit per-modul** (rulări reale, deploy incremental), **F6** listă boundary uman (V2/V3/V4/curricular).
+> **F4 OCR — FĂCUT parțial (reliability):** măsurat pe prod → **figurile FUNCȚIONEAZĂ** (6 figuri+img_b64;
+> „figuri stricate" era artefact de sondă — bbox→img_b64 după crop). Cauza reală a OCR-ului nefidel =
+> `gemini-3.6-flash` **503 „high demand" + read-timeout la 45s** care NU cădeau pe fallback → pagină
+> degenerată. **Fix (`c3ecf3b`+`6b0b065`):** 5xx/429/timeout → modelul următor (3.5-flash-lite→2.5-flash→Mistral)
+>
+> - `temperature:0`. + `.vercelignore` bundle fix (`860d143`, manuale 275MB bloatau bundle-ul >225MB).
+>   DEPLOYAT `traduceri-api` build `6b0b065`, verificat: 3/4 direct + zid de reușite în log-uri (16-25s).
+>   Reziduu: cold-start Vercel (prins de `fetchWithRetry` client). **NU s-a construit Azure-figure-merge**
+>   (premisa „figuri stricate" era falsă). Capcană: sonda cu câmpuri greșite (bbox/image vs img_b64) — vezi advisor.
+>
+> **URMĂTORUL PAS (autonom):** **F4 rest** = V4 (PDF multi-pag scanat) + goluri R7.4/R3.9 (opțional, best-effort).
+> Apoi **F5 audit per-modul** (Convertor/Editor/Chat/Calculator/Teste/Planșe/Școlare — rulări reale, deploy
+> incremental), **F6** listă boundary uman (V2 corectitudine math / perceptual export / curricular Școlare).
 > Fiecare fază verde = commit+push+deploy auto.
 
 ## ▶️ REIA DE AICI (2026-08-20, continuare) — Teste/Școlare: plafon tokeni ↑ + auto-continuare + opțiuni Școlare (capitole + până la 20 exerciții)
