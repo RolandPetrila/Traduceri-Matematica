@@ -22,6 +22,37 @@ const CONVERSION_MAP: Record<string, string[]> = {
   html: ["pdf", "md", "docx"],
 };
 
+// R9 (audit 2026-09-07): runtime-ul Vercel Python prepend-ează framing în CORPUL
+// răspunsului binar — `\r\n` (warm) sau blocul „x-vercel-internal-timing:…\r\n\r\n"
+// (cold). Fișierele descărcate (png/jpg/pdf/docx/zip) ies corupte fiindcă semnătura
+// nu mai e la byte 0. Curățăm sărind la prima semnătură binară reală (junk-ul dinainte
+// e mereu TEXT — \r\n / antete — deci nu conține acești bytes non-ASCII). Fail-open.
+const _BIN_SIGNATURES: number[][] = [
+  [0x89, 0x50, 0x4e, 0x47], // PNG
+  [0xff, 0xd8, 0xff], // JPG
+  [0x25, 0x50, 0x44, 0x46], // PDF (%PDF)
+  [0x50, 0x4b, 0x03, 0x04], // ZIP / DOCX (PK..)
+];
+async function stripVercelFraming(blob: Blob, ext: string): Promise<Blob> {
+  if (["html", "md", "txt"].includes(ext)) return blob; // text: leading whitespace inofensiv
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const limit = Math.min(bytes.length, 1024);
+  for (let i = 0; i < limit; i++) {
+    for (const sig of _BIN_SIGNATURES) {
+      let hit = true;
+      for (let j = 0; j < sig.length; j++) {
+        if (bytes[i + j] !== sig[j]) {
+          hit = false;
+          break;
+        }
+      }
+      if (hit)
+        return i === 0 ? blob : new Blob([bytes.slice(i)], { type: blob.type });
+    }
+  }
+  return blob; // semnătură negăsită → lasă blob-ul neatins (fail-open)
+}
+
 const OPERATIONS = [
   { id: "convert", label: "Conversie", icon: "\u{1F504}" },
   { id: "merge", label: "Merge", icon: "\u{1F4CE}" },
@@ -203,18 +234,8 @@ export default function ConvertorPage() {
         );
       }
 
-      const blob = await res.blob();
+      const rawBlob = await res.blob();
 
-      // Smart filename from Content-Disposition header or construct one
-      const disposition = res.headers.get("content-disposition") || "";
-      const serverFilename = disposition.match(/filename="?([^";\n]+)"?/)?.[1];
-
-      // Validate conversion output
-      validateConversionOutput(blob, operation, serverFilename || "output");
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const baseName = files[0].name.replace(/\.[^.]+$/, "");
       const ext =
         operation === "merge"
@@ -226,6 +247,20 @@ export default function ConvertorPage() {
               : operation === "edit-pdf"
                 ? "pdf"
                 : targetFormat || "bin";
+
+      // R9: curăță framing-ul scurs de runtime în corpul binar înainte de descărcare.
+      const blob = await stripVercelFraming(rawBlob, ext);
+
+      // Smart filename from Content-Disposition header or construct one
+      const disposition = res.headers.get("content-disposition") || "";
+      const serverFilename = disposition.match(/filename="?([^";\n]+)"?/)?.[1];
+
+      // Validate conversion output
+      validateConversionOutput(blob, operation, serverFilename || "output");
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
       a.download = serverFilename || `${baseName}_${operation}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
