@@ -114,6 +114,7 @@ export default function ConvertorPage() {
       "edit-pdf": "Editarea PDF",
       split: "Împărțirea (Split)",
       merge: "Combinarea (Merge)",
+      compress: "Comprimarea (Compress)", // audit 2026-09-07: lipsea garda → .docx dădea eroare de librărie criptică
     };
     if (PDF_ONLY[operation] && detectedFormat !== "pdf") {
       setResult({

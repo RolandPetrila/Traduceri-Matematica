@@ -158,6 +158,7 @@ function GenerateTab({
         ];
         let wasTruncated = r.truncated;
         let provider = r.provider;
+        let contFailed = false;
         for (let round = 0; wasTruncated && round < 2; round++) {
           setNote(`Completez testul (partea ${round + 2})…`);
           const cont = await sendChat(
@@ -165,7 +166,12 @@ function GenerateTab({
             buildSystemPrompt(),
             GENERATION_OPTS,
           );
-          if (!cont.ok) break;
+          if (!cont.ok) {
+            // NU raporta succes fals: o rundă de continuare eșuată = baremul poate
+            // rămâne tăiat = test invalid pt elevi. Semnalăm onest (audit 2026-09-07).
+            contFailed = true;
+            break;
+          }
           full = full + "\n" + cont.reply;
           msgs = [
             ...msgs,
@@ -177,9 +183,16 @@ function GenerateTab({
         }
         setResult(full);
         setStatus("idle");
-        setNote(`Generat cu ${provider}.`);
         setTruncated(wasTruncated);
         setHistory(msgs);
+        // Barem complet DOAR dacă nu mai e truncat ȘI nicio rundă n-a eșuat.
+        if (contFailed || wasTruncated) {
+          setNote(
+            "⚠ Testul poate fi INCOMPLET (baremul s-a putut trunchia). Apasă „Continuă răspunsul” pentru restul.",
+          );
+        } else {
+          setNote(`Generat cu ${provider}.`);
+        }
       } else {
         setStatus("error");
         setNote(r.error);
@@ -200,16 +213,28 @@ function GenerateTab({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
-    const r = await sendChat(nextHistory, buildSystemPrompt(), GENERATION_OPTS);
-    if (r.ok) {
-      setResult((prev) => prev + "\n" + r.reply);
-      setStatus("idle");
-      setNote(`Continuat cu ${r.provider}.`);
-      setTruncated(r.truncated);
-      setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
-    } else {
+    // Gardă defensivă (audit 2026-09-07): fără try/catch, o excepție neprevăzută din
+    // sendChat lăsa `status` blocat pe "loading" → butonul „Continuă" dispare
+    // (truncated && status!=="loading") și cel principal e dezactivat = tab blocat.
+    try {
+      const r = await sendChat(
+        nextHistory,
+        buildSystemPrompt(),
+        GENERATION_OPTS,
+      );
+      if (r.ok) {
+        setResult((prev) => prev + "\n" + r.reply);
+        setStatus("idle");
+        setNote(`Continuat cu ${r.provider}.`);
+        setTruncated(r.truncated);
+        setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
+      } else {
+        setStatus("error");
+        setNote(r.error);
+      }
+    } catch (e) {
       setStatus("error");
-      setNote(r.error);
+      setNote((e as Error).message || "Eroare");
     }
   };
 
@@ -449,7 +474,19 @@ function CorrectTab({
         .join("\n\n")
         .trim();
       if (!text) throw new Error("N-am putut extrage text din imagine.");
-      await correctText(text);
+      // Bug#3 (audit 2026-09-07): o pagină OCR eșuată produce un marcaj ne-gol
+      // ("[Eroare OCR pagina N: …]" / "[Pagina N: OCR eșuat]") care trecea garda de
+      // „text gol" și ajungea la AI ca lucrarea elevului → notă FABRICATĂ pe o eroare.
+      // Scoatem markerele; corectăm DOAR conținutul real; dacă nu rămâne nimic, oprim onest.
+      const cleaned = text
+        .replace(/\[\s*(Eroare OCR pagina|Pagina)\b[^\]]*\]/gi, "")
+        .trim();
+      if (!cleaned) {
+        throw new Error(
+          "OCR-ul nu a putut citi lucrarea (poză neclară / prea întunecată?). Încearcă altă poză.",
+        );
+      }
+      await correctText(cleaned);
     } catch (e) {
       setStatus("error");
       setNote((e as Error).message || "Eroare");
@@ -463,16 +500,27 @@ function CorrectTab({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
-    const r = await sendChat(nextHistory, buildSystemPrompt(), GENERATION_OPTS);
-    if (r.ok) {
-      setResult((prev) => prev + "\n" + r.reply);
-      setStatus("idle");
-      setNote(`Continuat cu ${r.provider}.`);
-      setTruncated(r.truncated);
-      setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
-    } else {
+    // Gardă defensivă (audit 2026-09-07): fără try/catch, o excepție ar bloca `status`
+    // pe "loading" permanent (identic cu continueGenerate).
+    try {
+      const r = await sendChat(
+        nextHistory,
+        buildSystemPrompt(),
+        GENERATION_OPTS,
+      );
+      if (r.ok) {
+        setResult((prev) => prev + "\n" + r.reply);
+        setStatus("idle");
+        setNote(`Continuat cu ${r.provider}.`);
+        setTruncated(r.truncated);
+        setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
+      } else {
+        setStatus("error");
+        setNote(r.error);
+      }
+    } catch (e) {
       setStatus("error");
-      setNote(r.error);
+      setNote((e as Error).message || "Eroare");
     }
   };
 

@@ -14,6 +14,8 @@ import os
 import re
 import sys
 import traceback
+import unicodedata
+from urllib.parse import quote as _url_quote
 
 # Ensure api/lib/ is importable
 _api_dir = os.path.dirname(os.path.abspath(__file__))
@@ -53,6 +55,29 @@ def _safe_header_filename(name: str) -> str:
     this, a crafted name (e.g. containing `"` or CRLF) could break or inject into
     the response header."""
     return re.sub(r'[\r\n"\\/]', "_", name)
+
+
+def _ascii_fallback_filename(name: str) -> str:
+    """ASCII-only fallback for the `filename=` param of Content-Disposition.
+
+    `http.server.send_header` encodes headers as latin-1 STRICT, so any RO/SK
+    diacritic in the user's filename (ă/ș/ț/ľ/ô …) raised UnicodeEncodeError →
+    the 200 header block was half-written, then the except-branch wrote a 2nd
+    status line → a malformed double-response the browser can't parse (2026-09-07
+    audit, confirmed live). Fold to ASCII (NFKD → drop combining marks → ascii
+    ignore); the real Unicode name is preserved via `filename*` (RFC 5987)."""
+    stripped = _safe_header_filename(name)
+    folded = unicodedata.normalize("NFKD", stripped).encode("ascii", "ignore").decode("ascii")
+    folded = folded.strip() or "download"
+    return folded
+
+
+def _content_disposition(name: str) -> str:
+    """RFC 5987 Content-Disposition: ASCII `filename=` (latin-1 safe) + UTF-8
+    `filename*=` so clients that support it recover the exact RO/SK name."""
+    ascii_name = _ascii_fallback_filename(name)
+    utf8_name = _url_quote(name, safe="")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{utf8_name}"
 
 
 # --- Conversion functions ---
@@ -729,11 +754,14 @@ class handler(BaseHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header("Content-Type", result["mime"])
-            safe_filename = _safe_header_filename(result["filename"])
-            self.send_header("Content-Disposition", f'attachment; filename="{safe_filename}"')
-            self.send_header("Content-Length", str(len(out_data)))
+            # RFC 5987 (ASCII fallback + UTF-8 filename*) — evită UnicodeEncodeError pe
+            # diacritice RO/SK în numele fișierului (crăpa send_header latin-1 → răspuns
+            # HTTP dublu/malformat). Content-Length NU se mai setează manual: Vercel
+            # servește chunked+brotli (content-encoding: br) → valoarea manuală (necomprimată)
+            # era greșită și cobora ultimul antet în CORPUL răspunsului (audit 2026-09-07).
+            self.send_header("Content-Disposition", _content_disposition(result["filename"]))
             self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
-            self.send_header("Access-Control-Expose-Headers", "Content-Disposition, Content-Length")
+            self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
             self.end_headers()
             self.wfile.write(out_data)
 
