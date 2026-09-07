@@ -70,6 +70,28 @@ def test_503_on_first_model_falls_through_to_next():
 
 @patch.dict("os.environ", {"GOOGLE_AI_API_KEY": "test-key"})
 @patch("lib.ocr_structured.increment_gemini_counter", lambda *a, **k: None)
+def test_read_timeout_on_first_model_falls_through():
+    """gemini-3.6-flash read-timeout → must retry the NEXT model, not fail the page.
+
+    This was the residual prod failure: TimeoutError wasn't in the fallback set, so
+    a 45s hang returned a degenerate 1-paragraph page instead of trying a faster model.
+    """
+    sections = '{"title":"T","sections":[{"type":"paragraph","content":"ok"}]}'
+
+    def _side(req, *a, **k):
+        url = getattr(req, "full_url", "")
+        if "gemini-3.6-flash" in url:
+            raise TimeoutError("The read operation timed out")
+        return _FakeResp(_gemini_ok_bytes(sections))
+
+    with patch("urllib.request.urlopen", side_effect=_side):
+        result = ocr_structured_call()
+
+    assert result["sections"][0]["content"] == "ok"
+
+
+@patch.dict("os.environ", {"GOOGLE_AI_API_KEY": "test-key"})
+@patch("lib.ocr_structured.increment_gemini_counter", lambda *a, **k: None)
 def test_all_models_503_falls_to_mistral():
     """All 3 Gemini tiers 503 → last-resort Mistral OCR is attempted (not a crash)."""
     def _side(req, *a, **k):

@@ -155,7 +155,17 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
                 return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
             raise
         except Exception as e:
-            if any(c in str(e) for c in ("429", "500", "502", "503", "529")) and model_name != MODELS[-1]:
+            # Tranzitoriu = merită modelul următor: 5xx/429 SAU read-timeout. Log-urile
+            # prod (2026-09-07) arătau `TimeoutError: read operation timed out` pe
+            # gemini-3.6-flash (supraîncărcat) care NU cădea pe fallback → pagina eșua
+            # degenerat (1 paragraf). Clientul n-are timeout propriu (așteaptă serverul,
+            # maxDuration=300s) → e sigur să încercăm modelul următor (3.5-flash-lite = mai rapid).
+            transient = (
+                any(c in str(e) for c in ("429", "500", "502", "503", "529"))
+                or isinstance(e, TimeoutError)
+                or "timed out" in str(e).lower()
+            )
+            if transient and model_name != MODELS[-1]:
                 print(f"[OCR-STRUCT] {model_name} transient error, trying next model: {e}", file=sys.stderr)
                 continue
             print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
