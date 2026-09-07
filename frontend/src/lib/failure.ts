@@ -96,7 +96,10 @@ export function toSample(input: unknown, max = SAMPLE_MAX): string | undefined {
       return undefined;
     }
   }
-  const clean = text.replace(/\s+/g, " ").trim();
+  // Tăiem ÎNAINTE de normalizare: documentele cu figuri au base64 înglobat, deci
+  // `text` poate avea megaocteți, iar asta rulează pe calea de eroare.
+  const clipped = text.length > max * 2 ? text.slice(0, max * 2) : text;
+  const clean = clipped.replace(/\s+/g, " ").trim();
   if (!clean) return undefined;
   return clean.length > max ? clean.slice(0, max) + "…" : clean;
 }
@@ -189,8 +192,11 @@ function messageFor(kind: FailureKind): string {
     case "http":
       return "Serverul a răspuns cu eroare. Încearcă din nou peste câteva momente.";
     case "badResponse":
-      // Observat live: la a doua încercare merge (prima trezește serverul).
-      return "Serverul a trimis un răspuns deteriorat. Apasă din nou — de obicei a doua încercare reușește.";
+      // Fără promisiuni: cazul observat pe 08.09.2026 (cold start Vercel) reușea
+      // la a doua încercare, dar un corp persistent corupt n-ar reuși niciodată,
+      // iar mesajul ăsta se afișează pe TOATE fluxurile. Specificul stă în
+      // catalog (`fix`), nu într-o garanție dată utilizatorului.
+      return "Serverul a trimis un răspuns deteriorat. Încearcă din nou.";
     case "timeout":
       return "Operația a durat prea mult și a fost oprită. Încearcă din nou.";
     case "abort":
@@ -236,9 +242,14 @@ export function reportFailure(o: FailureOptions): FailureReport {
         context.netStatus = net.status;
         context.netUrl = net.url;
       } else {
-        // Dovada explicită că NU a plecat nicio cerere — exact întrebarea la
-        // care nimeni n-a putut răspunde pe bug-ul SK.
-        context.netCallSeen = false;
+        // ATENȚIE la ce înseamnă acest câmp: interceptorul de fetch raportează
+        // doar apelurile /api/* care au EȘUAT (rețea căzută sau 4xx/5xx). Un
+        // răspuns 200 cu corpul corupt îi e invizibil prin construcție — și
+        // exact așa arăta bug-ul de traducere. Deci `false` NU înseamnă „n-a
+        // plecat nicio cerere"; înseamnă „niciun apel n-a fost raportat ca
+        // eșuat". Confuzia dintre cele două a produs concluzia greșită din
+        // `docs/Fazele.md` („0 cereri de rețea"), infirmată pe 08.09.2026.
+        context.apiFailureSeen = false;
       }
 
       const opts = {

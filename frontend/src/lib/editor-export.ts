@@ -10,6 +10,7 @@
 
 import { ZEBRA_COLOR } from "@/components/editor/table-extensions";
 import { KATEX_INLINE_CSS } from "./katex-inline-css";
+import { reportFailure } from "./failure";
 import {
   renderMathToKatexHtml,
   renderMathToImages,
@@ -216,7 +217,21 @@ export function exportPdf(bodyHtml: string, title: string): void {
   document.body.appendChild(iframe);
   const doc = iframe.contentWindow?.document;
   if (!doc) {
+    // FAZA 1: ieșire complet MUTĂ. Pop-up-ul a fost blocat ȘI iframe-ul de rezervă
+    // e indisponibil → utilizatorul apasă „Export PDF" și nu se întâmplă NIMIC:
+    // fără fereastră, fără mesaj, fără log. `return`-ul e într-o funcție care nu
+    // aruncă, deci nici pâlnia din EditorFileMenu nu-l putea vedea.
     iframe.remove();
+    reportFailure({
+      code: "E-CONV-002",
+      flow: "editor.export.pdf.blocked",
+      error: new Error(
+        "Nu s-a putut deschide nici fereastra de print, nici iframe-ul de rezerva",
+      ),
+      context: { htmlLen: html.length, popupBlocked: true },
+      userHint:
+        "Nu am putut deschide fereastra de tipărire. Permite ferestrele pop-up pentru această pagină, apoi reîncearcă.",
+    });
     return;
   }
   doc.open();

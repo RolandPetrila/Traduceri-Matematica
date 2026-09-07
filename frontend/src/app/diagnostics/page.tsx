@@ -149,8 +149,10 @@ export default function DiagnosticsPage() {
    * Filtrarea exista deja; lipsea tabloul care spune, dintr-o privire, CE se
    * strică cel mai des. Fără el, 300 de rânduri se citesc unul câte unul.
    *
-   * Rândurile de rețea (E-NET-*) care aparțin aceluiași eșec de flux poartă
-   * același `traceId` → le numărăm o dată, ca un click eșuat să nu apară ca două.
+   * Numărăm INCIDENTE, nu rânduri: în cadrul aceluiași cod, rândurile care
+   * poartă același `traceId` sunt aceeași defecțiune raportată de două straturi
+   * (rețea + flux) și se numără o dată. Rândurile fără `traceId` se numără fiecare
+   * — trei apăsări reale ale utilizatorului TREBUIE să apară ca trei.
    */
   const grouped = (() => {
     const map = new Map<
@@ -160,28 +162,39 @@ export default function DiagnosticsPage() {
     for (const l of logs) {
       if (!l.errorCode) continue;
       const trace = (l.context?.traceId as string) || "";
-      const g = map.get(l.errorCode);
+      let g = map.get(l.errorCode);
       if (!g) {
-        map.set(l.errorCode, {
+        g = {
           code: l.errorCode,
-          count: 1,
+          count: 0,
           last: l.timestamp,
-          traces: new Set(trace ? [trace] : []),
-        });
+          traces: new Set(),
+        };
+        map.set(l.errorCode, g);
+      }
+      if (trace) {
+        if (!g.traces.has(trace)) {
+          g.traces.add(trace);
+          g.count++;
+        }
       } else {
         g.count++;
-        if (trace) g.traces.add(trace);
-        if (new Date(l.timestamp) > new Date(g.last)) g.last = l.timestamp;
       }
+      if (new Date(l.timestamp) > new Date(g.last)) g.last = l.timestamp;
     }
     return Array.from(map.values()).sort(
       (a, b) => b.count - a.count || (a.last < b.last ? 1 : -1),
     );
   })();
 
-  /** Câte incidente distincte au fost corelate cu un eșec de rețea. */
+  /**
+   * Câte eșecuri de FLUX au putut fi legate de un apel API căzut. Se numără doar
+   * pe rândurile de flux — rândul de rețea poartă același `traceId`, deci
+   * includerea lui ar dubla cifra.
+   */
   const correlated = new Set(
     logs
+      .filter((l) => l.errorCode && !l.errorCode.startsWith("E-NET-"))
       .map((l) => (l.context?.traceId as string) || "")
       .filter((t) => t.length > 0),
   ).size;
@@ -418,7 +431,7 @@ export default function DiagnosticsPage() {
                     <thead>
                       <tr className="text-chalk-white/50 text-left">
                         <th className="py-1 pr-2 font-normal">Cod</th>
-                        <th className="py-1 pr-2 font-normal">Nr.</th>
+                        <th className="py-1 pr-2 font-normal">Incidente</th>
                         <th className="py-1 pr-2 font-normal">Ultima data</th>
                         <th className="py-1 font-normal">Ce inseamna</th>
                       </tr>

@@ -88,14 +88,18 @@ describe("classify — mecanismul eșecului, nu presupunerea", () => {
     expect(classify(e, false)).toBe("badResponse");
   });
 
-  it("badResponse ii spune utilizatorului sa reincerce (a doua oara merge)", () => {
+  it("badResponse: mesaj onest, FARA promisiunea ca a doua oara merge", () => {
     const f = reportFailure({
       code: "E-TRANS-005",
       flow: "editor.translate",
       error: new SyntaxError("Unexpected token 'x' ... is not valid JSON"),
     });
     expect(f.kind).toBe("badResponse");
-    expect(f.userMessage).toMatch(/apas[ăa] din nou/i);
+    expect(f.userMessage).toMatch(/r[ăa]spuns deteriorat/i);
+    expect(f.userMessage).toMatch(/[îi]ncearc[ăa] din nou/i);
+    // Mesajul se afiseaza pe TOATE fluxurile; o singura observatie (cold start
+    // Vercel) nu justifica o garantie de reusita. Specificul sta in catalog.
+    expect(f.userMessage).not.toMatch(/de obicei|reu[sș]e[sș]te/i);
     expect(f.userMessage).toContain("E-TRANS-005");
   });
 });
@@ -164,13 +168,18 @@ describe("reportFailure — ce ajunge in log", () => {
     expect(opts?.context?.to).toBe("sk");
   });
 
-  it("noteaza EXPLICIT ca nicio cerere n-a plecat", () => {
+  it("noteaza ca niciun apel API n-a fost raportat ca ESUAT (nu ca n-a plecat)", () => {
+    // Distinctie critica: un raspuns 200 cu corp corupt NU e vazut de
+    // interceptorul de retea. `false` inseamna „niciun esec raportat", nu
+    // „nicio cerere". Confuzia asta a produs concluzia gresita din Fazele.md.
     reportFailure({
       code: "E-TRANS-005",
       flow: "editor.translate",
       error: new Error("x"),
     });
-    expect(mockedLogError.mock.calls[0][1]?.context?.netCallSeen).toBe(false);
+    expect(mockedLogError.mock.calls[0][1]?.context?.apiFailureSeen).toBe(
+      false,
+    );
   });
 
   it("pastreaza stack-ul (inainte era mereu null)", () => {
