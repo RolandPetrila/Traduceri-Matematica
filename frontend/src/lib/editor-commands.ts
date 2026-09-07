@@ -61,3 +61,23 @@ export function setEditorTextInserter(fn: TextInserter | null): void {
 export function insertEditorText(text: string): void {
   textInserter?.(text);
 }
+
+/**
+ * R11 (audit 2026-09-07): Chat AI vede documentul CURENT din Editor (context relevant).
+ * EditorShell înregistrează un getter de text simplu; Chat-ul îl cheamă la trimitere și-l
+ * pasează în system-prompt. `""` dacă editorul nu e montat sau e gol.
+ */
+type TextGetter = () => string;
+let textGetter: TextGetter | null = null;
+
+export function setEditorTextGetter(fn: TextGetter | null): void {
+  textGetter = fn;
+}
+
+export function getEditorText(): string {
+  try {
+    return textGetter ? textGetter() : "";
+  } catch {
+    return "";
+  }
+}

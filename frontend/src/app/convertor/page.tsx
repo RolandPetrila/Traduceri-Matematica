@@ -426,6 +426,17 @@ export default function ConvertorPage() {
               </button>
             ))}
           </div>
+          {/* R10 (audit 2026-09-07): conversia document↔document (pdf/docx/html) e text-only
+              — pierde figuri/tabele (limitare pypdf/fpdf2). Notă onestă + calea corectă. */}
+          {["pdf", "docx", "html"].includes(detectedFormat) &&
+            ["pdf", "docx", "html"].includes(targetFormat) && (
+              <p className="mt-2 text-xs opacity-70">
+                ℹ️ Conversia păstrează <strong>textul</strong> (formule
+                incluse), dar nu figurile/tabelele. Pentru un document cu desene
+                sau tabele, folosește <strong>Editor → Import</strong> (are OCR
+                care le reconstruiește).
+              </p>
+            )}
         </div>
       )}
 

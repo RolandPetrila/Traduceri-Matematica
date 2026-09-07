@@ -39,6 +39,7 @@ import {
   setEditorCommandHandler,
   setEditorImageInserter,
   setEditorTextInserter,
+  setEditorTextGetter,
   type EditorCommandId,
 } from "@/lib/editor-commands";
 import { normalizeMathDelimiters } from "@/lib/math-html";
@@ -261,9 +262,12 @@ function EditorShell({ editor }: { editor: Editor | null }) {
       whenReady();
     };
     setEditorTextInserter(insertTxt);
+    // R11: Chat AI citește documentul curent (context) prin acest getter.
+    setEditorTextGetter(() => editor.getText());
     return () => {
       setEditorImageInserter(null);
       setEditorTextInserter(null);
+      setEditorTextGetter(null);
     };
   }, [editor]);
 

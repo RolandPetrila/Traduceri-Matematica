@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sendChat, CHAIN, type ChatMessage } from "@/lib/chat-providers";
 import { buildSystemPrompt } from "@/lib/chat-context";
+import { getEditorText } from "@/lib/editor-commands";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
@@ -69,7 +70,11 @@ export function ChatPanel({
   const ask = async (history: ChatMessage[]) => {
     setStatus("loading");
     setNote("");
-    const r = await sendChat(history, buildSystemPrompt());
+    // R11: dă asistentului contextul documentului curent din Editor (dacă e ceva scris).
+    const r = await sendChat(
+      history,
+      buildSystemPrompt(getEditorText() || undefined),
+    );
     if (r.ok) {
       setProvider(r.provider);
       setStatus("ok");
@@ -95,7 +100,10 @@ export function ChatPanel({
           "Continuă exact de unde ai rămas, fără să reiei ce ai scris deja.",
       },
     ];
-    const r = await sendChat(apiHistory, buildSystemPrompt());
+    const r = await sendChat(
+      apiHistory,
+      buildSystemPrompt(getEditorText() || undefined),
+    );
     if (r.ok) {
       setProvider(r.provider);
       setStatus("ok");
@@ -124,6 +132,30 @@ export function ChatPanel({
         content: "Salut! Confirmă într-o propoziție că funcționezi.",
       },
     ]);
+  };
+
+  // R11: șterge conversația (repornește de la zero).
+  const clearChat = () => {
+    if (status === "loading") return;
+    setMessages([]);
+    setProvider(null);
+    setNote("");
+    setTruncated(false);
+    setStatus("idle");
+  };
+
+  // R11: copiază textul unui răspuns în clipboard (feedback scurt prin `note`).
+  const copyMessage = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setNote("✓ Copiat în clipboard.");
+      setTimeout(
+        () => setNote((n) => (n === "✓ Copiat în clipboard." ? "" : n)),
+        1500,
+      );
+    } catch {
+      setNote("Nu am putut copia (permisiune clipboard).");
+    }
   };
 
   const onAttach = async (file: File) => {
@@ -195,6 +227,19 @@ export function ChatPanel({
         >
           Testează
         </Button>
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={clearChat}
+            disabled={status === "loading"}
+            title="Șterge conversația"
+          >
+            🗑 Șterge
+          </Button>
+        )}
       </div>
 
       {/* Mesaje */}
@@ -221,15 +266,27 @@ export function ChatPanel({
               }`}
               dangerouslySetInnerHTML={{ __html: renderMathText(m.content) }}
             />
-            {m.role === "assistant" && onSendToEditor && (
-              <button
-                type="button"
-                onClick={() => onSendToEditor(m.content)}
-                className="mt-1 text-xs text-chalk-yellow/80 hover:text-chalk-yellow hover:underline"
-                title="Adaugă acest răspuns în Editor (formulele devin editabile)"
-              >
-                ➕ În editor
-              </button>
+            {m.role === "assistant" && (
+              <div className="mt-1 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => copyMessage(m.content)}
+                  className="text-xs text-chalk-yellow/80 hover:text-chalk-yellow hover:underline"
+                  title="Copiază răspunsul în clipboard"
+                >
+                  ⧉ Copiază
+                </button>
+                {onSendToEditor && (
+                  <button
+                    type="button"
+                    onClick={() => onSendToEditor(m.content)}
+                    className="text-xs text-chalk-yellow/80 hover:text-chalk-yellow hover:underline"
+                    title="Adaugă acest răspuns în Editor (formulele devin editabile)"
+                  >
+                    ➕ În editor
+                  </button>
+                )}
+              </div>
             )}
           </div>
         ))}
