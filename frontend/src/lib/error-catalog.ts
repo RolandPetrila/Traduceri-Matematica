@@ -74,9 +74,9 @@ export const ERROR_CATALOG: Record<string, ErrorInfo> = {
     area: "translate",
   },
   "E-TRANS-005": {
-    message: "Traducerea a esuat LOCAL, inainte de orice apel de retea",
-    cause: "Esecul s-a produs in browser, inainte ca vreo cerere sa plece spre server (extragerea textului din document, serializarea, sau aplicarea rezultatului). Acest text descrie CATEGORIA; cauza reala a incidentului e in context.cause + stack pe randul de log — nu presupune un vinovat din acest camp.",
-    fix: "Deschide randul in /diagnostics: context.cause = mesajul real al erorii, context.kind = tipul, context.sample = fragment din continutul care a picat, context.flow = locul in cod. Reproduce cu acel tip de continut.",
+    message: "Traducerea a esuat IN BROWSER (niciun apel de retea esuat)",
+    cause: "Esecul s-a produs pe partea de client, fara ca vreun apel API sa fie raportat ca esuat. Doua sub-cazuri, distinse de context.kind: 'logic' = eroare de cod la extragerea/aplicarea continutului; 'badResponse' = serverul a raspuns 200 dar CORPUL era corupt si nu s-a putut parsa. Acest text descrie CATEGORIA; incidentul real e in context.cause + stack pe randul de log — nu presupune un vinovat din acest camp.",
+    fix: "Citeste context.kind. 'badResponse' cu 'x-vercel-i...' in cauza = runtime-ul Vercel Python scurge framing intern in corpul raspunsului la cold start (aceeasi clasa ca R9 pe descarcarile binare, dar pe calea JSON) — de obicei a doua incercare reuseste. 'logic' = bug de cod: reproduce cu tipul de continut din context.sample.",
     severity: "error",
     area: "translate",
   },

@@ -176,11 +176,14 @@ export function EditorTranslateProvider({
           // FAZA 1: eroarea NU se mai aruncă la gunoi. Mesajul reflectă mecanismul
           // real (dacă n-a plecat nicio cerere, nu mai dăm vina pe internet), iar
           // logul primește cod + cauză + structura documentului care a picat.
-          // Eșec local (nicio cerere n-a plecat) vs. server care a răspuns prost —
-          // sunt două probleme diferite, deci două coduri diferite.
+          // Eșec în browser (bug de cod SAU răspuns corupt de la server) vs. eșec
+          // de rețea/HTTP — sunt probleme diferite, deci coduri diferite.
+          const localKind = classifyFailure(e);
           const f = reportFailure({
             code:
-              classifyFailure(e) === "logic" ? "E-TRANS-005" : "E-TRANS-001",
+              localKind === "logic" || localKind === "badResponse"
+                ? "E-TRANS-005"
+                : "E-TRANS-001",
             flow: "editor.translate",
             error: e,
             context: {

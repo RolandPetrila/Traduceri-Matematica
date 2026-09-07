@@ -78,6 +78,26 @@ describe("classify — mecanismul eșecului, nu presupunerea", () => {
     const e = new Error("raspuns invalid");
     expect(classify(e, true)).toBe("http");
   });
+
+  it("DOVADA LIVE 08.09.2026: corp de raspuns corupt = badResponse, nu bug de cod", () => {
+    // Eroarea exacta prinsa pe productie la primul click pe SK: runtime-ul Vercel
+    // Python a scurs „x-vercel-internal-timing…" in corpul JSON al raspunsului.
+    const e = new SyntaxError(
+      "Unexpected token 'x', \"x-vercel-i\"... is not valid JSON",
+    );
+    expect(classify(e, false)).toBe("badResponse");
+  });
+
+  it("badResponse ii spune utilizatorului sa reincerce (a doua oara merge)", () => {
+    const f = reportFailure({
+      code: "E-TRANS-005",
+      flow: "editor.translate",
+      error: new SyntaxError("Unexpected token 'x' ... is not valid JSON"),
+    });
+    expect(f.kind).toBe("badResponse");
+    expect(f.userMessage).toMatch(/apas[ăa] din nou/i);
+    expect(f.userMessage).toContain("E-TRANS-005");
+  });
 });
 
 describe("reportFailure — mesajul spus utilizatorului", () => {

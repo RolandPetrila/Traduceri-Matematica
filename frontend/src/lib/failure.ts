@@ -33,9 +33,10 @@ import { getRecentApiFailure, logError, logWarn } from "./monitoring";
 export type FailureKind =
   | "network" // cererea n-a ajuns la server (offline, DNS, CORS, conexiune tăiată)
   | "http" // serverul a răspuns, dar cu 4xx/5xx
+  | "badResponse" // serverul a răspuns 200, dar CORPUL e corupt (nu se poate parsa)
   | "timeout" // a expirat (abort pe timeout propriu)
   | "abort" // anulat de utilizator sau de o nouă acțiune
-  | "logic" // a crăpat în browser, ÎNAINTE de orice cerere → bug de aplicație
+  | "logic" // a crăpat în browser (fără nicio cerere eșuată) → bug de aplicație
   | "unknown";
 
 export interface FailureOptions {
@@ -128,6 +129,17 @@ export function classify(error: unknown, netSeen: boolean): FailureKind {
       : "abort";
   }
   if (msg.includes("timeout") || msg.includes("timed out")) return "timeout";
+  // Serverul a răspuns 200, dar corpul nu se poate parsa. Clasă REALĂ, observată
+  // live pe 08.09.2026: runtime-ul Vercel Python scurge framing intern
+  // („x-vercel-internal-timing…") în corpul răspunsului la cold start, iar
+  // `res.json()` crapă. Fără această categorie, un răspuns corupt de la server
+  // arăta ca un bug de cod în browser — diagnostic greșit, trimis în direcția greșită.
+  if (
+    (error instanceof SyntaxError || name === "SyntaxError") &&
+    (msg.includes("json") || msg.includes("unexpected token"))
+  ) {
+    return "badResponse";
+  }
   // Serverul A răspuns (doar prost). Două forme întâlnite în cod:
   //  - "OCR HTTP 413", "status 429"        → prefix explicit;
   //  - "Eroare conversie (500): ..."       → statusul între paranteze (Convertor).
@@ -176,6 +188,9 @@ function messageFor(kind: FailureKind): string {
       return "Nu am putut contacta serverul. Verifică internetul și încearcă din nou.";
     case "http":
       return "Serverul a răspuns cu eroare. Încearcă din nou peste câteva momente.";
+    case "badResponse":
+      // Observat live: la a doua încercare merge (prima trezește serverul).
+      return "Serverul a trimis un răspuns deteriorat. Apasă din nou — de obicei a doua încercare reușește.";
     case "timeout":
       return "Operația a durat prea mult și a fost oprită. Încearcă din nou.";
     case "abort":
