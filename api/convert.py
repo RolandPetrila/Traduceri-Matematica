@@ -752,16 +752,18 @@ class handler(BaseHTTPRequestHandler):
             log_to_file("")
             print(f"[CONVERT OK] {operation}: {result['filename']} ({result['mime']}, {len(out_data)} bytes)", file=sys.stderr)
 
+            # Oglindim EXACT pattern-ul `_send_json` care nu scurge antet (verificat live):
+            # ULTIMUL send_header pe calea de download scurgea în CORP pe runtime-ul Vercel
+            # Python (ex. `Access-Control-Expose-Headers: …\r\n\r\n<body>` → blob corupt la
+            # client, `res.blob()`). `_send_json` (Content-Type + Allow-Origin ULTIMUL,
+            # end_headers, write) e curat → replicăm: Allow-Origin ultimul, FĂRĂ Expose-Headers.
+            # Clientul (convertor/page.tsx:229) are fallback de nume — nu depinde de citirea
+            # cross-origin a Content-Disposition (care oricum cere Expose-Headers). Content-Length
+            # NU se setează manual (Vercel servește chunked+brotli). RFC 5987 pe filename (diacritice RO/SK).
             self.send_response(200)
             self.send_header("Content-Type", result["mime"])
-            # RFC 5987 (ASCII fallback + UTF-8 filename*) — evită UnicodeEncodeError pe
-            # diacritice RO/SK în numele fișierului (crăpa send_header latin-1 → răspuns
-            # HTTP dublu/malformat). Content-Length NU se mai setează manual: Vercel
-            # servește chunked+brotli (content-encoding: br) → valoarea manuală (necomprimată)
-            # era greșită și cobora ultimul antet în CORPUL răspunsului (audit 2026-09-07).
             self.send_header("Content-Disposition", _content_disposition(result["filename"]))
             self.send_header("Access-Control-Allow-Origin", os.environ.get("ALLOWED_ORIGIN", "*"))
-            self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
             self.end_headers()
             self.wfile.write(out_data)
 
