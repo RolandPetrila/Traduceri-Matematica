@@ -104,6 +104,10 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
         "contents": contents,
         "generationConfig": {
             "responseMimeType": "application/json",
+            # temperature 0 (2026-09-07): taie variația run-to-run — fără el, aceeași
+            # pagină dădea ba o reconstrucție bogată, ba un răspuns degenerat (1 paragraf).
+            # OCR = extragere deterministă, nu creativitate → 0 e corect.
+            "temperature": 0,
         },
     }).encode("utf-8")
 
@@ -135,9 +139,12 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
             break
         except urllib.error.HTTPError as e:
             # 429 = rate-limited pe acest tier; 404 = model retras/inexistent
-            # (exact ce s-a intamplat cu gemini-2.5-flash-lite) — in ambele
-            # cazuri incercam tier-ul urmator in loc sa oprim tot lanțul.
-            if e.code in (429, 404) and model_name != MODELS[-1]:
+            # (exact ce s-a intamplat cu gemini-2.5-flash-lite); 500/502/503/529 =
+            # model SUPRAÎNCĂRCAT/tranzitoriu (2026-09-07: gemini-3.6-flash întorcea
+            # 503 "high demand" la ~jumătate din cereri, iar 503 NU declanșa fallback
+            # → pagina eșua/degenera). În TOATE aceste cazuri încercăm tier-ul următor
+            # în loc să oprim tot lanțul (503 e cel mai frecvent la ore de vârf).
+            if e.code in (429, 404, 500, 502, 503, 529) and model_name != MODELS[-1]:
                 print(f"[OCR-STRUCT] {model_name} HTTP {e.code}, trying next model", file=sys.stderr)
                 continue
             error_body = e.read().decode("utf-8", errors="replace")[:300]
@@ -148,8 +155,8 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
                 return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
             raise
         except Exception as e:
-            if "429" in str(e) and model_name != MODELS[-1]:
-                print(f"[OCR-STRUCT] {model_name} quota exceeded, trying next model", file=sys.stderr)
+            if any(c in str(e) for c in ("429", "500", "502", "503", "529")) and model_name != MODELS[-1]:
+                print(f"[OCR-STRUCT] {model_name} transient error, trying next model: {e}", file=sys.stderr)
                 continue
             print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
             if model_name == MODELS[-1]:
