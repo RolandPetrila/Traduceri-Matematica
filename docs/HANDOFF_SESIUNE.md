@@ -51,9 +51,13 @@
 > R9 Convertor framing binar (client-side `stripVercelFraming`). Gate: `tsc 0 · jest 357/357 · pytest 75/75`.
 > Frontend **v54** + backend `a7304a2` live. Commit-uri `e7379e2`→`b6b5b09`.
 >
-> **RĂMAS (decizii Roland + verificare):** R10 Convertor PDF↔DOCX text-only (documentare vs pipeline OCR) ·
-> R11 Chat context-document + butoane Șterge/Copiere (dacă se adaugă) · R12 F4 V4 PDF multi-pag scanat (test browser) ·
-> **F6** boundary uman (V2 corectitudine math / perceptual export / curricular — ochiul Cristinei).
+> **R10-R12 — FĂCUT (decizii Roland, 2026-09-07):** R10 notă UI Convertor (conversie text-only) DEPLOYAT ·
+> R11 Chat context-document (`getEditorText`) + butoane Șterge/Copiere DEPLOYAT (v55) · R12 **VERIFICAT LIVE prin
+> Chrome:** buclă per-pagină OCR (1/2→2/2) + marcaj `[Pagina N: OCR eșuat]` + „Vezi originalul (2)" pe PDF scanat.
+> **TOATE R1-R12 = rezolvate + deployate + verificate.** Frontend v55 + backend `a7304a2`.
+>
+> **RĂMAS = doar F6 boundary uman** (NU se automatizează): V2 corectitudinea matematică a 334+ formule ·
+> verificarea perceptuală finală export/OCR · validitatea curriculară Școlare — cer ochiul Cristinei/Roland.
 
 ## ▶️ REIA DE AICI (2026-08-20, continuare) — Teste/Școlare: plafon tokeni ↑ + auto-continuare + opțiuni Școlare (capitole + până la 20 exerciții)
 

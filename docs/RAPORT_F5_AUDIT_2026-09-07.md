@@ -79,6 +79,12 @@ Gate: `tsc 0 · jest 356/356 · build OK · pytest 75/75`. Frontend v52 + backen
 - [x] **R9** Convertor framing binar CONFIRMAT (warm `0d 0a`+PNG, cold „x-vercel-timing"+PNG → fișiere
       binare corupte). FIX client-side `stripVercelFraming` (sare la prima semnătură PNG/JPG/PDF/ZIP);
       verificat logic (warm+cold+curat+html). Backend-ul tot scurge (artefact runtime Vercel) — mitigat la client.
-- [ ] **R10** Convertor PDF↔DOCX/HTML text-only — DECIZIE: documentare UI vs pipeline OCR (efort mare).
-- [ ] **R11** Chat: context-document + butoane Șterge/Copiere — DECIZIE dacă se adaugă.
-- [ ] **R12** F4 V4 — verificare PDF multi-pagină scanat.
+      **Rundă decizii Roland (2026-09-07):**
+
+- [x] **R10** (decizie: notă în UI) — notă onestă la conversia document↔document (text-only; trimite la Editor+OCR pt figuri/tabele). DEPLOYAT.
+- [x] **R11** (decizie: da) — Chat vede documentul din Editor (`getEditorText`) + butoane Șterge conversație + Copiază răspuns. DEPLOYAT.
+- [x] **R12** (decizie: test Chrome) — **VERIFICAT LIVE prin extensia Chrome:** import PDF digital multi-pag = toate paginile (text path);
+      import PDF SCANAT 2 pag = **buclă per-pagină OCR (1/2→2/2)** + marcaj **`[Pagina 1: OCR eșuat]`** pe pagina picată (NU săritură tăcută) +
+      conținut OCR real pe pagina reușită + „Vezi originalul (2)". Toate cele 3 cerințe V4 confirmate.
+
+**TOATE R1-R12 = REZOLVATE + DEPLOYATE + VERIFICATE.** Gate final: `tsc 0 · jest 357/357 · pytest 75/75`. Frontend v55 + backend `a7304a2` live.
