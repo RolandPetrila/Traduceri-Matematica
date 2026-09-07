@@ -36,10 +36,17 @@
 >   Reziduu: cold-start Vercel (prins de `fetchWithRetry` client). **NU s-a construit Azure-figure-merge**
 >   (premisa „figuri stricate" era falsă). Capcană: sonda cu câmpuri greșite (bbox/image vs img_b64) — vezi advisor.
 >
-> **URMĂTORUL PAS (autonom):** **F4 rest** = V4 (PDF multi-pag scanat) + goluri R7.4/R3.9 (opțional, best-effort).
-> Apoi **F5 audit per-modul** (Convertor/Editor/Chat/Calculator/Teste/Planșe/Școlare — rulări reale, deploy
-> incremental), **F6** listă boundary uman (V2 corectitudine math / perceptual export / curricular Școlare).
-> Fiecare fază verde = commit+push+deploy auto.
+> **F5 AUDIT „fiecare buton executabil" (6 module) — FĂCUT + DEPLOYAT.** 6 subagenți (inventar static) +
+> probe LIVE. Toate modulele funcționale pe butoane; bug-uri REALE (pe căile de eroare) fixate: Convertor
+> **diacritice RO/SK CRITIC** (crăpa send_header → răspuns malformat, lovea fișierele Cristinei) + scurgere
+> antet în corp (blob corupt) + 3 bug-uri Teste (continue fără try/catch → blocaj; auto-continuare succes-fals
+> → barem tăiat tăcut; text „[Eroare OCR]" notat ca lucrarea elevului) + gardă format Compress. Commit-uri
+> `c140b5b`+`ca4892c`, frontend v52 + backend live, verificat. Detalii: [[finding_f5_button_audit_2026_09_07]].
+> Reziduu Convertor: `\r\n` inițial + cold-start = artefact runtime Vercel (poate afecta descărcări binare).
+>
+> **URMĂTORUL PAS (autonom):** reziduuri minore F5 (Școlare `[[DESEN]]` în editor; Planșe `remember()` dedup;
+> buget OCR 60s→270s) · **F4 rest** V4 (PDF multi-pag scanat) · **F6** boundary uman (V2 corectitudine math /
+> perceptual export / curricular Școlare — cer ochiul Cristinei). Fiecare fază verde = commit+push+deploy auto.
 
 ## ▶️ REIA DE AICI (2026-08-20, continuare) — Teste/Școlare: plafon tokeni ↑ + auto-continuare + opțiuni Școlare (capitole + până la 20 exerciții)
 

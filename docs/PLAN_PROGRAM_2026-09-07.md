@@ -102,12 +102,47 @@
 - [ ] Gol R3.9 ETAPA B: liste numerotate DOCX → paragrafe; tabele → aplatizate
 - [ ] Remediază ce se poate determinist; ce rămâne perceptual → boundary uman (F6)
 
-### F5 — Audit per-modul: „toate rulările fără eroare, pe fiecare modul"
+### F5 — Audit „fiecare buton executabil" ✅ FĂCUT (6 module, 6 subagenți + probe live)
 
-> Sistematic, cu dovezi `file:line`; deploy incremental după fiecare grup verde.
+> Cerere Roland: auditează fiecare buton prin care se fac execuții + verifică că chiar generează/execută
+> comanda reală+completă. Metodă: inventar static per modul (subagenți) + probe LIVE pe prod (endpoint-uri).
 
-- [ ] Convertor · Editor (F1-F9) · Chat AI · Calculator · Teste · Planșe (6/6) · Școlare · Import/OCR
-- [ ] Pentru fiecare: rulare reală a fluxurilor principale + fix bug-uri găsite + gate + deploy
+**Verdict per modul (butoane executabile):**
+
+- **Editor toolbar/math/insert/find/Ctrl+K:** ~73 ✓ · 2 ⚠ cosmetice (Font/Mărime nu afișează valoarea
+  curentă la cursor, dar APLICĂ corect) · 0 ✗.
+- **Editor import/export/traducere:** 12+ ✓ toate cablate real (OCR multipart, export PDF vectorial/HTML/DOCX
+  client-side, F8 `/api/translate-text`). Verificat live: **translate RO→SK 200, formulă intactă**.
+- **Chat AI:** toate ✓ (Trimite/Testează/Continuă/📎OCR/➕editor). Live: groq 200.
+- **Calculator:** toate ✓, motor mathjs corect (verificat empiric). **0 bug-uri.**
+- **Teste:** flux real ✓; live: **generare 200, finish=STOP, are exerciții + barem = COMPLET**. 3 bug-uri FIXATE (jos).
+- **Planșe:** 6/6 generatoare ✓ (toate selectoarele → generare, print, coș). 1 gap: `remember()` cod mort.
+- **Școlare:** flux central ✓ (generare reală+completă cu barem, auto-continuare). 5 ⚠ minore.
+
+**FIXATE + DEPLOYATE (commit `c140b5b`):**
+
+- [x] 🔴 **CONVERTOR CRITIC** — nume fișier cu diacritice RO/SK crăpa `send_header` → răspuns HTTP
+      dublu/malformat (lovea `Fișă_matematică.pdf` al Cristinei). Fix: Content-Disposition RFC 5987. +5 teste.
+      **Verificat LIVE:** `Fișă`/`Skúška` → 200, nume corecte, fără crash.
+- [x] **CONVERTOR scurgere antet** (`Access-Control-Expose-Headers` cobora în corp → blob corupt). Fix
+      (`ca4892c`): oglindit `_send_json` (Allow-Origin ultimul, fără Expose-Headers/Content-Length manual).
+      **Verificat LIVE: `antet_scurs=false`.** Reziduu: `\r\n` inițial + cold-start `x-vercel-timing` =
+      artefact runtime Vercel Python (toate endpoint-urile; inofensiv JSON/HTML, poate afecta binar docx/png) —
+      logica de conversie corectă, doar framing HTTP; fix complet = alt mecanism răspuns (backlog).
+- [x] **TESTE #1** — `continueGenerate`/`continueCorrect` fără try/catch → tab blocat pe „loading". Fix.
+- [x] **TESTE #2** — auto-continuare raporta succes fals când o rundă eșua → barem tăiat tăcut. Fix: notă onestă.
+- [x] **TESTE #3** — text „[Eroare OCR]" era notat ca lucrarea elevului. Fix: scoate markerele + oprește onest.
+- [x] **CONVERTOR** — gardă format lipsă la Compress (.docx → eroare criptică). Fix.
+
+**RĂMAS (⚠ minore/medii — nu butoane rupte; de făcut la cerere/next):**
+
+- [ ] Școlare „➕ În editor" nu randează markerele `[[DESEN]]` (text brut în editor; Print/PDF e OK)
+- [ ] Școlare `parseParams` trunchiază `culori=rosu, albastru` la primul spațiu (baloane)
+- [ ] Planșe `remember()` = cod mort → Print direct (fără coș) nu dedup-ează
+- [ ] Editor Font/Mărime select nu reflectă valoarea curentă (cosmetic)
+- [ ] Buget OCR calibrat pe 60s deși `maxDuration=300s` → pagini lente eșuează evitabil (recalibrare 270s)
+- [ ] Convertor: PDF↔DOCX/HTML text-only (pierde imagini/tabele) — limitare pypdf/fpdf2, nu bug
+- [ ] Docs stale: DOCX „backend" (e client-side), MathJax (e KaTeX)
 
 ### F6 — Boundary uman (NU se automatizează — livrat ca listă cu dovezi, nu ascuns în „funcționează")
 
