@@ -2,6 +2,35 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
+## ▶️ REIA DE AICI (2026-09-07) — PROGRAM „totul funcțional + mereu live" (F0-F6) · fix major limite AI
+
+> **Cerere Roland:** totul funcțional pe fiecare modul fără erori, OCR fidel la layout (focus math),
+> toate generările complete, **rezolvată atingerea limitelor AI**, docs mereu la zi, sync auto git,
+> **mereu live**. Plan complet + tracking: **`docs/PLAN_PROGRAM_2026-09-07.md`** (F0-F6, sursa de adevăr a programului).
+>
+> **Făcut + LIVE azi:**
+>
+> - **F0** — laptopul Dell n-avea `node_modules` (gate-ul era fals-verde din pipe-masking). Instalat +
+>   `.venv` pt pytest. **Baseline REAL: `tsc 0 · jest 356/356 · build OK · pytest 67/67`.**
+> - **F1** — R-DIAG-AUTO pe Supabase `logs`: **fără erori active** (toate fixate post-08-20; app folosit până 09-06).
+> - **F2** — #1+#2 (plafon tokeni/auto-continuare/Școlare capitole+20) = **deja LIVE** (`63d781e` = ultimul
+>   deploy prod; adnotarea „NEDEPLOYAT" era stale, scrisă în același commit înainte de deploy).
+> - **F3 (fix major „limite AI")** — sondă DIRECTĂ cu cheile reale a arătat lanțul de chat **RUPT: doar
+>   Gemini viu** (`mistral-large`=403 tier-lock, groq llama-uri=404 retrase, cerebras/samba/fireworks/nvidia
+>   moarte). **Reînviat:** gemini→gemini2→**groq(gpt-oss-20b)**→**mistral(small)**→mistral2 = 3 vendori
+>   independenți. Commit `6e305d6`, **DEPLOYAT v51**, verificat LIVE (`provider_health.mjs`: groq **200**,
+>   mistral 429 tranzitoriu NU 403). Detalii: [[finding_chat_provider_rot_2026_09_07]].
+>
+> **Setup nou (o dată):** git credential → `gh` (repo-local, nu mai atârnă); deploy permission
+> `Bash(vercel:*)` în settings.local.json (Roland a ales „deploy automat"). Deploy FRONTEND corect =
+> `--cwd "C:/Proiecte/Traduceri_Matematica/frontend"` (rădăcina e linkată la `traduceri-api`).
+> Detalii: [[finding_dell_laptop_env_setup_2026_09_07]].
+>
+> **URMĂTORUL PAS (autonom):** **F4 OCR fidelitate** — rulează V3 (OCR real din browser pe prod, poză
+> manual) + V4 (PDF multi-pag scanat) + golurile R7.4 (figuri pe cale PDF-text-bun) / R3.9 ETAPA B (liste/tabele
+> DOCX). Apoi **F5 audit per-modul** (rulări reale, deploy incremental), **F6** listă boundary uman (V2/V3/V4/curricular).
+> Fiecare fază verde = commit+push+deploy auto.
+
 ## ▶️ REIA DE AICI (2026-08-20, continuare) — Teste/Școlare: plafon tokeni ↑ + auto-continuare + opțiuni Școlare (capitole + până la 20 exerciții)
 
 > **Cerere Roland:** ridică plafonul (opțiunea A) pt Teste/Școlare; la Școlare — opțiuni multiple per

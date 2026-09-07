@@ -63,8 +63,8 @@
 - [x] Probă directă a tuturor providerilor free cu cheile reale (nu catalog)
 - [x] **Fix lanț chat** (`6e305d6`): gemini→gemini2→**groq(gpt-oss-20b)**→**mistral(small)**→mistral2(small)
       = 3 vendori independenți (Google×2, Groq, Mistral×2) în loc de 1. Gate: tsc 0 · jest 356/356.
-- [ ] **DEPLOY** (blocat de clasificator → Roland adaugă regulă `Bash(npx vercel:*)`; ales „deploy automat")
-- [ ] Verificare LIVE post-deploy: sondă prin `/api/proxy` că groq+mistral răspund 200 (nu forced-dead-model)
+- [x] **DEPLOY** ✅ (Roland a permis `Bash(vercel:*)`; `dpl_FzhEaLpZYnd...` READY, alias servește **sw v51**)
+- [x] **Verificat LIVE post-deploy** (`provider_health.mjs`): **groq 200** (era 404, model forțat gpt-oss-20b), mistral **429** rate-limit tranzitoriu (NU mai 403 tier-lock) → accesibil. gemini×2 200. **3 vendori vii.**
 - [ ] Traducere/OCR: verifică `mistral-ocr-latest` nu e și el tier-locked; restul (Azure 4M/DeepL/Doc Intel) sănătos per inventar
 - [ ] (rezervă) Cohere `command-r` viu — cablabil ca al 4-lea vendor dacă se cere mai mult headroom
 
