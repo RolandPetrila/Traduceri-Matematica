@@ -33,8 +33,8 @@ _API_VERSION = "2024-11-30"
 _ANALYZE_TIMEOUT = 20       # POST submit (revine în ~1-2s; 20 = ceiling generos)
 _POLL_TIMEOUT = 15          # each GET poll
 _POLL_INTERVAL = 1.2        # seconds between polls
-_TOTAL_DEADLINE = 35        # hard cap < 60s ȘI lasă buget pt fallback-ul Gemini (§2 S4)
-                            # Azure real ~6s pe Filtrasan → 35 = 5.8× headroom
+_TOTAL_DEADLINE = 55        # R8 (2026-09-07): maxDuration real=300s → 55 lasă buget amplu
+                            # pt fallback-ul Gemini (≤120s). Azure real ~6s → 55 = 9× headroom
 
 
 def azure_layout(image_bytes: bytes, mime_type: str, source_lang: str = "ro") -> dict:

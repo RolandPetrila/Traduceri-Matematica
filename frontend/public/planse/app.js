@@ -115,6 +115,18 @@
     }
   }
 
+  // R6 (audit 2026-09-07): Print DIRECT (fără a trece prin coș) nu marca planșa ca
+  // „văzută" → `remember()` era cod mort și generate() putea reoferi EXACT aceeași
+  // planșă. La print marcăm semnăturile ca văzute (ca la addToCart), deci unicitatea
+  // ține și pt fluxul principal (print direct), nu doar pt coș.
+  function rememberBatch(tip, items) {
+    if (!window.PlanseHistory || !window.PlanseHistory.remember || !items)
+      return;
+    items.forEach(function (it) {
+      if (it && it.semnatura) window.PlanseHistory.remember(it.semnatura, tip);
+    });
+  }
+
   function wipPanel(tab) {
     var badge = tab.online
       ? '<p class="note-online">🌐 Online / AI — va apărea în Faza 4 (materiale școlare). Restul planșelor sunt offline, instant.</p>'
@@ -393,6 +405,7 @@
         puzzlePages: puzzle,
         answerPages: answer,
       });
+      rememberBatch("labirint", state.items);
       var w = window.PlanseRender.openPrintWindow(doc);
       if (!w) {
         // popup blocat → fallback link (gest utilizator)
@@ -635,6 +648,7 @@
         puzzlePages: puzzle,
         answerPages: answer,
       });
+      rememberBatch("cautare", state.items);
       var w = window.PlanseRender.openPrintWindow(doc);
       if (!w) {
         var blob = new Blob([doc], { type: "text/html" });
@@ -855,6 +869,7 @@
         puzzlePages: puzzle,
         answerPages: answer,
       });
+      rememberBatch("uneste", state.items);
       var w = window.PlanseRender.openPrintWindow(doc);
       if (!w) {
         var blob = new Blob([doc], { type: "text/html" });
@@ -1078,6 +1093,7 @@
         puzzlePages: puzzle,
         answerPages: answer,
       });
+      rememberBatch("dictare", state.items);
       var w = window.PlanseRender.openPrintWindow(doc);
       if (!w) {
         var blob = new Blob([doc], { type: "text/html" });
@@ -1299,6 +1315,7 @@
         puzzlePages: puzzle,
         answerPages: answer,
       });
+      rememberBatch("numere", state.items);
       var w = window.PlanseRender.openPrintWindow(doc);
       if (!w) {
         var blob = new Blob([doc], { type: "text/html" });
@@ -1521,6 +1538,7 @@
         puzzlePages: puzzle,
         answerPages: answer,
       });
+      rememberBatch("integrama", state.items);
       var w = window.PlanseRender.openPrintWindow(doc);
       if (!w) {
         var blob = new Blob([doc], { type: "text/html" });

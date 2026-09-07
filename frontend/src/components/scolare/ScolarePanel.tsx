@@ -146,6 +146,10 @@ export function ScolarePanel({
     setVerify(null);
     const bucket = bucketKey(cycleId, level.id, node.id);
     const regulament = await loadRegulament(node.regulament_ref);
+    // R4 (audit 2026-09-07): dacă nodul ARE regulament dar fetch-ul a eșuat (rețea/404),
+    // generarea continuă NE-ghidat — semnalăm vizibil (bannerul static din UI arăta „ghidat"
+    // pe baza existenței `regulament_ref`, nu a încărcării reale → inducea în eroare).
+    const regExpectedButMissing = !!node.regulament_ref && !regulament;
     let avoid = avoidList(bucket);
 
     // Re-roll anti-repetare: dacă fișa generată are semnătură deja folosită, reîncearcă
@@ -192,6 +196,7 @@ export function ScolarePanel({
       ];
       let wasTruncated = r.truncated;
       let provider = r.provider;
+      let contFailed = false;
       for (let round = 0; wasTruncated && round < 2; round++) {
         setNote(`Completez fișa (partea ${round + 2})…`);
         const cont = await sendChat(
@@ -199,7 +204,10 @@ export function ScolarePanel({
           buildScolareSystemPrompt(cycle, level),
           GENERATION_OPTS,
         );
-        if (!cont.ok) break;
+        if (!cont.ok) {
+          contFailed = true;
+          break;
+        }
         fullReply = sanitizeFisa(fullReply + "\n" + cont.reply);
         msgs = [
           ...msgs,
@@ -215,7 +223,19 @@ export function ScolarePanel({
       setTruncated(wasTruncated);
       setVerify(verifyArithmetic(fullReply));
       setStatus("idle");
-      setNote(`Generat cu ${provider}.`);
+      // Notă onestă: barem complet DOAR dacă nu mai e truncat ȘI nicio rundă n-a eșuat
+      // (același bug ca la Teste #2 — nu raporta succes fals). + avertisment regulament (R4).
+      if (contFailed || wasTruncated) {
+        setNote(
+          "⚠ Fișa poate fi INCOMPLETĂ (baremul s-a putut trunchia). Apasă „Continuă răspunsul” pentru restul.",
+        );
+      } else if (regExpectedButMissing) {
+        setNote(
+          `Generat cu ${provider}. ⚠ Regulamentul curricular nu s-a putut încărca — fișa e mai puțin ghidată; reîncearcă dacă pare în afara programei.`,
+        );
+      } else {
+        setNote(`Generat cu ${provider}.`);
+      }
       return;
     }
   };
@@ -358,6 +378,7 @@ export function ScolarePanel({
               type="radio"
               name="scolare-dif"
               checked={dificultate === d}
+              disabled={status === "loading"}
               onChange={() => setDificultate(d)}
             />
             {d}
@@ -402,7 +423,8 @@ export function ScolarePanel({
             <button
               type="button"
               onClick={() => setSelectedCapitole([])}
-              className="self-start text-chalk-yellow/80 underline"
+              disabled={status === "loading"}
+              className="self-start text-chalk-yellow/80 underline disabled:opacity-50"
             >
               Deselectează tot ({selectedCapitole.length} bifate → folosește
               toate temele)
@@ -416,9 +438,10 @@ export function ScolarePanel({
         <input
           type="text"
           value={cerinta}
+          disabled={status === "loading"}
           onChange={(e) => setCerinta(e.target.value)}
           placeholder="ex. doar exerciții cu puteri; temă despre toamnă…"
-          className="h-9 rounded-md border border-chalk-white/25 bg-black/20 px-2 text-sm text-chalk-white placeholder:text-chalk-white/40"
+          className="h-9 rounded-md border border-chalk-white/25 bg-black/20 px-2 text-sm text-chalk-white placeholder:text-chalk-white/40 disabled:opacity-50"
         />
       </label>
 

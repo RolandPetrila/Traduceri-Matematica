@@ -53,13 +53,14 @@ def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str)
     engine='gemini' (default) → Gemini math OCR unchanged.
     """
     if engine == "azure":
-        # S4: bugetul rămas pt fallback-ul Gemini, ca Azure(≤35s) + Gemini să nu
-        # stea peste 60s (maxDuration). Azure normal ~6s → Gemini primește ~45s;
-        # dacă Azure a mâncat tot, Gemini primește minim 10s (eroare curată, nu 504).
+        # R8 (audit 2026-09-07): maxDuration REAL e 300s (vercel.json), nu 60s — vechea
+        # calibrare (48-elapsed, cap 45) dădea fallback-ului Gemini doar ~13s când Azure
+        # consuma bugetul → pagini lente ieșeau „[OCR eșuat]" deși mai erau ~4× mai mult
+        # timp util. Acum Gemini primește 30-120s (Azure ≤55s + Gemini ≤120s ≪ 300s).
         t_start = time.time()
 
         def _gemini_budget() -> int:
-            return min(45, max(10, 48 - int(time.time() - t_start)))
+            return min(120, max(30, 220 - int(time.time() - t_start)))
 
         try:
             page_data = azure_layout(image_bytes, mime_type, source_lang)

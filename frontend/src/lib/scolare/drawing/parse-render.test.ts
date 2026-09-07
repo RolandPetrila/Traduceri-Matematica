@@ -34,6 +34,17 @@ describe("renderScolareContent — markere valide", () => {
     expect(out).toContain("ALBASTRU");
   });
 
+  test("baloane: listă cu SPAȚII după virgulă → toate culorile (regresie R2, audit 2026-09-07)", () => {
+    // Un LLM scrie natural „rosu, albastru, verde" (cu spații) — înainte se trunchia la „rosu".
+    const out = renderScolareContent(
+      "[[DESEN tip=baloane culori=rosu, albastru, verde]]",
+    );
+    expect((out.match(/<svg/g) || []).length).toBe(3);
+    expect(out).toContain("ROSU");
+    expect(out).toContain("ALBASTRU");
+    expect(out).toContain("VERDE");
+  });
+
   test("traseu fără start/final → markere generice, nu crapă", () => {
     const out = renderScolareContent("[[DESEN tip=traseu]]");
     expect(out).toContain("<svg");

@@ -62,4 +62,21 @@ Gate: `tsc 0 · jest 356/356 · build OK · pytest 75/75`. Frontend v52 + backen
 
 ## Jurnal execuție remediere
 
-(se completează pe măsură ce se rezolvă fiecare R)
+**Rundă reziduuri (2026-09-07):**
+
+- [x] **R1** docs stale corectate (KaTeX, DOCX client-side) — CLAUDE.md + project_rules.md.
+- [x] **R2** Școlare `parseParams` acceptă liste cu spații (`culori=rosu, albastru`) + test.
+- [x] **R3** Școlare radio Dificultate + Cerință + „Deselectează tot" — `disabled` la loading.
+- [x] **R4** Școlare `loadRegulament` eșec → avertisment vizibil (+ bonus: Bug#2-Școlare = notă onestă la barem trunchiat).
+- [x] **R5** Școlare „➕ În editor" randează `[[DESEN]]` ca imagini SVG (`scolareToSegments` + inserare segmentată).
+- [x] **R6** Planșe `remember()` cablat la Print direct (6 generatoare) → unicitate și fără coș.
+- [x] **R7** Editor Font/Mărime select reflectă valoarea curentă la cursor.
+- [x] **R8** Buget OCR recalibrat pe maxDuration real 300s (Gemini fallback 30-120s, Azure 55s).
+- Gate: `tsc 0 · jest 357/357 · pytest 75/75`. Deploy: frontend v53 + backend.
+
+**RĂMASE (de decis cu Roland / verificare):**
+
+- [ ] **R9** Convertor framing binar (`\r\n` inițial + cold-start Vercel) — investigație mecanism răspuns.
+- [ ] **R10** Convertor PDF↔DOCX/HTML text-only — DECIZIE: documentare UI vs pipeline OCR (efort mare).
+- [ ] **R11** Chat: context-document + butoane Șterge/Copiere — DECIZIE dacă se adaugă.
+- [ ] **R12** F4 V4 — verificare PDF multi-pagină scanat.

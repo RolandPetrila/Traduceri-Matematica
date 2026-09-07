@@ -23,18 +23,18 @@ except ImportError:
 
 
 def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
-                   *, timeout_s: int = 45, max_retries: int = 0) -> dict:
+                   *, timeout_s: int = 60, max_retries: int = 0) -> dict:
     """Extract structured content from an image using Gemini JSON mode.
 
     Returns dict with "title" and "sections" list.
     Section types: heading, paragraph, step, observation, list, figure, two_column.
     Figure sections have "svg" field with inline SVG code (school geometry conventions).
 
-    S4 (§2 securitate): ``timeout_s`` < Vercel maxDuration 60s (era 180s în
-    retry(max_retries=2) → până la 540s → 504 opac). ``max_retries=0`` implicit:
-    un timeout ridică imediat (nu multiplică fereastra); doar 429 cascadează pe
-    modele (rapid). Apelantul (``api/ocr.py`` fallback Azure→Gemini) trece un
-    ``timeout_s`` redus = bugetul rămas, ca requestul total să stea sub 60s.
+    S4 + R8 (audit 2026-09-07): ``timeout_s`` per-model. maxDuration REAL = 300s
+    (vercel.json), nu 60s → default ridicat 45→60 (o pagină bogată de geometrie ia
+    ~30-44s; 45 tăia evitabil). ``max_retries=0``: un timeout ridică imediat + cascadează
+    pe modelul următor (5xx/timeout → fallback). Apelantul (``api/ocr.py`` fallback
+    Azure→Gemini) trece bugetul rămas (≤120s). Lanțul complet ≪ 300s.
     """
     api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
     if not api_key:

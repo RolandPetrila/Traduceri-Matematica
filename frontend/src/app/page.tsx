@@ -7,6 +7,7 @@ import IframeModule from "@/components/layout/IframeModule";
 import { CommandPalette } from "@/components/command/CommandPalette";
 import { DEFAULT_TAB, TABS, type TabId } from "@/lib/tab-config";
 import { insertEditorImage, insertEditorText } from "@/lib/editor-commands";
+import { scolareToSegments } from "@/lib/scolare/drawing/parse-render";
 
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
@@ -145,7 +146,26 @@ export default function Home() {
           <ScolarePanel
             onSendToEditor={(text) => {
               handleTabChange("editor");
-              setTimeout(() => insertEditorText(text), 150);
+              // R5 (audit 2026-09-07): fișele cu desene `[[DESEN]]` (grădiniță+primar)
+              // se inserează ca segmente — text ca text/KaTeX, desenele ca imagini SVG
+              // (înainte markerul brut ajungea ca text literal în editor).
+              setTimeout(() => {
+                const segs = scolareToSegments(text);
+                if (!segs.some((s) => s.kind === "svg")) {
+                  insertEditorText(text);
+                  return;
+                }
+                for (const s of segs) {
+                  if (s.kind === "text") {
+                    if (s.text.trim()) insertEditorText(s.text);
+                  } else {
+                    insertEditorImage(
+                      `data:image/svg+xml;utf8,${encodeURIComponent(s.svg)}`,
+                      "desen",
+                    );
+                  }
+                }
+              }, 150);
             }}
           />
         </div>

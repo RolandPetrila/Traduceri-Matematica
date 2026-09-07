@@ -138,6 +138,18 @@ export function TiptapToolbar({
           ? "quote"
           : "p";
 
+  // R7 (audit 2026-09-07): Font/Mărime reflectă valoarea curentă la cursor (ca „Stil
+  // paragraf"). Fără `value` controlat afișau mereu placeholder. "" → placeholder când
+  // valoarea activă nu e în listă (ex. font moștenit din temă).
+  const ts = editor.getAttributes("textStyle") as {
+    fontFamily?: string;
+    fontSize?: string;
+  };
+  const fontValue =
+    ts.fontFamily && FONTS.includes(ts.fontFamily) ? ts.fontFamily : "";
+  const sizeValue = (ts.fontSize || "").replace(/pt$/, "") || "";
+  const sizeValueValid = SIZES.includes(sizeValue) ? sizeValue : "";
+
   return (
     <div
       className={
@@ -197,6 +209,7 @@ export function TiptapToolbar({
       {/* Font + marime */}
       <div className={groupCls}>
         <Select
+          value={fontValue}
           onValueChange={(v) => editor.chain().focus().setFontFamily(v).run()}
         >
           <SelectTrigger className="h-8 w-[120px] text-sm" aria-label="Font">
@@ -211,6 +224,7 @@ export function TiptapToolbar({
           </SelectContent>
         </Select>
         <Select
+          value={sizeValueValid}
           onValueChange={(v) =>
             editor
               .chain()

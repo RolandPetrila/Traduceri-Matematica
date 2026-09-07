@@ -67,7 +67,7 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 - API keys: doar in .env / env Vercel, niciodata in cod
 - Tema UI: tabla verde (#2d5016) + text creta (alb/galben); butoane vizibile (contrast WCAG AA)
 - Servicii: GRATUITE prioritar (DeepL free, Gemini free, Vercel Hobby, Supabase free)
-- LaTeX: protejat cu placeholders la traducere, randat cu MathJax (SVG vectorial)
+- LaTeX: protejat cu placeholders la traducere, randat cu KaTeX (SVG vectorial; migrat de la MathJax)
 - Figuri: crop bbox din original (Pillow)
 - Editare: contentEditable persistat in cacheRef (supravietuieste switch limba + export)
 - Serverless: procesare grea per-pagina (limita `maxDuration` 300s pe Hobby, setat in vercel.json — per-pagina ramane buna practica); fara stare in memorie intre invocari (contoare in Supabase)
@@ -89,7 +89,7 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 [TRADUCERE F8] Switch de limbă on-demand (buton RO|SK|EN|DE) — traduce doar textul (DeepL implicit),
                EDITABIL + persistent, cache per limbă (reveniri instant, fără re-consum cotă).
                Figuri + formule LaTeX + layout = INTACTE.
-               Export: PDF (print vectorial) / DOCX (backend) / HTML — din continut EDITAT.
+               Export: PDF (print vectorial) / DOCX (client-side, @turbodocx/html-to-docx) / HTML — din continut EDITAT.
 ```
 
 ### Butoane in toolbar: `RO` | `SK` | `EN` | `DE` (F8, `LanguageSwitch.tsx`)

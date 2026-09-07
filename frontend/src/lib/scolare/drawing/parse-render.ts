@@ -14,10 +14,14 @@ const MARKER_RE = /\[\[DESEN\s+([^\]]*)\]\]/gi;
 
 function parseParams(raw: string): Record<string, string> {
   const out: Record<string, string> = {};
-  const re = /(\w+)\s*=\s*"?([^"\s]+)"?/g;
+  // Valoarea = fie "..." (cu spații), fie tot până la următorul ` cheie=` sau final.
+  // Vechiul `[^"\s]+` se oprea la primul spațiu → `culori=rosu, albastru` se trunchia
+  // tăcut la „rosu," (pierdea celelalte culori la markerul `baloane`). Audit 2026-09-07.
+  const re = /(\w+)\s*=\s*(?:"([^"]*)"|([^=]*?))(?=\s+\w+\s*=|\s*$)/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
-    out[m[1].toLowerCase()] = m[2].toLowerCase();
+    const val = (m[2] !== undefined ? m[2] : m[3] || "").trim();
+    out[m[1].toLowerCase()] = val.toLowerCase();
   }
   return out;
 }
@@ -57,4 +61,31 @@ export function renderScolareContent(text: string): string {
   }
   out += renderMathText(text.slice(last));
   return out;
+}
+
+/** Segment pt inserarea în Editor: text brut SAU un desen ca SVG. */
+export type ScolareSegment =
+  { kind: "text"; text: string } | { kind: "svg"; svg: string };
+
+/**
+ * R5 (audit 2026-09-07): „➕ În editor" trimitea textul BRUT → markerele `[[DESEN]]`
+ * ajungeau ca text literal în document (Print/PDF le randa, editorul nu). Împărțim în
+ * segmente: text (→ inserat ca text/KaTeX) și desene (→ SVG, inserat ca imagine în editor).
+ * Marker invalid = rămâne text (fallback, ca la randarea de print).
+ */
+export function scolareToSegments(text: string): ScolareSegment[] {
+  const segs: ScolareSegment[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  MARKER_RE.lastIndex = 0;
+  while ((m = MARKER_RE.exec(text)) !== null) {
+    if (m.index > last)
+      segs.push({ kind: "text", text: text.slice(last, m.index) });
+    const svg = renderMarker(m[1]);
+    if (svg) segs.push({ kind: "svg", svg });
+    else segs.push({ kind: "text", text: m[0] }); // marker invalid → text (fallback)
+    last = MARKER_RE.lastIndex;
+  }
+  if (last < text.length) segs.push({ kind: "text", text: text.slice(last) });
+  return segs;
 }

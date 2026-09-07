@@ -54,7 +54,7 @@ ramane read-only, doar ca verificare vizuala — nu mai e un „pas" separat de 
 
 ## R-EXPORT: Export din continut editat
 
-Export PDF (print vectorial + MathJax typeset, nu raster), DOCX (backend), HTML — toate
+Export PDF (print vectorial + KaTeX typeset, nu raster), DOCX (client-side, @turbodocx/html-to-docx), HTML — toate
 reflecta continutul EDITAT de utilizator, nu datele OCR originale.
 
 ## R-DIAG: Diagnostic live cu coduri de eroare
