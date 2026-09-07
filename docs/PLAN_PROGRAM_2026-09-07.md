@@ -81,7 +81,13 @@
 
 > Golurile sunt deja enumerate; rulez verificările nerulate ca ele să definească munca reală.
 
-- [ ] **V3** (§8): OCR real end-to-end din browser pe prod cu poză de manual (math)
+- [x] **V3 măsurat (API-level, prod, `scratchpad/ocr_fidelity_probe.mjs`):** math TEXT = **bun**
+      (2.0_test_page_1.jpeg → 35 formule corecte, ordine + pași P1-P4 la locul lor; limite eroare = doar
+      cold-start tranzitoriu, retry 200×2). **PROBLEMĂ: figuri nefiabile** — apeluri repetate pe ACEEAȘI
+      pagină de geometrie dau ba 5 `figure` cu `bbox=null`, ba **0 figuri** (non-determinism Gemini) →
+      diagramele geometrice se pierd. Candidați fix: retry pe figuri lipsă / prompt figuri mai ferm /
+      temperature 0 / rutează IMAGINI cu figuri prin Azure `figures[]` (nu doar PDF). **CALIBRARE ROLAND:**
+      cât de important e desenul geometric la import vs textul+formulele (care merg)? — oricum V3 perceptual = F6.
 - [ ] **V4** (§8): PDF multi-pagină scanat (buclă per-pagină + plafon 20 + marcaj `[Pagina N: OCR eșuat]`)
 - [ ] Gol R7.4 `[~]`: calea PDF-cu-text-BUN (`rawTextToBlocks`) nu extrage figuri
 - [ ] Gol R3.9 ETAPA B: liste numerotate DOCX → paragrafe; tabele → aplatizate
