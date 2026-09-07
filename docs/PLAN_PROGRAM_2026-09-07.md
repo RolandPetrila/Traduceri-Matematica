@@ -34,7 +34,7 @@
 - [x] `node_modules` lipsea (checkout nou laptop Dell) → `npm install` (804 pachete, exit 0)
 - [x] Gate real frontend: **tsc 0 · jest 356/356** (rulate real; gate-ul anterior era fals-verde din pipe-masking)
 - [x] `next build` OK (10/10 rute) → **gate frontend REAL VERDE: tsc 0 · jest 356/356 · build OK**
-- [ ] Mediu Python pt `pytest` (venv + `requirements-dev.txt`) — de setat când ating backend (F3/F4)
+- [x] Mediu Python `.venv` + `pytest` → **backend gate: pytest 67/67**. Baseline complet: tsc 0 · jest 356/356 · build OK · pytest 67/67
 
 ### F1 — R-DIAG-AUTO (log-uri prod) ✅ FĂCUT (2026-09-07)
 
@@ -44,24 +44,38 @@
       `ResizeObserver loop` ×29 (last 08-03) = zgomot benign. SW-install ×1 (09-03 Firefox desktop) = tranzitoriu.
       Activitate până 09-06 fără erori noi = sănătos.
 
-### F2 — Deploy #1+#2 LIVE (plafon tokeni + auto-continuare + Școlare capitole/20 exerciții)
+### F2 — Deploy #1+#2 ✅ DEJA LIVE (descoperit 2026-09-07)
 
-> Committed `63d781e`, gate verde, frontend-only. Prod e la v50; asta e nedeployat.
+> Lista de deploy-uri Vercel arată `dpl_8eco...` = commit **`63d781e`** (exact #1+#2), READY, target
+> production, cel mai recent → aliasul îl servește. Adnotarea „NEDEPLOYAT" din handoff era **stale**
+> (scrisă în același commit, înainte de deploy — tiparul din §CURENT PLAN_MASTER).
 
-- [ ] Bump `CACHE_VERSION` v50 → v51 (data curentă)
-- [ ] `vercel deploy --prod` (frontend `traduceri-frontend`), verifică pe alias (sw.js nou, homepage 200)
-- [ ] Probă LIVE reală generare Teste + Școlare (auto-continuare → barem complet) prin `/api/proxy`
+- [x] #1+#2 confirmat live prin lista de deployment-uri Vercel (63d781e = ultimul prod READY)
+- [x] `CACHE_VERSION` v50→v51 bump-uit + committed (`1a0064f`) — se livrează la următorul deploy
+- [ ] Probă LIVE comportamentală generare Teste + Școlare (auto-continuare → barem complet) — de făcut la primul deploy
 
-### F3 — Limite AI: probă + observabilitate (NU cablare oarbă)
+### F3 — Limite AI ✅ CAUZĂ GĂSITĂ + FIX (chat), pending deploy
 
-> Inventarul zice ~6M chars/lună dacă se cablează tot ≈ „practic nelimitat pt 1 profesoară". Riscul real
-> nu e „mai mulți provideri", ci un provider mort care stă tăcut în lanț. Probă ÎNTÂI, apoi decide.
+> **Descoperirea centrală (asta E „atingerea limitelor"):** lanțul de chat era efectiv RUPT — sondă
+> directă (`scratchpad/chat_providers_probe.mjs`) → doar Gemini viu. `mistral-large-latest`=403
+> tier-locked, groq llama-uri=404 retrase, cerebras 402, sambanova/fireworks/nvidia/scaleway moarte.
 
-- [ ] Rulează `scratchpad/provider_health.mjs` (+ echivalent traducere/OCR) pe prod — status VIU real
-- [ ] Cablează DOAR ce e verificat viu dintre necablate (candidați: Google Translate 1M, Cloudflare
-      Workers AI, chat: Cohere/SambaNova/Fireworks) — chei prin flux `.api-keys`→Vercel (R-SEC, fără valori în chat)
-- [ ] Observabilitate/hard-cap: `gemini_counter` există în Supabase → expune consum + prag; decide dacă
-      merită Upstash rate-limit distribuit (§7 backlog) pe baza probei
+- [x] Probă directă a tuturor providerilor free cu cheile reale (nu catalog)
+- [x] **Fix lanț chat** (`6e305d6`): gemini→gemini2→**groq(gpt-oss-20b)**→**mistral(small)**→mistral2(small)
+      = 3 vendori independenți (Google×2, Groq, Mistral×2) în loc de 1. Gate: tsc 0 · jest 356/356.
+- [ ] **DEPLOY** (blocat de clasificator → Roland adaugă regulă `Bash(npx vercel:*)`; ales „deploy automat")
+- [ ] Verificare LIVE post-deploy: sondă prin `/api/proxy` că groq+mistral răspund 200 (nu forced-dead-model)
+- [ ] Traducere/OCR: verifică `mistral-ocr-latest` nu e și el tier-locked; restul (Azure 4M/DeepL/Doc Intel) sănătos per inventar
+- [ ] (rezervă) Cohere `command-r` viu — cablabil ca al 4-lea vendor dacă se cere mai mult headroom
+
+### F3b — Observabilitate + headroom suplimentar (după deploy-ul fix-ului)
+
+> Riscul rezidual nu e „prea puțini provideri" (acum 3 vendori vii), ci un provider care MOARE tăcut
+> în lanț (ca acum). Fixul durabil = observabilitate, nu doar mai multe chei.
+
+- [ ] Sondă periodică / alertă când un provider din lanț devine 4xx (evită „mort tăcut" luni de zile)
+- [ ] Observabilitate/hard-cap: `gemini_counter` există în Supabase → expune consum + prag pe /diagnostics
+- [ ] (opțional) Cablează Google Translate 1M / Cloudflare Workers AI la traducere dacă proba le confirmă vii
 
 ### F4 — OCR fidelitate layout (focus matematică) — MĂSOARĂ apoi remediază
 
