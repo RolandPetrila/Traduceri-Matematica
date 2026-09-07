@@ -36,25 +36,34 @@ export type ProviderStep = {
  * OpenAI-compatibile trebuie să fie în `MODEL_ALLOW` din `app/api/proxy/route.ts`
  * (migrat din `pages/api/proxy.js` la App Router, 2026-08-07, prerequisit Next 16).
  */
-// Lanț rescris (2026-08-20) pe baza unei sonde LIVE pe prod (scratchpad/provider_health.mjs):
-//   gemini 200/1.7s · gemini2 200/0.9s · mistral 200/0.7s · mistral2 200/0.6s  → SĂNĂTOASE
-//   cerebras 402 "Payment required" (cotă free epuizată → încalcă R-COST) → SCOS
-//   groq 404 "model does not exist / no access" pe AMBELE modele (cheie/cont fără acces) → SCOS
-// Cei 4 rămași acoperă 2 vendori × 2 chei (GOOGLE_API_KEY/_2, MISTRAL_API_KEY/_2) = reziliență reală.
-// Re-adăugarea groq/cerebras necesită chei free VALIDE noi (flux .api-keys) — vezi PROVIDERS din route.ts.
+// Lanț rescris (2026-09-07) pe baza unei sonde DIRECTE cu cheile reale
+// (scratchpad/chat_providers_probe.mjs) — cauza „se ating limitele": lanțul vechi
+// era efectiv RUPT, doar Gemini rămăsese viu:
+//   gemini/gemini2 200 ✓ · groq gpt-oss-20b 200 ✓ · mistral-small/ministral-8b 200 ✓
+//   mistral-large-latest = 403 "not available in your subscription tier" (tier-locked, NU 429) → SCOS model
+//   groq llama-3.3-70b / llama-3.1-8b = 404 (retrase de Groq); gemma2 = 400 (decomisionat) → model schimbat
+//   cerebras 402 (plată) · sambanova 410/402 · fireworks 404 · nvidia 410 EOL · scaleway 403 → toate moarte
+// Rezultat: 3 VENDORI independenți (Google ×2 chei, Groq, Mistral ×2 chei) = reziliență reală, free-tier.
+// Cohere (command-r) e VIU ca rezervă suplimentară (necablat încă — quota 1000/lună, vezi inventar).
 export const CHAIN: ProviderStep[] = [
   { id: "gemini", label: "Gemini Flash", format: "gemini" },
   { id: "gemini2", label: "Gemini Flash (2)", format: "gemini" },
   {
+    id: "groq",
+    label: "Groq (gpt-oss-20b)",
+    model: "openai/gpt-oss-20b",
+    format: "openai",
+  },
+  {
     id: "mistral",
-    label: "Mistral Large",
-    model: "mistral-large-latest",
+    label: "Mistral Small",
+    model: "mistral-small-latest",
     format: "openai",
   },
   {
     id: "mistral2",
-    label: "Mistral Large (2)",
-    model: "mistral-large-latest",
+    label: "Mistral Small (2)",
+    model: "mistral-small-latest",
     format: "openai",
   },
 ];

@@ -23,8 +23,8 @@ describe("chat-providers · payloads", () => {
   });
 
   it("OpenAI (Groq/Cerebras/Mistral): system + messages, model setat", () => {
-    const p = buildOpenAiPayload("llama-3.3-70b-versatile", "SYS", msgs);
-    expect(p.model).toBe("llama-3.3-70b-versatile");
+    const p = buildOpenAiPayload("openai/gpt-oss-20b", "SYS", msgs);
+    expect(p.model).toBe("openai/gpt-oss-20b");
     expect(p.messages[0]).toEqual({ role: "system", content: "SYS" });
     expect(p.messages).toHaveLength(4);
   });
@@ -61,19 +61,26 @@ describe("chat-providers · payloads", () => {
     expect(isTruncated("groq", {})).toBe(false);
   });
 
-  it("CHAIN = Gemini → Gemini2 → Mistral → Mistral2 (cerebras 402 + groq 404 scoși 2026-08-20)", () => {
+  it("CHAIN = Gemini → Gemini2 → Groq → Mistral → Mistral2 (3 vendori independenți, revived 2026-09-07)", () => {
     expect(CHAIN.map((c) => c.id)).toEqual([
       "gemini",
       "gemini2",
+      "groq",
       "mistral",
       "mistral2",
     ]);
-    // Morți verificați live pe prod (scratchpad/provider_health.mjs): scoși din lanț.
+    // Morți verificați live prin sondă directă (scratchpad/chat_providers_probe.mjs): scoși/neincluși.
     expect(CHAIN.some((c) => c.id === "cerebras")).toBe(false); // 402 Payment required (R-COST)
-    expect(CHAIN.some((c) => c.id === "groq")).toBe(false); // 404 model_not_found (cont fără acces)
     expect(CHAIN.some((c) => c.id === "openrouter")).toBe(false); // slug :free = 404, scos anterior
+    // Modele actualizate la cele VII pe free-tier (large=403 tier-locked, llama-uri Groq=404 retrase):
+    expect(CHAIN.find((c) => c.id === "groq")?.model).toBe(
+      "openai/gpt-oss-20b",
+    );
     expect(CHAIN.find((c) => c.id === "mistral")?.model).toBe(
-      "mistral-large-latest",
+      "mistral-small-latest",
+    );
+    expect(CHAIN.find((c) => c.id === "mistral2")?.model).toBe(
+      "mistral-small-latest",
     );
     // fiecare treaptă are format explicit (gemini vs openai)
     expect(
@@ -139,7 +146,7 @@ describe("sendChat · fallback + instrumentare", () => {
       expect(r.errors).toHaveLength(CHAIN.length); // câte o eroare per provider
       expect(r.errors.every((e) => e.includes("HTTP 429"))).toBe(true);
       expect(r.error).toContain("Gemini Flash");
-      expect(r.error).toContain("Mistral Large (2)");
+      expect(r.error).toContain("Mistral Small (2)");
     }
     expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(
       CHAIN.length,
