@@ -2,7 +2,82 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI (2026-09-08) — ⚠️ AUDITUL A FOST INFIRMAT DE REALITATE · program de reparație în 6 faze, DRAFT
+## ▶️ REIA DE AICI (2026-09-08, seara) — FAZA 1 EXECUTATĂ + DEPLOYATĂ + VERIFICATĂ LIVE · cauza bug-ului #1 GĂSITĂ
+
+> **Ce a cerut Roland:** execută Faza 1 (orbirea diagnostică) pe variantele `[recomandat]`.
+> Apoi, după ce trimite `Fazele.md` completat de el, se reverifică Faza 1 + punctele A/B/C
+> față de corecțiile lui. **Fazele 2-6 NU sunt încă stabilite — nu le executa.**
+>
+> ### Livrat (frontend v57, LIVE pe `traduceri-frontend.vercel.app`)
+>
+> `lib/failure.ts` = pâlnia UNICĂ prin care trece orice eșec de flux. Clasifică mecanic
+> (`network` / `http` / `badResponse` / `timeout` / `abort` / `logic`), scrie **cauza reală**
+>
+> - stack + fragment din conținutul care a picat, la nivel **`error`** cu **cod** — deci vizibil
+>   pe `/diagnostics`, la gruparea pe cod ȘI la R-DIAG-AUTO. Mesajul către utilizator conține
+>   codul (1b) și nu mai acuză internetul când n-a fost internetul.
+>
+> **12 coduri noi** (E-TRANS-005, E-EDIT-001..003, E-CHAT-001/002, E-TEST-001..003, E-SCOL-001,
+> E-PLAN-001, E-HIST-001) → catalog 17→29. `error-catalog.ts` e acum **GENERAT** din
+> `config/error_codes.json` (identitate garantată, nu sperată).
+> **Cablat în:** traducere F8 · import/OCR · export PDF/HTML/DOCX (PDF și HTML rulau FĂRĂ
+> try/catch — eșuau complet tăcut) · autosalvare document · dictare · Chat (mesaj + OCR poză) ·
+> Teste (generare/corectare/OCR) · Școlare · Convertor · Istoric · Planșe (6 generatoare, modul
+> offline vanilla JS, prin `planse/lib/diag.js`).
+> `/diagnostics`: tablou de **grupare pe cod** + corelare rețea↔flux prin `traceId`.
+>
+> **Limite declarate:** Calculator exclus deliberat (greșeli de tastare, vizibile instant —
+> logarea lor ar fi zgomot). Teste corectare/OCR: **fără fragment de conținut** (e munca unui
+> elev) — doar mărimi structurale.
+>
+> ### 🔴 CAUZA BUG-ULUI #1 — GĂSITĂ, în primele 10 secunde după deploy
+>
+> ```
+> SyntaxError: Failed to execute 'json' on 'Response':
+> Unexpected token 'x', "x-vercel-i"... is not valid JSON
+> ```
+>
+> Runtime-ul **Vercel Python scurge `x-vercel-internal-timing:…` în CORPUL răspunsului** la cold
+> start → `res.json()` crapă. **Exact clasa reparată la R9** pentru descărcările binare din
+> Convertor (`stripVercelFraming`) — dar atunci s-a curățat DOAR calea binară; calea **JSON**
+> (traducerea) a rămas necurățată. **Fixul = Faza 2, neexecutat.**
+>
+> ### ⚠️ TREI „fapte verificate" din `Fazele.md` sunt FALSE — vezi `docs/Erata_dovezi_2026-09-08.md`
+>
+> 1. „0 cereri de rețea" — **FALS**: cererea a plecat, 2218 ms (măsurat pe prod).
+> 2. „Butonul SK rămâne dezactivat" — **FALS**: dovedit în cod, în log-uri (eșec 10:27:37 →
+>    reușită 10:27:42, același dispozitiv) și **live** (a doua apăsare a tradus tot documentul).
+> 3. „Tabel + page-break = declanșator" — **corelație falsă**: același document a reușit la a
+>    doua apăsare, nemodificat. Eșecul e **intermitent** (cold start), ~1 din 5 încercări,
+>    pe `sk`/`en`/`de`/`ro`, din **20.08.2026** (10 eșecuri / 39 reușite).
+>
+> ### 🆕 Risc nou descoperit în timpul verificării (nu era în niciun document)
+>
+> **Traducere + reload = originalul se pierde definitiv.** Autosalvarea scrie conținutul AFIȘAT,
+> iar limba afișată devine limba-sursă după reload. Cristina traduce o fișă, revine a doua zi,
+> varianta românească nu mai există. S-a întâmplat în această sesiune, pe documentul lui Roland
+> (rămas acum în slovacă — vezi mai jos).
+>
+> ### Dovezi live (capturi salvate)
+>
+> Mesaj onest pe ecran + rând `E-TRANS-005` pe `/diagnostics` cu `kind`, `cause`, `sample`,
+> `nodeTypes`; tablou de grupare pe cod funcțional.
+>
+> ### ⚠️ Efect secundar al verificării, de semnalat lui Roland
+>
+> Documentul rămas în editor (fișa tehnică „POMPE DOZATOARE", artefact din sesiunea trecută) a
+> fost tradus în slovacă în timpul probei și, după reload, **varianta română nu mai e
+> recuperabilă** (vezi riscul nou de mai sus). Nu era material al Cristinei.
+>
+> ### Poartă + deploy
+>
+> `tsc 0 · jest 384/384 (+27) · build OK · pytest 75/75`. Lint: 14 probleme înainte ȘI după
+> (preexistente, neatinse). Commit-uri `0b6e0c7` → `64b5bdd` → sw precache. Frontend **v57**.
+> Backend NEATINS (`a7304a2`).
+
+---
+
+## ▶️ (2026-09-08, dimineața) — ⚠️ AUDITUL A FOST INFIRMAT DE REALITATE · program de reparație în 6 faze, DRAFT
 
 > **CITEȘTE ÎNTÂI:** `docs/completari_pt_reparatie.md` (cele 8 puncte scrise de Roland) +
 > `docs/Fazele.md` (cele 6 faze explicate) + `docs/PROMPT_SESIUNE_NOUA_REPARATIE.md` (prompt de pornire).
