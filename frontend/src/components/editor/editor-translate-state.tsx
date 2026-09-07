@@ -25,7 +25,8 @@ import {
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { translateEditorDoc } from "./editor-translate";
-import { trackEditor } from "./editor-telemetry";
+import { trackEditor, docShape } from "./editor-telemetry";
+import { classifyFailure, reportFailure } from "@/lib/failure";
 import {
   getCachedDocTranslation,
   cacheDocTranslation,
@@ -172,10 +173,24 @@ export function EditorTranslateProvider({
         trackEditor("translate", { from: sourceLang, to: target });
       } catch (e) {
         if ((e as Error)?.name !== "AbortError") {
-          setError(
-            "Traducerea a eșuat. Verifică internetul și încearcă din nou.",
-          );
-          trackEditor("translate_error", { to: target });
+          // FAZA 1: eroarea NU se mai aruncă la gunoi. Mesajul reflectă mecanismul
+          // real (dacă n-a plecat nicio cerere, nu mai dăm vina pe internet), iar
+          // logul primește cod + cauză + structura documentului care a picat.
+          // Eșec local (nicio cerere n-a plecat) vs. server care a răspuns prost —
+          // sunt două probleme diferite, deci două coduri diferite.
+          const f = reportFailure({
+            code:
+              classifyFailure(e) === "logic" ? "E-TRANS-005" : "E-TRANS-001",
+            flow: "editor.translate",
+            error: e,
+            context: {
+              to: target,
+              from: sourceLang,
+              ...docShape(sourceDoc),
+            },
+            sample: JSON.stringify(sourceDoc),
+          });
+          setError(f.userMessage);
         }
       } finally {
         setIsTranslating(false);

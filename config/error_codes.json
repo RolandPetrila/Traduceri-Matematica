@@ -50,6 +50,13 @@
       "severity": "warn",
       "area": "translate"
     },
+    "E-TRANS-005": {
+      "message": "Traducerea a esuat LOCAL, inainte de orice apel de retea",
+      "cause": "Esecul s-a produs in browser, inainte ca vreo cerere sa plece spre server (extragerea textului din document, serializarea, sau aplicarea rezultatului). Acest text descrie CATEGORIA; cauza reala a incidentului e in context.cause + stack pe randul de log — nu presupune un vinovat din acest camp.",
+      "fix": "Deschide randul in /diagnostics: context.cause = mesajul real al erorii, context.kind = tipul, context.sample = fragment din continutul care a picat, context.flow = locul in cod. Reproduce cu acel tip de continut.",
+      "severity": "error",
+      "area": "translate"
+    },
     "E-CONV-001": {
       "message": "Conversia fisierului a esuat",
       "cause": "Operatie incompatibila cu formatul (ex. edit-pdf/split/merge pe un non-PDF), fisier corupt, sau backend a intors non-JSON (CORS/edge) parsat gresit de client.",
@@ -119,6 +126,83 @@
       "fix": "Reproduce local, citeste stack trace-ul. Cel mai grav tip — de reparat imediat. Verifica componenta din context.",
       "severity": "error",
       "area": "app"
+    },
+    "E-EDIT-001": {
+      "message": "Importul de fisier in editor a esuat (client)",
+      "cause": "Lantul de import din browser s-a oprit cu eroare (citirea fisierului, rasterizarea pdf.js, bucla OCR per-pagina, sau maparea in blocuri de editor). Categoria; incidentul real e in context.cause / context.kind.",
+      "fix": "Vezi editor-import.tsx. Daca context.kind = network, verifica /api/ocr (E-OCR-001). Daca e logic, e o eroare de cod pe fisierul respectiv — cere fisierul de la utilizator si reproduce.",
+      "severity": "error",
+      "area": "editor"
+    },
+    "E-EDIT-002": {
+      "message": "Dictarea vocala a esuat",
+      "cause": "Motorul de recunoastere vocala al browserului a refuzat sau s-a oprit. Codul returnat de motor e in context.cause.",
+      "fix": "not-allowed = permisiune microfon respinsa; audio-capture = microfon absent sau TACUT (vezi MicTestDialog, capcana din 2026-07-26); network = serviciul de voce al browserului; nesuportat = browser fara Web Speech API. Vezi editor-dictation.tsx.",
+      "severity": "error",
+      "area": "editor"
+    },
+    "E-EDIT-003": {
+      "message": "Salvarea sau incarcarea documentului local a esuat",
+      "cause": "Stocarea din browser (localStorage) a refuzat operatia — cel mai des cota plina, fereastra privata, sau document prea mare (figuri inglobate base64).",
+      "fix": "Vezi storage.ts + editor-document.tsx. Verifica dimensiunea din context. Sterge documentele vechi sau redu figurile inglobate.",
+      "severity": "error",
+      "area": "editor"
+    },
+    "E-CHAT-001": {
+      "message": "Lantul de provideri AI (Chat) s-a epuizat",
+      "cause": "Niciun provider din CHAIN n-a livrat un raspuns util. Motivul per provider e in context.errors.",
+      "fix": "Citeste context.errors: 404 = model retras, 402 = cota free epuizata, 401 = cheie invalida, 429 = rate-limit, abort = timeout per provider. Scoate/inlocuieste providerii morti in chat-providers.ts; ruleaza scratchpad/provider_health.mjs. Acelasi tipar ca 2026-08-20 si 2026-09-07.",
+      "severity": "error",
+      "area": "chat"
+    },
+    "E-CHAT-002": {
+      "message": "Citirea imaginii (OCR) in Chat a esuat",
+      "cause": "Poza atasata in chat n-a putut fi transformata in text: fisier prea mare (413), OCR-ul a intors eroare, sau nu s-a gasit text in imagine.",
+      "fix": "Vezi context.status. 413 = poza prea mare, redu rezolutia. Altfel verifica lantul OCR ca la E-OCR-001.",
+      "severity": "error",
+      "area": "chat"
+    },
+    "E-TEST-001": {
+      "message": "Generarea testului a esuat",
+      "cause": "Generarea din modulul Teste s-a oprit: lantul AI n-a livrat, raspunsul a fost gol sau taiat, ori construirea testului a crapat.",
+      "fix": "Vezi context.cause si context.provider. Daca au picat toti providerii, cauza-mama e E-CHAT-001 pe acelasi lant. Vezi TestePanel.tsx + lib/test-generator.ts.",
+      "severity": "error",
+      "area": "teste"
+    },
+    "E-TEST-002": {
+      "message": "Corectarea lucrarii a esuat",
+      "cause": "Corectarea automata s-a oprit inainte de a produce baremul. ATENTIE: pe acest flux NU se salveaza fragment din lucrare (e munca unui elev) — doar marimi structurale.",
+      "fix": "Vezi context.cause, context.textLen, context.hasMath. Daca lantul AI a picat, vezi E-CHAT-001. Vezi TestePanel.tsx.",
+      "severity": "error",
+      "area": "teste"
+    },
+    "E-TEST-003": {
+      "message": "OCR pe poza lucrarii a esuat",
+      "cause": "Poza lucrarii n-a putut fi transformata in text (413 prea mare, OCR in eroare, sau imagine fara text lizibil). NU se salveaza fragment din lucrare.",
+      "fix": "Vezi context.status si context.cause. 413 = redu rezolutia pozei. Altfel, acelasi lant ca E-OCR-001.",
+      "severity": "error",
+      "area": "teste"
+    },
+    "E-SCOL-001": {
+      "message": "Generarea fisei scolare a esuat",
+      "cause": "Generarea din modulul Scolare s-a oprit: lantul AI n-a livrat, raspunsul a fost gol sau taiat, ori construirea fisei a crapat. Nodul curricular cerut e in context.node.",
+      "fix": "Vezi context.cause si context.node. Daca au picat toti providerii, cauza-mama e E-CHAT-001. Vezi ScolarePanel.tsx + lib/scolare/.",
+      "severity": "error",
+      "area": "scolare"
+    },
+    "E-PLAN-001": {
+      "message": "Generarea unei planse a esuat",
+      "cause": "Un generator din modulul Planse (labirint/cautare/uneste/dictare/numere/integrama) a aruncat o eroare la construirea fisei. Generatorul e in context.generator.",
+      "fix": "Modul offline, vanilla JS: vezi frontend/public/planse/app.js + generators/. Reproduce cu parametrii din context (aceeasi forma, acelasi numar de itemi).",
+      "severity": "error",
+      "area": "planse"
+    },
+    "E-HIST-001": {
+      "message": "Re-descarcarea din Istoric a esuat",
+      "cause": "Refacerea fisierului dintr-o intrare veche de istoric a esuat: datele salvate lipsesc ori sunt corupte, sau serverul a refuzat cererea.",
+      "fix": "Vezi context.status si context.cause. Intrarile peste 2MB nu au output_data salvat si nu pot fi re-descarcate — se reface conversia in Convertor.",
+      "severity": "error",
+      "area": "istoric"
     }
   }
 }

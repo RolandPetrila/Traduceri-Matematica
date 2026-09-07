@@ -39,6 +39,7 @@ import { requestNotifyPermission, notifyIfHidden } from "@/lib/import-notify";
 import { useEditorTranslate, type LangCode } from "./editor-translate-state";
 import { useEditorDocument } from "./editor-document";
 import { trackEditor } from "./editor-telemetry";
+import { reportFailure } from "@/lib/failure";
 
 const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp"]);
 const TEXT_EXT = new Set(["txt", "md", "csv", "json"]);
@@ -479,7 +480,23 @@ export function EditorImportProvider({
         );
         if (ac.signal.aborted) return;
         if (!r.blocks.length) {
-          setError("Nu am putut extrage conținut din fișier.");
+          // Eșec fără excepție: importul „a mers", dar n-a livrat nimic. Tot un
+          // eșec de flux e — deci tot cu cod, nu doar un mesaj pe ecran.
+          const f = reportFailure({
+            code: "E-EDIT-001",
+            flow: "editor.import.empty",
+            error: new Error("Import fara continut: 0 blocuri extrase"),
+            context: {
+              files: files.length,
+              filename: files[0]?.name,
+              sizeKb: Math.round((files[0]?.size || 0) / 1024),
+              usedOcr: r.usedOcr,
+              failedPages: r.failedPages,
+            },
+            userHint:
+              "Nu am putut extrage conținut din fișier. Încearcă cu OCR forțat sau cu alt fișier.",
+          });
+          setError(f.userMessage);
           return;
         }
         const meta: ImportMeta = {
@@ -520,19 +537,27 @@ export function EditorImportProvider({
         }
       } catch (err) {
         if ((err as Error)?.name !== "AbortError") {
-          setError((err as Error)?.message || "Importul a eșuat.");
-          // Detaliu real în log (înainte era `{}` — imposibil de diagnosticat DE CE
-          // a eșuat OCR-ul). Acum capturăm mesajul, tipul și durata până la eșec.
-          trackEditor("ocr_import_error", {
-            message: (err as Error)?.message || String(err),
-            name: (err as Error)?.name || "Error",
-            elapsed_ms: Date.now() - startedAt,
+          // FAZA 1: eșecul urcă la nivel `error` cu cod — înainte era `action`,
+          // deci invizibil și pe /diagnostics, și la verificarea automată.
+          const f = reportFailure({
+            code: "E-EDIT-001",
+            flow: "editor.import",
+            error: err,
+            context: {
+              files: files.length,
+              filename: files[0]?.name,
+              sizeKb: Math.round((files[0]?.size || 0) / 1024),
+              forceOcr: forceOcrRef.current,
+              lang: usedLang,
+              elapsed_ms: Date.now() - startedAt,
+            },
+            sample: files
+              .map((f2) => `${f2.name} (${f2.type || "?"})`)
+              .join(", "),
           });
+          setError(f.userMessage);
           if (Date.now() - startedAt > 8000) {
-            notifyIfHidden(
-              "Import eșuat",
-              (err as Error)?.message || "Eroare la import",
-            );
+            notifyIfHidden("Import eșuat", f.userMessage);
           }
         }
       } finally {

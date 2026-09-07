@@ -163,6 +163,53 @@ export function logAction(
   sendLogToServer(log);
 }
 
+/* ------------------------------------------------------------------------- *
+ * Corelare retea <-> flux (Faza 1, 2026-09-08)
+ *
+ * Interceptorul de fetch loghează deja fiecare /api/* eșuat (E-NET-001/002).
+ * Când un flux (traducere, OCR, generare…) eșuează DIN CAUZA acelui apel, ar
+ * apărea două rânduri fără legătură între ele — iar gruparea pe cod ar arăta
+ * două eșecuri pentru un singur click. Reținem ultimul eșec de rețea cu un
+ * `traceId`; `lib/failure.ts` îl atașează rândului de flux, deci cele două se
+ * pot uni la citire. Tot de aici vine și dovada „a plecat sau nu o cerere?".
+ * ------------------------------------------------------------------------- */
+
+export interface ApiFailureTrace {
+  traceId: string;
+  at: number;
+  url: string;
+  method: string;
+  /** HTTP status, sau 0 dacă cererea n-a ajuns deloc (rețea căzută). */
+  status: number;
+  errorCode: string;
+}
+
+let lastApiFailure: ApiFailureTrace | null = null;
+
+function noteApiFailure(t: Omit<ApiFailureTrace, "traceId" | "at">): string {
+  const traceId = generateId();
+  lastApiFailure = { ...t, traceId, at: Date.now() };
+  return traceId;
+}
+
+/**
+ * Ultimul apel /api/* eșuat, dacă s-a produs în ultimele `withinMs` milisecunde.
+ * Folosit ca dovadă că un eșec de flux a fost (sau NU a fost) cauzat de rețea.
+ */
+export function getRecentApiFailure(
+  withinMs = 15000,
+): ApiFailureTrace | undefined {
+  if (!lastApiFailure) return undefined;
+  return Date.now() - lastApiFailure.at <= withinMs
+    ? lastApiFailure
+    : undefined;
+}
+
+/** Doar pentru teste — golește urma de rețea reținută. */
+export function __resetApiFailureTrace(): void {
+  lastApiFailure = null;
+}
+
 export function getLocalLogs(): ErrorLog[] {
   try {
     return JSON.parse(localStorage.getItem(LOGS_KEY) || "[]");
@@ -262,12 +309,18 @@ export function initGlobalErrorHandlers(): void {
       } else {
         // Any non-ok API response is an execution that did not deliver → give it a
         // structured code so /diagnostics surfaces it (413/500/404/…), not a bare warn.
+        const traceId = noteApiFailure({
+          url,
+          method,
+          status: response.status,
+          errorCode: "E-NET-002",
+        });
         logWarn(
           `API | ${method} ${url} | ${response.status} | ${duration}ms | FAIL`,
           {
             source: "api-interceptor",
             errorCode: "E-NET-002",
-            context: { status: response.status, url, method },
+            context: { status: response.status, url, method, traceId },
           },
         );
       }
@@ -275,9 +328,16 @@ export function initGlobalErrorHandlers(): void {
     } catch (error) {
       const duration = Date.now() - t0;
       const msg = error instanceof Error ? error.message : String(error);
+      const traceId = noteApiFailure({
+        url,
+        method,
+        status: 0,
+        errorCode: "E-NET-001",
+      });
       logError(`API | ${method} ${url} | NETWORK | ${duration}ms | ${msg}`, {
         source: "api-interceptor",
         errorCode: "E-NET-001",
+        context: { url, method, status: 0, traceId },
       });
       throw error;
     }

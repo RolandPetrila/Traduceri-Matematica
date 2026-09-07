@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { Editor } from "@tiptap/react";
 import { trackEditor } from "./editor-telemetry";
+import { reportFailure } from "@/lib/failure";
 
 /**
  * Persistență document (F4b) — cheie NOUĂ separată de editorul vechi (`editor_documente_v1`),
@@ -153,14 +154,32 @@ export function EditorDocumentProvider({
   nameRef.current = name;
   const restoredRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Autosalvarea a eșuat deja? (raportăm o singură dată per sesiune) */
+  const persistFailedRef = useRef(false);
 
   const persist = useCallback((html: string, docName: string) => {
     try {
       const payload: Saved = { html, name: docName, savedAt: Date.now() };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       setLastSavedAt(payload.savedAt);
-    } catch {
-      /* quota/private mode → ignorăm (fail-open) */
+    } catch (e) {
+      // FAZA 1: rămâne fail-open (nu rupem editarea), dar NU mai e tăcut. Ăsta e
+      // cel mai periculos eșec mut din aplicație: documentul Cristinei nu se mai
+      // salvează, iar ea nu află până când nu-l pierde. Autosalvarea rulează des
+      // → raportăm o SINGURĂ dată per sesiune (cauza nu se schimbă între apeluri).
+      if (!persistFailedRef.current) {
+        persistFailedRef.current = true;
+        reportFailure({
+          code: "E-EDIT-003",
+          flow: "editor.document.autosave",
+          error: e,
+          context: {
+            htmlLen: html.length,
+            docName,
+            quotaLikely: (e as Error)?.name === "QuotaExceededError",
+          },
+        });
+      }
     }
   }, []);
 

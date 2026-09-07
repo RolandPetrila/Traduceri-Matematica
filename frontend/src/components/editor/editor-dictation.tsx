@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { setDictationInterim } from "./dictation-interim";
 import { trackEditor } from "./editor-telemetry";
+import { reportFailure } from "@/lib/failure";
 import { MicTestDialog } from "./MicTestDialog";
 
 /**
@@ -179,33 +180,62 @@ export function EditorDictationProvider({
       setDictationInterim(current, interimText);
     };
 
+    // FAZA 1: un eșec care OPREȘTE dictarea primește cod + cauză (nivel `error`).
+    // Codul motorului (`not-allowed`, `audio-capture`, …) e cauza reală — îl
+    // păstrăm ca atare, nu-l înlocuim cu un mesaj generic.
+    const failDictation = (engineCode: string, hint: string) =>
+      reportFailure({
+        code: "E-EDIT-002",
+        flow: "editor.dictation",
+        error: new Error(engineCode || "unknown"),
+        context: { engineCode: engineCode || "unknown", lang: "ro-RO" },
+        userHint: hint,
+      }).userMessage;
+
     rec.onerror = (e: any) => {
       const code = e?.error;
-      // Logăm ORICE eroare (până acum eram orbi la cauză).
-      trackEditor("dictation_error", { code: code || "unknown" });
-      if (code === "no-speech" || code === "aborted") return; // benign → onend repornește
+      // Erorile benigne rămân la nivel `action` — dictarea repornește singură,
+      // nu e un eșec de flux. Doar cele care OPRESC dictarea urcă la `error`.
+      if (code === "no-speech" || code === "aborted") {
+        trackEditor("dictation_error", { code: code || "unknown" });
+        return; // benign → onend repornește
+      }
       if (code === "not-allowed" || code === "service-not-allowed") {
         setError(
-          "Microfonul e blocat. Apasă lacătul din bara de adrese → Microfon → Permite, apoi reîncearcă.",
+          failDictation(
+            code,
+            "Microfonul e blocat. Apasă lacătul din bara de adrese → Microfon → Permite, apoi reîncearcă.",
+          ),
         );
         stop();
         return;
       }
       if (code === "audio-capture") {
         setError(
-          "Nu s-a găsit niciun microfon. Verifică dispozitivul de intrare din Windows.",
+          failDictation(
+            code,
+            "Nu s-a găsit niciun microfon. Verifică dispozitivul de intrare din Windows.",
+          ),
         );
         stop();
         return;
       }
       if (code === "network") {
         setError(
-          "Fără rețea pentru recunoașterea vocală. Verifică internetul.",
+          failDictation(
+            code,
+            "Fără rețea pentru recunoașterea vocală. Verifică internetul.",
+          ),
         );
         stop();
         return;
       }
-      setError("Dictarea s-a oprit (eroare motor vocal: " + code + ").");
+      setError(
+        failDictation(
+          code,
+          "Dictarea s-a oprit (eroare motor vocal: " + code + ").",
+        ),
+      );
     };
 
     rec.onend = () => {
@@ -219,13 +249,13 @@ export function EditorDictationProvider({
       if (!gotResultRef.current) {
         noResultEndsRef.current += 1;
         if (noResultEndsRef.current >= 3) {
-          trackEditor("dictation_error", {
-            code: gotAudioRef.current ? "no_voice_loop" : "no_audio_loop",
-          });
           setError(
-            gotAudioRef.current
-              ? "Microfonul e pornit, dar nu se aude nicio voce. În Windows: Setări → Sunet → Intrare — alege dispozitivul corect, dă-l Mai tare și scoate-l din Mut, apoi Testează. Apoi reîncearcă."
-              : "Dictarea pornește dar nu primește sunet. Verifică permisiunea de microfon a site-ului și dispozitivul de intrare, apoi reîncearcă.",
+            failDictation(
+              gotAudioRef.current ? "no_voice_loop" : "no_audio_loop",
+              gotAudioRef.current
+                ? "Microfonul e pornit, dar nu se aude nicio voce. În Windows: Setări → Sunet → Intrare — alege dispozitivul corect, dă-l Mai tare și scoate-l din Mut, apoi Testează. Apoi reîncearcă."
+                : "Dictarea pornește dar nu primește sunet. Verifică permisiunea de microfon a site-ului și dispozitivul de intrare, apoi reîncearcă.",
+            ),
           );
           stop();
           return;
@@ -250,8 +280,16 @@ export function EditorDictationProvider({
       setListening(true);
       setError(null);
       trackEditor("dictation_start", { lang: "ro-RO", continuous: true });
-    } catch {
-      setError("Nu am putut porni dictarea.");
+    } catch (e) {
+      setError(
+        reportFailure({
+          code: "E-EDIT-002",
+          flow: "editor.dictation.start",
+          error: e,
+          context: { lang: "ro-RO" },
+          userHint: "Nu am putut porni dictarea.",
+        }).userMessage,
+      );
     }
   }, [stop]);
 

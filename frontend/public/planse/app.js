@@ -321,6 +321,7 @@
       var seen = {};
       var seed = base;
       var guard = 0;
+      var lastErr = null;
       // dedup în cadrul lotului: niciodată două labirinturi identice deodată (§8)
       while (items.length < nr && guard < nr + 200) {
         guard++;
@@ -335,11 +336,21 @@
           }
         } catch (e) {
           // nu ar trebui să apară (gate-ul de verificare aruncă doar la bug)
-          if (window.console) console.error("[planse:labirint]", e);
+          lastErr = e; // FAZA 1: retinem cauza; raportam o data, dupa bucla
         }
         seed++;
       }
       state.items = items;
+      // FAZA 1: lot incomplet = esec de flux (nu doar un item ratat) -> cod + cauza.
+      if (items.length < nr && window.PlanseDiag) {
+        window.PlanseDiag.fail(
+          "labirint",
+          { seedBase: typeof base !== "undefined" ? base : null },
+          nr,
+          items.length,
+          lastErr,
+        );
+      }
       state.mm = mm;
       state.showSolution = false;
       renderPreview();
@@ -566,6 +577,7 @@
       var seen = {};
       var seed = base;
       var guard = 0;
+      var lastErr = null;
       while (items.length < np && guard < np + 200) {
         guard++;
         try {
@@ -578,11 +590,21 @@
             items.push(it);
           }
         } catch (e) {
-          if (window.console) console.error("[planse:cautare]", e);
+          lastErr = e; // FAZA 1: retinem cauza; raportam o data, dupa bucla
         }
         seed++;
       }
       state.items = items;
+      // FAZA 1: lot incomplet = esec de flux (nu doar un item ratat) -> cod + cauza.
+      if (items.length < np && window.PlanseDiag) {
+        window.PlanseDiag.fail(
+          "cautare",
+          { seedBase: typeof base !== "undefined" ? base : null },
+          np,
+          items.length,
+          lastErr,
+        );
+      }
       state.mm = mm;
       state.showSolution = false;
       renderPreview();
@@ -789,6 +811,7 @@
       var seen = {};
       var seed = base;
       var guard = 0;
+      var lastErr = null;
       while (items.length < np && guard < np + 400) {
         guard++;
         try {
@@ -798,13 +821,23 @@
             items.push(it);
           }
         } catch (e) {
-          if (window.console) console.error("[planse:uneste]", e);
+          lastErr = e; // FAZA 1: retinem cauza; raportam o data, dupa bucla
         }
         seed++;
         // o formă fixă dă o singură planșă (semnătură constantă) → nu bucla inutil
         if (forma !== "aleator") break;
       }
       state.items = items;
+      // FAZA 1: lot incomplet = esec de flux (nu doar un item ratat) -> cod + cauza.
+      if (items.length < np && window.PlanseDiag) {
+        window.PlanseDiag.fail(
+          "uneste",
+          { seedBase: typeof base !== "undefined" ? base : null },
+          np,
+          items.length,
+          lastErr,
+        );
+      }
       state.showSolution = false;
       renderPreview();
       meta.textContent =
@@ -1010,6 +1043,7 @@
       var seen = {};
       var seed = base;
       var guard = 0;
+      var lastErr = null;
       while (items.length < np && guard < np + 400) {
         guard++;
         try {
@@ -1019,13 +1053,23 @@
             items.push(it);
           }
         } catch (e) {
-          if (window.console) console.error("[planse:dictare]", e);
+          lastErr = e; // FAZA 1: retinem cauza; raportam o data, dupa bucla
         }
         seed++;
         // o formă fixă dă o singură planșă (semnătură constantă) → nu bucla inutil
         if (forma !== "aleator") break;
       }
       state.items = items;
+      // FAZA 1: lot incomplet = esec de flux (nu doar un item ratat) -> cod + cauza.
+      if (items.length < np && window.PlanseDiag) {
+        window.PlanseDiag.fail(
+          "dictare",
+          { seedBase: typeof base !== "undefined" ? base : null },
+          np,
+          items.length,
+          lastErr,
+        );
+      }
       state.showSolution = false;
       renderPreview();
       meta.textContent =
@@ -1237,6 +1281,7 @@
       var seen = {};
       var seed = base;
       var guard = 0;
+      var lastErr = null;
       while (items.length < np && guard < np + 400) {
         guard++;
         try {
@@ -1246,11 +1291,21 @@
             items.push(it);
           }
         } catch (e) {
-          if (window.console) console.error("[planse:numere]", e);
+          lastErr = e; // FAZA 1: retinem cauza; raportam o data, dupa bucla
         }
         seed++;
       }
       state.items = items;
+      // FAZA 1: lot incomplet = esec de flux (nu doar un item ratat) -> cod + cauza.
+      if (items.length < np && window.PlanseDiag) {
+        window.PlanseDiag.fail(
+          "numere",
+          { seedBase: typeof base !== "undefined" ? base : null },
+          np,
+          items.length,
+          lastErr,
+        );
+      }
       state.showSolution = false;
       renderPreview();
       meta.textContent =
@@ -1460,6 +1515,7 @@
       var seen = {};
       var seed = base;
       var guard = 0;
+      var lastErr = null;
       while (items.length < np && guard < np + 400) {
         guard++;
         try {
@@ -1469,11 +1525,21 @@
             items.push(it);
           }
         } catch (e) {
-          if (window.console) console.error("[planse:integrama]", e);
+          lastErr = e; // FAZA 1: retinem cauza; raportam o data, dupa bucla
         }
         seed++;
       }
       state.items = items;
+      // FAZA 1: lot incomplet = esec de flux (nu doar un item ratat) -> cod + cauza.
+      if (items.length < np && window.PlanseDiag) {
+        window.PlanseDiag.fail(
+          "integrama",
+          { seedBase: typeof base !== "undefined" ? base : null },
+          np,
+          items.length,
+          lastErr,
+        );
+      }
       state.showSolution = false;
       renderPreview();
       meta.textContent =

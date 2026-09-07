@@ -33,6 +33,7 @@ import {
 import { verifyArithmetic, type VerifyResult } from "@/lib/scolare/verify-fisa";
 import { sanitizeFisa } from "@/lib/scolare/sanitize";
 import { fetchWithRetry } from "@/lib/fetch-retry";
+import { reportFailure } from "@/lib/failure";
 
 /**
  * Modul „Școlare 🌐" (F0, 2026-08-07) — generator AI de fișe curriculare A4.
@@ -174,7 +175,24 @@ export function ScolarePanel({
       );
       if (!r.ok) {
         setStatus("error");
-        setNote(r.error);
+        setNote(
+          reportFailure({
+            code: "E-SCOL-001",
+            flow: "scolare.generate",
+            error: new Error(r.error),
+            context: {
+              node: node.id,
+              level: level.id,
+              cycle: cycleId,
+              nrEx,
+              dificultate,
+              regulamentLoaded: !!regulament,
+              attempt,
+              errors: r.errors,
+            },
+            userHint: r.error,
+          }).userMessage,
+        );
         return;
       }
       // Sanitizează runaway-urile de „linii de completat" ÎNAINTE de orice consum
@@ -274,7 +292,21 @@ export function ScolarePanel({
       setNote(`Continuat cu ${r.provider}.`);
     } else {
       setStatus("error");
-      setNote(r.error);
+      setNote(
+        reportFailure({
+          code: "E-SCOL-001",
+          flow: "scolare.generate.continue",
+          error: new Error(r.error),
+          context: {
+            node: node.id,
+            level: level.id,
+            cycle: cycleId,
+            turns: history.length,
+            errors: r.errors,
+          },
+          userHint: r.error,
+        }).userMessage,
+      );
     }
   };
 

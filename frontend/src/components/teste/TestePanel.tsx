@@ -12,6 +12,7 @@ import { buildSystemPrompt } from "@/lib/chat-context";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
+import { reportFailure } from "@/lib/failure";
 import {
   CLASSES,
   DIFFICULTIES,
@@ -195,14 +196,29 @@ function GenerateTab({
         }
       } else {
         setStatus("error");
-        setNote(r.error);
+        setNote(
+          reportFailure({
+            code: "E-TEST-001",
+            flow: "teste.generate",
+            error: new Error(r.error),
+            context: { clasa, tema: effectiveTema, diff, errors: r.errors },
+            userHint: r.error,
+          }).userMessage,
+        );
       }
     } catch (e) {
       // sendChat nu aruncă în mod normal (prinde erorile per-provider intern),
       // dar gardă defensivă — fără ea, o excepție neprevăzută ar lăsa `status`
       // blocat pe "loading" (butonul dezactivat permanent). Vezi audit Faza C.
       setStatus("error");
-      setNote((e as Error).message || "Eroare");
+      setNote(
+        reportFailure({
+          code: "E-TEST-001",
+          flow: "teste.generate.crash",
+          error: e,
+          context: { clasa, tema: effectiveTema, diff },
+        }).userMessage,
+      );
     }
   };
 
@@ -230,11 +246,26 @@ function GenerateTab({
         setHistory([...nextHistory, { role: "assistant", content: r.reply }]);
       } else {
         setStatus("error");
-        setNote(r.error);
+        setNote(
+          reportFailure({
+            code: "E-TEST-001",
+            flow: "teste.generate.continue",
+            error: new Error(r.error),
+            context: { clasa, errors: r.errors, turns: history.length },
+            userHint: r.error,
+          }).userMessage,
+        );
       }
     } catch (e) {
       setStatus("error");
-      setNote((e as Error).message || "Eroare");
+      setNote(
+        reportFailure({
+          code: "E-TEST-001",
+          flow: "teste.generate.continue.crash",
+          error: e,
+          context: { clasa, turns: history.length },
+        }).userMessage,
+      );
     }
   };
 
@@ -434,11 +465,32 @@ function CorrectTab({
         setHistory([...initial, { role: "assistant", content: r.reply }]);
       } else {
         setStatus("error");
-        setNote(r.error);
+        // (1c) EXCEPȚIE de confidențialitate: textul e lucrarea unui elev — NU
+        // trimitem `sample`. Doar mărimi structurale, suficiente pt diagnostic.
+        setNote(
+          reportFailure({
+            code: "E-TEST-002",
+            flow: "teste.correct",
+            error: new Error(r.error),
+            context: {
+              textLen: text.length,
+              hasMath: /[=+\-*/^√∫]|\\\w/.test(text),
+              errors: r.errors,
+            },
+            userHint: r.error,
+          }).userMessage,
+        );
       }
     } catch (e) {
       setStatus("error");
-      setNote((e as Error).message || "Eroare");
+      setNote(
+        reportFailure({
+          code: "E-TEST-002",
+          flow: "teste.correct.crash",
+          error: e,
+          context: { textLen: text.length },
+        }).userMessage,
+      );
     }
   };
 
@@ -489,7 +541,18 @@ function CorrectTab({
       await correctText(cleaned);
     } catch (e) {
       setStatus("error");
-      setNote((e as Error).message || "Eroare");
+      // Poza e lucrarea unui elev → fără `sample`, doar mărimi (1c, excepție).
+      setNote(
+        reportFailure({
+          code: "E-TEST-003",
+          flow: "teste.correct.ocr",
+          error: e,
+          context: {
+            fileType: file.type,
+            sizeKb: Math.round(file.size / 1024),
+          },
+        }).userMessage,
+      );
     }
   };
 

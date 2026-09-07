@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { HistoryEntry } from "@/lib/types";
 import { sanitizeHtml } from "@/lib/sanitize";
-import { logAction, logError } from "@/lib/monitoring";
+import { logAction } from "@/lib/monitoring";
+import { reportFailure } from "@/lib/failure";
 import { API_URL } from "@/lib/api-url";
 
 interface HistoryDetailProps {
@@ -68,11 +69,19 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
       await downloadAsDocx(entry.html, `traducere_${entry.id}.docx`);
       logAction("Re-download DOCX din istoric", { entryId: entry.id });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Eroare necunoscuta";
-      setDocxError(message);
-      logError(`Re-download DOCX esuat: ${message}`, {
-        context: { entryId: entry.id },
-      });
+      // FAZA 1: logul exista, dar fără cod → nu apărea la gruparea pe cod și nu
+      // avea nici cauză clasificată (rețea vs. date corupte).
+      setDocxError(
+        reportFailure({
+          code: "E-HIST-001",
+          flow: "istoric.redownload.docx",
+          error: err,
+          context: {
+            entryId: entry.id,
+            htmlLen: entry.html?.length ?? 0,
+          },
+        }).userMessage,
+      );
     }
   };
 

@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import ProgressBar from "@/components/convertor/ProgressBar";
-import { logAction, logInfo, logError } from "@/lib/monitoring";
+import { logAction, logInfo } from "@/lib/monitoring";
+import { reportFailure } from "@/lib/failure";
 import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
@@ -312,14 +313,23 @@ export default function ConvertorPage() {
         output_mime: outputMime,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Eroare necunoscuta";
       setProgress(0);
-      setResult({ success: false, message });
-      logError(message, {
-        source: "conversion",
-        errorCode: "E-CONV-001",
-        context: { operation, targetFormat, fileCount: files.length },
+      // FAZA 1: aceeași pâlnie ca restul modulelor — codul exista deja, dar acum
+      // primește și tipul eșecului (local vs. server) + fișierele care l-au produs.
+      const f = reportFailure({
+        code: "E-CONV-001",
+        flow: "convertor.convert",
+        error: err,
+        context: {
+          operation,
+          targetFormat,
+          detectedFormat,
+          fileCount: files.length,
+          totalKb: Math.round(files.reduce((s, x) => s + x.size, 0) / 1024),
+        },
+        sample: files.map((x) => `${x.name} (${x.type || "?"})`).join(", "),
       });
+      setResult({ success: false, message: f.userMessage });
     } finally {
       if (progressTimer.current) clearInterval(progressTimer.current);
       setIsProcessing(false);

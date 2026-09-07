@@ -9,6 +9,7 @@ import { getEditorText } from "@/lib/editor-commands";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
+import { reportFailure } from "@/lib/failure";
 
 /**
  * Chat AI matematică (2026-08-04, mock §17 aprobat) — înlocuiește Asistentul.
@@ -82,7 +83,18 @@ export function ChatPanel({
       setMessages([...history, { role: "assistant", content: r.reply }]);
     } else {
       setStatus("error");
-      setNote(r.error);
+      // FAZA 1: până acum, epuizarea lanțului de provideri NU se loga deloc —
+      // se vedea doar pe ecran, la utilizator. Acum are cod + motivul fiecărui
+      // provider, deci se poate diagnostica fără să fie nevoie de raportarea lui.
+      setNote(
+        reportFailure({
+          code: "E-CHAT-001",
+          flow: "chat.send",
+          error: new Error(r.error),
+          context: { errors: r.errors, turns: history.length },
+          userHint: r.error,
+        }).userMessage,
+      );
     }
   };
 
@@ -111,7 +123,15 @@ export function ChatPanel({
       setMessages([...messages, { role: "assistant", content: r.reply }]);
     } else {
       setStatus("error");
-      setNote(r.error);
+      setNote(
+        reportFailure({
+          code: "E-CHAT-001",
+          flow: "chat.continue",
+          error: new Error(r.error),
+          context: { errors: r.errors, turns: messages.length },
+          userHint: r.error,
+        }).userMessage,
+      );
     }
   };
 
@@ -190,7 +210,18 @@ export function ChatPanel({
       setInput(`Verifică și corectează această rezolvare:\n${extracted}`);
     } catch (e) {
       setStatus("error");
-      setNote((e as Error).message || "Eroare la citirea imaginii");
+      setNote(
+        reportFailure({
+          code: "E-CHAT-002",
+          flow: "chat.ocr",
+          error: e,
+          context: {
+            fileType: file.type,
+            sizeKb: Math.round(file.size / 1024),
+          },
+          // Poza e tema unui elev → NU salvăm fragment din conținut (1c, excepție).
+        }).userMessage,
+      );
     }
   };
 

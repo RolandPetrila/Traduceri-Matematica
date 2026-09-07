@@ -144,6 +144,48 @@ export default function DiagnosticsPage() {
     new Set(logs.map((l) => l.errorCode).filter(Boolean)),
   ) as string[];
 
+  /**
+   * FAZA 1 — gruparea pe cod (cerința: erorile să fie „filtrabile ȘI grupabile").
+   * Filtrarea exista deja; lipsea tabloul care spune, dintr-o privire, CE se
+   * strică cel mai des. Fără el, 300 de rânduri se citesc unul câte unul.
+   *
+   * Rândurile de rețea (E-NET-*) care aparțin aceluiași eșec de flux poartă
+   * același `traceId` → le numărăm o dată, ca un click eșuat să nu apară ca două.
+   */
+  const grouped = (() => {
+    const map = new Map<
+      string,
+      { code: string; count: number; last: string; traces: Set<string> }
+    >();
+    for (const l of logs) {
+      if (!l.errorCode) continue;
+      const trace = (l.context?.traceId as string) || "";
+      const g = map.get(l.errorCode);
+      if (!g) {
+        map.set(l.errorCode, {
+          code: l.errorCode,
+          count: 1,
+          last: l.timestamp,
+          traces: new Set(trace ? [trace] : []),
+        });
+      } else {
+        g.count++;
+        if (trace) g.traces.add(trace);
+        if (new Date(l.timestamp) > new Date(g.last)) g.last = l.timestamp;
+      }
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.count - a.count || (a.last < b.last ? 1 : -1),
+    );
+  })();
+
+  /** Câte incidente distincte au fost corelate cu un eșec de rețea. */
+  const correlated = new Set(
+    logs
+      .map((l) => (l.context?.traceId as string) || "")
+      .filter((t) => t.length > 0),
+  ).size;
+
   const levelColor = (level: string) => {
     if (level === "error") return "text-red-400";
     if (level === "warn") return "text-yellow-400";
@@ -357,25 +399,69 @@ export default function DiagnosticsPage() {
               ))}
             </div>
 
-            {/* Error-code filter chips */}
-            {codes.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4 items-center">
-                <span className="text-chalk-white/50 text-xs">Cod eroare:</span>
-                <button
-                  onClick={() => setCodeFilter("")}
-                  className={`text-xs px-2 py-1 rounded ${codeFilter === "" ? "chalk-btn--active" : "chalk-btn"}`}
-                >
-                  Toate
-                </button>
-                {codes.map((c) => (
+            {/* FAZA 1 — grupare pe cod: ce se strică cel mai des, dintr-o privire. */}
+            {grouped.length > 0 && (
+              <div className="chalk-card mb-4 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-chalk-yellow text-sm font-bold">
+                    Grupare pe cod de eroare
+                  </h2>
                   <button
-                    key={c}
-                    onClick={() => setCodeFilter(c)}
-                    className={`text-xs px-2 py-1 rounded font-mono ${codeFilter === c ? "chalk-btn--active" : "chalk-btn"}`}
+                    onClick={() => setCodeFilter("")}
+                    className={`text-xs px-2 py-1 rounded ${codeFilter === "" ? "chalk-btn--active" : "chalk-btn"}`}
                   >
-                    {c}
+                    Arata toate
                   </button>
-                ))}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-chalk-white/50 text-left">
+                        <th className="py-1 pr-2 font-normal">Cod</th>
+                        <th className="py-1 pr-2 font-normal">Nr.</th>
+                        <th className="py-1 pr-2 font-normal">Ultima data</th>
+                        <th className="py-1 font-normal">Ce inseamna</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grouped.map((g) => {
+                        const info = getErrorInfo(g.code);
+                        return (
+                          <tr
+                            key={g.code}
+                            onClick={() =>
+                              setCodeFilter(codeFilter === g.code ? "" : g.code)
+                            }
+                            className={`cursor-pointer border-t border-chalk-white/10 hover:bg-chalk-white/5 ${
+                              codeFilter === g.code ? "bg-chalk-yellow/10" : ""
+                            }`}
+                          >
+                            <td className="py-1 pr-2 font-mono text-chalk-yellow whitespace-nowrap">
+                              {g.code}
+                            </td>
+                            <td className="py-1 pr-2 text-chalk-white font-bold">
+                              {g.count}
+                            </td>
+                            <td className="py-1 pr-2 text-chalk-white/60 whitespace-nowrap">
+                              {new Date(g.last).toLocaleString("ro-RO")}
+                            </td>
+                            <td className="py-1 text-chalk-white/70">
+                              {info?.message || "(cod necunoscut in catalog)"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-chalk-white/40 text-[11px] mt-2">
+                  Apasa un rand ca sa filtrezi. {codes.length} cod(uri)
+                  distinct(e)
+                  {correlated > 0
+                    ? ` · ${correlated} esec(uri) corelate cu un apel de retea cazut`
+                    : ""}
+                  .
+                </p>
               </div>
             )}
 

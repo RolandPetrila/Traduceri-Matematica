@@ -34,6 +34,7 @@ import {
 import { exportPdf, exportHtml, exportDocx } from "@/lib/editor-export";
 import { useEditorDocument } from "./editor-document";
 import { trackEditor, contentFlags } from "./editor-telemetry";
+import { reportFailure } from "@/lib/failure";
 
 /**
  * Meniul „Fișier" (F4a export + F4b fișier) — Document nou / Salvează / Redenumește
@@ -52,27 +53,37 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
 
   if (!editor) return null;
 
-  const onPdf = () => {
+  // FAZA 1: PDF și HTML rulau FĂRĂ try/catch — un eșec acolo nu lăsa nicio urmă,
+  // nici pe ecran, nici în log-uri. Acum toate trei trec prin aceeași pâlnie.
+  const runExport = async (
+    format: "pdf" | "html" | "docx",
+    run: () => void | Promise<void>,
+  ) => {
     const html = editor.getHTML();
-    trackEditor("export", { format: "pdf", name, ...contentFlags(html) });
-    exportPdf(html, name);
+    const flags = contentFlags(html);
+    trackEditor("export", { format, name, ...flags });
+    try {
+      await run();
+    } catch (err) {
+      const f = reportFailure({
+        code: "E-CONV-002",
+        flow: `editor.export.${format}`,
+        error: err,
+        context: { format, name, ...flags },
+        userHint: `Exportul ${format.toUpperCase()} a eșuat.`,
+      });
+      alert(f.userMessage);
+    }
   };
-  const onHtml = () => {
-    const html = editor.getHTML();
-    trackEditor("export", { format: "html", name, ...contentFlags(html) });
-    exportHtml(html, name);
-  };
+
+  const onPdf = () => runExport("pdf", () => exportPdf(editor.getHTML(), name));
+  const onHtml = () =>
+    runExport("html", () => exportHtml(editor.getHTML(), name));
   const onDocx = async () => {
     if (busy) return;
     setBusy(true);
-    const html = editor.getHTML();
-    trackEditor("export", { format: "docx", name, ...contentFlags(html) });
     try {
-      await exportDocx(html, name);
-    } catch (err) {
-      console.error("[editor] export DOCX a eșuat:", err);
-      trackEditor("export_error", { format: "docx" });
-      alert("Exportul Word a eșuat. Încearcă PDF sau HTML.");
+      await runExport("docx", () => exportDocx(editor.getHTML(), name));
     } finally {
       setBusy(false);
     }
