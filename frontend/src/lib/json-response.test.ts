@@ -86,4 +86,23 @@ describe("readJson — corp deteriorat de framing-ul Vercel", () => {
   it("corp gol → eroare explicită, nu `undefined` strecurat mai departe", async () => {
     await expect(readJson(raspuns(""), "test")).rejects.toThrow(/corp gol/);
   });
+
+  it("`report: false` recuperează la fel, dar NU inundă jurnalul (sonde repetitive)", async () => {
+    // `VersionBadge` întreabă /api/health la fiecare 30 de secunde. Fereastra
+    // anti-dublură din failure.ts e de 2s, deci fiecare sondă ar produce un rând
+    // nou — exact inundarea suprafeței de diagnostic pe care Faza 1 a curățat-o.
+    const corpStricat = `x-vercel-internal-timing: dur=99\r\n${CORP_BUN}`;
+    const d = await readJson<{ translated_sections: { content: string }[] }>(
+      raspuns(corpStricat),
+      "layout.version",
+      { report: false },
+    );
+    expect(d.translated_sections[0].content).toBe("Ahoj"); // recuperarea se face
+    expect(reportFailure).not.toHaveBeenCalled(); // dar tăcut
+  });
+
+  it("implicit se RAPORTEAZĂ — tăcerea trebuie cerută explicit, nu moștenită din greșeală", async () => {
+    await readJson(raspuns(`junk\r\n${CORP_BUN}`), "editor.translate");
+    expect(reportFailure).toHaveBeenCalledTimes(1);
+  });
 });

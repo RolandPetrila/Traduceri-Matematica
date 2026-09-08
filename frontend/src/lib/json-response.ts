@@ -37,7 +37,26 @@ const JUNK_SAMPLE = 160;
  *         după curățare corpul nu e JSON valid — deci `classify()` îl încadrează
  *         corect la `badResponse`, nu la „bug de aplicație".
  */
-export async function readJson<T>(res: Response, flow: string): Promise<T> {
+export async function readJson<T>(
+  res: Response,
+  flow: string,
+  opts: {
+    /**
+     * `false` = recuperează, dar NU raporta recuperarea.
+     *
+     * Doar pentru apeluri REPETITIVE de fond (ex. `VersionBadge` întreabă
+     * `/api/health` la 30 de secunde). Acolo, un framing persistent ar produce un
+     * rând de `warn` la fiecare 30s, în fiecare filă deschisă — adică exact
+     * inundarea suprafeței de diagnostic pe care Faza 1 a curățat-o ca să rămână
+     * SEMNAL. Fereastra anti-dublură din `failure.ts` e de 2 secunde, deci nu
+     * acoperă un interval de 30.
+     *
+     * NU-l folosi pe fluxurile pornite de utilizator: acolo vrem fiecare incident.
+     */
+    report?: boolean;
+  } = {},
+): Promise<T> {
+  const { report = true } = opts;
   const text = await res.text();
 
   try {
@@ -48,19 +67,21 @@ export async function readJson<T>(res: Response, flow: string): Promise<T> {
     if (start > 0) {
       try {
         const parsed = JSON.parse(text.slice(start)) as T;
-        reportFailure({
-          code: "E-NET-003",
-          flow,
-          error: first,
-          severity: "warn",
-          context: {
-            recovered: true,
-            trimmedBytes: start,
-            status: res.status,
-            bodyLen: text.length,
-          },
-          sample: text.slice(0, JUNK_SAMPLE),
-        });
+        if (report) {
+          reportFailure({
+            code: "E-NET-003",
+            flow,
+            error: first,
+            severity: "warn",
+            context: {
+              recovered: true,
+              trimmedBytes: start,
+              status: res.status,
+              bodyLen: text.length,
+            },
+            sample: text.slice(0, JUNK_SAMPLE),
+          });
+        }
         return parsed;
       } catch {
         /* nici după curățare — cade mai jos, cu cauza reală */

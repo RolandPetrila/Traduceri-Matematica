@@ -57,7 +57,15 @@ def translate_with_groq(text: str, source_lang: str, target_lang: str, dict_term
     if not api_key:
         raise RuntimeError("GROQ_API_KEY not set")
 
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    # `de` was missing here too (same shape as the NLLB bug fixed 2026-09-08). Here the
+    # fallback is benign — the raw code "de" goes into an English prompt, degraded but
+    # not wrong — yet leaving it would be leaving the same trap armed for the next reader.
+    lang_names = {
+        "ro": "Romanian",
+        "sk": "Slovak",
+        "en": "English",
+        "de": "German",
+    }
     src = lang_names.get(source_lang, source_lang)
     tgt = lang_names.get(target_lang, target_lang)
 
@@ -269,7 +277,15 @@ def translate_with_openrouter(text: str, source_lang: str, target_lang: str, dic
     if not api_key:
         raise RuntimeError("OPENROUTER_API_KEY not set — OpenRouter translation unavailable")
 
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    # `de` was missing here too (same shape as the NLLB bug fixed 2026-09-08). Here the
+    # fallback is benign — the raw code "de" goes into an English prompt, degraded but
+    # not wrong — yet leaving it would be leaving the same trap armed for the next reader.
+    lang_names = {
+        "ro": "Romanian",
+        "sk": "Slovak",
+        "en": "English",
+        "de": "German",
+    }
     src = lang_names.get(source_lang, source_lang)
     tgt = lang_names.get(target_lang, target_lang)
 

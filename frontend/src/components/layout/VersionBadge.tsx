@@ -23,10 +23,14 @@ export default function VersionBadge() {
       try {
         const res = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
         if (res.ok) {
+          // `report: false` — sonda asta rulează la fiecare 30 de secunde. Corpul se
+          // curăță (deci insigna nu mai clipește degeaba la cold start), dar
+          // recuperarea NU se scrie în jurnal: altfel un framing persistent ar
+          // umple /diagnostics cu un rând la fiecare 30s, în fiecare filă.
           const data = await readJson<{
             build_version?: string;
             version?: string;
-          }>(res, "layout.version");
+          }>(res, "layout.version", { report: false });
           const sv = data.build_version || data.version || "";
           setServerVersion(sv);
           if (sv && sv !== BUILD_VERSION && BUILD_VERSION !== "dev") {
