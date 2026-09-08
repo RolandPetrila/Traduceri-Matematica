@@ -20,7 +20,7 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** ziua livrării Fazei 2 · **Producție:** frontend **v67** · **Fază activă:** FAZA 2
+**Ultima actualizare:** ziua livrării Fazei 2 · **Producție:** frontend **v69** · **Fază activă:** FAZA 2
 
 ---
 
@@ -40,13 +40,13 @@
 
 ## ✅ FAZA 1 — Repară orbirea diagnostică `ÎNCHISĂ`
 
-|     | Item                                                | Dovadă                                         |
-| --- | --------------------------------------------------- | ---------------------------------------------- |
-| 🟢  | Pâlnie unică de eșec (`lib/failure.ts`), 22 fluxuri | teste + cablare verificată                     |
-| 🟢  | 12 coduri noi (catalog 17→30), oglindă anti-drift   | `config/error_codes.json` ↔ `error-catalog.ts` |
-| 🟢  | Grupare pe cod în `/diagnostics`                    | `docs/dovada_faza1_grupare_incidente.jpg`      |
-| 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)           | `docs/dovada_faza1_mesaj_onest.jpg`            |
-| 🟢  | Erată: 3 „fapte verificate" false, corectate        | `docs/Erata_dovezi_2026-09-08.md`              |
+|     | Item                                                                 | Dovadă                                                            |
+| --- | -------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 🟡  | Pâlnie unică de eșec (`lib/failure.ts`), **26 de fluxuri** distincte | _verificat în cod și prin teste, nu exersat live pe fiecare flux_ |
+| 🟢  | 12 coduri noi (catalog 17→30), oglindă anti-drift                    | `config/error_codes.json` ↔ `error-catalog.ts`                    |
+| 🟢  | Grupare pe cod în `/diagnostics`                                     | `docs/dovada_faza1_grupare_incidente.jpg`                         |
+| 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)                            | `docs/dovada_faza1_mesaj_onest.jpg`                               |
+| 🟢  | Erată: 3 „fapte verificate" false, corectate                         | `docs/Erata_dovezi_2026-09-08.md`                                 |
 
 ---
 
@@ -64,9 +64,9 @@ Decizii: **2a** suport complet, traduce și tabelele · **2b** buton „Încearc
 | 🟢  | **2.C — buton „Încearcă din nou"**                                          | Secvența completă, exersată de două ori independent: rețea tăiată → mesaj + buton; rețea revenită → **apăsat** → traducerea reușește (EN la mine, DE la auditor), eroarea se stinge                                                                                                                                                                                                                                              |
 | 🟢  | **2.D — tabelele, pe SK + EN + DE**                                         | Tabel 3×3 inserat live și comutat pe toate trei: SK „Názov uhla" / „Ostrý uhol", DE „Bezeichnung des Winkels", EN „Name of the angle"; structura intactă (**1 tabel, 3 `th`, 6 `td`**). Captură (EN): `docs/dovezi/dovada_2D_tabel_tradus_EN.png`                                                                                                                                                                                |
 | 🟢  | **2.E — mesaje care spun ce are de făcut**                                  | Text exact, citit de pe ecran: _„Traducerea nu a ajuns la server. Așteaptă ~5 secunde și apasă «Încearcă din nou». (cod E-TRANS-001)"_; eroarea a ajuns în Supabase la `level=error`, cu `kind`, cauză și fragment                                                                                                                                                                                                               |
-| 🟢  | **Cache-ul nu mai servește o traducere învechită**                          | Infirmat o dată, apoi reparat. Auditorul a reprodus pe v65 cu **contra-probă**: cu editare ⇒ pleacă un POST real și corectura apare tradusă; fără editare ⇒ **zero cereri**, instant (cota DeepL protejată). `docs/dovezi/dovada_cache_dupa_reload_v64.jpg`                                                                                                                                                                      |
+| 🟢  | **Cache-ul nu mai servește o traducere învechită**                          | Infirmat o dată, apoi reparat. Auditorul a reprodus pe v65 cu **contra-probă**: cu editare ⇒ pleacă un POST real și corectura apare tradusă; fără editare ⇒ **zero cereri**, instant (cota DeepL protejată). `docs/dovezi/dovada_cache_dupa_reload_v64.jpg` (proba mea, v64) + `docs/dovezi/dovada_cache_dupa_reload_v65_auditor.png` (proba auditorului, v65)                                                                   |
 | 🟢  | **Eroarea veche nu mai rămâne lipită de o comutare reușită**                | Exersat live de auditor                                                                                                                                                                                                                                                                                                                                                                                                          |
-| 🟢  | 2.F.1 — poartă completă                                                     | `tsc 0` · `jest 425/425` · `build OK` · `pytest 83/83`. Rulată independent și de auditorul de regresie. **Acoperă acum și `public/planse/`**, care era complet în afara ei                                                                                                                                                                                                                                                       |
+| 🟢  | 2.F.1 — poartă completă                                                     | `tsc 0` · `jest 428/428` · `build OK` · `pytest 83/83`. Rulată independent și de auditorul de regresie. **Acoperă acum și `public/planse/`**, care era complet în afara ei                                                                                                                                                                                                                                                       |
 | 🟢  | 2.F.2 — deploy + verificare live                                            | Frontend **v67**, backend livrat. _(Notă: `/api/health` raportează commit-ul backendului, care rămâne în urmă când modific doar frontendul — `git diff <acel commit>..HEAD -- api/` gol înseamnă că e la zi funcțional.)_                                                                                                                                                                                                        |
 
 ### Verificate în cod și în pachetul livrat, NEEXERSATE live
@@ -151,13 +151,14 @@ rămâne în urmă minte la fel de rău ca documentația veche.
 
 ## 🟢 FAZA 2.5 — Cei trei agenți de audit
 
-|     | Item                                         | Dovadă                                                                                                                                                                                     |
-| --- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 🟢  | `auditor-dovezi`                             | Trei rulări. A prins că dovada lui 2.D nu susținea afirmația, a găsit defectul de cache, l-a **infirmat** a doua oară după reload, apoi a găsit încă trei defecte live                     |
-| 🟢  | `auditor-regresie`                           | A rulat jest pe commit-ul anterior vs. acum — creștere reală. A prins că agenții nu erau comiși, riscul de inundare a jurnalului, și **regresia mea din Planșe**, invizibilă pentru poartă |
-| 🟢  | `auditor-cerinte`                            | A găsit bug-ul `de`→slovacă, cele două tăceri, mesajul fals pe căile care aruncă deliberat (în două runde), și Planșe fără mesaj la lot incomplet                                          |
-| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                                                    |
-| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; aici au rulat cu instrucțiunile injectate. **Condiția nu a fost încă testată** — nu „testată și picată". De confirmat la prima sesiune nouă   |
+|     | Item                                         | Dovadă                                                                                                                                                                                                                                                       |
+| --- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🟢  | `auditor-dovezi`                             | Trei rulări. A prins că dovada lui 2.D nu susținea afirmația, a găsit defectul de cache, l-a **infirmat** a doua oară după reload, apoi a găsit încă trei defecte live                                                                                       |
+| 🟢  | `auditor-regresie`                           | A rulat jest pe commit-ul anterior vs. acum — creștere reală. A prins că agenții nu erau comiși, riscul de inundare a jurnalului, și **regresia mea din Planșe**, invizibilă pentru poartă                                                                   |
+| 🟢  | `auditor-cerinte`                            | A găsit bug-ul `de`→slovacă, cele două tăceri, mesajul fals pe căile care aruncă deliberat (în două runde), și Planșe fără mesaj la lot incomplet                                                                                                            |
+| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                                                                                                                      |
+| 🟢  | **Golul de unelte, reparat**                 | Prima versiune le dădea `tools: Read, Grep, Glob, Bash` — adică `auditor-dovezi`, agentul creat ca să impună regula dovezii live în browser, **nu putea deschide un browser**. Găsit de el însuși, la a patra rulare. Acum moștenesc toate uneltele sesiunii |
+| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; aici au rulat cu instrucțiunile injectate. **Condiția nu a fost încă testată** — nu „testată și picată". De confirmat la prima sesiune nouă                                                                     |
 
 ---
 
@@ -183,13 +184,13 @@ Decizii: **4a** fișiere reale din `99_Roland_Work\Teste_Input` → rezultate î
 
 ## Riscuri deschise
 
-| Risc                                                      | Stare                                                                                                                  |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Traducere + reload = originalul se pierde                 | 🟢 reparat, exersat live de 6 ori                                                                                      |
-| Eșec intermitent la traducere (cold start Vercel)         | 🟢 recuperat client-side, prins pe bug-ul real în producție. **Serverul scurge în continuare** — nu e reparat la sursă |
-| Cache pe limbă servea traducerea de dinainte de corectură | 🟢 reparat în două runde, cu contra-probă                                                                              |
-| Memorie plină → originalul nu se salva, în tăcere         | 🟢 reparat: comutarea se refuză, cu mesaj care spune ce să facă                                                        |
-| Document doar cu formule → comuta tăcut + consuma cotă    | 🟢 reparat + 4 teste                                                                                                   |
-| Germana revenea în slovacă prin NLLB                      | 🟡 reparat + 8 teste; nedovedibil live din exterior                                                                    |
-| **Ceasul laptopului e cu o zi înainte**                   | 🔴 deschis — de reparat pe laptop. Afectează R-DIAG-AUTO și toate datele scrise în documentație                        |
-| Mesaje neacționabile în modulele neatinse încă            | 🟡 mecanism gata, 9 locuri reparate; restul în Faza 3+4                                                                |
+| Risc                                                      | Stare                                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traducere + reload = originalul se pierde                 | 🟢 reparat, exersat live de 6 ori                                                                                                                                                                                                                                                                                   |
+| Eșec intermitent la traducere (cold start Vercel)         | 🟢 recuperat client-side, prins pe bug-ul real în producție. **Serverul scurge în continuare** — nu e reparat la sursă                                                                                                                                                                                              |
+| Cache pe limbă servea traducerea de dinainte de corectură | 🟢 reparat în două runde, cu contra-probă                                                                                                                                                                                                                                                                           |
+| Memorie plină → originalul nu se salva, în tăcere         | 🟢 reparat pe calea care contează: comutarea de limbă se refuză cu mesaj, magazia își eliberează întâi propria intrare veche și reîncearcă, iar insigna de salvare devine **alarmă vizibilă** („NU se mai salvează — exportă documentul acum"). Autosalvarea rămâne fail-open prin proiectare — dar nu mai e tăcută |
+| Document doar cu formule → comuta tăcut + consuma cotă    | 🟢 reparat + 4 teste                                                                                                                                                                                                                                                                                                |
+| Germana revenea în slovacă prin NLLB                      | 🟡 reparat + 8 teste; nedovedibil live din exterior                                                                                                                                                                                                                                                                 |
+| **Ceasul laptopului e cu o zi înainte**                   | 🔴 deschis — de reparat pe laptop. Afectează R-DIAG-AUTO și toate datele scrise în documentație                                                                                                                                                                                                                     |
+| Mesaje neacționabile în modulele neatinse încă            | 🟡 mecanism gata, 9 locuri reparate; restul în Faza 3+4                                                                                                                                                                                                                                                             |

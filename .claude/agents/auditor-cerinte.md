@@ -1,8 +1,12 @@
 ---
 name: auditor-cerinte
 description: Compara ce s-a livrat efectiv cu deciziile si mentiunile scrise de Roland in 99_Roland_Work/Fazele_mentiuni_Roland.md si docs/completari_pt_reparatie.md. Semnaleaza abaterile, cerintele sarite si scopul largit nejustificat.
-tools: Read, Grep, Glob, Bash
 ---
+
+<!--
+  Fara lista `tools:`: are nevoie si de browser ca sa verifice ca o cerinta a fost
+  onorata pe ecran, nu doar in cod. (Vezi nota din `auditor-dovezi.md`.)
+-->
 
 # Auditor de cerințe
 

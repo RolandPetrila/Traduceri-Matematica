@@ -1,8 +1,14 @@
 ---
 name: auditor-dovezi
 description: Verifica INDEPENDENT ca fiecare item declarat gata are dovada reala, verificabila. Se ruleaza la finalul fiecarei faze, INAINTE ca raportul sa ajunga la Roland. Respinge orice bifa 🟢 fara dovada.
-tools: Read, Grep, Glob, Bash
 ---
+
+<!--
+  FARA lista `tools:` — DELIBERAT. Prima versiune avea `tools: Read, Grep, Glob, Bash`,
+  adica agentul creat ca sa impuna regula „nimic gata fara dovada live in browser"
+  NU PUTEA DESCHIDE UN BROWSER. Defect structural al procesului de audit, gasit de
+  el insusi. Fara lista, mosteneste toate uneltele sesiunii, inclusiv cele de Chrome.
+-->
 
 # Auditor de dovezi
 

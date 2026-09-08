@@ -66,6 +66,15 @@ type DocumentApi = {
   externalUpdateWarning: boolean;
   /** Ascunde avertismentul (păstrează conținutul curent din ACEASTĂ fereastră). */
   dismissExternalUpdate: () => void;
+  /**
+   * Ultima încercare de salvare a EȘUAT (memorie plină sau blocată).
+   *
+   * Fără asta, insigna rămânea înghețată pe ultima salvare reușită și pe ecran nu
+   * apărea nimic: Cristina continua să scrie într-un document care nu se mai
+   * salvează și afla abia când îl pierdea. `E-EDIT-003` ajungea în jurnal, dar
+   * jurnalul nu e pe ecranul ei. (Semnalat de auditorul de dovezi.)
+   */
+  saveFailed: boolean;
 };
 
 const DocumentContext = createContext<DocumentApi | null>(null);
@@ -151,6 +160,7 @@ export function EditorDocumentProvider({
     null,
   );
   const [externalUpdateWarning, setExternalUpdateWarning] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const nameRef = useRef(name);
   nameRef.current = name;
   const restoredRef = useRef(false);
@@ -163,7 +173,9 @@ export function EditorDocumentProvider({
       const payload: Saved = { html, name: docName, savedAt: Date.now() };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       setLastSavedAt(payload.savedAt);
+      setSaveFailed(false);
     } catch (e) {
+      setSaveFailed(true);
       // FAZA 1: rămâne fail-open (nu rupem editarea), dar NU mai e tăcut. Ăsta e
       // cel mai periculos eșec mut din aplicație: documentul Cristinei nu se mai
       // salvează, iar ea nu află până când nu-l pierde. Autosalvarea rulează des
@@ -308,6 +320,7 @@ export function EditorDocumentProvider({
         dismissLegacyAvailable: () => setLegacyAvailableName(null),
         externalUpdateWarning,
         dismissExternalUpdate: () => setExternalUpdateWarning(false),
+        saveFailed,
       }}
     >
       {children}

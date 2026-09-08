@@ -43,7 +43,7 @@ import { reportFailure } from "@/lib/failure";
  * DOCX e async (import dinamic) → spinner cât se generează.
  */
 export function EditorFileMenu({ editor }: { editor: Editor | null }) {
-  const { name, lastSavedAt, saveNow, rename, newDocument } =
+  const { name, lastSavedAt, saveNow, rename, newDocument, saveFailed } =
     useEditorDocument();
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -98,8 +98,9 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
     setConfirmNewOpen(false);
   };
 
-  const savedLabel =
-    lastSavedAt != null
+  const savedLabel = saveFailed
+    ? "⚠ NU se mai salvează — exportă documentul acum"
+    : lastSavedAt != null
       ? `✓ salvat ${new Date(lastSavedAt).toLocaleTimeString("ro-RO", {
           hour: "2-digit",
           minute: "2-digit",
@@ -176,11 +177,20 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
         </DropdownMenu>
 
         {/* Status auto-save (mic, discret) */}
+        {/* La eșec de salvare NU mai e „discret": e vizibil pe orice ecran,
+            inclusiv pe telefon, și anunțat asertiv cititoarelor de ecran. Insigna
+            înghețată pe ultima oră reușită o lăsa pe Cristina să scrie ore întregi
+            într-un document care nu se mai salva. */}
         <span
-          className="hidden items-center gap-1 whitespace-nowrap text-xs text-muted-foreground sm:flex"
-          aria-live="polite"
+          className={
+            saveFailed
+              ? "flex items-center gap-1 whitespace-nowrap rounded bg-destructive/15 px-1.5 py-0.5 text-xs font-medium text-destructive"
+              : "hidden items-center gap-1 whitespace-nowrap text-xs text-muted-foreground sm:flex"
+          }
+          role={saveFailed ? "alert" : undefined}
+          aria-live={saveFailed ? "assertive" : "polite"}
         >
-          {lastSavedAt != null && <Check className="h-3 w-3" />}
+          {!saveFailed && lastSavedAt != null && <Check className="h-3 w-3" />}
           {savedLabel}
         </span>
       </div>

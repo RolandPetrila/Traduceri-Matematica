@@ -206,7 +206,11 @@ export function EditorTranslateProvider({
           // (Cazul a fost testat de auditorul de dovezi: se scria E-EDIT-003 în
           // jurnal, dar pe ecran rămânea „✓ salvat".)
           setError(
-            "Nu am putut păstra originalul: memoria browserului e plină. Exportă documentul (Fișier → Export) ÎNAINTE de a traduce — altfel varianta curentă s-ar pierde la reîncărcare. (cod E-EDIT-003)",
+            // „plină SAU blocată": cu `localStorage` dezactivat din browser eroarea
+            // e `SecurityError`, nu cotă. Logul scria corect `quotaLikely:false`,
+            // dar mesajul afirma „plină" — adică exact un mesaj neadevărat, în
+            // clasa pe care Faza 1 o repară. (Auditorul de dovezi.)
+            "Nu am putut păstra originalul: memoria browserului e plină sau blocată. Exportă documentul (Fișier → Export) ÎNAINTE de a traduce — altfel varianta curentă s-ar pierde la reîncărcare. (cod E-EDIT-003)",
           );
           return;
         }
