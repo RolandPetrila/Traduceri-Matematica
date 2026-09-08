@@ -10,7 +10,7 @@ import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
 import { readJson } from "@/lib/json-response";
-import { reportFailure } from "@/lib/failure";
+import { reportFailure, UserFacingError } from "@/lib/failure";
 
 /**
  * Chat AI matematică (2026-08-04, mock §17 aprobat) — înlocuiește Asistentul.
@@ -198,7 +198,10 @@ export function ChatPanel({
         method: "POST",
         body: fd,
       });
-      if (res.status === 413) throw new Error("Poza e prea mare.");
+      if (res.status === 413)
+        throw new UserFacingError(
+          "Poza e prea mare. Fă-o din nou la rezoluție mai mică sau decupează doar exercițiul.",
+        );
       if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
       const data = await readJson<{ structured_pages?: OcrPageLite[] }>(
         res,

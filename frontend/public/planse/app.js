@@ -360,6 +360,7 @@
         (items.length === 1 ? "" : "uri") +
         " · seed bază " +
         base;
+      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, nr, items.length);
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }
@@ -614,6 +615,7 @@
         (items.length === 1 ? "" : "ri") +
         " · seed bază " +
         base;
+      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, nr, items.length);
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }
@@ -846,6 +848,7 @@
         (items.length === 1 ? "" : "e") +
         " · seed bază " +
         base;
+      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, nr, items.length);
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }
@@ -1081,6 +1084,7 @@
           : "") +
         " · seed bază " +
         base;
+      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, nr, items.length);
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }
@@ -1314,6 +1318,7 @@
         (items.length === 1 ? "" : "ri") +
         " · seed bază " +
         base;
+      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, nr, items.length);
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }
@@ -1548,6 +1553,7 @@
         (items.length === 1 ? "ă" : "e") +
         " · seed bază " +
         base;
+      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, nr, items.length);
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }

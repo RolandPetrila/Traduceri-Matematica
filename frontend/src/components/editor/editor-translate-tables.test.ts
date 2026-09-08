@@ -14,13 +14,13 @@
 import { extractTranslatable, rebuildTranslated } from "./editor-translate";
 import type { JSONContent } from "@tiptap/core";
 
-const celula = (text: string): JSONContent => ({
+const cell = (text: string): JSONContent => ({
   type: "tableCell",
   attrs: { colspan: 1, rowspan: 1 },
   content: [{ type: "paragraph", content: [{ type: "text", text }] }],
 });
 
-const DOC_CU_TABEL: JSONContent = {
+const DOC_WITH_TABLE: JSONContent = {
   type: "doc",
   content: [
     {
@@ -32,12 +32,12 @@ const DOC_CU_TABEL: JSONContent = {
       content: [
         {
           type: "tableRow",
-          content: [celula("Unghiul"), celula("Măsura")],
+          content: [cell("Unghiul"), cell("Măsura")],
         },
         {
           type: "tableRow",
           content: [
-            celula("Ascuțit"),
+            cell("Ascuțit"),
             {
               type: "tableCell",
               attrs: { colspan: 1, rowspan: 1 },
@@ -60,7 +60,7 @@ const DOC_CU_TABEL: JSONContent = {
 
 describe("traducerea tabelelor (decizia 2a)", () => {
   const { sections, skeleton, mathInlineType } =
-    extractTranslatable(DOC_CU_TABEL);
+    extractTranslatable(DOC_WITH_TABLE);
 
   it("textul din celule INTRĂ efectiv la traducere", () => {
     expect(sections).toContain("Unghiul");
@@ -73,12 +73,12 @@ describe("traducerea tabelelor (decizia 2a)", () => {
   });
 
   it("formula dintr-o celulă pleacă protejată ca `$latex$`, nu ca text liber", () => {
-    const cuFormula = sections.find((s) => s.includes("$"));
-    expect(cuFormula).toBe("mai mic de $90^\\circ$");
+    const withFormula = sections.find((s) => s.includes("$"));
+    expect(withFormula).toBe("mai mic de $90^\\circ$");
   });
 
   it("reconstrucția păstrează STRUCTURA tabelului (R-LAYOUT)", () => {
-    const traduse = sections.map((s) =>
+    const translated = sections.map((s) =>
       s === "Unghiul"
         ? "Uhol"
         : s === "Măsura"
@@ -89,21 +89,21 @@ describe("traducerea tabelelor (decizia 2a)", () => {
               ? "Tabuľka hodnôt"
               : s.replace("mai mic de", "menej ako"),
     );
-    const rezultat = rebuildTranslated(skeleton, traduse, mathInlineType);
+    const result = rebuildTranslated(skeleton, translated, mathInlineType);
 
-    const tabel = rezultat.content!.find((n) => n.type === "table")!;
-    expect(tabel).toBeDefined();
-    expect(tabel.content).toHaveLength(2); // două rânduri
-    expect(tabel.content![0].content).toHaveLength(2); // două celule
-    expect(tabel.content![0].content![0].type).toBe("tableCell");
-    expect(tabel.content![0].content![0].attrs).toEqual({
+    const table = result.content!.find((n) => n.type === "table")!;
+    expect(table).toBeDefined();
+    expect(table.content).toHaveLength(2); // două rânduri
+    expect(table.content![0].content).toHaveLength(2); // două celule
+    expect(table.content![0].content![0].type).toBe("tableCell");
+    expect(table.content![0].content![0].attrs).toEqual({
       colspan: 1,
       rowspan: 1,
     });
   });
 
   it("textul tradus ajunge ÎN celule, iar formula rămâne intactă (R-MATH)", () => {
-    const traduse = sections.map((s) =>
+    const translated = sections.map((s) =>
       s === "Unghiul"
         ? "Uhol"
         : s === "Măsura"
@@ -114,13 +114,13 @@ describe("traducerea tabelelor (decizia 2a)", () => {
               ? "Tabuľka hodnôt"
               : s.replace("mai mic de", "menej ako"),
     );
-    const rezultat = rebuildTranslated(skeleton, traduse, mathInlineType);
-    const serializat = JSON.stringify(rezultat);
+    const result = rebuildTranslated(skeleton, translated, mathInlineType);
+    const serialized = JSON.stringify(result);
 
-    expect(serializat).toContain("Uhol");
-    expect(serializat).toContain("Ostrý");
+    expect(serialized).toContain("Uhol");
+    expect(serialized).toContain("Ostrý");
     // Formula NU se traduce și nu se transformă în text.
-    expect(serializat).toContain('"latex":"90^\\\\circ"');
-    expect(serializat).not.toContain("$90");
+    expect(serialized).toContain('"latex":"90^\\\\circ"');
+    expect(serialized).not.toContain("$90");
   });
 });

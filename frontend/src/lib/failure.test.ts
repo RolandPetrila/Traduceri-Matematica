@@ -17,6 +17,7 @@ import {
   toSample,
   SAMPLE_MAX,
   __resetFailureDedup,
+  UserFacingError,
 } from "./failure";
 
 jest.mock("./monitoring", () => {
@@ -304,5 +305,60 @@ describe("anti-dublura — suprima zgomotul, NU click-urile reale", () => {
 describe("classifyFailure — folosit pt a alege codul corect", () => {
   it("fara apel de retea cazut, o eroare de cod ramane 'logic'", () => {
     expect(classifyFailure(new Error("bug intern"))).toBe("logic");
+  });
+});
+
+describe("UserFacingError — palnia nu mai distruge sfatul bun", () => {
+  beforeEach(() => {
+    __resetFailureDedup();
+    __resetApiFailureTrace();
+    jest.clearAllMocks();
+  });
+
+  it("pastreaza sfatul scris de programator in loc de mesajul derivat din mecanism", () => {
+    // Regresia reala: "OCR-ul nu a putut citi lucrarea... Incearca alta poza."
+    // devenea "Operatia a esuat in aplicatie, inainte de a trimite ceva la
+    // server" — fals (cererea plecase si reusise) si fara sfatul util.
+    const r = reportFailure({
+      code: "E-TEST-003",
+      flow: "teste.correct.ocr",
+      error: new UserFacingError(
+        "Nu am putut citi lucrarea. Incearca alta poza.",
+      ),
+    });
+    expect(r.userMessage).toContain("Incearca alta poza");
+    expect(r.userMessage).not.toContain("problemă de internet");
+    expect(r.userMessage).toContain("E-TEST-003"); // codul ramane vizibil (1b)
+  });
+
+  it("`userHint` de la locul apelului bate sfatul purtat de eroare", () => {
+    const r = reportFailure({
+      code: "E-TEST-003",
+      flow: "x",
+      error: new UserFacingError("sfat din eroare"),
+      userHint: "sfat de la locul apelului",
+    });
+    expect(r.userMessage).toContain("sfat de la locul apelului");
+  });
+
+  it("o eroare OBISNUITA foloseste in continuare mesajul derivat din mecanism", () => {
+    // Garda inversa: mecanismul de la Faza 1 nu are voie sa fie ocolit accidental
+    // pentru esecuri neprevazute, unde mesajul brut n-ar spune nimic omului.
+    const r = reportFailure({
+      code: "E-TRANS-005",
+      flow: "editor.translate",
+      error: new Error("Cannot read properties of undefined"),
+    });
+    expect(r.userMessage).not.toContain("Cannot read properties");
+    expect(r.kind).toBe("logic");
+  });
+
+  it("esecul ajunge in jurnal la nivel `error`, nu se pierde pentru ca are mesaj frumos", () => {
+    reportFailure({
+      code: "E-CHAT-002",
+      flow: "chat.ocr",
+      error: new UserFacingError("Poza e prea mare."),
+    });
+    expect(logError).toHaveBeenCalledTimes(1);
   });
 });

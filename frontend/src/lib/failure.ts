@@ -67,6 +67,38 @@ export interface FailureReport {
   traceId?: string;
 }
 
+/**
+ * Eroare aruncată DELIBERAT, al cărei mesaj e deja scris pentru utilizator.
+ *
+ * DE CE EXISTĂ (găsit de auditorul de cerințe, 08.09.2026): pâlnia deriva mesajul
+ * din MECANISM (`kind`), ceea ce e corect pentru eșecuri neprevăzute — dar
+ * DISTRUGEA sfatul bun acolo unde programatorul îl scrisese deja. Exemple reale:
+ *
+ *   throw new Error("OCR-ul nu a putut citi lucrarea… Încearcă altă poză.")
+ *     → kind="logic" → pe ecran: „Operația a eșuat în aplicație, înainte de a
+ *       trimite ceva la server" — FALS (cererea plecase și reușise), iar sfatul
+ *       real dispărea.
+ *
+ *   throw new Error("Poza e prea mare.")   // după un 413
+ *     → kind="http" → „Serverul a răspuns cu eroare. Încearcă din nou peste
+ *       câteva momente." — sfat GREȘIT: aceeași poză va eșua la fel; ea are
+ *       nevoie de o rezoluție mai mică.
+ *
+ * Aceeași clasă de defect care a pornit tot programul („Verifică internetul"),
+ * reapărută cu un nivel mai jos. Aruncă `UserFacingError` ori de câte ori știi
+ * deja ce are utilizatorul de făcut; pâlnia îi păstrează mesajul intact.
+ */
+export class UserFacingError extends Error {
+  /** Ce are utilizatorul de făcut, în cuvinte care îi folosesc. */
+  readonly advice: string;
+
+  constructor(advice: string) {
+    super(advice);
+    this.name = "UserFacingError";
+    this.advice = advice;
+  }
+}
+
 /** Lungimea maximă a fragmentului salvat în log (1c). */
 export const SAMPLE_MAX = 180;
 
@@ -266,7 +298,11 @@ export function reportFailure(o: FailureOptions): FailureReport {
     /* fail-open: diagnosticul nu are voie să rupă fluxul */
   }
 
-  const base = o.userHint || messageFor(kind);
+  // Ordinea contează: `userHint` (decis la locul apelului) bate orice; apoi sfatul
+  // purtat de eroarea însăși; abia la urmă mesajul derivat din mecanism.
+  const base =
+    o.userHint ||
+    (o.error instanceof UserFacingError ? o.error.advice : messageFor(kind));
   return {
     code: o.code,
     kind,

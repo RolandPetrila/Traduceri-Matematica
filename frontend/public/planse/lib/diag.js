@@ -106,5 +106,27 @@
     }
   }
 
-  window.PlanseDiag = { fail: fail };
+  /**
+   * Lot incomplet — SPUNE-I UTILIZATORULUI, nu doar jurnalului.
+   *
+   * Găsit de auditorul de cerințe (08.09.2026): `fail()` scria corect în jurnal,
+   * dar pe ecran rămânea „3 labirinturi · seed bază X". Cristina cerea 5 fișe,
+   * primea 3 și NU afla niciodată că ceva a eșuat. Mențiunea lui Roland cere ca
+   * la orice eroare să i se scrie clar, acolo, ce s-a întâmplat și ce are de făcut.
+   *
+   * @param {HTMLElement} metaEl elementul în care se scrie rezumatul
+   * @param {number} cerute     câte fișe a cerut
+   * @param {number} obtinute   câte au ieșit
+   */
+  function notaLot(metaEl, cerute, obtinute) {
+    if (!metaEl || obtinute >= cerute) return;
+    metaEl.textContent +=
+      " · ⚠ doar " +
+      obtinute +
+      " din " +
+      cerute +
+      " — restul nu au putut fi generate. Mai apasă o dată pentru altele noi.";
+  }
+
+  window.PlanseDiag = { fail: fail, notaLot: notaLot };
 })();

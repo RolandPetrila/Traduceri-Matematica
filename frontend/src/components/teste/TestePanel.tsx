@@ -13,7 +13,7 @@ import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
 import { readJson } from "@/lib/json-response";
-import { reportFailure } from "@/lib/failure";
+import { reportFailure, UserFacingError } from "@/lib/failure";
 import {
   CLASSES,
   DIFFICULTIES,
@@ -513,7 +513,10 @@ function CorrectTab({
         method: "POST",
         body: fd,
       });
-      if (res.status === 413) throw new Error("Poza e prea mare.");
+      if (res.status === 413)
+        throw new UserFacingError(
+          "Poza e prea mare. Fă-o din nou la rezoluție mai mică sau decupează doar lucrarea — reîncercarea aceleiași poze va eșua la fel.",
+        );
       if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
       const data = await readJson<{
         structured_pages?: { title?: string; sections?: OcrSectionLite[] }[];
@@ -526,7 +529,10 @@ function CorrectTab({
         )
         .join("\n\n")
         .trim();
-      if (!text) throw new Error("N-am putut extrage text din imagine.");
+      if (!text)
+        throw new UserFacingError(
+          "N-am găsit text în imagine. Verifică dacă poza e dreaptă și bine luminată, apoi încearcă din nou.",
+        );
       // Bug#3 (audit 2026-09-07): o pagină OCR eșuată produce un marcaj ne-gol
       // ("[Eroare OCR pagina N: …]" / "[Pagina N: OCR eșuat]") care trecea garda de
       // „text gol" și ajungea la AI ca lucrarea elevului → notă FABRICATĂ pe o eroare.
@@ -535,8 +541,8 @@ function CorrectTab({
         .replace(/\[\s*(Eroare OCR pagina|Pagina)\b[^\]]*\]/gi, "")
         .trim();
       if (!cleaned) {
-        throw new Error(
-          "OCR-ul nu a putut citi lucrarea (poză neclară / prea întunecată?). Încearcă altă poză.",
+        throw new UserFacingError(
+          "Nu am putut citi lucrarea (poză neclară sau prea întunecată?). Încearcă altă poză — nu e o problemă de conexiune.",
         );
       }
       await correctText(cleaned);
