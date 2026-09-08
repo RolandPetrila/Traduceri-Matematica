@@ -11,7 +11,7 @@
 > **Distincția pe care o cer auditorii:** „exersat live" ≠ „verificat în cod și în pachetul livrat".
 > A doua e reală și utilă, dar NU e dovadă live. Fiecare rând spune care dintre ele e.
 
-**Ultima actualizare:** 08.09.2026, 09:4x · **Producție:** frontend **v65** · **Fază activă:** FAZA 2
+**Ultima actualizare:** 08.09.2026, 10:2x · **Producție:** frontend **v66** · **Fază activă:** FAZA 2
 
 ---
 
@@ -129,6 +129,30 @@ polomeru."** Corectura ajunge în traducere. Captură: `docs/dovezi/dovada_cache
   `QuotaExceededError` se raportează `E-EDIT-003` și originalul **nu** se salvează — exact
   documentele care contează cel mai mult sunt cele unde fixul poate să nu țină. Ce ar închide:
   import fișă cu figuri din `Teste_Input` → traducere → reload → RO, fără `E-EDIT-003`. **Faza 4.**
+
+---
+
+## 🔴 O regresie introdusă de MINE, livrată în producție — și ce am schimbat ca să nu se repete
+
+Scriptul cu care am inserat nota de lot incomplet în Planșe a folosit variabila `nr` în toate cele
+6 generatoare. `nr` există **doar** în labirint; celelalte cinci folosesc `np`. Rezultat:
+`ReferenceError` în 5 din 6, **live pe producție de la v63**. Excepția se arunca înainte de
+`actions.style.display = "flex"`, deci planșele apăreau pe ecran dar bara cu „Print / PDF" și
+„Adaugă în coș" rămânea ascunsă — inutilizabile.
+
+**Poarta a rămas verde peste tot.** `tsc` nu vede `public/**`, `jest` nu îl vedea, iar
+`eslint.config.mjs` îl ignoră explicit. Patru comenzi verzi peste un modul rupt.
+
+|     | Ce am făcut                                                                                                                                                                                                                        |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | `np` la cele 5 linii; labirintul rămâne `nr`. Verificat pe producție: 1 `nr` + 5 `np`                                                                                                                                              |
+| 🟢  | **Poarta vede acum Planșe**: `planse-smoke.test.ts` încarcă modulul în jsdom și apasă „Generează" pe toate cele 6 generatoare (7 teste). **Control negativ rulat:** cu bug-ul reintrodus, testul pică exact pe generatorul stricat |
+| 🟢  | Dovadă live pe v66, generator „Căutare" (unul dintre cele rupte): „2 careuri · seed bază 3814030881", butoanele vizibile. `docs/dovezi/dovada_planse_reparat_v66.jpg`                                                              |
+| 🟢  | `notaLot`: avertismentul se scria în `meta`, care e **înăuntrul** barei ascunse — deci în cazul cel mai grav (0 din 5) era invizibil. Acum scrie și în afara barei, și se șterge când lotul e complet                              |
+
+**Lecția, mai importantă decât bug-ul:** o poartă verde nu înseamnă nimic pentru codul pe care
+poarta nu-l vede. Auditorul de regresie a prins-o rulând el însuși generatoarele — exact ce nu
+făcea niciun pas automat.
 
 ---
 

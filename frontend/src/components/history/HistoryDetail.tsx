@@ -7,6 +7,7 @@ import { logAction } from "@/lib/monitoring";
 import { reportFailure, UserFacingError } from "@/lib/failure";
 import { API_URL } from "@/lib/api-url";
 import { readJson } from "@/lib/json-response";
+import { stripVercelFraming } from "@/lib/binary-framing";
 
 interface HistoryDetailProps {
   entry: HistoryEntry;
@@ -44,7 +45,11 @@ async function downloadAsDocx(html: string, filename: string) {
     if (message) throw new UserFacingError(message);
     throw new Error(`Eroare server: ${res.status}`);
   }
-  const blob = await res.blob();
+  // Aceeași curățare ca la Convertor (R9): la cold start, runtime-ul Vercel Python
+  // scurge framing ÎNAINTEA octeților fișierului, iar DOCX-ul descărcat iese corupt.
+  // Istoricul o făcea fără curățare — același bug, un singur modul acoperit
+  // (semnalat de auditorul de dovezi).
+  const blob = await stripVercelFraming(await res.blob(), "docx");
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

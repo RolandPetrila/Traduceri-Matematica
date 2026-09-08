@@ -24,7 +24,11 @@ import {
 } from "react";
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
-import { translateEditorDoc, extractTranslatable } from "./editor-translate";
+import {
+  translateEditorDoc,
+  extractTranslatable,
+  hasTranslatableText,
+} from "./editor-translate";
 import { trackEditor, docShape } from "./editor-telemetry";
 import { classifyFailure, reportFailure } from "@/lib/failure";
 import {
@@ -180,7 +184,19 @@ export function EditorTranslateProvider({
       // a pune originalul la adăpost. Din secunda următoare, autosalvarea va scrie
       // peste el varianta tradusă. Aici se pierdea munca Cristinei.
       if (displayLang === sourceLang) {
-        saveSourceSnapshot(sourceLang, currentView);
+        const pastrat = saveSourceSnapshot(sourceLang, currentView);
+        if (!pastrat) {
+          // Memoria browserului e plină. Dacă am comuta totuși, originalul s-ar
+          // pierde la următoarea reîncărcare — exact defectul pe care 2.A l-a
+          // reparat. Refuzăm comutarea și spunem de ce: mai bine o traducere
+          // neefectuată decât munca Cristinei distrusă în tăcere.
+          // (Cazul a fost testat de auditorul de dovezi: se scria E-EDIT-003 în
+          // jurnal, dar pe ecran rămânea „✓ salvat".)
+          setError(
+            "Nu am putut păstra originalul: memoria browserului e plină. Exportă documentul (Fișier → Export) ÎNAINTE de a traduce — altfel varianta curentă s-ar pierde la reîncărcare. (cod E-EDIT-003)",
+          );
+          return;
+        }
       }
 
       const sourceDoc = cacheRef.current.get(sourceLang) ?? editor.getJSON();
@@ -211,9 +227,9 @@ export function EditorTranslateProvider({
       // înainte, butonul se aprindea, limba se schimba și NU se afișa nimic —
       // Cristina rămânea convinsă că a tradus. Acum i se spune, iar limba NU se
       // schimbă, ca butonul să nu mintă. (Găsit de auditorul de cerințe.)
-      if (extractTranslatable(sourceDoc).sections.length === 0) {
+      if (!hasTranslatableText(extractTranslatable(sourceDoc).sections)) {
         setError(
-          "Nu am ce traduce: documentul nu conține text, doar figuri sau formule. Limba a rămas neschimbată.",
+          "Nu am ce traduce: documentul conține doar formule sau figuri, fără text. Limba a rămas neschimbată.",
         );
         return;
       }

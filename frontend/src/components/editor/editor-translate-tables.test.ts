@@ -11,7 +11,34 @@
  * că formulele din celule rămân neatinse (R-MATH).
  */
 
-import { extractTranslatable, rebuildTranslated } from "./editor-translate";
+import {
+  extractTranslatable,
+  rebuildTranslated,
+  hasTranslatableText,
+} from "./editor-translate";
+
+describe("hasTranslatableText — document doar cu formule", () => {
+  // Defect găsit LIVE de auditorul de dovezi: pe un document cu o singură formulă,
+  // apăsarea pe SK comuta limba în tăcere ȘI consuma cotă DeepL degeaba, fiindcă
+  // garda se uita la `sections.length`, iar `$x^2$` E o secțiune.
+  it("o formulă singură NU e text traductibil", () => {
+    expect(hasTranslatableText(["$x^2$"])).toBe(false);
+    expect(hasTranslatableText(["$90^\\circ$", "$\\frac{1}{2}$"])).toBe(false);
+  });
+
+  it("text real e recunoscut, inclusiv cu diacritice", () => {
+    expect(hasTranslatableText(["Unghiul drept"])).toBe(true);
+    expect(hasTranslatableText(["Măsura în grade"])).toBe(true);
+  });
+
+  it("text amestecat cu formule rămâne traductibil", () => {
+    expect(hasTranslatableText(["mai mic de $90^\\circ$"])).toBe(true);
+  });
+
+  it("cifre, punctuație și spații singure NU sunt text de tradus", () => {
+    expect(hasTranslatableText(["123", " — ", "", "  "])).toBe(false);
+  });
+});
 import type { JSONContent } from "@tiptap/core";
 
 const cell = (text: string): JSONContent => ({

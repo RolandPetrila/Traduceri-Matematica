@@ -38,12 +38,21 @@ export type SourceSnapshot = {
 /** Raportăm o singură dată per sesiune: cauza nu se schimbă între apeluri. */
 let reported = false;
 
-/** Salvează documentul-sursă. Fail-open: nu rupe editarea, dar nu tace. */
-export function saveSourceSnapshot(lang: string, doc: JSONContent): void {
-  if (typeof window === "undefined") return;
+/**
+ * Salvează documentul-sursă. **Întoarce `false` dacă NU a reușit.**
+ *
+ * Valoarea de retur nu e decorativă: la memorie plină, originalul nu se salvează,
+ * iar dacă apelantul comută oricum limba, munca se pierde exact ca înainte de
+ * reparația 2.A. Auditorul de dovezi a testat cazul (localStorage umplut la refuz)
+ * și a găsit că se scria `E-EDIT-003` în jurnal, dar pe ecran rămânea „✓ salvat"
+ * — utilizatorul n-avea niciun semnal. Apelantul TREBUIE să trateze `false`.
+ */
+export function saveSourceSnapshot(lang: string, doc: JSONContent): boolean {
+  if (typeof window === "undefined") return false;
   try {
     const payload: SourceSnapshot = { lang, doc, savedAt: Date.now() };
     localStorage.setItem(SOURCE_KEY, JSON.stringify(payload));
+    return true;
   } catch (e) {
     if (!reported) {
       reported = true;
@@ -58,6 +67,7 @@ export function saveSourceSnapshot(lang: string, doc: JSONContent): void {
         },
       });
     }
+    return false;
   }
 }
 

@@ -139,6 +139,26 @@ function walkExtract(
   };
 }
 
+/**
+ * Litere „reale" — latine cu diacritice, grecești, chirilice. Deliberat NU `\p{L}`:
+ * proiectul compilează pe target es5, unde escapările de proprietăți Unicode nu sunt
+ * disponibile.
+ */
+const LETTER_RE = /[A-Za-zÀ-ɏͰ-ӿ]/;
+
+/**
+ * Are documentul TEXT de tradus, sau doar formule și figuri?
+ *
+ * Nu e același lucru cu `sections.length > 0`. Un document care conține doar o
+ * formulă produce o secțiune — `$x^2$` — care arată traductibilă și nu e. Defect
+ * găsit live de auditorul de dovezi (2026-09): pe un document cu o singură formulă,
+ * apăsarea pe SK comuta limba în tăcere ȘI trimitea o cerere la DeepL, consumând
+ * cotă pentru nimic. Aici scoatem întâi matematica, apoi căutăm o literă.
+ */
+export function hasTranslatableText(sections: string[]): boolean {
+  return sections.some((s) => LETTER_RE.test(s.replace(/\$[^$]*\$/g, " ")));
+}
+
 /** Extrage secțiunile traductibile + scheletul cu placeholdere. */
 export function extractTranslatable(doc: JSONContent): ExtractResult {
   const sections: string[] = [];

@@ -35,7 +35,7 @@ describe("magazia documentului-sursă", () => {
   });
 
   it("salvează și recuperează originalul împreună cu limba lui", () => {
-    saveSourceSnapshot("ro", DOC_RO);
+    expect(saveSourceSnapshot("ro", DOC_RO)).toBe(true);
     const s = readSourceSnapshot();
     expect(s).not.toBeNull();
     expect(s!.lang).toBe("ro");
@@ -89,11 +89,16 @@ describe("magazia documentului-sursă", () => {
       e.name = "QuotaExceededError";
       throw e;
     };
+    let rezultat: boolean | undefined;
     try {
-      saveSourceSnapshot("ro", DOC_RO);
+      rezultat = saveSourceSnapshot("ro", DOC_RO);
     } finally {
       Storage.prototype.setItem = orig;
     }
+    // Valoarea de retur NU e decorativă: apelantul refuză comutarea de limbă pe
+    // baza ei. Fără `false`, originalul s-ar pierde exact ca înainte de 2.A, iar
+    // pe ecran ar scrie „✓ salvat" (defect testat de auditorul de dovezi).
+    expect(rezultat).toBe(false);
     expect(reportFailure).toHaveBeenCalledTimes(1);
     const arg = (reportFailure as jest.Mock).mock.calls[0][0];
     expect(arg.code).toBe("E-EDIT-003");
