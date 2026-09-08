@@ -82,6 +82,30 @@ proactiv:
 5. Nu inchide o eroare fara sa fi confirmat cauza reala si fixul empiric. Un log de eroare ignorat
    = regresie tacuta pt utilizatorul real (Cristina).
 
+## R-AUDIT-FAZA: Cei trei auditori ruleaza la finalul FIECAREI faze (OBLIGATORIU)
+
+Cerut de Roland, 08.09.2026 (mentiunea la 2a: „adauga agenti configurati care sa auditeze
+executiile de implementare la toate fazele"). Confirmat prin AskUserQuestion: toti trei.
+
+Inainte ca raportul unei faze sa ajunga la Roland, se ruleaza, prin Agent tool:
+
+1. **`auditor-dovezi`** — respinge orice item declarat gata fara dovada reala, verificabila.
+2. **`auditor-regresie`** — poarta completa (`tsc`/`jest`/`build`/`pytest`) + verifica sa nu se fi
+   stricat ce mergea (numar de teste, anti-drift, bump `CACHE_VERSION`, `git diff --stat`).
+3. **`auditor-cerinte`** — compara livrarea cu deciziile SI mentiunile scrise de Roland in
+   `99_Roland_Work/Fazele_mentiuni_Roland.md` + `docs/completari_pt_reparatie.md`.
+
+Definitiile lor: `.claude/agents/*.md`. Reguli de aplicare:
+
+- Se ruleaza pe faza INCHEIATA, nu pe cea in curs; se pot rula in paralel (sunt read-only).
+- Verdictele lor intra IN raportul catre Roland, inclusiv cele negative. Un `NEDOVEDIT` nu se
+  sterge si nu se rotunjeste — se trece in raport ca atare.
+- Un item ramane 🟡 in `docs/Plan_in_Lucru.md` daca `auditor-dovezi` nu l-a confirmat.
+- Auditorii NU repara nimic. Reparatia se decide cu Roland.
+
+Motivul: auditul din 2026-09-07 a declarat „toate butoanele executa comanda reala"; Roland a apasat
+SK si a primit eroare in 10 secunde. Un auditor independent, care cere dovada, ar fi prins-o.
+
 ## R-HANDOFF: Context transferabil intre sesiuni (OBLIGATORIU)
 
 Scopul: orice sesiune noua sa reia munca la ~100% context, fara pierdere, ca si cum ar continua.

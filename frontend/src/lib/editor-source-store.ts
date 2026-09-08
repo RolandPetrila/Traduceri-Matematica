@@ -36,7 +36,7 @@ export type SourceSnapshot = {
 };
 
 /** Raportăm o singură dată per sesiune: cauza nu se schimbă între apeluri. */
-let raportat = false;
+let reported = false;
 
 /** Salvează documentul-sursă. Fail-open: nu rupe editarea, dar nu tace. */
 export function saveSourceSnapshot(lang: string, doc: JSONContent): void {
@@ -45,8 +45,8 @@ export function saveSourceSnapshot(lang: string, doc: JSONContent): void {
     const payload: SourceSnapshot = { lang, doc, savedAt: Date.now() };
     localStorage.setItem(SOURCE_KEY, JSON.stringify(payload));
   } catch (e) {
-    if (!raportat) {
-      raportat = true;
+    if (!reported) {
+      reported = true;
       reportFailure({
         code: "E-EDIT-003",
         flow: "editor.source.persist",
@@ -54,7 +54,7 @@ export function saveSourceSnapshot(lang: string, doc: JSONContent): void {
         context: {
           lang,
           quotaLikely: (e as Error)?.name === "QuotaExceededError",
-          scop: "salvarea originalului pentru a nu-l pierde la reload",
+          purpose: "persist source doc so the original survives a reload",
         },
       });
     }

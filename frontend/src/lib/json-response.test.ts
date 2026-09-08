@@ -57,8 +57,8 @@ describe("readJson — corp deteriorat de framing-ul Vercel", () => {
     const arg = (reportFailure as jest.Mock).mock.calls[0][0];
     expect(arg.code).toBe("E-NET-003");
     expect(arg.severity).toBe("warn");
-    expect(arg.context.recuperat).toBe(true);
-    expect(arg.context.octetiTaiati).toBeGreaterThan(0);
+    expect(arg.context.recovered).toBe(true);
+    expect(arg.context.trimmedBytes).toBeGreaterThan(0);
   });
 
   it("recuperează și când framing-ul precedă un ARRAY, nu un obiect", async () => {

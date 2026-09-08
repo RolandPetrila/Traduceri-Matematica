@@ -175,6 +175,32 @@ def translate_with_azure(text: str, source_lang: str, target_lang: str, dict_ter
     raise last_err or RuntimeError("Azure translation failed (all keys)")
 
 
+# NLLB language codes. `de` was MISSING here until 2026-09-08: a German request fell
+# through to a "slk_Latn" default and came back in SLOVAK, status 200, no error
+# anywhere — a confident wrong answer, the worst kind of failure. Found by the
+# requirements auditor while checking Roland's decision 2c (SK + EN + DE).
+NLLB_LANG_MAP = {
+    "ro": "ron_Latn",
+    "sk": "slk_Latn",
+    "en": "eng_Latn",
+    "de": "deu_Latn",
+}
+
+
+def nllb_codes(source_lang: str, target_lang: str) -> tuple[str, str]:
+    """Map a language pair to NLLB codes. NO silent defaults.
+
+    An unsupported language must raise, so the provider chain falls through to the
+    next translator instead of returning fluent text in the wrong language.
+    """
+    if source_lang not in NLLB_LANG_MAP or target_lang not in NLLB_LANG_MAP:
+        raise RuntimeError(
+            f"NLLB: unsupported language pair {source_lang}->{target_lang} "
+            f"(supported: {', '.join(sorted(NLLB_LANG_MAP))})"
+        )
+    return NLLB_LANG_MAP[source_lang], NLLB_LANG_MAP[target_lang]
+
+
 def translate_with_nllb(text: str, source_lang: str, target_lang: str, dict_terms: list[dict] | None = None) -> str:
     """G3 — Translate using NLLB-200 via HuggingFace Inference API.
 
@@ -185,10 +211,7 @@ def translate_with_nllb(text: str, source_lang: str, target_lang: str, dict_term
     if not hf_token:
         raise RuntimeError("HF_TOKEN not set — NLLB translation unavailable")
 
-    # NLLB language codes
-    lang_map = {"ro": "ron_Latn", "sk": "slk_Latn", "en": "eng_Latn"}
-    src_code = lang_map.get(source_lang, "ron_Latn")
-    tgt_code = lang_map.get(target_lang, "slk_Latn")
+    src_code, tgt_code = nllb_codes(source_lang, target_lang)
 
     print(f"[TRANSLATE] NLLB HF: {source_lang}({src_code}) -> {target_lang}({tgt_code}), {len(text)} chars", file=sys.stderr)
 

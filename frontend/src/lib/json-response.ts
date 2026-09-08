@@ -54,10 +54,10 @@ export async function readJson<T>(res: Response, flow: string): Promise<T> {
           error: first,
           severity: "warn",
           context: {
-            recuperat: true,
-            octetiTaiati: start,
+            recovered: true,
+            trimmedBytes: start,
             status: res.status,
-            corpLen: text.length,
+            bodyLen: text.length,
           },
           sample: text.slice(0, JUNK_SAMPLE),
         });
@@ -69,9 +69,9 @@ export async function readJson<T>(res: Response, flow: string): Promise<T> {
 
     // Corp nerecuperabil. Mesajul poartă un fragment REAL din ce a venit, ca
     // rândul de log să spună ce s-a primit, nu doar că „a eșuat".
-    const bucata = text.slice(0, JUNK_SAMPLE).replace(/\s+/g, " ").trim();
+    const snippet = text.slice(0, JUNK_SAMPLE).replace(/\s+/g, " ").trim();
     throw new SyntaxError(
-      `Raspuns JSON deteriorat (status ${res.status}, ${text.length} octeti): ${bucata || "corp gol"}`,
+      `Raspuns JSON deteriorat (status ${res.status}, ${text.length} octeti): ${snippet || "corp gol"}`,
     );
   }
 }
