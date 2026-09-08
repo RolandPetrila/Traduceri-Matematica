@@ -101,7 +101,9 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
   const savedLabel = saveFailed
     ? "⚠ NU se mai salvează — exportă documentul acum"
     : lastSavedAt != null
-      ? `✓ salvat ${new Date(lastSavedAt).toLocaleTimeString("ro-RO", {
+      ? // Fără „✓" în text: pictograma <Check> de alături îl desena deja o dată,
+        // ieșea „✓ ✓ salvat" (semnalat de auditorul de dovezi).
+        `salvat ${new Date(lastSavedAt).toLocaleTimeString("ro-RO", {
           hour: "2-digit",
           minute: "2-digit",
         })}`

@@ -40,13 +40,13 @@
 
 ## ✅ FAZA 1 — Repară orbirea diagnostică `ÎNCHISĂ`
 
-|     | Item                                                                 | Dovadă                                                            |
-| --- | -------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| 🟡  | Pâlnie unică de eșec (`lib/failure.ts`), **26 de fluxuri** distincte | _verificat în cod și prin teste, nu exersat live pe fiecare flux_ |
-| 🟢  | 12 coduri noi (catalog 17→30), oglindă anti-drift                    | `config/error_codes.json` ↔ `error-catalog.ts`                    |
-| 🟢  | Grupare pe cod în `/diagnostics`                                     | `docs/dovada_faza1_grupare_incidente.jpg`                         |
-| 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)                            | `docs/dovada_faza1_mesaj_onest.jpg`                               |
-| 🟢  | Erată: 3 „fapte verificate" false, corectate                         | `docs/Erata_dovezi_2026-09-08.md`                                 |
+|     | Item                                                                                                 | Dovadă                                                            |
+| --- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 🟡  | Pâlnie unică de eșec (`lib/failure.ts`), **23 de fluxuri distincte** (26 de apeluri `reportFailure`) | _verificat în cod și prin teste, nu exersat live pe fiecare flux_ |
+| 🟢  | 12 coduri noi la Faza 1 (catalog **17→29**; al 30-lea, E-NET-003, e din Faza 2), oglindă anti-drift  | `config/error_codes.json` ↔ `error-catalog.ts`                    |
+| 🟢  | Grupare pe cod în `/diagnostics`                                                                     | `docs/dovada_faza1_grupare_incidente.jpg`                         |
+| 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)                                                            | `docs/dovada_faza1_mesaj_onest.jpg`                               |
+| 🟢  | Erată: 3 „fapte verificate" false, corectate                                                         | `docs/Erata_dovezi_2026-09-08.md`                                 |
 
 ---
 
@@ -151,14 +151,14 @@ rămâne în urmă minte la fel de rău ca documentația veche.
 
 ## 🟢 FAZA 2.5 — Cei trei agenți de audit
 
-|     | Item                                         | Dovadă                                                                                                                                                                                                                                                       |
-| --- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 🟢  | `auditor-dovezi`                             | Trei rulări. A prins că dovada lui 2.D nu susținea afirmația, a găsit defectul de cache, l-a **infirmat** a doua oară după reload, apoi a găsit încă trei defecte live                                                                                       |
-| 🟢  | `auditor-regresie`                           | A rulat jest pe commit-ul anterior vs. acum — creștere reală. A prins că agenții nu erau comiși, riscul de inundare a jurnalului, și **regresia mea din Planșe**, invizibilă pentru poartă                                                                   |
-| 🟢  | `auditor-cerinte`                            | A găsit bug-ul `de`→slovacă, cele două tăceri, mesajul fals pe căile care aruncă deliberat (în două runde), și Planșe fără mesaj la lot incomplet                                                                                                            |
-| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                                                                                                                      |
-| 🟢  | **Golul de unelte, reparat**                 | Prima versiune le dădea `tools: Read, Grep, Glob, Bash` — adică `auditor-dovezi`, agentul creat ca să impună regula dovezii live în browser, **nu putea deschide un browser**. Găsit de el însuși, la a patra rulare. Acum moștenesc toate uneltele sesiunii |
-| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; aici au rulat cu instrucțiunile injectate. **Condiția nu a fost încă testată** — nu „testată și picată". De confirmat la prima sesiune nouă                                                                     |
+|     | Item                                         | Dovadă                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | `auditor-dovezi`                             | Trei rulări. A prins că dovada lui 2.D nu susținea afirmația, a găsit defectul de cache, l-a **infirmat** a doua oară după reload, apoi a găsit încă trei defecte live                                                                                                                                                                                                                                           |
+| 🟢  | `auditor-regresie`                           | A rulat jest pe commit-ul anterior vs. acum — creștere reală. A prins că agenții nu erau comiși, riscul de inundare a jurnalului, și **regresia mea din Planșe**, invizibilă pentru poartă                                                                                                                                                                                                                       |
+| 🟢  | `auditor-cerinte`                            | A găsit bug-ul `de`→slovacă, cele două tăceri, mesajul fals pe căile care aruncă deliberat (în două runde), și Planșe fără mesaj la lot incomplet                                                                                                                                                                                                                                                                |
+| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                                                                                                                                                                                                                                                                          |
+| 🟢  | **Golul de unelte, reparat**                 | Prima versiune le dădea `tools: Read, Grep, Glob, Bash` — adică `auditor-dovezi`, agentul creat ca să impună regula dovezii live în browser, **nu putea deschide un browser**. Găsit de el însuși, la a patra rulare. `auditor-dovezi` și `auditor-cerinte` moștenesc acum toate uneltele sesiunii; `auditor-regresie` păstrează deliberat `Read/Grep/Glob/Bash` — nu are nevoie de browser (poartă + citit cod) |
+| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; aici au rulat cu instrucțiunile injectate. **Condiția nu a fost încă testată** — nu „testată și picată". De confirmat la prima sesiune nouă                                                                                                                                                                                                                         |
 
 ---
 

@@ -844,8 +844,7 @@
       renderPreview();
       meta.textContent =
         items.length +
-        " planșă" +
-        (items.length === 1 ? "" : "e") +
+        (items.length === 1 ? " planșă" : " planșe") +
         " · seed bază " +
         base;
       if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, np, items.length);
@@ -1077,8 +1076,7 @@
       renderPreview();
       meta.textContent =
         items.length +
-        " planșă" +
-        (items.length === 1 ? "" : "e") +
+        (items.length === 1 ? " planșă" : " planșe") +
         (items.length < np
           ? " (doar atâtea forme distincte la această dificultate)"
           : "") +
