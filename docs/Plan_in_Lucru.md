@@ -8,7 +8,7 @@
 > **O căsuță devine 🟢 DOAR** dacă execuția e făcută ȘI verificată live ȘI dovada e scrisă în
 > dreptul ei. Fără dovadă → rămâne 🟡. (Decizia 6a: „nimic gata fără dovadă live în browser".)
 
-**Ultima actualizare:** 08.09.2026, 05:0x · **Fază activă:** FAZA 2 — remediere după auditori
+**Ultima actualizare:** 08.09.2026, 09:0x · **Fază activă:** FAZA 2 — livrată pe v61, în validare finală la auditori
 
 ---
 
@@ -51,16 +51,16 @@ Decizii: **2a** suport complet, traduce și tabelele · **2b** buton „Încearc
 | 🟢  | **2.D — tabelele, pe SK + EN + DE**             | **Dovada inițială (test unitar) NU susținea afirmația** — nu atingea nicio limbă și niciun `tableHeader`. Dovada reală, live: tabel 3×3 inserat din bară, tradus în SK („Ostrý uhol"), DE („Spitzer Winkel"), EN („Acute angle"), structură intactă (1 tabel, 3 `th`, 6 `td`). Captură: `docs/dovezi/dovada_2D_tabel_tradus_EN.png`. Plus proba mea pe text: SK/EN/DE toate corecte |
 | 🟢  | **2.E — mesaje care spun ce are de făcut**      | Text exact pe ecran: _„Traducerea nu a ajuns la server. Așteaptă ~5 secunde și apasă «Încearcă din nou». (cod E-TRANS-001)"_ — cauză + acțiune + cod                                                                                                                                                                                                                                |
 | 🟢  | 2.F.1 — poartă completă                         | `tsc 0` · `jest 406/406` · `build OK` · `pytest 83/83`                                                                                                                                                                                                                                                                                                                              |
-| 🟡  | 2.F.2 — deploy + verificare live                | Frontend **v60** + backend livrate și verificate live (SK/EN/DE, 2.A). **Reparațiile de după auditori (cache învechit + ultimele 2 citiri JSON) NU sunt încă livrate** — se redeployează acum                                                                                                                                                                                       |
+| 🟢  | 2.F.2 — deploy + verificare live                | Frontend **v61** + backend livrate pe producție. Verificat live după fiecare livrare: SK/EN/DE corecte, 2.A dovedit de două ori, cache-ul învechit dovedit reparat                                                                                                                                                                                                                  |
 
 ### Remedieri născute din auditul fazei (toate în cod, poartă verde)
 
-|     | Ce                                                                                             | De unde a venit                                                                                                                                                                                                      |
-| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟡  | **Cache-ul nu mai servește o traducere învechită** (`lib/translation-cache-guard.ts`, 4 teste) | Defect găsit **live** de auditorul de dovezi: traduci SK → revii pe RO → corectezi → apeși SK ⇒ primeai versiunea de dinainte de corectură, tăcut. ⏳ dovadă live după redeploy                                      |
-| 🟢  | **Germana nu mai revine în slovacă** (`NLLB_LANG_MAP` + `nllb_codes()`, 8 teste)               | Auditorul de cerințe, verificând decizia 2c: `de` lipsea din hartă, iar `.get(target, "slk_Latn")` întorcea SLOVACĂ cu status 200. Acum limbile nesuportate **aruncă**, ca lanțul să cadă pe alt provider            |
-| 🟢  | **Două tăceri la apăsarea pe SK**                                                              | (1) document fără text traductibil: butonul se aprindea, zero mesaj → acum i se scrie și limba nu se schimbă; (2) eroarea veche + butonul de retry rămâneau lipite de o comutare care reușise → se golesc la intrare |
-| 🟢  | R-LANG: identificatori și chei de log în engleză                                               | `recovered`, `trimmedBytes`, `bodyLen`, `purpose`, `hint`, `currentView`, `displayed`, `validSource`                                                                                                                 |
+|     | Ce                                                                                             | De unde a venit                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | **Cache-ul nu mai servește o traducere învechită** (`lib/translation-cache-guard.ts`, 4 teste) | Defect găsit **live** de auditorul de dovezi: traduci SK → revii pe RO → corectezi → apeși SK ⇒ primeai versiunea de dinainte de corectură, tăcut. **Dovedit reparat live pe v61:** RO „Unghiul drept are noua zeci de grade." → SK → RO → adăugat „Bisectoarea trece prin varf." → SK ⇒ traducerea conține acum și corectura („Polpriamka prechádza vrcholom."). Captură: `docs/dovezi/dovada_cache_invechit_reparat.jpg` |
+| 🟢  | **Germana nu mai revine în slovacă** (`NLLB_LANG_MAP` + `nllb_codes()`, 8 teste)               | Auditorul de cerințe, verificând decizia 2c: `de` lipsea din hartă, iar `.get(target, "slk_Latn")` întorcea SLOVACĂ cu status 200. Acum limbile nesuportate **aruncă**, ca lanțul să cadă pe alt provider                                                                                                                                                                                                                  |
+| 🟢  | **Două tăceri la apăsarea pe SK**                                                              | (1) document fără text traductibil: butonul se aprindea, zero mesaj → acum i se scrie și limba nu se schimbă; (2) eroarea veche + butonul de retry rămâneau lipite de o comutare care reușise → se golesc la intrare                                                                                                                                                                                                       |
+| 🟢  | R-LANG: identificatori și chei de log în engleză                                               | `recovered`, `trimmedBytes`, `bodyLen`, `purpose`, `hint`, `currentView`, `displayed`, `validSource`                                                                                                                                                                                                                                                                                                                       |
 
 ### Limite declarate (NEDOVEDITE, nu ascunse)
 
@@ -110,10 +110,10 @@ Decizii: **4a** fișiere reale din `99_Roland_Work\Teste_Input` → rezultate î
 
 ## Riscuri deschise
 
-| Risc                                                                    | Stare                                           |
-| ----------------------------------------------------------------------- | ----------------------------------------------- |
-| Traducere + reload = originalul se pierde                               | 🟢 reparat, dovedit live de două ori            |
-| Eșec intermitent la traducere (cold start Vercel)                       | 🟢 reparat, prins pe bug-ul real în producție   |
-| Germana revenea în slovacă prin NLLB, tăcut                             | 🟢 reparat + 8 teste                            |
-| Cache pe limbă servea traducerea de dinainte de corectură               | 🟡 reparat în cod, ⏳ dovadă live după redeploy |
-| `QuotaExceededError` pe documente cu figuri → originalul nu se salvează | 🔴 deschis, netestat — intră în Faza 4          |
+| Risc                                                                    | Stare                                         |
+| ----------------------------------------------------------------------- | --------------------------------------------- |
+| Traducere + reload = originalul se pierde                               | 🟢 reparat, dovedit live de două ori          |
+| Eșec intermitent la traducere (cold start Vercel)                       | 🟢 reparat, prins pe bug-ul real în producție |
+| Germana revenea în slovacă prin NLLB, tăcut                             | 🟢 reparat + 8 teste                          |
+| Cache pe limbă servea traducerea de dinainte de corectură               | 🟢 reparat, dovedit live pe v61               |
+| `QuotaExceededError` pe documente cu figuri → originalul nu se salvează | 🔴 deschis, netestat — intră în Faza 4        |
