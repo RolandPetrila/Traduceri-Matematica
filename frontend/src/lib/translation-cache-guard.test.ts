@@ -46,6 +46,48 @@ describe("pruneStaleTranslations", () => {
     expect(c.size).toBe(1);
   });
 
+  it("DUPĂ RELOAD: traducerea restaurată se aruncă dacă sursa a fost corectată", () => {
+    // Regresia care a scăpat prima dată (confirmată LIVE pe v63 de auditorul de
+    // dovezi): după reload, provenienţa traducerii afișate era necunoscută
+    // (`builtFromKey = null`), guardul ieșea imediat, iar vederea tradusă intra în
+    // cache ca valabilă pentru orice sursă. Cristina traduce, închide, revine a
+    // doua zi, corectează o formulă, apasă SK ⇒ primea traducerea VECHE.
+    //
+    // Acum, la restaurare, `builtFromKey` = cheia instantaneului salvat în clipa
+    // plecării din limba-sursă. Deci corectura de a doua zi îl invalidează.
+    const sursaSalvata = doc("Unghiul drept");
+    const cheiaInstantaneu = JSON.stringify(sursaSalvata);
+
+    // starea de după reload: sursa din instantaneu + vederea SK restaurată
+    const c = new Map<string, ReturnType<typeof doc>>();
+    c.set("ro", sursaSalvata);
+    c.set("sk", doc("Pravý uhol"));
+
+    // Cristina corectează originalul, apoi apasă SK.
+    const sursaCorectata = JSON.stringify(doc("Unghiul drept are 90 de grade"));
+    const aruncate = pruneStaleTranslations(
+      c,
+      "ro",
+      sursaCorectata,
+      cheiaInstantaneu,
+    );
+
+    expect(aruncate).toBe(1);
+    expect(c.has("sk")).toBe(false); // se retraduce, cu corectură
+    expect(c.has("ro")).toBe(true);
+  });
+
+  it("DUPĂ RELOAD, fără corectură: traducerea restaurată rămâne (fără cotă DeepL irosită)", () => {
+    const sursaSalvata = doc("Unghiul drept");
+    const cheia = JSON.stringify(sursaSalvata);
+    const c = new Map<string, ReturnType<typeof doc>>();
+    c.set("ro", sursaSalvata);
+    c.set("sk", doc("Pravý uhol"));
+
+    expect(pruneStaleTranslations(c, "ro", cheia, cheia)).toBe(0);
+    expect(c.get("sk")).toEqual(doc("Pravý uhol"));
+  });
+
   it("editările făcute ÎN limba-țintă (R-EDIT) supraviețuiesc cât timp sursa nu se schimbă", () => {
     const c = cacheCu("Unghiul drept", "Pravý uhol — corectat de Cristina");
     const cheie = JSON.stringify(doc("Unghiul drept"));

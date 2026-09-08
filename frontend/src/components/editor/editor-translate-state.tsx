@@ -128,6 +128,19 @@ export function EditorTranslateProvider({
     if (snap && validSource) {
       cacheRef.current.set(validSource, snap.doc);
       setSourceLang(validSource);
+      // CRITIC (defect confirmat live pe v63 de auditorul de dovezi): fără linia
+      // asta, după reload `builtFromRef` rămânea `null`, `pruneStaleTranslations`
+      // ieșea imediat, iar vederea tradusă restaurată din autosalvare intra în
+      // cache ca și cum ar fi fost valabilă pentru orice sursă. Traseul realist al
+      // Cristinei — traduce, închide, revine a doua zi, corectează o formulă,
+      // apasă SK — îi servea traducerea VECHE, instant, fără corectură și fără
+      // niciun mesaj. Fixul din sesiune era real, dar se oprea la reload.
+      //
+      // Instantaneul a fost scris exact în clipa plecării din limba-sursă, deci
+      // traducerea afișată acum provine din el. Declarăm asta explicit: dacă
+      // sursa se schimbă, traducerile devin învechite și se retraduc; dacă nu se
+      // schimbă, rămân instant, fără să reconsume cota DeepL.
+      builtFromRef.current = JSON.stringify(snap.doc);
     } else {
       setSourceLang(displayed);
     }

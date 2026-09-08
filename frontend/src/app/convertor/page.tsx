@@ -228,7 +228,31 @@ export default function ConvertorPage() {
           const data = JSON.parse(raw);
           msg = data.error || data.detail || "";
         } catch {
-          /* corp non-JSON — folosim textul brut, tăiat */
+          // Ultima citire JSON de la API-ul Python care ocolea `readJson`
+          // (semnalată de auditorul de dovezi). Nu crapă — dar dacă framing-ul
+          // Vercel se scurge în corpul de EROARE, mesajul real al serverului se
+          // pierdea și rămânea doar statusul. Reluăm după primul `{`.
+          const start = raw.search(/[[{]/);
+          if (start > 0) {
+            try {
+              const data = JSON.parse(raw.slice(start));
+              msg = data.error || data.detail || "";
+              reportFailure({
+                code: "E-NET-003",
+                flow: "convertor.error",
+                error: new SyntaxError("framing inaintea corpului de eroare"),
+                severity: "warn",
+                context: {
+                  recovered: true,
+                  trimmedBytes: start,
+                  status: res.status,
+                },
+                sample: raw.slice(0, 160),
+              });
+            } catch {
+              /* nici după curățare — rămâne textul brut, tăiat */
+            }
+          }
         }
         throw new Error(
           msg || `Eroare conversie (${res.status}): ${raw.substring(0, 200)}`,
