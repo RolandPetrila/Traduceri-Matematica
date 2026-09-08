@@ -49,24 +49,58 @@ let reported = false;
  */
 export function saveSourceSnapshot(lang: string, doc: JSONContent): boolean {
   if (typeof window === "undefined") return false;
+  const payload = JSON.stringify({ lang, doc, savedAt: Date.now() });
   try {
-    const payload: SourceSnapshot = { lang, doc, savedAt: Date.now() };
-    localStorage.setItem(SOURCE_KEY, JSON.stringify(payload));
+    localStorage.setItem(SOURCE_KEY, payload);
     return true;
-  } catch (e) {
-    if (!reported) {
-      reported = true;
-      reportFailure({
-        code: "E-EDIT-003",
-        flow: "editor.source.persist",
-        error: e,
-        context: {
-          lang,
-          quotaLikely: (e as Error)?.name === "QuotaExceededError",
-          purpose: "persist source doc so the original survives a reload",
-        },
-      });
+  } catch {
+    // Cotă plină. Înainte de a ne declara învinși, eliberăm PROPRIA intrare veche
+    // — oricum urmează să o suprascriem — și reîncercăm o dată. `translation-cache`
+    // face de mult asta; magazia sursei doar eșua, lăsând utilizatorul blocat
+    // (semnalat de auditorul de regresie).
+    try {
+      localStorage.removeItem(SOURCE_KEY);
+      localStorage.setItem(SOURCE_KEY, payload);
+      return true;
+    } catch (e) {
+      return raporteazaEsecul(e, lang);
     }
+  }
+}
+
+/** Raportează o singură dată per sesiune și întoarce `false`. */
+function raporteazaEsecul(e: unknown, lang: string): boolean {
+  if (!reported) {
+    reported = true;
+    reportFailure({
+      code: "E-EDIT-003",
+      flow: "editor.source.persist",
+      error: e,
+      context: {
+        lang,
+        quotaLikely: (e as Error)?.name === "QuotaExceededError",
+        purpose: "persist source doc so the original survives a reload",
+      },
+    });
+  }
+  return false;
+}
+
+/**
+ * Originalul curent E DEJA la adăpost? (aceeași limbă ȘI același conținut)
+ *
+ * Contează exact în cazul „memorie plină": dacă instantaneul salvat mai devreme
+ * corespunde sursei de acum, o scriere eșuată nu schimbă nimic — protecția există.
+ * Fără verificarea asta, garda refuza comutarea și pe drumuri complet sigure, de
+ * exemplu spre o limbă deja tradusă, aflată în memorie (semnalat de auditorul de
+ * regresie).
+ */
+export function sourceSnapshotMatches(lang: string, doc: JSONContent): boolean {
+  const snap = readSourceSnapshot();
+  if (!snap || snap.lang !== lang) return false;
+  try {
+    return JSON.stringify(snap.doc) === JSON.stringify(doc);
+  } catch {
     return false;
   }
 }

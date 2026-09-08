@@ -70,6 +70,68 @@ function incarcaModulul(): Error[] {
   return erori;
 }
 
+describe("PlanseDiag.notaLot — avertismentul de lot incomplet", () => {
+  // Ramura asta NU e atinsă de testul de fum: acolo lotul iese complet, iar
+  // `notaLot` se întoarce imediat. Fixul livrat (mesaj și ÎN AFARA barei ascunse,
+  // plus ștergerea lui la lot complet) rămânea neexercitat de niciun test —
+  // semnalat de auditorul de regresie.
+  type Diag = {
+    notaLot: (el: HTMLElement, requested: number, produced: number) => void;
+  };
+
+  function pregatesteDom() {
+    document.body.innerHTML =
+      '<section id="gazda">' +
+      '  <div class="gen-actions" id="x-actions" style="display:none">' +
+      '    <span id="x-meta">3 careuri</span>' +
+      "  </div>" +
+      "</section>";
+    return {
+      meta: document.getElementById("x-meta")!,
+      gazda: document.getElementById("gazda")!,
+    };
+  }
+
+  let diag: Diag;
+  beforeAll(() => {
+    window.eval(fs.readFileSync(path.join(PLANSE, "lib/diag.js"), "utf8"));
+    diag = (window as unknown as { PlanseDiag: Diag }).PlanseDiag;
+  });
+
+  it("lot INCOMPLET: scrie și în afara barei ascunse — altfel la 0 din 5 mesajul e invizibil", () => {
+    const { meta, gazda } = pregatesteDom();
+    diag.notaLot(meta, 5, 0);
+
+    const avertisment = gazda.querySelector(".lot-incomplet");
+    expect(avertisment).toBeTruthy();
+    expect(avertisment!.textContent).toContain("0 din 5");
+    expect(avertisment!.getAttribute("role")).toBe("alert");
+    // În AFARA barei ascunse, ca să fie vizibil chiar dacă bara rămâne `display:none`.
+    expect(avertisment!.closest(".gen-actions")).toBeNull();
+  });
+
+  it("lot parțial: mesajul apare și în rezumatul din bară", () => {
+    const { meta } = pregatesteDom();
+    diag.notaLot(meta, 5, 3);
+    expect(meta.textContent).toContain("3 din 5");
+  });
+
+  it("lot COMPLET după unul eșuat: avertismentul vechi dispare, nu rămâne agățat pe ecran", () => {
+    const { meta, gazda } = pregatesteDom();
+
+    diag.notaLot(meta, 5, 2); // prima rulare, eșuată parțial
+    expect(gazda.querySelector(".lot-incomplet")).toBeTruthy();
+
+    // A doua rulare, reușită. Generatorul rescrie rezumatul ÎNAINTE de `notaLot`
+    // (`meta.textContent = ...` în `app.js`), deci simulăm exact asta.
+    meta.textContent = "5 careuri";
+    diag.notaLot(meta, 5, 5);
+
+    expect(gazda.querySelector(".lot-incomplet")).toBeNull();
+    expect(meta.textContent).toBe("5 careuri");
+  });
+});
+
 describe("Planșe — fiecare generator răspunde la „Generează” fără să crape", () => {
   let eroriIncarcare: Error[] = [];
 

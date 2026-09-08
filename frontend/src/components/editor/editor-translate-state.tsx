@@ -38,6 +38,7 @@ import {
 import {
   readSourceSnapshot,
   saveSourceSnapshot,
+  sourceSnapshotMatches,
 } from "@/lib/editor-source-store";
 import { pruneStaleTranslations } from "@/lib/translation-cache-guard";
 
@@ -162,7 +163,13 @@ export function EditorTranslateProvider({
       setDisplayLang(lang);
       writeLang(lang);
       // 2.A: originalul declarat acum devine cel care trebuie să supraviețuiască.
-      saveSourceSnapshot(lang, doc);
+      // Dacă memoria e plină, conținutul de pe ecran NU se pierde (el ESTE sursa),
+      // dar utilizatorul trebuie să știe că protecția lipsește înainte să traducă.
+      if (!saveSourceSnapshot(lang, doc)) {
+        setError(
+          "Am schimbat limba documentului, dar nu am putut păstra o copie de siguranță: memoria browserului e plină. Exportă documentul înainte de a traduce. (cod E-EDIT-003)",
+        );
+      }
     },
     [editor],
   );
@@ -184,7 +191,13 @@ export function EditorTranslateProvider({
       // a pune originalul la adăpost. Din secunda următoare, autosalvarea va scrie
       // peste el varianta tradusă. Aici se pierdea munca Cristinei.
       if (displayLang === sourceLang) {
-        const pastrat = saveSourceSnapshot(sourceLang, currentView);
+        const pastrat =
+          saveSourceSnapshot(sourceLang, currentView) ||
+          // Scrierea a eșuat, DAR instantaneul de dinainte corespunde sursei de
+          // acum → originalul e deja la adăpost, nu blocăm degeaba. Fără această
+          // a doua verificare, garda refuza inclusiv comutarea spre o limbă deja
+          // tradusă, aflată în memorie — o cale fără rețea și fără risc.
+          sourceSnapshotMatches(sourceLang, currentView);
         if (!pastrat) {
           // Memoria browserului e plină. Dacă am comuta totuși, originalul s-ar
           // pierde la următoarea reîncărcare — exact defectul pe care 2.A l-a
