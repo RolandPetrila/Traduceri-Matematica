@@ -6,6 +6,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { logAction } from "@/lib/monitoring";
 import { reportFailure } from "@/lib/failure";
 import { API_URL } from "@/lib/api-url";
+import { readJson } from "@/lib/json-response";
 
 interface HistoryDetailProps {
   entry: HistoryEntry;
@@ -31,7 +32,9 @@ async function downloadAsDocx(html: string, filename: string) {
   if (!res.ok) {
     let message = `Eroare server: ${res.status}`;
     try {
-      const data = await res.json();
+      // Și corpul de EROARE poate veni cu framing Vercel scurs peste el — fără
+      // curățare, mesajul real al serverului se pierdea și rămânea doar statusul.
+      const data = await readJson<{ error?: string }>(res, "istoric.docx");
       if (data?.error) message = data.error;
     } catch {
       /* corpul nu era JSON — păstrează mesajul generic de mai sus */

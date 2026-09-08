@@ -35,6 +35,7 @@ import {
   readSourceSnapshot,
   saveSourceSnapshot,
 } from "@/lib/editor-source-store";
+import { pruneStaleTranslations } from "@/lib/translation-cache-guard";
 
 export type LangCode = "ro" | "sk" | "en" | "de";
 export const LANGS: { code: LangCode; label: string; name: string }[] = [
@@ -101,6 +102,12 @@ export function EditorTranslateProvider({
   // se hrăneau unul pe altul.
   const [failedTarget, setFailedTarget] = useState<LangCode | null>(null);
   const cacheRef = useRef<Map<LangCode, JSONContent>>(new Map());
+  /**
+   * Cheia sursei din care au fost construite traducerile aflate ACUM în `cacheRef`.
+   * `null` = în cache e doar sursa. Dacă sursa e editată, cheia nu mai corespunde și
+   * traducerile vechi se aruncă — altfel am servi o versiune fără corectura Cristinei.
+   */
+  const builtFromRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // FAZA 2 (2.A) — la reload, limba AFIȘATĂ vine din `editor_nou_lang_v1`, dar
@@ -133,6 +140,7 @@ export function EditorTranslateProvider({
       // vechi erau raportate la altă sursă).
       const doc = editor.getJSON();
       cacheRef.current = new Map<LangCode, JSONContent>([[lang, doc]]);
+      builtFromRef.current = null; // cache golit → nicio traducere de raportat la o sursă
       setSourceLang(lang);
       setDisplayLang(lang);
       writeLang(lang);
@@ -162,6 +170,22 @@ export function EditorTranslateProvider({
         saveSourceSnapshot(sourceLang, currentView);
       }
 
+      const sourceDoc = cacheRef.current.get(sourceLang) ?? editor.getJSON();
+      const sourceKey = JSON.stringify(sourceDoc);
+
+      // DEFECT găsit LIVE de auditorul de dovezi (08.09.2026): Cristina traduce în
+      // SK, revine pe RO ca să repare o formulă, apasă din nou SK — și primea
+      // versiunea SK de DINAINTEA reparației, instant, fără nicio cerere și fără
+      // niciun mesaj. Corectura ei dispărea în tăcere. Traducerile din memorie sunt
+      // valabile DOAR pentru sursa din care au fost făcute; dacă sursa s-a schimbat,
+      // le aruncăm și retraducem.
+      pruneStaleTranslations(
+        cacheRef.current,
+        sourceLang,
+        sourceKey,
+        builtFromRef.current,
+      );
+
       const cached = cacheRef.current.get(target);
       if (cached) {
         editor.commands.setContent(cached);
@@ -169,8 +193,6 @@ export function EditorTranslateProvider({
         writeLang(target);
         return;
       }
-
-      const sourceDoc = cacheRef.current.get(sourceLang) ?? editor.getJSON();
 
       // Document fără text traductibil (doar figuri / formule / tabel gol):
       // înainte, butonul se aprindea, limba se schimba și NU se afișa nimic —
@@ -184,7 +206,7 @@ export function EditorTranslateProvider({
       }
       // G2 — cache PERSISTENT (cross-reload): dacă am tradus deja ACEST conținut
       // în ACEASTĂ pereche de limbi, îl refolosesc → instant + NU reconsumă DeepL.
-      const sourceKey = JSON.stringify(sourceDoc);
+      // (Ăsta e indexat DUPĂ conținutul sursei, deci nu suferă de învechirea de mai sus.)
       try {
         const persisted = await getCachedDocTranslation(
           sourceKey,
@@ -194,6 +216,7 @@ export function EditorTranslateProvider({
         if (persisted) {
           const doc = JSON.parse(persisted) as JSONContent;
           cacheRef.current.set(target, doc);
+          builtFromRef.current = sourceKey;
           editor.commands.setContent(doc);
           setDisplayLang(target);
           writeLang(target);
@@ -217,6 +240,7 @@ export function EditorTranslateProvider({
           signal: ac.signal,
         });
         cacheRef.current.set(target, translated);
+        builtFromRef.current = sourceKey;
         editor.commands.setContent(translated);
         setDisplayLang(target);
         writeLang(target);

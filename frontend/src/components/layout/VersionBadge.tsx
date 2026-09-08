@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { API_URL } from "@/lib/api-url";
+import { readJson } from "@/lib/json-response";
 
 // Vercel exposes the commit SHA as VERCEL_GIT_COMMIT_SHA; next.config.js maps it
 // to NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA so it's readable client-side.
@@ -22,7 +23,10 @@ export default function VersionBadge() {
       try {
         const res = await fetch(`${API_URL}/api/health`, { cache: "no-store" });
         if (res.ok) {
-          const data = await res.json();
+          const data = await readJson<{
+            build_version?: string;
+            version?: string;
+          }>(res, "layout.version");
           const sv = data.build_version || data.version || "";
           setServerVersion(sv);
           if (sv && sv !== BUILD_VERSION && BUILD_VERSION !== "dev") {

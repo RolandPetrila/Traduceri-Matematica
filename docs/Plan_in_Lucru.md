@@ -8,7 +8,7 @@
 > **O căsuță devine 🟢 DOAR** dacă execuția e făcută ȘI verificată live ȘI dovada e scrisă în
 > dreptul ei. Fără dovadă → rămâne 🟡. (Decizia 6a: „nimic gata fără dovadă live în browser".)
 
-**Ultima actualizare:** 08.09.2026, 04:1x · **Fază activă:** FAZA 2 — cod gata, **deploy blocat pe `vercel login`**
+**Ultima actualizare:** 08.09.2026, 05:0x · **Fază activă:** FAZA 2 — remediere după auditori
 
 ---
 
@@ -28,74 +28,92 @@
 
 ## ✅ FAZA 1 — Repară orbirea diagnostică `ÎNCHISĂ`
 
-|     | Item                                            | Dovadă                                        |
-| --- | ----------------------------------------------- | --------------------------------------------- |
-| 🟢  | Pâlnie unică de eșec (`lib/failure.ts`)         | 22 fluxuri cablate, `jest 384/384`            |
-| 🟢  | 12 coduri noi (catalog 17→29), oglindă generată | `config/error_codes.json`, `error-catalog.ts` |
-| 🟢  | Grupare pe cod în `/diagnostics`                | `docs/dovada_faza1_grupare_incidente.jpg`     |
-| 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)       | `docs/dovada_faza1_mesaj_onest.jpg`           |
-| 🟢  | Deploy v57/v58 + verificare live pe producție   | `docs/dovada_faza1_diagnostics.jpg`           |
-| 🟢  | Erată: 3 „fapte verificate" false, corectate    | `docs/Erata_dovezi_2026-09-08.md`             |
+|     | Item                                                | Dovadă                                         |
+| --- | --------------------------------------------------- | ---------------------------------------------- |
+| 🟢  | Pâlnie unică de eșec (`lib/failure.ts`), 22 fluxuri | `jest`, cablare verificată                     |
+| 🟢  | 12 coduri noi (catalog 17→29), oglindă anti-drift   | `config/error_codes.json` ↔ `error-catalog.ts` |
+| 🟢  | Grupare pe cod în `/diagnostics`                    | `docs/dovada_faza1_grupare_incidente.jpg`      |
+| 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)           | `docs/dovada_faza1_mesaj_onest.jpg`            |
+| 🟢  | Erată: 3 „fapte verificate" false, corectate        | `docs/Erata_dovezi_2026-09-08.md`              |
 
 ---
 
-## 🟡 FAZA 2 — Bug SK: reparare + posibilitatea de a reîncerca `ÎN LUCRU`
+## 🟡 FAZA 2 — Bug SK: reparare + posibilitatea de a reîncerca
 
-Deciziile lui Roland: **2a** suport complet, traduce și tabelele · **2b** buton „Încearcă din nou"
-· **2c** SK + EN + DE · mențiune: mesaje clare, care spun ce are de făcut Cristina.
+Decizii: **2a** suport complet, traduce și tabelele · **2b** buton „Încearcă din nou" · **2c** SK+EN+DE
+· mențiune: mesaje clare, care spun ce are de făcut Cristina · mențiune 2a: agenți de audit.
 
-|     | Item                                                                                                                | Stare / dovadă                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟡  | **2.A — Originalul nu se mai pierde la reload** (prioritatea 1, mai grav decât SK: pierdere de muncă, ireversibilă) | Cod scris: `lib/editor-source-store.ts` salvează separat documentul-SURSĂ + limba lui, exact în momentul în care se pleacă din limba-sursă. La reload, originalul se repune în cache → butonul RO îl readuce instant. Șters la „Document nou"/înlocuire. **7 teste** în `editor-source-store.test.ts`, inclusiv scenariul real RO→SK→reload. ⏳ rămâne dovada live                                                                                                                                                                     |
-| 🟡  | 2.B — Bug SK: curăț framing-ul Vercel scurs în corpul JSON                                                          | Cod scris: `lib/json-response.ts` (`readJson`) taie gunoiul dinaintea primului `{`/`[` și reia parsarea; recuperarea se logează la `warn` cu **E-NET-003** (cod nou, catalog 29→30). Cablat în traducere + OCR (import, Teste, Chat) + cota DeepL. **6 teste**, unul reproducând corpul real observat pe producție. ⏳ rămâne dovada live                                                                                                                                                                                              |
-| 🟡  | 2.C — Buton „Încearcă din nou" pe eșecul de traducere                                                               | Cod scris: contextul reține `failedTarget`, butonul reia exact limba care a picat. **Rupe lanțul cu 2.A**: înainte, singura reîncercare era reîncărcarea paginii — iar reload-ul pierdea originalul. ⏳ rămâne dovada live                                                                                                                                                                                                                                                                                                             |
-| 🟢  | 2.D — Traducerea acoperă și tabelele, pe SK + EN + DE                                                               | **Mergea deja** — dovedit, nu presupus: `editor-translate-tables.test.ts` (5 teste) arată că textul din celule intră la traducere, structura tabelului se păstrează (R-LAYOUT) și formulele rămân intacte (R-MATH). Comentariul din cod susținea contrariul → **era fals, l-am corectat**                                                                                                                                                                                                                                              |
-| 🟡  | 2.E — Mesaje care spun ce are de făcut, nu doar că a eșuat                                                          | Cod scris: mesaj per cauză reală — „serverul a pornit greu… apasă Încearcă din nou", „așteaptă ~5 secunde", „documentul e mare… împarte-l în două". Codul erorii rămâne vizibil (1b). ⏳ rămâne dovada live                                                                                                                                                                                                                                                                                                                            |
-| 🟢  | 2.F.1 — Poartă completă                                                                                             | `tsc 0` · `jest 402/402` (+18 teste noi) · `build OK` · `pytest 75/75`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 🔴  | 2.F.2 — Deploy + verificare live pe producție                                                                       | **BLOCAT — are nevoie de Roland.** Codul e pe GitHub (`576ff5a`, ramura `faza-g-editor`), dar CLI-ul Vercel nu mai are credențiale în terminal: `No existing credentials found`. Auto-deploy din GitHub NU s-a declanșat (livrările anterioare erau tot prin CLI, cu `actor: claude-code…agent`). **Deblocare:** Roland rulează `! vercel login` în sesiune, apoi reiau `vercel deploy --prod` + verificarea live. Producția rulează în continuare **v58** (Faza 1) — nimic stricat, doar reparațiile Fazei 2 nu sunt încă la Cristina |
+|     | Item                                            | Dovadă                                                                                                                                                                                                                                                                                                                                                                              |
+| --- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | **2.A — originalul nu se mai pierde la reload** | **Verificat live pe producție, de două ori independent.** Eu: document RO → SK (tradus corect) → reload → RO → textul românesc revine integral. Auditorul de dovezi, separat, cu propria frază de test + captură: `docs/dovezi/dovada_2A_original_recuperat.png`. „Document nou" șterge corect magazia (`snapshotSters: true`). Cod: `lib/editor-source-store.ts`, 7 teste          |
+| 🟢  | **2.B — bug SK reparat la sursă**               | **Prins pe bug-ul REAL, nu pe fixture:** în timpul unei traduceri pe producție s-a logat `warn E-NET-003 · "Unexpected token 'x', \"x-vercel-i\"…" · {recovered:true, trimmedBytes:187, status:200}` — `readJson` a tăiat 187 octeți de framing Vercel și traducerea a ajuns corectă la ecran. 6 teste. Cablat acum în **toate** citirile JSON de la API-ul Python                  |
+| 🟢  | **2.C — buton „Încearcă din nou"**              | Eșec forțat prin interceptarea `fetch` → butonul apare; `fetch` restaurat → apăsat → traducerea reușește, eroarea se stinge. Captură: `docs/dovezi/dovada_2C_2E_mesaj_si_retry.png`                                                                                                                                                                                                 |
+| 🟢  | **2.D — tabelele, pe SK + EN + DE**             | **Dovada inițială (test unitar) NU susținea afirmația** — nu atingea nicio limbă și niciun `tableHeader`. Dovada reală, live: tabel 3×3 inserat din bară, tradus în SK („Ostrý uhol"), DE („Spitzer Winkel"), EN („Acute angle"), structură intactă (1 tabel, 3 `th`, 6 `td`). Captură: `docs/dovezi/dovada_2D_tabel_tradus_EN.png`. Plus proba mea pe text: SK/EN/DE toate corecte |
+| 🟢  | **2.E — mesaje care spun ce are de făcut**      | Text exact pe ecran: _„Traducerea nu a ajuns la server. Așteaptă ~5 secunde și apasă «Încearcă din nou». (cod E-TRANS-001)"_ — cauză + acțiune + cod                                                                                                                                                                                                                                |
+| 🟢  | 2.F.1 — poartă completă                         | `tsc 0` · `jest 406/406` · `build OK` · `pytest 83/83`                                                                                                                                                                                                                                                                                                                              |
+| 🟡  | 2.F.2 — deploy + verificare live                | Frontend **v60** + backend livrate și verificate live (SK/EN/DE, 2.A). **Reparațiile de după auditori (cache învechit + ultimele 2 citiri JSON) NU sunt încă livrate** — se redeployează acum                                                                                                                                                                                       |
+
+### Remedieri născute din auditul fazei (toate în cod, poartă verde)
+
+|     | Ce                                                                                             | De unde a venit                                                                                                                                                                                                      |
+| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟡  | **Cache-ul nu mai servește o traducere învechită** (`lib/translation-cache-guard.ts`, 4 teste) | Defect găsit **live** de auditorul de dovezi: traduci SK → revii pe RO → corectezi → apeși SK ⇒ primeai versiunea de dinainte de corectură, tăcut. ⏳ dovadă live după redeploy                                      |
+| 🟢  | **Germana nu mai revine în slovacă** (`NLLB_LANG_MAP` + `nllb_codes()`, 8 teste)               | Auditorul de cerințe, verificând decizia 2c: `de` lipsea din hartă, iar `.get(target, "slk_Latn")` întorcea SLOVACĂ cu status 200. Acum limbile nesuportate **aruncă**, ca lanțul să cadă pe alt provider            |
+| 🟢  | **Două tăceri la apăsarea pe SK**                                                              | (1) document fără text traductibil: butonul se aprindea, zero mesaj → acum i se scrie și limba nu se schimbă; (2) eroarea veche + butonul de retry rămâneau lipite de o comutare care reușise → se golesc la intrare |
+| 🟢  | R-LANG: identificatori și chei de log în engleză                                               | `recovered`, `trimmedBytes`, `bodyLen`, `purpose`, `hint`, `currentView`, `displayed`, `validSource`                                                                                                                 |
+
+### Limite declarate (NEDOVEDITE, nu ascunse)
+
+- **Documente cu figuri (base64):** magazia scrie o a doua copie în `localStorage`. La
+  `QuotaExceededError` se raportează `E-EDIT-003` și originalul **nu** se salvează — adică exact
+  documentele care contează cel mai mult sunt cele unde fixul poate să nu țină. Ce ar închide:
+  import fișă cu figuri din `Teste_Input` → traducere → reload → RO, fără `E-EDIT-003`. **Intră în Faza 4.**
+
+### O greșeală a mea, consemnată
+
+Am scris în acest fișier că 2.F.2 e **🔴 BLOCAT** și că „producția rulează v58". Era adevărat când
+am scris-o, dar **am deployat imediat după și nu am actualizat rândul** — auditorul l-a găsit
+spunându-i lui Roland să facă `vercel login` pentru ceva deja livrat. Un tablou „viu" care rămâne
+în urmă e exact genul de documentație care minte, împotriva căruia există acest fișier.
 
 ---
 
-## ⬜ FAZA 2.5 — Cei trei agenți de audit `NEÎNCEPUTĂ`
+## 🟢 FAZA 2.5 — Cei trei agenți de audit
 
-|     | Item                                                                               |
-| --- | ---------------------------------------------------------------------------------- |
-| ⬜  | `auditor-dovezi` — respinge orice bifă fără dovadă reală                           |
-| ⬜  | `auditor-regresie` — rulează poarta completă, verifică că nu s-a stricat ce mergea |
-| ⬜  | `auditor-cerinte` — compară livrarea cu deciziile din `Fazele_mentiuni_Roland.md`  |
-| ⬜  | Rulează automat la finalul fiecărei faze, înainte de raportul către Roland         |
+|     | Item                                         | Dovadă                                                                                                                                                         |
+| --- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | `auditor-dovezi`                             | A rulat pe Faza 2: 6 CONFIRMAT / 1 INFIRMAT. A prins că dovada lui 2.D nu susținea afirmația și a găsit un defect nou, live                                    |
+| 🟢  | `auditor-regresie`                           | A rulat jest **efectiv pe commit-ul anterior** (384) vs. acum (402) — creștere reală, nu aritmetică. Verdict: FĂRĂ REGRESIE. A prins că agenții nu erau comiși |
+| 🟢  | `auditor-cerinte`                            | A găsit 4 abateri reale, inclusiv bug-ul `de`→slovacă din backend                                                                                              |
+| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                        |
+| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; în sesiunea care i-a creat au rulat cu instrucțiunile injectate. ⏳ de confirmat la prima sesiune nouă            |
 
 ---
 
-## ⬜ FAZA 3 — Caiet de sarcini `NEÎNCEPUTĂ`
+## ⬜ FAZA 3 — Caiet de sarcini
 
-Decizii: **3a** doar butoanele de execuție · **3b** inventar + confirmare live · **3c** `.md` **și**
-`.html` cu căutare și editabil ca `Fazele.html` · mențiune: **fișier viu, auto-actualizabil**.
+Decizii: **3a** doar butoanele de execuție · **3b** inventar + confirmare live · **3c** `.md` **și** `.html`
+cu căutare, editabil ca `Fazele.html` · mențiune: **fișier viu, auto-actualizabil**.
 
-## ⬜ FAZA 4 — Auditul real în browser `NEÎNCEPUTĂ`
+## ⬜ FAZA 4 — Auditul real în browser
 
 Decizii: **4a** fișiere reale din `99_Roland_Work\Teste_Input` → rezultate în `Teste_Output` ·
 **4b** de la cel mai folosit modul la cel mai rar · **4c** notez și continui, reparăm la final.
 
-## ⬜ FAZA 4.5 — Reparațiile din lista de la 4c `NEÎNCEPUTĂ`
+## ⬜ FAZA 4.5 — Reparațiile din lista de la 4c
 
-## ⬜ FAZA 5 — Unificarea documentației `NEÎNCEPUTĂ`
+## ⬜ FAZA 5 — Unificarea documentației
 
-Decizii: **5a** documentele vechi în `docs/arhiva/` · **5b** rezumat per fază cu linkuri ·
-**5c** cronologic + index pe module · mențiune: memorie anti-recidivă + mediu nativ Claude Code +
-`/onboard` cu sesiuni AskUserQuestion.
-
-## ⬜ FAZA 6 — Automatizarea procesului `NEÎNCEPUTĂ`
-
-Decizii: **6a** nimic gata fără dovadă live · **6b** raport după fiecare fază + acest tablou live ·
-**6c** listă de pornire.
+## ⬜ FAZA 6 — Automatizarea procesului
 
 ---
 
-## Riscuri deschise, transmise între faze
+## Riscuri deschise
 
-| Risc                                                                                   | Stare                                         |
-| -------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Traducere + reload = originalul se pierde definitiv                                    | 🟡 în reparație (2.A)                         |
-| Eșec intermitent la traducere (~1 din 5, toate limbile, din 20.08) — cold start Vercel | 🟡 în reparație (2.B)                         |
-| Documentul „POMPE DOZATOARE" rămas în slovacă, varianta română nerecuperabilă          | ⏸️ artefact de test, nu material al Cristinei |
+| Risc                                                                    | Stare                                           |
+| ----------------------------------------------------------------------- | ----------------------------------------------- |
+| Traducere + reload = originalul se pierde                               | 🟢 reparat, dovedit live de două ori            |
+| Eșec intermitent la traducere (cold start Vercel)                       | 🟢 reparat, prins pe bug-ul real în producție   |
+| Germana revenea în slovacă prin NLLB, tăcut                             | 🟢 reparat + 8 teste                            |
+| Cache pe limbă servea traducerea de dinainte de corectură               | 🟡 reparat în cod, ⏳ dovadă live după redeploy |
+| `QuotaExceededError` pe documente cu figuri → originalul nu se salvează | 🔴 deschis, netestat — intră în Faza 4          |
