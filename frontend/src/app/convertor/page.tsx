@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ProgressBar from "@/components/convertor/ProgressBar";
 import { logAction, logInfo } from "@/lib/monitoring";
-import { reportFailure } from "@/lib/failure";
+import { reportFailure, UserFacingError } from "@/lib/failure";
 import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
@@ -254,8 +254,12 @@ export default function ConvertorPage() {
             }
           }
         }
+        // Dacă serverul a spus DE CE a eșuat, mesajul lui ajunge la utilizator —
+        // înainte era înlocuit cu „Serverul a răspuns cu eroare. Încearcă din
+        // nou", adică explicația reală era aruncată la gunoi.
+        if (msg) throw new UserFacingError(msg);
         throw new Error(
-          msg || `Eroare conversie (${res.status}): ${raw.substring(0, 200)}`,
+          `Eroare conversie (${res.status}): ${raw.substring(0, 200)}`,
         );
       }
 

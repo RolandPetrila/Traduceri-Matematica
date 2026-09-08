@@ -26,6 +26,7 @@ import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { API_URL } from "@/lib/api-url";
 import { readJson } from "@/lib/json-response";
+import { UserFacingError } from "@/lib/failure";
 import { fetchWithRetry } from "@/lib/fetch-retry";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { docxArrayBufferToBlocks } from "@/lib/docx-to-blocks";
@@ -128,7 +129,10 @@ async function ocrRequest(
     body: fd,
     signal,
   });
-  if (res.status === 413) throw new Error("Fișierul e prea mare (peste 4MB).");
+  if (res.status === 413)
+    throw new UserFacingError(
+      "Fișierul e prea mare (peste 4MB). Împarte-l în mai multe fișiere sau scanează la o rezoluție mai mică — retrimiterea aceluiași fișier va eșua la fel.",
+    );
   if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
   // FAZA 2: aceeași curățare de framing ca la traducere — OCR-ul avea bug-ul
   // latent identic (cold start Vercel Python), doar că nu-l lovise nimeni încă.
@@ -137,7 +141,11 @@ async function ocrRequest(
     status?: string;
     error?: string;
   }>(res, "editor.import.ocr");
-  if (data.status === "error") throw new Error(data.error || "OCR a eșuat");
+  // Mesajul REAL al serverului ajunge la utilizator, nu îl înlocuim cu unul generic.
+  if (data.status === "error")
+    throw new UserFacingError(
+      data.error || "OCR-ul a eșuat pentru acest fișier. Încearcă din nou.",
+    );
   return data.structured_pages || [];
 }
 
@@ -308,7 +316,11 @@ async function processFile(
     }
   }
 
-  throw new Error(`Format nesuportat: .${e || "?"}`);
+  // Ajungi aici trăgând pe foaie un fișier de tip nesuportat: `accept=` de pe
+  // selector NU filtrează drag&drop. Codul ȘTIE exact ce e greșit — să i-o spună.
+  throw new UserFacingError(
+    `Nu pot deschide fișiere .${e || "necunoscut"}. Acceptate: PDF, DOCX, JPG, PNG. Salvează documentul în unul dintre formatele astea și încearcă din nou.`,
+  );
 }
 
 /** Procesează toate fișierele → un singur set de blocuri (pageBreak între fișiere). */

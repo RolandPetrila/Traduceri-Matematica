@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { HistoryEntry } from "@/lib/types";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { logAction } from "@/lib/monitoring";
-import { reportFailure } from "@/lib/failure";
+import { reportFailure, UserFacingError } from "@/lib/failure";
 import { API_URL } from "@/lib/api-url";
 import { readJson } from "@/lib/json-response";
 
@@ -30,7 +30,7 @@ async function downloadAsDocx(html: string, filename: string) {
     body: formData,
   });
   if (!res.ok) {
-    let message = `Eroare server: ${res.status}`;
+    let message = "";
     try {
       // Și corpul de EROARE poate veni cu framing Vercel scurs peste el — fără
       // curățare, mesajul real al serverului se pierdea și rămânea doar statusul.
@@ -39,7 +39,10 @@ async function downloadAsDocx(html: string, filename: string) {
     } catch {
       /* corpul nu era JSON — păstrează mesajul generic de mai sus */
     }
-    throw new Error(message);
+    // Mesajul serverului, dacă l-a dat, e mai util decât „Serverul a răspuns cu
+    // eroare" — și supraviețuiește pâlniei doar dacă e purtat de eroare.
+    if (message) throw new UserFacingError(message);
+    throw new Error(`Eroare server: ${res.status}`);
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);

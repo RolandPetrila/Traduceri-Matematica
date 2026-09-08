@@ -118,14 +118,41 @@
    * @param {number} cerute     câte fișe a cerut
    * @param {number} obtinute   câte au ieșit
    */
-  function notaLot(metaEl, cerute, obtinute) {
-    if (!metaEl || obtinute >= cerute) return;
-    metaEl.textContent +=
-      " · ⚠ doar " +
-      obtinute +
+  function notaLot(metaEl, requested, produced) {
+    if (!metaEl) return;
+
+    // `meta` trăiește ÎNĂUNTRUL barei `.gen-actions`, care rămâne ascunsă când nu
+    // s-a generat nimic. Deci exact în cazul cel mai grav — 0 din 5 — mesajul de
+    // mai jos ar fi fost invizibil. Punem unul ȘI în afara barei, lângă ea.
+    // (Defect de ordinul doi, semnalat de auditorul de regresie 08.09.2026.)
+    var bar = metaEl.closest ? metaEl.closest(".gen-actions") : null;
+    var host = bar && bar.parentNode;
+    var warn = host ? host.querySelector(".lot-incomplet") : null;
+
+    if (produced >= requested) {
+      if (warn && warn.parentNode) warn.parentNode.removeChild(warn);
+      return;
+    }
+
+    var msg =
+      "⚠ Doar " +
+      produced +
       " din " +
-      cerute +
-      " — restul nu au putut fi generate. Mai apasă o dată pentru altele noi.";
+      requested +
+      " au putut fi generate. Mai apasă o dată pentru altele noi.";
+
+    metaEl.textContent += " · " + msg;
+
+    if (!host) return;
+    if (!warn) {
+      warn = document.createElement("p");
+      warn.className = "lot-incomplet";
+      warn.setAttribute("role", "alert");
+      warn.style.cssText =
+        "margin:8px 0;color:#ffd166;font-weight:600;font-size:0.95em";
+      host.insertBefore(warn, bar);
+    }
+    warn.textContent = msg;
   }
 
   window.PlanseDiag = { fail: fail, notaLot: notaLot };

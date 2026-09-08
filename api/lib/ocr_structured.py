@@ -41,7 +41,15 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
         raise RuntimeError("GOOGLE_AI_API_KEY not set")
 
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-    lang_names = {"ro": "Romanian", "sk": "Slovak", "en": "English"}
+    # Third site of the same trap (found by the requirements auditor, 08.09.2026):
+    # `de` was missing while the editor's language switch offers it, so a German
+    # source page went to the model described as "de" instead of "German".
+    lang_names = {
+        "ro": "Romanian",
+        "sk": "Slovak",
+        "en": "English",
+        "de": "German",
+    }
     src = lang_names.get(source_lang, source_lang)
 
     print(f"[OCR-STRUCT] Processing: {len(image_bytes)} bytes, {mime_type}, {source_lang}", file=sys.stderr)
