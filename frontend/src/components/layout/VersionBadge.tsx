@@ -31,13 +31,18 @@ export default function VersionBadge() {
             build_version?: string;
             version?: string;
           }>(res, "layout.version", { report: false });
-          const sv = data.build_version || data.version || "";
-          setServerVersion(sv);
-          if (sv && sv !== BUILD_VERSION && BUILD_VERSION !== "dev") {
-            setStatus("stale");
-          } else {
-            setStatus("current");
-          }
+          // ALARMĂ FALSĂ, reparată 08.09.2026 (semnalată de auditorul de dovezi):
+          // aici se compara sha-ul FRONTENDULUI cu `build_version` al
+          // BACKENDULUI — două proiecte Vercel livrate independent, care diverg
+          // în mod normal. Rezultatul: insignă roșie „reîncarcă", permanentă,
+          // pulsând, pe care un reload NU o putea stinge. O alarmă care nu se
+          // stinge o învață pe Cristina să ignore alarmele — exact opusul a ce
+          // construiește Faza 1. Semnalul corect pentru „există o versiune nouă
+          // de frontend" vine de la service worker (`SW_UPDATED`), mai jos.
+          setServerVersion(data.build_version || data.version || "");
+          // Serverul răspunde → nu suntem în timpul unei livrări. Dar dacă
+          // service worker-ul a anunțat deja o versiune nouă, nu o ștergem.
+          setStatus((s) => (s === "stale" ? s : "current"));
         }
       } catch {
         // Network error — probably deploying
@@ -48,6 +53,24 @@ export default function VersionBadge() {
     check();
     const interval = setInterval(check, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Sursa ONESTĂ pentru „există o versiune nouă": service worker-ul din
+  // `public/sw.js` trimite `SW_UPDATED` când un worker nou a preluat controlul —
+  // adică exact atunci când reîncărcarea chiar aduce ceva nou. Asta se poate
+  // rezolva printr-un reload, spre deosebire de comparația de dinainte.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator))
+      return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === "SW_UPDATED") {
+        setServerVersion(e.data.version || "");
+        setStatus("stale");
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", onMessage);
   }, []);
 
   const color =

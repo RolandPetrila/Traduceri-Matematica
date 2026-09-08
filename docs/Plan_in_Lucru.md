@@ -7,8 +7,11 @@
 >
 > **O căsuță devine 🟢 DOAR** dacă execuția e făcută ȘI verificată live ȘI dovada e scrisă în
 > dreptul ei. Fără dovadă → rămâne 🟡. (Decizia 6a: „nimic gata fără dovadă live în browser".)
+>
+> **Distincția pe care o cer auditorii:** „exersat live" ≠ „verificat în cod și în pachetul livrat".
+> A doua e reală și utilă, dar NU e dovadă live. Fiecare rând spune care dintre ele e.
 
-**Ultima actualizare:** 08.09.2026, 09:0x · **Fază activă:** FAZA 2 — livrată pe v61, în validare finală la auditori
+**Ultima actualizare:** 08.09.2026, 09:4x · **Producție:** frontend **v65** · **Fază activă:** FAZA 2
 
 ---
 
@@ -30,8 +33,8 @@
 
 |     | Item                                                | Dovadă                                         |
 | --- | --------------------------------------------------- | ---------------------------------------------- |
-| 🟢  | Pâlnie unică de eșec (`lib/failure.ts`), 22 fluxuri | `jest`, cablare verificată                     |
-| 🟢  | 12 coduri noi (catalog 17→29), oglindă anti-drift   | `config/error_codes.json` ↔ `error-catalog.ts` |
+| 🟢  | Pâlnie unică de eșec (`lib/failure.ts`), 22 fluxuri | teste + cablare verificată                     |
+| 🟢  | 12 coduri noi (catalog 17→30), oglindă anti-drift   | `config/error_codes.json` ↔ `error-catalog.ts` |
 | 🟢  | Grupare pe cod în `/diagnostics`                    | `docs/dovada_faza1_grupare_incidente.jpg`      |
 | 🟢  | Mesaj onest pe ecran, cu cod vizibil (1b)           | `docs/dovada_faza1_mesaj_onest.jpg`            |
 | 🟢  | Erată: 3 „fapte verificate" false, corectate        | `docs/Erata_dovezi_2026-09-08.md`              |
@@ -43,50 +46,111 @@
 Decizii: **2a** suport complet, traduce și tabelele · **2b** buton „Încearcă din nou" · **2c** SK+EN+DE
 · mențiune: mesaje clare, care spun ce are de făcut Cristina · mențiune 2a: agenți de audit.
 
-|     | Item                                            | Dovadă                                                                                                                                                                                                                                                                                                                                                                              |
-| --- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟢  | **2.A — originalul nu se mai pierde la reload** | **Verificat live pe producție, de două ori independent.** Eu: document RO → SK (tradus corect) → reload → RO → textul românesc revine integral. Auditorul de dovezi, separat, cu propria frază de test + captură: `docs/dovezi/dovada_2A_original_recuperat.png`. „Document nou" șterge corect magazia (`snapshotSters: true`). Cod: `lib/editor-source-store.ts`, 7 teste          |
-| 🟢  | **2.B — bug SK reparat la sursă**               | **Prins pe bug-ul REAL, nu pe fixture:** în timpul unei traduceri pe producție s-a logat `warn E-NET-003 · "Unexpected token 'x', \"x-vercel-i\"…" · {recovered:true, trimmedBytes:187, status:200}` — `readJson` a tăiat 187 octeți de framing Vercel și traducerea a ajuns corectă la ecran. 6 teste. Cablat acum în **toate** citirile JSON de la API-ul Python                  |
-| 🟢  | **2.C — buton „Încearcă din nou"**              | Eșec forțat prin interceptarea `fetch` → butonul apare; `fetch` restaurat → apăsat → traducerea reușește, eroarea se stinge. Captură: `docs/dovezi/dovada_2C_2E_mesaj_si_retry.png`                                                                                                                                                                                                 |
-| 🟢  | **2.D — tabelele, pe SK + EN + DE**             | **Dovada inițială (test unitar) NU susținea afirmația** — nu atingea nicio limbă și niciun `tableHeader`. Dovada reală, live: tabel 3×3 inserat din bară, tradus în SK („Ostrý uhol"), DE („Spitzer Winkel"), EN („Acute angle"), structură intactă (1 tabel, 3 `th`, 6 `td`). Captură: `docs/dovezi/dovada_2D_tabel_tradus_EN.png`. Plus proba mea pe text: SK/EN/DE toate corecte |
-| 🟢  | **2.E — mesaje care spun ce are de făcut**      | Text exact pe ecran: _„Traducerea nu a ajuns la server. Așteaptă ~5 secunde și apasă «Încearcă din nou». (cod E-TRANS-001)"_ — cauză + acțiune + cod                                                                                                                                                                                                                                |
-| 🟢  | 2.F.1 — poartă completă                         | `tsc 0` · `jest 406/406` · `build OK` · `pytest 83/83`                                                                                                                                                                                                                                                                                                                              |
-| 🟢  | 2.F.2 — deploy + verificare live                | Frontend **v61** + backend livrate pe producție. Verificat live după fiecare livrare: SK/EN/DE corecte, 2.A dovedit de două ori, cache-ul învechit dovedit reparat                                                                                                                                                                                                                  |
+### Exersate LIVE pe producție
 
-### Remedieri născute din auditul fazei (toate în cod, poartă verde)
+|     | Item                                               | Dovadă live                                                                                                                                                                                                                                                                                         |
+| --- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | **2.A — originalul nu se mai pierde la reload**    | Exersat de **5 ori** (eu de 2, auditorul de dovezi de 3, pe v61 și v63): document RO → tradus → reload → apăs RO → textul românesc revine integral, inclusiv corecturile. Captură: `docs/dovezi/dovada_2A_original_recuperat.png`                                                                   |
+| 🟢  | **2.B — bug SK reparat la sursă**                  | Prins pe bug-ul REAL: auditorul a citit rândurile din Supabase — **4 rânduri `warn E-NET-003`**, `flow: editor.translate`, `status: 200`, `recovered: true`, `trimmedBytes: 187`, `sample` conținând `x-vercel-internal-timing: bootstrap;dur=…`. Traducerea a ajuns corectă la ecran               |
+| 🟢  | **2.C — buton „Încearcă din nou"**                 | Secvența completă, exersată: rețea tăiată → mesaj + buton; rețea revenită → **apăsat** → traducerea EN reușește, eroarea se stinge, limba devine `en`                                                                                                                                               |
+| 🟢  | **2.D — tabelele, pe SK + EN + DE**                | Auditorul a inserat live un tabel 3×3 și a comutat pe toate trei: SK „Názov uhla", DE „Bezeichnung des Winkels", EN „Name of the angle"; structura intactă (**1 tabel, 3 `th`, 6 `td`**). Captură (EN): `docs/dovezi/dovada_2D_tabel_tradus_EN.png`. Separat, eu am dovedit SK/EN/DE pe text simplu |
+| 🟢  | **2.E — mesaje care spun ce are de făcut**         | Text exact, citit de pe ecran: _„Traducerea nu a ajuns la server. Așteaptă ~5 secunde și apasă «Încearcă din nou». (cod E-TRANS-001)"_                                                                                                                                                              |
+| 🟢  | **Cache-ul nu mai servește o traducere învechită** | **Infirmat o dată, apoi reparat.** Vezi secțiunea de mai jos                                                                                                                                                                                                                                        |
+| 🟢  | 2.F.1 — poartă completă                            | `tsc 0` · `jest 414/414` · `build OK` · `pytest 83/83` — rulată și de auditorul de regresie, independent                                                                                                                                                                                            |
+| 🟢  | 2.F.2 — deploy + verificare live                   | Frontend **v65** + backend, ambele livrate. `/api/health` confirmă backend-ul pe commit-ul curent                                                                                                                                                                                                   |
 
-|     | Ce                                                                                             | De unde a venit                                                                                                                                                                                                                                                                                                                                                                                                            |
-| --- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟢  | **Cache-ul nu mai servește o traducere învechită** (`lib/translation-cache-guard.ts`, 4 teste) | Defect găsit **live** de auditorul de dovezi: traduci SK → revii pe RO → corectezi → apeși SK ⇒ primeai versiunea de dinainte de corectură, tăcut. **Dovedit reparat live pe v61:** RO „Unghiul drept are noua zeci de grade." → SK → RO → adăugat „Bisectoarea trece prin varf." → SK ⇒ traducerea conține acum și corectura („Polpriamka prechádza vrcholom."). Captură: `docs/dovezi/dovada_cache_invechit_reparat.jpg` |
-| 🟢  | **Germana nu mai revine în slovacă** (`NLLB_LANG_MAP` + `nllb_codes()`, 8 teste)               | Auditorul de cerințe, verificând decizia 2c: `de` lipsea din hartă, iar `.get(target, "slk_Latn")` întorcea SLOVACĂ cu status 200. Acum limbile nesuportate **aruncă**, ca lanțul să cadă pe alt provider                                                                                                                                                                                                                  |
-| 🟢  | **Două tăceri la apăsarea pe SK**                                                              | (1) document fără text traductibil: butonul se aprindea, zero mesaj → acum i se scrie și limba nu se schimbă; (2) eroarea veche + butonul de retry rămâneau lipite de o comutare care reușise → se golesc la intrare                                                                                                                                                                                                       |
-| 🟢  | R-LANG: identificatori și chei de log în engleză                                               | `recovered`, `trimmedBytes`, `bodyLen`, `purpose`, `hint`, `currentView`, `displayed`, `validSource`                                                                                                                                                                                                                                                                                                                       |
+### Verificate în cod și în pachetul livrat, NEEXERSATE live
 
-### Limite declarate (NEDOVEDITE, nu ascunse)
+|     | Item                                                  | Ce s-a verificat                                                                                                                                                                                                                                                                            |
+| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟡  | Germana nu mai revine în slovacă (NLLB)               | `de: "deu_Latn"` în hartă; `nllb_codes()` aruncă pe limbi nesuportate; lanțul prinde excepția și trece la providerul următor. **8 teste.** Nedovedibil din exterior: DeepL servește `de`, deci o cerere reală nu ajunge la NLLB. Live s-a confirmat doar că DE întoarce germană, nu slovacă |
+| 🟡  | Cele două tăceri la apăsarea pe SK                    | Textul „Nu am ce traduce…" e prezent în pachetul livrat în producție; golirea erorii la intrarea în `switchLanguage` e verificată în cod. Niciuna dintre cele două situații nu a fost declanșată live                                                                                       |
+| 🟡  | Pâlnia nu mai distruge sfatul bun (`UserFacingError`) | 4 teste, inclusiv garda inversă (o eroare neprevăzută folosește în continuare mecanismul). Neexersat live pe o poză prea mare / ilizibilă                                                                                                                                                   |
+| 🟡  | Planșe spune când lotul e incomplet                   | Cablat în toate cele 6 generatoare. Lotul incomplet apare doar la un bug de generare — greu de declanșat deliberat                                                                                                                                                                          |
+
+---
+
+## Defectul pe care auditorul l-a găsit și m-a infirmat
+
+Marcasem 🟢 rândul „cache-ul nu mai servește o traducere învechită". Auditorul de dovezi l-a
+**INFIRMAT live pe v63**, reproducându-l de trei ori.
+
+Fixul era real, dar **se oprea la reload** — adică exact pe drumul pe care tocmai îl deschisese
+reparația 2.A. După reload, provenienţa traducerii afișate era necunoscută, garda ieșea imediat,
+iar vederea tradusă restaurată din autosalvare intra în cache ca valabilă pentru orice sursă:
+
+```
+reload (documentul afișat în SK) → apăs RO (originalul revine ✓)
+→ adaug o corectură → apăs SK
+⇒ traducerea VECHE, instant, fără cerere, fără mesaj. Corectura pierdută tăcut.
+```
+
+Traseul realist al Cristinei: traduce, închide, revine a doua zi, corectează o formulă, apasă SK.
+Cele 4 teste treceau pentru că acopereau doar cazul din aceeași sesiune.
+
+**Reparat și dovedit live pe v64**, cu exact scenariul lui: „Cercul are o raza." → SK → reload → RO
+→ adaug „Diametrul este dublul razei." → SK ⇒ **„Kruh má polomer. / Priemer je dvojnásobok
+polomeru."** Corectura ajunge în traducere. Captură: `docs/dovezi/dovada_cache_dupa_reload_v64.jpg`.
+2 teste noi, pe scenariul de după reload.
+
+---
+
+## Alte remedieri născute din audit
+
+|     | Ce                                                                                               | De unde a venit                                                                                                                                                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | Ultima citire JSON care ocolea curățarea de framing (`convertor/page.tsx`, corpul de **eroare**) | Auditorul de dovezi. Fără ea se pierdea mesajul real al serverului și nu se scria niciun `E-NET-003`                                                                                                                                                                                                                          |
+| 🟢  | Sonda de versiune nu mai poate inunda jurnalul                                                   | Auditorul de regresie: `/api/health` la 30s prin `readJson` ar fi scris un `warn` la fiecare sondă, în fiecare filă                                                                                                                                                                                                           |
+| 🟢  | **Insigna de versiune nu mai dă alarmă falsă**                                                   | Auditorul de dovezi: compara sha-ul FRONTENDULUI cu `build_version` al BACKENDULUI — două proiecte livrate independent, care diverg normal ⇒ insignă roșie „reîncarcă" permanentă, pe care reload-ul nu o stingea. Acum semnalul vine de la service worker (`SW_UPDATED`), adică exact când reîncărcarea chiar aduce ceva nou |
+| 🟢  | `de` adăugat și la Groq/OpenRouter                                                               | Auditorul de cerințe: aceeași formă cu bug-ul NLLB; acolo benign (prompt degradat), dar capcana rămânea armată                                                                                                                                                                                                                |
+| 🟢  | R-LANG: identificatori și chei de log în engleză                                                 | Migrarea se vede în datele din Supabase: rândurile vechi au `corpLen`/`recuperat`, cele noi `bodyLen`/`recovered`                                                                                                                                                                                                             |
+
+---
+
+## Cerințe MUTATE explicit în faze următoare (nu sărite)
+
+**Mențiunea lui Roland la FAZA 2**, citată exact:
+
+> „pentru orice eroare aparuta sau vreu setare stabilita de noi, cristina cand apasa pe sk de
+> exemplu sa ii scrie acolo clar ca trebuie sa mai apese odata, sau ca este o eroare, sau sa
+> reincerce in 5 secunde"
+
+- **Exemplul din mențiune (butonul SK)** → ONORAT în Faza 2, dovedit live.
+- **„orice eroare / orice setare stabilită de noi", pe TOATE modulele** → decizia 2a e delimitată
+  la traducere, deci nu încape aici. Mecanismul există acum (`UserFacingError`) și primele trei
+  locuri au fost reparate (Teste OCR, Chat poză prea mare). Restul se face în **Faza 3** (caiet de
+  sarcini, buton cu buton) + **Faza 4** (audit modul cu modul). Roland decide dacă acceptă mutarea.
+
+---
+
+## Limite declarate (NEDOVEDITE, nu ascunse)
 
 - **Documente cu figuri (base64):** magazia scrie o a doua copie în `localStorage`. La
-  `QuotaExceededError` se raportează `E-EDIT-003` și originalul **nu** se salvează — adică exact
+  `QuotaExceededError` se raportează `E-EDIT-003` și originalul **nu** se salvează — exact
   documentele care contează cel mai mult sunt cele unde fixul poate să nu țină. Ce ar închide:
-  import fișă cu figuri din `Teste_Input` → traducere → reload → RO, fără `E-EDIT-003`. **Intră în Faza 4.**
+  import fișă cu figuri din `Teste_Input` → traducere → reload → RO, fără `E-EDIT-003`. **Faza 4.**
 
-### O greșeală a mea, consemnată
+---
+
+## O greșeală a mea, consemnată
 
 Am scris în acest fișier că 2.F.2 e **🔴 BLOCAT** și că „producția rulează v58". Era adevărat când
 am scris-o, dar **am deployat imediat după și nu am actualizat rândul** — auditorul l-a găsit
-spunându-i lui Roland să facă `vercel login` pentru ceva deja livrat. Un tablou „viu" care rămâne
-în urmă e exact genul de documentație care minte, împotriva căruia există acest fișier.
+spunându-i lui Roland să facă `vercel login` pentru ceva deja livrat. Apoi s-a repetat, mai mic:
+cât a durat auditul, producția a trecut v61→v63 și tabloul a rămas pe v61. Un tablou „viu" care
+rămâne în urmă minte la fel de rău ca documentația veche.
 
 ---
 
 ## 🟢 FAZA 2.5 — Cei trei agenți de audit
 
-|     | Item                                         | Dovadă                                                                                                                                                         |
-| --- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🟢  | `auditor-dovezi`                             | A rulat pe Faza 2: 6 CONFIRMAT / 1 INFIRMAT. A prins că dovada lui 2.D nu susținea afirmația și a găsit un defect nou, live                                    |
-| 🟢  | `auditor-regresie`                           | A rulat jest **efectiv pe commit-ul anterior** (384) vs. acum (402) — creștere reală, nu aritmetică. Verdict: FĂRĂ REGRESIE. A prins că agenții nu erau comiși |
-| 🟢  | `auditor-cerinte`                            | A găsit 4 abateri reale, inclusiv bug-ul `de`→slovacă din backend                                                                                              |
-| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                        |
-| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; în sesiunea care i-a creat au rulat cu instrucțiunile injectate. ⏳ de confirmat la prima sesiune nouă            |
+|     | Item                                         | Dovadă                                                                                                                                                                                   |
+| --- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🟢  | `auditor-dovezi`                             | Două rulări. A prins că dovada lui 2.D nu susținea afirmația, a găsit defectul de cache **și** l-a infirmat a doua oară, live                                                            |
+| 🟢  | `auditor-regresie`                           | A rulat jest pe commit-ul anterior (384) vs. acum — creștere reală. A prins că agenții nu erau comiși și riscul de inundare a jurnalului                                                 |
+| 🟢  | `auditor-cerinte`                            | A găsit bug-ul `de`→slovacă, cele două tăceri, mesajul fals pe căile care aruncă deliberat, și Planșe fără mesaj la lot incomplet                                                        |
+| 🟢  | Regula R-AUDIT-FAZA + agenții, comiși în git | `.claude/agents/*.md`, `.claude/rules/project_rules.md`                                                                                                                                  |
+| 🟡  | Se încarcă sub numele lor ca agenți          | Claude Code îi citește la pornirea sesiunii; aici au rulat cu instrucțiunile injectate. **Condiția nu a fost încă testată** — nu „testată și picată". De confirmat la prima sesiune nouă |
 
 ---
 
@@ -94,11 +158,13 @@ spunându-i lui Roland să facă `vercel login` pentru ceva deja livrat. Un tabl
 
 Decizii: **3a** doar butoanele de execuție · **3b** inventar + confirmare live · **3c** `.md` **și** `.html`
 cu căutare, editabil ca `Fazele.html` · mențiune: **fișier viu, auto-actualizabil**.
+**Preia:** mențiunea A5 (mesaje acționabile pe toate modulele).
 
 ## ⬜ FAZA 4 — Auditul real în browser
 
 Decizii: **4a** fișiere reale din `99_Roland_Work\Teste_Input` → rezultate în `Teste_Output` ·
 **4b** de la cel mai folosit modul la cel mai rar · **4c** notez și continui, reparăm la final.
+**Preia:** limita `QuotaExceededError` pe documente cu figuri.
 
 ## ⬜ FAZA 4.5 — Reparațiile din lista de la 4c
 
@@ -110,10 +176,12 @@ Decizii: **4a** fișiere reale din `99_Roland_Work\Teste_Input` → rezultate î
 
 ## Riscuri deschise
 
-| Risc                                                                    | Stare                                         |
-| ----------------------------------------------------------------------- | --------------------------------------------- |
-| Traducere + reload = originalul se pierde                               | 🟢 reparat, dovedit live de două ori          |
-| Eșec intermitent la traducere (cold start Vercel)                       | 🟢 reparat, prins pe bug-ul real în producție |
-| Germana revenea în slovacă prin NLLB, tăcut                             | 🟢 reparat + 8 teste                          |
-| Cache pe limbă servea traducerea de dinainte de corectură               | 🟢 reparat, dovedit live pe v61               |
-| `QuotaExceededError` pe documente cu figuri → originalul nu se salvează | 🔴 deschis, netestat — intră în Faza 4        |
+| Risc                                                                    | Stare                                                                                                                                        |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traducere + reload = originalul se pierde                               | 🟢 reparat, exersat live de 5 ori                                                                                                            |
+| Eșec intermitent la traducere (cold start Vercel)                       | 🟢 reparat, prins pe bug-ul real în producție                                                                                                |
+| Cache pe limbă servea traducerea de dinainte de corectură               | 🟢 reparat în două runde, dovedit live pe v64                                                                                                |
+| Germana revenea în slovacă prin NLLB                                    | 🟡 reparat + 8 teste; nedovedibil live din exterior                                                                                          |
+| `QuotaExceededError` pe documente cu figuri → originalul nu se salvează | 🔴 deschis, netestat — Faza 4                                                                                                                |
+| **Marcajele de timp din jurnal sunt cu ~24h în urmă**                   | 🔴 deschis, semnalat de auditor. Ordinea relativă e corectă, data absolută nu. Contează pentru R-DIAG-AUTO, care filtrează „log-uri recente" |
+| Mesaje neacționabile în restul modulelor (mențiunea A5)                 | 🟡 mecanism gata, 3 locuri reparate; restul în Faza 3+4                                                                                      |
