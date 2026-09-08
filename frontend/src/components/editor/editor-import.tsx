@@ -25,6 +25,7 @@ import {
 import type { Editor } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { API_URL } from "@/lib/api-url";
+import { readJson } from "@/lib/json-response";
 import { fetchWithRetry } from "@/lib/fetch-retry";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { docxArrayBufferToBlocks } from "@/lib/docx-to-blocks";
@@ -129,11 +130,13 @@ async function ocrRequest(
   });
   if (res.status === 413) throw new Error("Fișierul e prea mare (peste 4MB).");
   if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
-  const data = (await res.json()) as {
+  // FAZA 2: aceeași curățare de framing ca la traducere — OCR-ul avea bug-ul
+  // latent identic (cold start Vercel Python), doar că nu-l lovise nimeni încă.
+  const data = await readJson<{
     structured_pages?: OcrPage[];
     status?: string;
     error?: string;
-  };
+  }>(res, "editor.import.ocr");
   if (data.status === "error") throw new Error(data.error || "OCR a eșuat");
   return data.structured_pages || [];
 }

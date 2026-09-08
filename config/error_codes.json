@@ -113,6 +113,13 @@
       "severity": "warn",
       "area": "network"
     },
+    "E-NET-003": {
+      "message": "Corp de raspuns deteriorat — framing intern scurs peste JSON",
+      "cause": "Runtime-ul Vercel Python scurge antete interne (`x-vercel-internal-timing: ...`) in CORPUL raspunsului la cold start, iar `res.json()` crapa desi statusul e 200. Observat live 08.09.2026 pe traducere; aceeasi clasa reparata la R9 pe calea BINARA a Convertorului (`stripVercelFraming`), unde calea JSON ramasese necuratata. Intermitent: ~1 din 5 incercari, pe orice limba, din 20.08.2026.",
+      "fix": "Toate citirile de JSON de la API-ul Python trec prin `lib/json-response.ts` (`readJson`), care taie gunoiul dinaintea primului `{`/`[` si reia parsarea. Severitate `warn` = eroarea a fost RECUPERATA automat, utilizatorul n-a vazut nimic. Daca apare des, verifica functiile Python din `api/` care scriu antete dupa `end_headers()`.",
+      "severity": "warn",
+      "area": "network"
+    },
     "E-RATE-001": {
       "message": "Prea multe cereri (rate limit)",
       "cause": "Rate-limit-ul proxy-ului (60 cereri/min/IP) sau al providerului (429) a fost atins — de obicei prea multe mesaje cascadate rapid.",

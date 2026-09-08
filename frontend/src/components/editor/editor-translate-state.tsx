@@ -31,6 +31,10 @@ import {
   getCachedDocTranslation,
   cacheDocTranslation,
 } from "@/lib/translation-cache";
+import {
+  readSourceSnapshot,
+  saveSourceSnapshot,
+} from "@/lib/editor-source-store";
 
 export type LangCode = "ro" | "sk" | "en" | "de";
 export const LANGS: { code: LangCode; label: string; name: string }[] = [
@@ -71,6 +75,10 @@ type TranslateCtx = {
   /** „Scris în": declară limba-sursă = limba conținutului curent. */
   changeSource: (lang: LangCode) => void;
   clearError: () => void;
+  /** (2b) Limba în care traducerea tocmai a eșuat — null dacă n-a eșuat nimic. */
+  failedTarget: LangCode | null;
+  /** (2b) Reia traducerea care a eșuat, fără ca Cristina să reîncarce pagina. */
+  retryTranslation: () => void;
 };
 
 const Ctx = createContext<TranslateCtx | null>(null);
@@ -87,13 +95,35 @@ export function EditorTranslateProvider({
   const [displayLang, setDisplayLang] = useState<LangCode>("ro");
   const [isTranslating, setIsTranslating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // (2b) Ținem minte ÎN CE limbă a eșuat, ca butonul „Încearcă din nou" să reia
+  // exact acea traducere. Fără asta, singura reîncercare posibilă era reîncărcarea
+  // paginii — iar la reload se pierdea originalul (vezi 2.A). Două defecte care
+  // se hrăneau unul pe altul.
+  const [failedTarget, setFailedTarget] = useState<LangCode | null>(null);
   const cacheRef = useRef<Map<LangCode, JSONContent>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
 
+  // FAZA 2 (2.A) — la reload, limba AFIȘATĂ vine din `editor_nou_lang_v1`, dar
+  // limba-SURSĂ și documentul original vin din magazia separată. Înainte, ambele
+  // erau puse pe limba afișată: dacă documentul fusese tradus, originalul devenea
+  // „sursă" și varianta românească se pierdea definitiv. Acum o repunem în cache,
+  // deci butonul RO o readuce instant.
   useEffect(() => {
-    const l = readLang();
-    setSourceLang(l);
-    setDisplayLang(l);
+    const afisat = readLang();
+    setDisplayLang(afisat);
+
+    const snap = readSourceSnapshot();
+    const sursaValida =
+      snap && LANGS.some((l) => l.code === snap.lang)
+        ? (snap.lang as LangCode)
+        : null;
+
+    if (snap && sursaValida) {
+      cacheRef.current.set(sursaValida, snap.doc);
+      setSourceLang(sursaValida);
+    } else {
+      setSourceLang(afisat);
+    }
   }, []);
 
   const changeSource = useCallback(
@@ -101,10 +131,13 @@ export function EditorTranslateProvider({
       if (!editor) return;
       // Conținutul curent E declarat ca fiind în `lang`. Resetez cache-ul (traducerile
       // vechi erau raportate la altă sursă).
-      cacheRef.current = new Map([[lang, editor.getJSON()]]);
+      const doc = editor.getJSON();
+      cacheRef.current = new Map([[lang, doc]]);
       setSourceLang(lang);
       setDisplayLang(lang);
       writeLang(lang);
+      // 2.A: originalul declarat acum devine cel care trebuie să supraviețuiască.
+      saveSourceSnapshot(lang, doc);
     },
     [editor],
   );
@@ -113,7 +146,14 @@ export function EditorTranslateProvider({
     async (target: LangCode) => {
       if (!editor || target === displayLang || isTranslating) return;
       // Capturez editările din vederea curentă înainte de a comuta.
-      cacheRef.current.set(displayLang, editor.getJSON());
+      const vedereCurenta = editor.getJSON();
+      cacheRef.current.set(displayLang, vedereCurenta);
+      // 2.A — momentul CRITIC: dacă plec DIN limba-sursă, asta e ultima ocazie de
+      // a pune originalul la adăpost. Din secunda următoare, autosalvarea va scrie
+      // peste el varianta tradusă. Aici se pierdea munca Cristinei.
+      if (displayLang === sourceLang) {
+        saveSourceSnapshot(sourceLang, vedereCurenta);
+      }
 
       const cached = cacheRef.current.get(target);
       if (cached) {
@@ -148,6 +188,7 @@ export function EditorTranslateProvider({
 
       setIsTranslating(true);
       setError(null);
+      setFailedTarget(null);
       abortRef.current?.abort();
       const ac = new AbortController();
       abortRef.current = ac;
@@ -179,6 +220,18 @@ export function EditorTranslateProvider({
           // Eșec în browser (bug de cod SAU răspuns corupt de la server) vs. eșec
           // de rețea/HTTP — sunt probleme diferite, deci coduri diferite.
           const localKind = classifyFailure(e);
+          // (2e) Mesajul îi spune Cristinei CE ARE DE FĂCUT, nu doar că a eșuat.
+          // Cerința ei, în cuvintele lui Roland: „să îi scrie acolo clar că
+          // trebuie să mai apese o dată, sau că este o eroare, sau să reîncerce
+          // în 5 secunde".
+          const indicatie =
+            localKind === "badResponse"
+              ? "Serverul a pornit greu și a trimis un răspuns deteriorat. Apasă „Încearcă din nou” — de obicei reușește din a doua."
+              : localKind === "network" || localKind === "http"
+                ? "Traducerea nu a ajuns la server. Așteaptă ~5 secunde și apasă „Încearcă din nou”."
+                : localKind === "timeout"
+                  ? "Documentul e mare și traducerea a durat prea mult. Apasă „Încearcă din nou”; dacă se repetă, împarte documentul în două."
+                  : undefined;
           const f = reportFailure({
             code:
               localKind === "logic" || localKind === "badResponse"
@@ -192,8 +245,11 @@ export function EditorTranslateProvider({
               ...docShape(sourceDoc),
             },
             sample: JSON.stringify(sourceDoc),
+            userHint: indicatie,
           });
           setError(f.userMessage);
+          // (2b) Butonul de reîncercare are nevoie să știe ce anume să reia.
+          setFailedTarget(target);
         }
       } finally {
         setIsTranslating(false);
@@ -202,7 +258,42 @@ export function EditorTranslateProvider({
     [editor, displayLang, sourceLang, isTranslating],
   );
 
-  const clearError = useCallback(() => setError(null), []);
+  // 2.A — cât timp pe ecran e limba-sursă, orice editare schimbă ORIGINALUL.
+  // Îl reîmprospătăm cu aceeași temporizare ca autosalvarea documentului (1,5 s),
+  // ca cele două să nu se desincronizeze. Fără asta, originalul salvat ar fi cel
+  // de dinaintea ultimelor corecturi ale Cristinei.
+  useEffect(() => {
+    if (!editor || displayLang !== sourceLang) return;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const onUpdate = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(
+        () => saveSourceSnapshot(sourceLang, editor.getJSON()),
+        1500,
+      );
+    };
+    editor.on("update", onUpdate);
+    return () => {
+      editor.off("update", onUpdate);
+      if (t) clearTimeout(t);
+    };
+  }, [editor, displayLang, sourceLang]);
+
+  const clearError = useCallback(() => {
+    setError(null);
+    setFailedTarget(null);
+  }, []);
+
+  // (2b) Reia EXACT traducerea care a picat, pe loc. Înainte, singura reîncercare
+  // posibilă era reîncărcarea paginii — iar reload-ul ducea la pierderea
+  // originalului (2.A). Butonul rupe acest lanț.
+  const retryTranslation = useCallback(() => {
+    if (!failedTarget || isTranslating) return;
+    const tinta = failedTarget;
+    setError(null);
+    setFailedTarget(null);
+    void switchLanguage(tinta);
+  }, [failedTarget, isTranslating, switchLanguage]);
 
   return (
     <Ctx.Provider
@@ -214,6 +305,8 @@ export function EditorTranslateProvider({
         switchLanguage,
         changeSource,
         clearError,
+        failedTarget,
+        retryTranslation,
       }}
     >
       {children}

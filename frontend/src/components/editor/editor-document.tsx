@@ -12,6 +12,7 @@ import {
 import type { Editor } from "@tiptap/react";
 import { trackEditor } from "./editor-telemetry";
 import { reportFailure } from "@/lib/failure";
+import { clearSourceSnapshot } from "@/lib/editor-source-store";
 
 /**
  * Persistență document (F4b) — cheie NOUĂ separată de editorul vechi (`editor_documente_v1`),
@@ -207,6 +208,9 @@ export function EditorDocumentProvider({
     } catch {
       /* ignore */
     }
+    // 2.A: documentul curent dispare → și originalul salvat trebuie să dispară.
+    // Altfel butonul RO ar învia textul unui document care nu mai există.
+    clearSourceSnapshot();
   }, [editor]);
 
   const bringLegacy = useCallback(() => {
@@ -219,6 +223,9 @@ export function EditorDocumentProvider({
     editor.commands.setContent(legacy.html);
     setName(legacy.name);
     persist(legacy.html, legacy.name);
+    // 2.A: conținutul a fost ÎNLOCUIT cu alt document → originalul vechi nu mai
+    // are legătură cu ce e pe ecran.
+    clearSourceSnapshot();
     markLegacyHandled();
     trackEditor("legacy_bring", { name: legacy.name });
     setLegacyAvailableName(null);

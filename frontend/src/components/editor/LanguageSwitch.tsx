@@ -6,7 +6,7 @@
  * documentul; formulele/figurile/tabelele rămân intacte.
  */
 
-import { Loader2, Languages, ChevronDown, X } from "lucide-react";
+import { Loader2, Languages, ChevronDown, X, RotateCcw } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,8 @@ export function LanguageSwitch({ compact = false }: { compact?: boolean }) {
     switchLanguage,
     changeSource,
     clearError,
+    failedTarget,
+    retryTranslation,
   } = useEditorTranslate();
 
   const srcName = LANGS.find((l) => l.code === sourceLang)?.label ?? "RO";
@@ -109,8 +111,25 @@ export function LanguageSwitch({ compact = false }: { compact?: boolean }) {
       <DeepLQuotaBadge refreshSignal={isTranslating} />
 
       {error && (
-        <span className="inline-flex items-center gap-1 rounded bg-destructive/15 px-1.5 py-0.5 text-xs text-destructive">
+        <span
+          role="alert"
+          className="inline-flex items-center gap-1.5 rounded bg-destructive/15 px-1.5 py-0.5 text-xs text-destructive"
+        >
           {error}
+          {/* (2b) Reîncercarea, la un clic. Înainte, singura cale era reîncărcarea
+              paginii — care ducea la pierderea originalului (2.A). */}
+          {failedTarget && !isTranslating && (
+            <button
+              onClick={retryTranslation}
+              className="inline-flex items-center gap-1 rounded border border-destructive/40 px-1.5 py-0.5 font-medium hover:bg-destructive/20"
+              title={`Reia traducerea în ${
+                LANGS.find((l) => l.code === failedTarget)?.name ?? failedTarget
+              }`}
+            >
+              <RotateCcw className="h-3 w-3" />
+              Încearcă din nou
+            </button>
+          )}
           <button
             onClick={clearError}
             aria-label="Închide eroarea"

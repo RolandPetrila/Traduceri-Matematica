@@ -9,6 +9,7 @@ import { getEditorText } from "@/lib/editor-commands";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
+import { readJson } from "@/lib/json-response";
 import { reportFailure } from "@/lib/failure";
 
 /**
@@ -199,7 +200,10 @@ export function ChatPanel({
       });
       if (res.status === 413) throw new Error("Poza e prea mare.");
       if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
-      const data = (await res.json()) as { structured_pages?: OcrPageLite[] };
+      const data = await readJson<{ structured_pages?: OcrPageLite[] }>(
+        res,
+        "chat.ocr",
+      );
       const extracted = pagesToText(data.structured_pages || []);
       setStatus("idle");
       setNote("");

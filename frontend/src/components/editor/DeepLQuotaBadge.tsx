@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { API_URL } from "@/lib/api-url";
+import { readJson } from "@/lib/json-response";
 
 interface Usage {
   character_count: number;
@@ -29,7 +30,7 @@ async function fetchUsage(force = false): Promise<Usage> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.data;
   if (!force && inflight) return inflight;
   inflight = fetch(`${API_URL}/api/deepl-usage`)
-    .then((r) => r.json() as Promise<Usage>)
+    .then((r) => readJson<Usage>(r, "editor.deeplQuota"))
     .then((d) => {
       cache = { at: Date.now(), data: d };
       inflight = null;

@@ -12,6 +12,7 @@ import { buildSystemPrompt } from "@/lib/chat-context";
 import { renderMathText } from "@/lib/math-html";
 import { ensureImageUnderCap } from "@/lib/image-downscale";
 import { API_URL } from "@/lib/api-url";
+import { readJson } from "@/lib/json-response";
 import { reportFailure } from "@/lib/failure";
 import {
   CLASSES,
@@ -514,9 +515,9 @@ function CorrectTab({
       });
       if (res.status === 413) throw new Error("Poza e prea mare.");
       if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
-      const data = (await res.json()) as {
+      const data = await readJson<{
         structured_pages?: { title?: string; sections?: OcrSectionLite[] }[];
-      };
+      }>(res, "teste.ocr");
       const text = (data.structured_pages || [])
         .map((p) =>
           [p.title, ...(p.sections || []).map(sectionText)]

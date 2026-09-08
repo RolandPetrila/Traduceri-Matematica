@@ -9,7 +9,11 @@
  *    se păstrează, fragmentare doar unde formatarea fragmenta deja fraza.
  *  - Formulele inline intră în textul secțiunii ca `$latex$` — protejate automat de
  *    `math_protect.py` pe server (DeepL <keep> / LLM __MATH_N__), deci NU se traduc.
- *  - Formulele-bloc, figurile (img), tabelele = păstrate ca noduri (nu intră la traducere).
+ *  - Formulele-bloc și figurile (img) = păstrate ca noduri (nu intră la traducere).
+ *  - Tabelele: STRUCTURA rămâne intactă, dar TEXTUL din celule SE TRADUCE — parcurgerea
+ *    coboară în tableRow → tableCell → paragraph. (Corectat 08.09.2026: comentariul
+ *    de aici susținea că tabelele „nu intră la traducere", ceea ce era fals. Dovada:
+ *    `editor-translate-tables.test.ts`.)
  *
  * Contract server (verificat): POST text/plain (NU application/json — altfel preflight 503),
  * body `{ text_sections:[{type,content}], source_lang, target_lang, translate_engine }`,
@@ -19,6 +23,7 @@
 import type { JSONContent } from "@tiptap/core";
 import { API_URL } from "@/lib/api-url";
 import { fetchWithRetry } from "@/lib/fetch-retry";
+import { readJson } from "@/lib/json-response";
 
 /** Separatorul cu care serverul îmbină secțiunile la batch — dacă apare în conținutul
  *  nostru ar strica împărțirea. Îl detectăm și forțăm calea per-secțiune (o cerere/secțiune). */
@@ -216,9 +221,13 @@ async function postSections(
       signal,
     });
     if (!res.ok) throw new Error(`translate HTTP ${res.status}`);
-    const data = (await res.json()) as {
+    // FAZA 2 — NU `res.json()`: la cold start, runtime-ul Vercel Python scurge
+    // framing intern în corpul răspunsului, iar parsarea directă crapă deși
+    // traducerea e acolo, corectă. `readJson` o curăță și o folosește. Ăsta e
+    // bug-ul SK pe care l-a lovit Roland (intermitent, ~1 din 5).
+    const data = await readJson<{
       translated_sections?: { content?: string }[];
-    };
+    }>(res, "editor.translate");
     const out = data.translated_sections || [];
     return batch.map((orig, i) => out[i]?.content ?? orig);
   };
