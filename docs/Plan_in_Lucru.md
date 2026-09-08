@@ -20,7 +20,23 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** ziua livrării Fazei 2 · **Producție:** frontend **v70** · **Fază activă:** FAZA 2
+**Ultima actualizare:** ziua livrării Fazei 2 · **Producție:** frontend **v71** · **FAZA 2 ÎNCHISĂ** (5 runde de audit trecute) · **Următoarea:** FAZA 3
+
+> ### ✅ FAZA 2 — ÎNCHISĂ
+>
+> Trecută prin **5 runde** de audit independent (dovezi + regresie + cerințe). Verdict final:
+> dovezi „se susține pe v71", regresie „FĂRĂ REGRESIE". Toate obiectivele 2.A–2.E dovedite live,
+> plus defectele găsite pe parcurs (cache învechit, memorie plină, germană→slovacă, mesaje care
+> mințeau, regresia mea din Planșe) reparate și verificate. Poartă: `tsc 0 · jest 428/428 ·
+build OK · pytest 83/83 · planse sintaxă OK`.
+>
+> **Rămas de decis de Roland înainte de Faza 3:** mutarea A5 — „mesaje acționabile pentru orice
+> eroare, pe toate modulele" e onorată pe fluxurile centrale (9 locuri), dar extinderea sistematică
+> pe fiecare buton e propusă pentru Faza 3+4. Vezi §„Cerințe MUTATE explicit".
+>
+> **Notă operațională (nu defect):** un utilizator cu tab-ul deschis din versiunea veche vede
+> textul vechi până la reîncărcare (cache-lag normal de PWA). Fix-ul e livrat; propagarea la
+> clienți cere un reload.
 
 ---
 

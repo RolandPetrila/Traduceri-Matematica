@@ -2,7 +2,36 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI (2026-09-08, seara) — FAZA 1 EXECUTATĂ + DEPLOYATĂ + VERIFICATĂ LIVE · cauza bug-ului #1 GĂSITĂ
+## ▶️ REIA DE AICI — FAZA 2 ÎNCHISĂ (frontend v71, 5 runde de audit) · urmează FAZA 3
+
+> ⏰ **Ceasul laptopului e cu o zi înainte** (Google/Vercel = 07.09.2026, laptop = 08.09). Datele
+> scrise în această sesiune sunt cu o zi în plus. De sincronizat în Windows.
+
+**Sursa de adevăr pentru stare: `docs/Plan_in_Lucru.md`** (tablou de bord viu). Deciziile lui Roland:
+`99_Roland_Work/Fazele_mentiuni_Roland.md`. Reclamațiile: `docs/completari_pt_reparatie.md`.
+
+**Ce s-a livrat în FAZA 2** (frontend v71 + backend, verificat live pe producție prin cei 3 auditori
+din `.claude/agents/*.md`, regula R-AUDIT-FAZA):
+
+- Originalul nu se mai pierde la reload (`lib/editor-source-store.ts`)
+- Bug-ul SK recuperat client-side (`lib/json-response.ts` — framing Vercel în corpul JSON)
+- Buton „Încearcă din nou" + mesaje acționabile + `UserFacingError` (păstrează sfatul scris de programator)
+- Cache pe limbă nu mai servește traduceri învechite (`lib/translation-cache-guard.ts`)
+- Tabelele se traduc pe SK/EN/DE; germana nu mai revine în slovacă (`NLLB_LANG_MAP`)
+- Memorie plină: comutarea se refuză cu mesaj + eviction + alarmă de salvare vizibilă (desktop + `MobileSaveAlarm`)
+- Framing binar curățat și în Istoric (`lib/binary-framing.ts`, extras din Convertor)
+- **Poarta acoperă acum și `public/planse/`** (`planse-smoke.test.ts`) — era complet în afara ei
+
+**DE DECIS de Roland înainte de Faza 3:** mutarea A5 (mesaje acționabile pe TOATE modulele, nu doar
+cele 9 fluxuri centrale reparate) → propusă pentru Faza 3+4. Vezi `docs/Plan_in_Lucru.md` §Cerințe MUTATE.
+
+**Cei 3 auditori** (`auditor-dovezi`, `auditor-regresie`, `auditor-cerinte`) rulează la finalul
+fiecărei faze — au prins 5 clase de defecte pe care poarta verde nu le vedea. `auditor-dovezi` și
+`auditor-cerinte` au nevoie de browser (fără listă `tools:`); `auditor-regresie` doar de poartă.
+
+---
+
+## FAZA 1 EXECUTATĂ + DEPLOYATĂ + VERIFICATĂ LIVE · cauza bug-ului #1 GĂSITĂ (istoric)
 
 > **Ce a cerut Roland:** execută Faza 1 (orbirea diagnostică) pe variantele `[recomandat]`.
 > Apoi, după ce trimite `Fazele.md` completat de el, se reverifică Faza 1 + punctele A/B/C
