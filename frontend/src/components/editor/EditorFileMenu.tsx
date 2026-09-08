@@ -177,10 +177,12 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
         </DropdownMenu>
 
         {/* Status auto-save (mic, discret) */}
-        {/* La eșec de salvare NU mai e „discret": e vizibil pe orice ecran,
-            inclusiv pe telefon, și anunțat asertiv cititoarelor de ecran. Insigna
-            înghețată pe ultima oră reușită o lăsa pe Cristina să scrie ore întregi
-            într-un document care nu se mai salva. */}
+        {/* La eșec de salvare NU mai e „discret": devine alarmă, anunțată asertiv
+            cititoarelor de ecran. Aici, în bara desktop; pe TELEFON, unde acest meniu
+            e îngropat în Sheet-ul „Format", alarma apare separat în bara slim
+            mereu-vizibilă (`MobileSaveAlarm` din `MobileToolbar`). Insigna înghețată
+            pe ultima oră reușită o lăsa pe Cristina să scrie ore întregi într-un
+            document care nu se mai salva. */}
         <span
           className={
             saveFailed

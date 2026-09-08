@@ -23,6 +23,32 @@ import {
 import { TiptapToolbar } from "./TiptapToolbar";
 import { EditorDictateButton } from "./editor-dictation";
 import { useEditorFind } from "./editor-find";
+import { useEditorDocument } from "./editor-document";
+
+/**
+ * Alarmă de salvare eșuată, în bara slim MEREU-vizibilă de pe telefon.
+ *
+ * Insigna de salvare completă trăiește în `EditorFileMenu`, care pe telefon e
+ * îngropat în Sheet-ul „Format", închis — deci un eșec de salvare rămânea invizibil
+ * pentru Cristina până dădea tap pe Format. Un mesaj despre pierderea de date pe
+ * care utilizatorul mobil nu-l vede e aproape la fel de rău ca lipsa lui (semnalat
+ * de auditorul de regresie, care a prins că afirmam „vizibil pe telefon" fără să
+ * fie adevărat). Apare DOAR la eșec, deci nu fură spațiu din bară în restul timpului.
+ */
+function MobileSaveAlarm() {
+  const { saveFailed } = useEditorDocument();
+  if (!saveFailed) return null;
+  return (
+    <span
+      role="alert"
+      aria-live="assertive"
+      className="flex items-center gap-1 rounded bg-destructive/15 px-1.5 py-0.5 text-xs font-medium text-destructive"
+      title="Documentul nu se mai salvează — exportă-l acum (Format → Export)"
+    >
+      ⚠ nu se salvează
+    </span>
+  );
+}
 
 function useEditorTick(editor: Editor | null) {
   const [, setTick] = useState(0);
@@ -108,7 +134,9 @@ export function MobileToolbar({ editor }: { editor: Editor | null }) {
       <Separator orientation="vertical" className="h-6" />
       <EditorDictateButton variant="slim" />
 
-      <div className="ml-auto">
+      {/* Alarma de salvare eșuată — între unelte și „Format", vizibilă fără niciun tap. */}
+      <div className="ml-auto flex items-center gap-1.5">
+        <MobileSaveAlarm />
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
             <Button
