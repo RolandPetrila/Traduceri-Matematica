@@ -22,8 +22,9 @@ din `.claude/agents/*.md`, regula R-AUDIT-FAZA):
 - Framing binar curățat și în Istoric (`lib/binary-framing.ts`, extras din Convertor)
 - **Poarta acoperă acum și `public/planse/`** (`planse-smoke.test.ts`) — era complet în afara ei
 
-**DE DECIS de Roland înainte de Faza 3:** mutarea A5 (mesaje acționabile pe TOATE modulele, nu doar
-cele 9 fluxuri centrale reparate) → propusă pentru Faza 3+4. Vezi `docs/Plan_in_Lucru.md` §Cerințe MUTATE.
+**DECIS de Roland (2026-09-09):** mutarea A5 (mesaje acționabile pe TOATE modulele, nu doar cele 9
+fluxuri centrale reparate) rămâne confirmat în Faza 3+4 — nu se implementează separat acum.
+Vezi `docs/Plan_in_Lucru.md` §Cerințe MUTATE.
 
 **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA, cerut de Roland 09.09.2026): O FAZĂ PER SESIUNE.** Execuți
 UNA singură fază, rulezi cei trei auditori, salvezi tot (rescrii acest bloc cu faza următoare +

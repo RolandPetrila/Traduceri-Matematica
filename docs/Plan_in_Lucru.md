@@ -30,9 +30,11 @@
 > mințeau, regresia mea din Planșe) reparate și verificate. Poartă: `tsc 0 · jest 428/428 ·
 build OK · pytest 83/83 · planse sintaxă OK`.
 >
-> **Rămas de decis de Roland înainte de Faza 3:** mutarea A5 — „mesaje acționabile pentru orice
-> eroare, pe toate modulele" e onorată pe fluxurile centrale (9 locuri), dar extinderea sistematică
-> pe fiecare buton e propusă pentru Faza 3+4. Vezi §„Cerințe MUTATE explicit".
+> **DECIS de Roland (2026-09-09):** mutarea A5 — „mesaje acționabile pentru orice eroare, pe toate
+> modulele" e onorată pe fluxurile centrale (9 locuri); extinderea sistematică pe fiecare buton
+> **rămâne în Faza 3+4** (confirmat, nu se implementează separat acum — Faza 3 inventariază fiecare
+> buton, Faza 4 îl auditează live; a face treaba acum ar însemna s-o refaci fără caietul de sarcini
+> ca ghid). Vezi §„Cerințe MUTATE explicit".
 >
 > **Notă operațională (nu defect):** un utilizator cu tab-ul deschis din versiunea veche vede
 > textul vechi până la reîncărcare (cache-lag normal de PWA). Fix-ul e livrat; propagarea la
@@ -151,7 +153,7 @@ poarta nu-l vede.
   _Corecție față de versiunea anterioară a acestui document: motivația scrisă atunci — „decizia 2a
   e delimitată la traducere" — era **falsă**. 2a e despre adâncimea traducerii, nu despre mesaje.
   Motivul real e volumul: mecanismul există, dar parcurgerea tuturor modulelor buton cu buton E
-  Faza 3-4._ Roland decide dacă acceptă mutarea.
+  Faza 3-4._ **Roland a confirmat mutarea (2026-09-09)** — vezi și blocul de sus.
 
 ---
 
