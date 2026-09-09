@@ -20,7 +20,7 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** ziua livrării Fazei 2 · **Producție:** frontend **v71** · **FAZA 2 ÎNCHISĂ** (5 runde de audit trecute) · **Următoarea:** FAZA 3
+**Ultima actualizare:** 2026-09-09 (Faza 3 închisă) · **Producție:** frontend **v71** (Faza 3 = doar documentație, fără deploy) · **FAZA 3 ÎNCHISĂ** · **Următoarea:** FAZA 4
 
 > ### ✅ FAZA 2 — ÎNCHISĂ
 >
@@ -180,11 +180,59 @@ rămâne în urmă minte la fel de rău ca documentația veche.
 
 ---
 
-## ⬜ FAZA 3 — Caiet de sarcini
+## 🟢 FAZA 3 — Caiet de sarcini `ÎNCHISĂ (2026-09-09)`
 
 Decizii: **3a** doar butoanele de execuție · **3b** inventar + confirmare live · **3c** `.md` **și** `.html`
 cu căutare, editabil ca `Fazele.html` · mențiune: **fișier viu, auto-actualizabil**.
-**Preia:** mesaje acționabile pe toate modulele.
+**Preia:** mesaje acționabile pe toate modulele (decizia A5, confirmată 2026-09-09).
+
+**Livrat:** `docs/caiet_de_sarcini/data.json` (sursă unică) → `docs/caiet_de_sarcini.md` +
+`docs/caiet_de_sarcini.html`, generate cu `docs/caiet_de_sarcini/generate.mjs`. **104 butoane de
+execuție / 38 submodule / 8 module.** Fiecare rând: buton, ce execută, cum se testează, coduri de
+eroare posibile, mesaj acționabil la eroare (A5), sursă (fișier:linie), status. Plan complet +
+jurnal execuție: `docs/PLAN_FAZA3_CAIET_SARCINI_2026-09-09.md`.
+
+**Metodă:** 8 subagenți secvențiali (unul per modul, nu fan-out paralel), fiecare a citit codul
+sursă real și a produs inventarul; asamblat manual în `data.json` după fiecare, validat JSON +
+regenerat `.md`/`.html` la fiecare pas. Sanity-check live (Chrome, `traduceri-frontend.vercel.app`)
+pe toate cele 8 module — vezi jurnalul din plan pt detalii pe modul.
+
+**`.html` are acum mecanism de adnotare** (cerut explicit de Roland, „exact cum facem in acest
+html": Fazele.html) — textarea per buton, autosave `localStorage`, buton „💾 Descarcă mențiunile”
+care exportă `caiet_de_sarcini_mentiuni.md` separat (NU modifică `data.json` — sursa de adevăr
+rămâne curată). Verificat cu jsdom: search + autosave + restore + clear funcționează corect;
+descărcarea (`URL.createObjectURL`) nu se poate simula în jsdom (limitare de mediu de test, nu a
+codului — pattern identic cu `Fazele.html`, deja folosit real de Roland).
+
+**Defecte reale găsite în timpul inventarierii** (read-only, nereparate — semnalate, nu e scopul
+Fazei 3 să repare): buton „(” din Calculator cu label gol (confirmat live) · Teste: test cu barem
+trunchiat livrat ca succes fără cod de eroare + o cale de eșec complet invizibilă pe /diagnostics
+· Istoric: „Re-print PDF” loghează succes chiar dacă popup-ul a fost blocat · Planșe: generatoarele
+Unește/Dictare cu formă fixă + >1 planșă cerută = lot incomplet GARANTAT (nu doar posibil) · Școlare:
+o fișă poate fi livrată ca succes normal chiar dacă e o repetiție deja folosită (reroll epuizat
+fără avertisment) + auto-continuare eșuată invizibilă la diagnostics + **cel mai grav: „➕ În
+editor” poate pierde COMPLET conținutul fișei, silențios, dacă editorul TipTap nu s-a montat încă
+în fereastra de 150ms** — recomandat ca prioritate pt Faza 4.
+
+**Auditori (R-AUDIT-FAZA):**
+
+- `auditor-regresie`: **FĂRĂ REGRESIE** — `tsc 0 · jest 428/428 · pytest 83/83 · build OK`, identic
+  cu baseline Faza 2; niciun fișier din `frontend/`/`api/` atins.
+- `auditor-dovezi`: **CONFIRMAT** pe eșantion >20 rânduri din toate cele 8 module (surse
+  fișier:linie exacte, mesaje de eroare citate cuvânt cu cuvânt) + verificare live proprie pe Chat
+  AI/Teste/Planșe/Școlare; **NEDOVEDIT**: submodulele Istoric cu date reale (profil de test fără
+  intrări în localStorage) — rămâne `unverified`, de reluat la Faza 4 cu fișiere reale.
+- `auditor-cerinte`: a găsit 4 abateri reale, toate corectate în aceeași sesiune, ÎNAINTE de STOP:
+  (1) 5 rânduri nu erau butoane de execuție reale (formatare Bold/Italic/Aliniere — exemplul EXACT
+  respins de Roland; deschide/închide căutare; selectare/ștergere fișier Convertor) → **eliminate**
+  (109→104 butoane); (2) verificarea live 3b nu era scrisă nicăieri → **consemnată** în jurnalul
+  planului; (3) lipsea mecanismul de editare cerut explicit („exact cum facem în acest html”) →
+  **construit**, cu confirmarea lui Roland; (4) textul „auto-actualizabil” din antet supra-promitea
+  → **reformulat onest** (regenerare fără drift ≠ auto-detectare de butoane noi din cod).
+
+**Rămas pentru Faza 4** (nu Faza 3): audit funcțional real, cu fișierele din `Teste_Input`, modul cu
+modul — inclusiv verificarea live a Istoricului cu date reale și investigarea riscului de pierdere
+silențioasă la „➕ În editor” (Școlare).
 
 ## ⬜ FAZA 4 — Auditul real în browser
 

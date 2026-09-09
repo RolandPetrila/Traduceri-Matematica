@@ -2,7 +2,30 @@
 
 > Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 2 ÎNCHISĂ (frontend v71, 5 runde de audit) · urmează FAZA 3
+## ▶️ REIA DE AICI — FAZA 3 ÎNCHISĂ (caiet de sarcini, 104 butoane/8 module) · urmează FAZA 4
+
+> **Ce s-a livrat în FAZA 3 (2026-09-09):** caiet de sarcini modul→submodul→funcție→buton, în
+> `docs/caiet_de_sarcini/data.json` (sursă) → `docs/caiet_de_sarcini.md` + `.html` (generate cu
+> `docs/caiet_de_sarcini/generate.mjs`). **104 butoane de execuție / 38 submodule / 8 module.**
+> Plan + jurnal complet: `docs/PLAN_FAZA3_CAIET_SARCINI_2026-09-09.md`. Detalii metodă, mecanism
+> de adnotare (`.html` are acum textarea+autosave+export mențiuni, ca `Fazele.html`), defecte
+> reale găsite (7, read-only) și verdictele celor 3 auditori: `docs/Plan_in_Lucru.md` §FAZA 3.
+>
+> **Cel mai important defect găsit** (prioritate pt Faza 4): în Școlare, „➕ În editor” poate
+> pierde COMPLET conținutul unei fișe generate, silențios, fără nicio eroare vizibilă, dacă
+> editorul TipTap nu s-a montat încă în fereastra de 150ms folosită de `insertEditorText`.
+>
+> **Rămas nedovedit** (nu e defect, e limită a Fazei 3): submodulele Istoric nu au putut fi
+> verificate live cu date reale (profil de test fără istoric în localStorage) — de reluat la
+> Faza 4, cu fișierele din `Teste_Input`.
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** O FAZĂ PER SESIUNE — sesiunea Fazei 3 s-a oprit aici,
+> fără să înceapă Faza 4. Deschide o sesiune nouă cu `/onboard` pentru Faza 4 (audit real în
+> browser, modul cu modul, cu fișierele din `99_Roland_Work/Teste_Input`).
+
+---
+
+## FAZA 2 ÎNCHISĂ (frontend v71, 5 runde de audit) — istoric
 
 > ⏰ **Ceasul laptopului e cu o zi înainte** (Google/Vercel = 07.09.2026, laptop = 08.09). Datele
 > scrise în această sesiune sunt cu o zi în plus. De sincronizat în Windows.
