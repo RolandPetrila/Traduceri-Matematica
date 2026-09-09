@@ -52,7 +52,7 @@ header .status { color: var(--chalk-dim); font-size: 12px; min-width: 90px; }
   <button class="act" id="btnSave">💾 Descarcă mențiunile</button>
   <button class="act" id="btnClear">🗑 Șterge mențiunile</button>
   <span class="status" id="status"></span>
-  <span class="meta">104 butoane · 8 module · generat 2026-09-09 19:27 UTC</span>
+  <span class="meta">104 butoane · 8 module · generat 2026-09-09 19:47 UTC</span>
 </header>
 <nav class="modnav"><a href="#convertor">Convertor (5)</a><a href="#editor">Editor (import/OCR + traducere F8 + export) (38)</a><a href="#chat">Chat AI (7)</a><a href="#calculator">Calculator (15)</a><a href="#teste">Teste (Corectare-Generare) (7)</a><a href="#istoric">Istoric (6)</a><a href="#planse">Planșe (21)</a><a href="#scolare">Școlare (5)</a></nav>
 <div class="wrap">
@@ -863,7 +863,7 @@ header .status { color: var(--chalk-dim); font-size: 12px; min-width: 90px; }
         <td>E-TEST-001</td>
         <td>Cale eroare totala (flow 'teste.generate', TestePanel.tsx:198-208): '${r.error} (cod E-TEST-001)', unde r.error = 'Niciun provider AI n-a raspuns. Detalii: &lt;erorile per-provider&gt;' (produs in chat-providers.ts:263). Cale exceptie neprevazuta (flow 'teste.generate.crash', TestePanel.tsx:210-222, fara userHint): mesaj derivat din tipul erorii, ex. „Operatia a esuat in aplicatie, inainte de a trimite ceva la server — nu e o problema de internet. (cod E-TEST-001)”. Cale succes-cu-avertisment, FARA cod (TestePanel.tsx:190-194): „⚠ Testul poate fi INCOMPLET (baremul s-a putut trunchia). Apasa «Continua raspunsul» pentru restul.”</td>
         <td><code>frontend/src/components/teste/TestePanel.tsx:353-365 (handler generate() la 134-224)</code></td>
-        <td class="status-unverified">⬜ neverificat</td>
+        <td class="status-live_partial">🟡 parțial</td>
         <td><textarea class="mention" data-k="teste-genereaza-test" placeholder="Mențiune…" rows="2"></textarea></td>
       </tr>
 <tr data-search="teste (corectare-generare) generare test continua raspunsul ▸ trimite un mesaj suplimentar (continue_prompt) in continuarea istoricului 'history' prin sendchat/generation_opts si anexeaza raspunsul la finalul textului deja generat. precondiie vizibila: butonul apare doar daca truncated===true si status!=='loading' (ultimul raspuns ai a fost taiat la limita de tokeni — finishreason:'max_tokens' / finish_reason:'length', vezi istruncated() in chat-providers.ts). nu e fortabil determinist din interfata. daca apare: apasa-l si verifica nota „continuat cu &lt;provider&gt;.” + textul extins la finalul rezultatului. e-test-001 cale eroare (flow 'teste.generate.continue', testepanel.tsx:249-259, userhint=r.error): '${r.error} (cod e-test-001)'. cale exceptie (flow 'teste.generate.continue.crash', testepanel.tsx:260-269): mesaj derivat din kind + '(cod e-test-001)'. frontend/src/components/teste/testepanel.tsx:388-398 (handler continuegenerate() la 226-271)">
@@ -883,7 +883,7 @@ header .status { color: var(--chalk-dim); font-size: 12px; min-width: 90px; }
         <td>—</td>
         <td>NECUNOSCUT — apelul onSendToEditor(result) (TestePanel.tsx:404) e sincron, fara try/catch; implementarea din page.tsx:138-143 (handleTabChange('editor'); setTimeout(() =&gt; insertEditorText(text), 150)) nu expune nicio cale de eroare vizibila in fisierele revizuite, deci niciun cod E-TEST-* se poate declansa de aici.</td>
         <td><code>frontend/src/components/teste/TestePanel.tsx:399-408; frontend/src/app/page.tsx:138-143</code></td>
-        <td class="status-unverified">⬜ neverificat</td>
+        <td class="status-live_ok">🟢 verificat live</td>
         <td><textarea class="mention" data-k="teste-trimite-test-editor" placeholder="Mențiune…" rows="2"></textarea></td>
       </tr></tbody>
     </table>
@@ -899,7 +899,7 @@ header .status { color: var(--chalk-dim); font-size: 12px; min-width: 90px; }
         <td>E-TEST-003, E-TEST-002</td>
         <td>Etapa OCR (flow 'teste.correct.ocr', TestePanel.tsx:549-563, fara userHint — mesajul vine din UserFacingError.advice sau din kind-ul clasificat): 413 -&gt; „Poza e prea mare. Fa-o din nou la rezolutie mai mica sau decupeaza doar lucrarea — reincercarea aceleiasi poze va esua la fel. (cod E-TEST-003)”; niciun text gasit -&gt; „N-am gasit text in imagine. Verifica daca poza e dreapta si bine luminata, apoi incearca din nou. (cod E-TEST-003)”; text gol dupa curatarea marcajelor -&gt; „Nu am putut citi lucrarea (poza neclara sau prea intunecata?). Incearca alta poza — nu e o problema de conexiune. (cod E-TEST-003)”; alt HTTP non-ok -&gt; kind 'http' -&gt; „Serverul a raspuns cu eroare. Incearca din nou peste cateva momente. (cod E-TEST-003)”; JSON corupt la citire (readJson) -&gt; kind 'badResponse' -&gt; „Serverul a trimis un raspuns deteriorat. Incearca din nou. (cod E-TEST-003)”. Validare fara cod (nu trece prin reportFailure, TestePanel.tsx:499-502): „Ataseaza o POZA (jpg/png) a lucrarii.”. Etapa corectare AI (flow 'teste.correct', TestePanel.tsx:467-484, userHint=r.error): '${r.error} (cod E-TEST-002)'. Nota separata: readJson (json-response.ts) poate loga E-NET-003 la nivel warn daca JSON-ul OCR vine cu framing Vercel scurs peste corp — RECUPERAT automat, invizibil in nota (nu afecteaza mesajul vazut de utilizator).</td>
         <td><code>frontend/src/components/teste/TestePanel.tsx:603-622 (input+buton), handler onFile() la 498-564, care apeleaza correctText() la 448-496</code></td>
-        <td class="status-unverified">⬜ neverificat</td>
+        <td class="status-live_ok">🟢 verificat live</td>
         <td><textarea class="mention" data-k="teste-ataseaza-poza-lucrare" placeholder="Mențiune…" rows="2"></textarea></td>
       </tr>
 <tr data-search="teste (corectare-generare) corectare lucrare corecteaza textul trimite textul lipit in textarea prin correcttext() direct la lantul ai (sendchat/generation_opts) pentru corectare pas-cu-pas + nota orientativa, fara pasul ocr. precondiie vizibila: butonul e disabled daca status==='loading' sau textarea e goala. 1) deschide sub-tab „corecteaza”. 2) scrie/lipeste text de lucrare in caseta „...sau lipeste/scrie textul lucrarii”. 3) apasa „corecteaza textul”. succes: nota „corectat cu &lt;provider&gt;.” + corectura randata. eroare: blocheaza /api/proxy din devtools -&gt; network inainte de a apasa -&gt; verifica mesajul cu cod e-test-002. e-test-002 cale eroare (flow 'teste.correct', testepanel.tsx:467-484, userhint=r.error): '${r.error} (cod e-test-002)'. cale exceptie (flow 'teste.correct.crash', testepanel.tsx:485-495): mesaj derivat din kind + '(cod e-test-002)'. garda la text gol, fara cod (testepanel.tsx:449-452): „n-am text de corectat.” frontend/src/components/teste/testepanel.tsx:638-647, handler correcttext() la 448-496">
@@ -909,7 +909,7 @@ header .status { color: var(--chalk-dim); font-size: 12px; min-width: 90px; }
         <td>E-TEST-002</td>
         <td>Cale eroare (flow 'teste.correct', TestePanel.tsx:467-484, userHint=r.error): '${r.error} (cod E-TEST-002)'. Cale exceptie (flow 'teste.correct.crash', TestePanel.tsx:485-495): mesaj derivat din kind + '(cod E-TEST-002)'. Garda la text gol, fara cod (TestePanel.tsx:449-452): „N-am text de corectat.”</td>
         <td><code>frontend/src/components/teste/TestePanel.tsx:638-647, handler correctText() la 448-496</code></td>
-        <td class="status-unverified">⬜ neverificat</td>
+        <td class="status-live_ok">🟢 verificat live</td>
         <td><textarea class="mention" data-k="teste-corecteaza-text" placeholder="Mențiune…" rows="2"></textarea></td>
       </tr>
 <tr data-search="teste (corectare-generare) corectare lucrare continua raspunsul ▸ trimite continue_prompt prin sendchat/generation_opts folosind history-ul corecturii si anexeaza raspunsul la result. defect gasit: spre deosebire de continuegenerate, acest handler nu trece prin reportfailure — la esec afiseaza direct r.error sau mesajul brut al exceptiei, fara niciun cod e-test-* si fara nicio logare in supabase/diagnostics. e singura cale de esec din tot modulul teste complet invizibila pe /diagnostics. precondiie vizibila: apare doar daca truncated===true si status!=='loading' (raspunsul de corectare a fost taiat la limita de tokeni). nu e fortabil determinist din ui. daca apare: apasa-l si verifica fie extinderea rezultatului, fie — la eroare — o nota fara niciun cod vizibil.  cale eroare (testepanel.tsx:587-590): setnote(r.error) — textul brut produs de sendchat in chat-providers.ts, ex. 'niciun provider ai n-a raspuns. detalii: …', fara '(cod ...)' anexat. cale exceptie (testepanel.tsx:591-594): setnote((e as error).message || 'eroare') — de asemenea fara cod. frontend/src/components/teste/testepanel.tsx:665-675, handler continuecorrect() la 566-595">
@@ -929,7 +929,7 @@ header .status { color: var(--chalk-dim); font-size: 12px; min-width: 90px; }
         <td>—</td>
         <td>NECUNOSCUT — apel sincron fara try/catch (TestePanel.tsx:681); implementarea din page.tsx:145-149 nu expune nicio cale de eroare vizibila in fisierele revizuite.</td>
         <td><code>frontend/src/components/teste/TestePanel.tsx:676-685; frontend/src/app/page.tsx:145-149</code></td>
-        <td class="status-unverified">⬜ neverificat</td>
+        <td class="status-live_ok">🟢 verificat live</td>
         <td><textarea class="mention" data-k="teste-trimite-corectare-editor" placeholder="Mențiune…" rows="2"></textarea></td>
       </tr></tbody>
     </table>

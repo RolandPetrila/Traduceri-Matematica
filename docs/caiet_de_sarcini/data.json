@@ -839,7 +839,8 @@
               "errorCodes": ["E-TEST-001"],
               "actionableMessage": "Cale eroare totala (flow 'teste.generate', TestePanel.tsx:198-208): '${r.error} (cod E-TEST-001)', unde r.error = 'Niciun provider AI n-a raspuns. Detalii: <erorile per-provider>' (produs in chat-providers.ts:263). Cale exceptie neprevazuta (flow 'teste.generate.crash', TestePanel.tsx:210-222, fara userHint): mesaj derivat din tipul erorii, ex. „Operatia a esuat in aplicatie, inainte de a trimite ceva la server — nu e o problema de internet. (cod E-TEST-001)”. Cale succes-cu-avertisment, FARA cod (TestePanel.tsx:190-194): „⚠ Testul poate fi INCOMPLET (baremul s-a putut trunchia). Apasa «Continua raspunsul» pentru restul.”",
               "source": "frontend/src/components/teste/TestePanel.tsx:353-365 (handler generate() la 134-224)",
-              "status": "unverified"
+              "howToTestLive": "VERIFICAT LIVE (Faza 4, 2026-09-09, prod): succes confirmat cu 3, 6 si 10 itemi (Clasa VII/Radicali) -> \"Generat cu Gemini Flash.\", textarea editabila cu markdown+LaTeX brut + previzualizare KaTeX randata corect dedesubt (verificat vizual, formulele apar corect, nu doar text brut). DEFECT NOU (jurnal #9): la 18 itemi (greu+barem) SI la 35 itemi (greu+barem) cererea a picat de FIECARE DATA prin calea de eroare totala -> \"Niciun provider AI n-a raspuns. Detalii: Gemini Flash: timeout * Gemini Flash (2): timeout * buget lant depasit (cod E-TEST-001)\" -- lantul epuizeaza tot bugetul de timp pe 2 incercari Gemini si NU mai ajunge la Groq/Mistral (spre diferenta de Chat AI, care are toti 5 providerii in lant). Testul cu 10 itemi (fara barem) a mers instant. Cauza exacta (marime request vs. flakiness provider Gemini in acel moment) NECLARIFICATA -- nereprodus determinist pe marime fixa.",
+              "status": "live_partial"
             },
             {
               "id": "teste-continua-generare",
@@ -849,6 +850,7 @@
               "errorCodes": ["E-TEST-001"],
               "actionableMessage": "Cale eroare (flow 'teste.generate.continue', TestePanel.tsx:249-259, userHint=r.error): '${r.error} (cod E-TEST-001)'. Cale exceptie (flow 'teste.generate.continue.crash', TestePanel.tsx:260-269): mesaj derivat din kind + '(cod E-TEST-001)'.",
               "source": "frontend/src/components/teste/TestePanel.tsx:388-398 (handler continueGenerate() la 226-271)",
+              "howToTestLive": "TESTAT LIVE (Faza 4, 2026-09-09): precondiia (truncated=true) NU s-a putut forta -- testele mici (3/6/10 itemi) au reusit direct, iar cele mari (18/35 itemi) au picat pe eroare TOTALA (timeout, vezi teste-genereaza-test) inainte de a produce un raspuns partial/trunchiat. Butonul nu a aparut in nicio tentativa. Ramane ⬜.",
               "status": "unverified"
             },
             {
@@ -859,7 +861,8 @@
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT — apelul onSendToEditor(result) (TestePanel.tsx:404) e sincron, fara try/catch; implementarea din page.tsx:138-143 (handleTabChange('editor'); setTimeout(() => insertEditorText(text), 150)) nu expune nicio cale de eroare vizibila in fisierele revizuite, deci niciun cod E-TEST-* se poate declansa de aici.",
               "source": "frontend/src/components/teste/TestePanel.tsx:399-408; frontend/src/app/page.tsx:138-143",
-              "status": "unverified"
+              "howToTestLive": "TESTAT LIVE (Faza 4, 2026-09-09, prod), 2 tentative -- inclusiv una pe editor NEMONTAT NICIODATA in acea incarcare de pagina (reload complet, Teste era tab-ul activ persistat, Editor nevizitat): in AMBELE cazuri continutul testului (10 itemi) a aparut COMPLET in Editor (verificat prin continutul paginii, numarul de pagini A4 a crescut corespunzator). Acesta e al 2-lea buton din grupul de risc \"→ Editor\" (editor-commands.ts:49-63) testat dupa Scolare -- NEREPRODUS din nou. Risc ramane real in cod, dar tot NEREPRODUS live (3-a tentativa fara succes de reproducere in Faza 4).",
+              "status": "live_ok"
             }
           ]
         },
@@ -875,7 +878,8 @@
               "errorCodes": ["E-TEST-003", "E-TEST-002"],
               "actionableMessage": "Etapa OCR (flow 'teste.correct.ocr', TestePanel.tsx:549-563, fara userHint — mesajul vine din UserFacingError.advice sau din kind-ul clasificat): 413 -> „Poza e prea mare. Fa-o din nou la rezolutie mai mica sau decupeaza doar lucrarea — reincercarea aceleiasi poze va esua la fel. (cod E-TEST-003)”; niciun text gasit -> „N-am gasit text in imagine. Verifica daca poza e dreapta si bine luminata, apoi incearca din nou. (cod E-TEST-003)”; text gol dupa curatarea marcajelor -> „Nu am putut citi lucrarea (poza neclara sau prea intunecata?). Incearca alta poza — nu e o problema de conexiune. (cod E-TEST-003)”; alt HTTP non-ok -> kind 'http' -> „Serverul a raspuns cu eroare. Incearca din nou peste cateva momente. (cod E-TEST-003)”; JSON corupt la citire (readJson) -> kind 'badResponse' -> „Serverul a trimis un raspuns deteriorat. Incearca din nou. (cod E-TEST-003)”. Validare fara cod (nu trece prin reportFailure, TestePanel.tsx:499-502): „Ataseaza o POZA (jpg/png) a lucrarii.”. Etapa corectare AI (flow 'teste.correct', TestePanel.tsx:467-484, userHint=r.error): '${r.error} (cod E-TEST-002)'. Nota separata: readJson (json-response.ts) poate loga E-NET-003 la nivel warn daca JSON-ul OCR vine cu framing Vercel scurs peste corp — RECUPERAT automat, invizibil in nota (nu afecteaza mesajul vazut de utilizator).",
               "source": "frontend/src/components/teste/TestePanel.tsx:603-622 (input+buton), handler onFile() la 498-564, care apeleaza correctText() la 448-496",
-              "status": "unverified"
+              "howToTestLive": "VERIFICAT LIVE (Faza 4, 2026-09-09, prod) cu poza reala `IMG-20250914-WA0001.jpg` (calitate WhatsApp, 299KB): nota a trecut \"Citesc lucrarea (OCR)...\" -> \"Corectez...\" -> \"Corectat cu Gemini Flash.\" fara nicio eroare. NOTA: poza continea de fapt enunturi de exercitii dintr-o fisa/manual (fractii ordinare), NU rezolvari scrise de elev -- AI-ul a detectat corect asta si a oferit baremul complet de rezolvare in loc sa incerce sa corecteze inexistent, comportament sensibil, nu defect. OCR robust pe input real de calitate telefon.",
+              "status": "live_ok"
             },
             {
               "id": "teste-corecteaza-text",
@@ -885,7 +889,8 @@
               "errorCodes": ["E-TEST-002"],
               "actionableMessage": "Cale eroare (flow 'teste.correct', TestePanel.tsx:467-484, userHint=r.error): '${r.error} (cod E-TEST-002)'. Cale exceptie (flow 'teste.correct.crash', TestePanel.tsx:485-495): mesaj derivat din kind + '(cod E-TEST-002)'. Garda la text gol, fara cod (TestePanel.tsx:449-452): „N-am text de corectat.”",
               "source": "frontend/src/components/teste/TestePanel.tsx:638-647, handler correctText() la 448-496",
-              "status": "unverified"
+              "howToTestLive": "VERIFICAT LIVE (Faza 4, 2026-09-09, prod): text cu eroare deliberata (\"12 + 25 = 38\") -> \"Corectat cu Gemini Flash.\" -> a identificat exact greseala (suma corecta 37, nu 38), a explicat pas cu pas (unitati+zeci), a dat nota orientativa \"7/10\" + sfat. Comportament corect si util.",
+              "status": "live_ok"
             },
             {
               "id": "teste-continua-corectare",
@@ -895,6 +900,7 @@
               "errorCodes": [],
               "actionableMessage": "Cale eroare (TestePanel.tsx:587-590): setNote(r.error) — textul brut produs de sendChat in chat-providers.ts, ex. 'Niciun provider AI n-a raspuns. Detalii: …', FARA '(cod ...)' anexat. Cale exceptie (TestePanel.tsx:591-594): setNote((e as Error).message || 'Eroare') — de asemenea fara cod.",
               "source": "frontend/src/components/teste/TestePanel.tsx:665-675, handler continueCorrect() la 566-595",
+              "howToTestLive": "TESTAT LIVE (Faza 4, 2026-09-09): precondiia (truncated=true) NU s-a putut forta -- ambele corectari efectuate (poza + text) au reusit direct, fara trunchiere. Butonul nu a aparut. Ramane ⬜.",
               "status": "unverified"
             },
             {
@@ -905,7 +911,8 @@
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT — apel sincron fara try/catch (TestePanel.tsx:681); implementarea din page.tsx:145-149 nu expune nicio cale de eroare vizibila in fisierele revizuite.",
               "source": "frontend/src/components/teste/TestePanel.tsx:676-685; frontend/src/app/page.tsx:145-149",
-              "status": "unverified"
+              "howToTestLive": "TESTAT LIVE (Faza 4, 2026-09-09, prod), imediat dupa testul-genereaza-test-editor de mai sus (editor deja montat): continutul corecturii OCR (poza) a aparut COMPLET in Editor (numarul de pagini A4 a crescut de la 4 la 9). Al 2-lea buton \"→ Editor\" din modulul Teste, ambele NEREPRODUSE (grup de risc general: 4 din 6 butoane testate pana acum in Faza 4, toate NEREPRODUSE live).",
+              "status": "live_ok"
             }
           ]
         }
