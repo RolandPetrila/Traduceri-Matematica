@@ -648,41 +648,41 @@
               "id": "calculator-cifre-si-punct",
               "label": "0-9, . (11 butoane echivalente ca risc, rand reprezentativ)",
               "executes": "Insereaza cifra sau separatorul zecimal la pozitia curenta a cursorului in campul Expresie, apoi repozitioneaza caretul dupa caracterul inserat.",
-              "howToTest": "Deschide tab-ul Calculator -> sub-tab Stiintific. Click pe cifre (ex. 1, 2, 3) apoi pe „.” — verifica ca apar in campul Expresie in ordinea apasata, cu caretul dupa ultimul caracter inserat.",
+              "howToTest": "Deschide tab-ul Calculator -> sub-tab Stiintific. Click pe cifre (ex. 1, 2, 3) apoi pe „.” — verifica ca apar in campul Expresie in ordinea apasata, cu caretul dupa ultimul caracter inserat. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): 7,8,+,9,= -> „78+9” = 87, corect. NOTA metodologica: clickuri sintetice CDP rapide (via unealta de automatizare) pot produce ordine INVERSATA a caracterelor pe secvente cu tokenuri multi-caracter (ex. sqrt(+1+6+) -> „)61sqrt(”), reprodus identic de 2 ori inclusiv cu wait 1s intre click-uri; INFIRMAT ca bug real prin clickuri .click() directe in JS (bypass CDP), care au dat ordinea CORECTA („sqrt(16)”) de fiecare data — e un artefact al uneltei de automatizare (CDP synthetic mouse events), NU un bug al aplicatiei pt un user real cu mouse/touch.",
               "errorCodes": [],
               "actionableMessage": "N/A la inserare — nicio validare; eroarea (daca apare) e vizibila abia la apasarea „=”.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:53-58,71-90,122-135",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-operatori",
               "label": "/, *, -, + , ^ (grup reprezentativ, 5 butoane)",
               "executes": "Insereaza simbolul operatorului la pozitia cursorului in campul Expresie.",
-              "howToTest": "Click pe „+” apoi pe o cifra, verifica textul rezultat din campul Expresie.",
+              "howToTest": "Click pe „+” apoi pe o cifra, verifica textul rezultat din campul Expresie. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): /,*,-,+,^ toate inserate corect in „78+9”, „2^10+4”, „10%3” etc.",
               "errorCodes": [],
               "actionableMessage": "N/A la inserare — nicio validare la acest pas.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:53-58,122-135",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-paranteze",
               "label": "( — DEFECT UI: butonul apare FARA TEXT VIZIBIL (label gol); ) — afisat normal",
               "executes": "Insereaza caracterul parantezei la pozitia cursorului. Functional identic pentru ambele, dar randarea `{k.replace(\"(\", \"\")}` transforma tokenul „(” in sir gol, deci butonul de deschidere nu are text vizibil.",
-              "howToTest": "In sub-tab Stiintific, randul 1 col.5 (langa „7/8/9”) si randul 2 col.5 (langa „4/5/6”): identifica butonul fara text (acolo unde ar trebui „(”), click pe el si verifica ca totusi insereaza „(” in camp. Click pe „)” (are text normal) — verifica inserarea „)”.",
+              "howToTest": "In sub-tab Stiintific, randul 1 col.5 (langa „7/8/9”) si randul 2 col.5 (langa „4/5/6”): identifica butonul fara text (acolo unde ar trebui „(”), click pe el si verifica ca totusi insereaza „(” in camp. Click pe „)” (are text normal) — verifica inserarea „)”. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): defectul UI confirmat vizual (buton complet fara text intre „*” si „)”); click pe el a inserat corect „(”, apoi click pe „)” a dat „()” — functional corect, doar labelul e gol.",
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT — nu produce mesaj; e un defect de afisare (label gol), nu o eroare de executie.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:132 (randare label); :54,55 (token \"(\" in SCI_KEYS)",
-              "status": "unverified"
+              "status": "live_defect_confirmed"
             },
             {
               "id": "calculator-pi",
               "label": "π",
               "executes": "Insereaza simbolul „π” la cursor; la evaluare, `normalizeExpr` il converteste in constanta math.js „pi”.",
-              "howToTest": "Click pe π, apoi pe „=” — verifica ca expresia „π” singura da rezultatul „3.14159265359” (format cu precizie 12).",
+              "howToTest": "Click pe π, apoi pe „=” — verifica ca expresia „π” singura da rezultatul „3.14159265359” (format cu precizie 12). VERIFICAT LIVE (Faza 4, 2026-09-09, prod): confirmat exact „= 3.14159265359”.",
               "errorCodes": [],
               "actionableMessage": "N/A la inserare; eventual mesajul de eroare math.js daca e combinat gresit cu alte tokenuri (vezi butonul „=”).",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:57,130; frontend/src/lib/calculator-eval.ts:27",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         },
@@ -694,31 +694,31 @@
               "id": "calculator-functii-matematice",
               "label": "sqrt, sin, cos, tan, ln (afisate fara paranteza; tokenul inserat real include „(”, ex. \"sqrt(\")",
               "executes": "Insereaza tokenul functiei (cu paranteza deschisa) la cursor. La evaluare, `normalizeExpr` mapeaza „ln(” -> „log(” (logaritm natural in math.js).",
-              "howToTest": "Click „sqrt”, scrie „16)”, apasa Enter sau „=” — verifica rezultat „4”.",
+              "howToTest": "Click „sqrt”, scrie „16)”, apasa Enter sau „=” — verifica rezultat „4”. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): sqrt(16)=4 confirmat; ln(e)=1 confirmat (mapare corecta ln->log natural, ordinea regex din normalizeExpr functioneaza). sin/cos/tan neexersate individual (buton reprezentativ, aceeasi mecanica de inserare token+paranteza).",
               "errorCodes": [],
               "actionableMessage": "Mesajul brut de eroare aruncat de math.js daca paranteza ramane neinchisa sau argumentul e invalid (prins la calculator-eval.ts:54-56), altfel fallback \"Eroare de sintaxa\".",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:54-58,122-135; frontend/src/lib/calculator-eval.ts:20,24-26",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-functii-suplimentare",
               "label": "log, abs, e, !, % (randul SCI_FN)",
               "executes": "Insereaza tokenul respectiv (\"log(\", \"abs(\", \"e\", \"!\", \"%\") la cursor. „log(” e convertit de `normalizeExpr` in „log10(” (logaritm zecimal), distinct de „ln” -> natural.",
-              "howToTest": "Click „log”, scrie „100)”, „=” — verifica rezultat „3” (logaritm zecimal). Pentru „%”: NECUNOSCUT ce semantica aplica math.js (modulo vs. procent) — nu s-a verificat in cod.",
+              "howToTest": "Click „log”, scrie „100)”, „=” — verifica rezultat. Pentru „%”: verifica semantica (modulo vs. procent). VERIFICAT LIVE (Faza 4, 2026-09-09, prod): log(100) = 2, NU „3” cum spunea caietul (caietul avea o eroare de documentatie — log10(100)=2 e corect matematic; corectat aici). e = 2.71828182846 confirmat. 5! = 120 confirmat. 10%3 = 1 -> REZOLVAT: „%” e MODULO (rest), NU procent.",
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT / mesajul brut math.js la sintaxa invalida (vezi calculator-eval.ts:54-56).",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:59,136-148; frontend/src/lib/calculator-eval.ts:23-24",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-ans",
               "label": "ans",
               "executes": "Insereaza in campul Expresie valoarea ultimului rezultat calculat CU SUCCES (state `ans`, populat doar dupa un „=” reusit). Daca nu exista inca niciun rezultat de succes, butonul e no-op silentios (`ans` e string gol, `ans && insert(ans)` nu face nimic).",
-              "howToTest": "Deschide Stiintific, click direct pe „ans” fara sa fi calculat nimic -> nimic nu apare in camp (no-op, fara mesaj). Calculeaza „2+2” cu „=”, apoi click „ans” -> se insereaza „4” in camp.",
+              "howToTest": "Deschide Stiintific, click direct pe „ans” fara sa fi calculat nimic -> nimic nu apare in camp (no-op, fara mesaj). Calculeaza „2+2” cu „=”, apoi click „ans” -> se insereaza „4” in camp. VERIFICAT LIVE (Faza 4, 2026-09-09, prod, pagina proaspat incarcata): ans inainte de orice calcul -> campul ramane gol (confirmat). Dupa 2+2=4, C, ans -> campul devine „4” (confirmat).",
               "errorCodes": [],
               "actionableMessage": "N/A — no-op silentios, fara mesaj, cand nu exista inca un rezultat de succes.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:68,149-158",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         },
@@ -730,41 +730,41 @@
               "id": "calculator-clear",
               "label": "C",
               "executes": "Goleste campul Expresie (`setExpr(\"\")`) si reseteaza rezultatul afisat la starea initiala (`setRes(null)` -> zona de rezultat revine la „= …”).",
-              "howToTest": "Scrie orice expresie, click „C” — verifica ca inputul e gol si zona de rezultat arata „= …”.",
+              "howToTest": "Scrie orice expresie, click „C” — verifica ca inputul e gol si zona de rezultat arata „= …”. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): confirmat, campul devine gol si rezultatul arata „…”.",
               "errorCodes": [],
               "actionableMessage": "N/A — nu produce erori.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:166-172",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-backspace",
               "label": "⌫",
               "executes": "Sterge ultimul caracter din CAPATUL sirului (`slice(0,-1)`) — NU e caret-aware (spre deosebire de `insert`, care tine cont de pozitia cursorului). Nu reseteaza `res`; rezultatul anterior ramane afisat pana la urmatorul „=”.",
-              "howToTest": "Scrie „123”, muta caretul la inceputul campului (Home), apasa „⌫” — verifica ca se sterge „3” (ultimul caracter din sir), nu caracterul de langa caret.",
+              "howToTest": "Scrie „123”, muta caretul la inceputul campului (Home), apasa „⌫” — verifica ca se sterge „3” (ultimul caracter din sir), nu caracterul de langa caret. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): confirmat EXACT comportamentul documentat — cu caretul la Home (pozitia 0) pe „123”, ⌫ a sters „3” (capatul sirului), rezultat „12”, nu caret-aware.",
               "errorCodes": [],
               "actionableMessage": "N/A — nu produce erori.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:173-181",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-egal",
               "label": "=",
               "executes": "Evalueaza expresia curenta prin `evaluateExpr` (math.js) si afiseaza rezultatul formatat, sau un mesaj de eroare. Efect identic la Enter in campul Expresie (linia 104).",
-              "howToTest": "(a) succes: scrie „2^10+4”, apasa „=” sau Enter -> afiseaza „= 1028”. (b) expresie goala: lasa campul gol, apasa „=” -> zona de rezultat afiseaza doar „…”. (c) expresie incompleta: scrie „sin(”, apasa „=” -> afiseaza „Expresie incompleta” (text rosu). (d) sintaxa invalida: scrie „2 +* 3”, apasa „=” -> afiseaza mesajul brut aruncat de math.js.",
+              "howToTest": "(a) succes: scrie „2^10+4”, apasa „=” sau Enter -> afiseaza „= 1028”. (b) expresie goala: lasa campul gol, apasa „=” -> zona de rezultat afiseaza doar „…”. (c) expresie incompleta: scrie „sin(”, apasa „=” -> afiseaza mesajul BRUT math.js, NU „Expresie incompleta” (vezi discrepanta jos). (d) sintaxa invalida: scrie „2 +* 3”, apasa „=” -> afiseaza mesajul brut aruncat de math.js. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): (a) confirmat „= 1028”. (b) confirmat „…”. (c) DISCREPANTA fata de caiet: „sin(” + „=” afiseaza „Unexpected end of expression (char 5)” (mesaj BRUT math.js din catch-ul de la linia 54-56), NU „Expresie incompleta”. Motivul (verificat in cod): ramura „Expresie incompleta” (linia 46-48) se declanseaza DOAR cand evaluate() returneaza cu succes o functie/undefined (ex. a scrie doar un nume de functie fara paranteze) — „sin(” cu paranteza neinchisa e o eroare de PARSARE, prinsa de catch, deci ia mesajul brut. Niciun buton din UI nu poate insera un nume de functie FARA paranteza (toate butoanele insereaza tokenul CU „(”), deci ramura „Expresie incompleta” pare NEATINGIBILA din interfata — doar prin tastare manuala directa in camp (ex. „sin” fara paranteza). Recomand corectarea exemplului din caiet, nu e un bug al aplicatiei. (d) confirmat „Value expected (char 4)” (mesaj brut math.js), exact ca documentat.",
               "errorCodes": [],
               "actionableMessage": "Fara cod de eroare — niciun `reportFailure` in CalculatorPanel.tsx/calculator-eval.ts, nicio intrare Calculator in config/error_codes.json sau error-catalog.ts (confirmat prin grep). Textele efective: \"\" (afisat ca „…”) pt input gol; \"Expresie incompleta\" pt evaluate()=function/undefined; mesajul brut al erorii math.js (variabil, in engleza) cu fallback \"Eroare de sintaxa\" doar daca mesajul e gol.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:92-96,104,109-120,182-184; frontend/src/lib/calculator-eval.ts:41-57",
-              "status": "unverified"
+              "status": "live_partial"
             },
             {
               "id": "calculator-insereaza-rezultat-stiintific",
               "label": "+ Insereaza rezultatul in editor",
               "executes": "Randat DOAR daca exista un rezultat de succes (`res?.ok`) SI prop-ul `onInsertTextToEditor` a fost furnizat; trimite textul `${expr} = ${res.value}` catre componenta parinte, care comuta pe tab-ul Editor si insereaza textul dupa ~150ms (setTimeout).",
-              "howToTest": "Calculeaza cu succes o expresie (ex. „2+2=”), verifica ca butonul apare, click pe el -> tab-ul comuta pe Editor si textul „2+2 = 4” apare inserat.",
+              "howToTest": "Calculeaza cu succes o expresie (ex. „2+2=”), verifica ca butonul apare, click pe el -> tab-ul comuta pe Editor si textul „2+2 = 4” apare inserat. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): calculat „3+3=6”, click pe buton -> tab-ul a comutat pe Editor si textul „3+3 = 6” a aparut COMPLET, la finalul continutului existent. AL 6-LEA TEST din Faza 4 al riscului sistemic „→Editor” (no-op 150ms, editor-commands.ts:49-63, dupa 2xScolare/2xTeste/1xChat) — din nou NEREPRODUS.",
               "errorCodes": [],
               "actionableMessage": "N/A — butonul dispare (nu se dezactiveaza) daca rezultatul curent e o eroare sau daca `onInsertTextToEditor` nu e furnizat.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:186-195; frontend/src/app/page.tsx:130-134",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         },
@@ -776,11 +776,11 @@
               "id": "calculator-insereaza-grafic",
               "label": "+ Insereaza graficul in editor",
               "executes": "Converteste SVG-ul curent (generat live, automat, din f(x)/g(x)/xmin/xmax via `useMemo` — nu exista buton separat de „ploteaza”) intr-un data-URI base64 si il trimite catre parinte, care comuta pe Editor si insereaza imaginea dupa ~150ms. Alt-textul imaginii e mereu „Grafic f(x)=${f}”, chiar daca doar g(x) e completat si f e gol.",
-              "howToTest": "In sub-tab Grafic, scrie „x^2-3” in f(x) — verifica graficul SVG live sub campuri, click pe buton -> tab-ul comuta pe Editor si graficul apare ca imagine inserata.",
+              "howToTest": "In sub-tab Grafic, scrie „x^2-3” in f(x) — verifica graficul SVG live sub campuri, click pe buton -> tab-ul comuta pe Editor si graficul apare ca imagine inserata. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): f(x)=x^2-3 randat corect (parabola SVG), click pe buton -> tab-ul a comutat pe Editor si graficul a aparut COMPLET ca imagine, sub continutul existent. AL 7-LEA TEST din Faza 4 al riscului sistemic „→Editor” — NEREPRODUS.",
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT — nu exista mesaj de eroare vizibil in UI: f(x)/g(x) invalid produce doar un SVG gol (fara curbe), silentios (catch la calculator-eval.ts:118-123, `pts=[]`); xmin/xmax necompletat sau non-numeric revine silentios la -10/10 (`Number.isFinite` check, CalculatorPanel.tsx:217-222).",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:212-223,268-277; frontend/src/lib/calculator-eval.ts:108-125",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         },
@@ -792,31 +792,31 @@
               "id": "calculator-matrice-template",
               "label": "Determinant, Produs, Inversa, Rezolva sistem (4 butoane, grupate ca risc echivalent)",
               "executes": "Suprascrie complet continutul campului de expresie cu un exemplu predefinit (ex. „det([[1, 2], [3, 4]])”). NU declanseaza calculul.",
-              "howToTest": "Click pe „Determinant” — verifica ca in campul Expresie apare exact „det([[1, 2], [3, 4]])” si ca zona de rezultat NU se schimba (ramane valoarea/placeholder anterior).",
+              "howToTest": "Click pe „Determinant” — verifica ca in campul Expresie apare exact „det([[1, 2], [3, 4]])” si ca zona de rezultat NU se schimba (ramane valoarea/placeholder anterior). VERIFICAT LIVE (Faza 4, 2026-09-09, prod): „Determinant” confirmat (campul devine exact „det([[1, 2], [3, 4]])”). Placeholder-ul campului e IDENTIC cu valoarea implicita a butonului Determinant — vizual ambiguu intr-o captura de ecran (text gri placeholder vs text alb valoare reala), dar functional distinct (confirmat prin citire directa a .value). „Produs”/„Inversa”/„Rezolva sistem” neexersate individual — buton reprezentativ, aceeasi mecanica (suprascrie campul cu un exemplu predefinit).",
               "errorCodes": [],
               "actionableMessage": "N/A — nu evalueaza, doar populeaza campul.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:284-289,307-320",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-matrice-calculeaza",
               "label": "= Calculeaza",
               "executes": "Evalueaza expresia din camp cu acelasi motor `evaluateExpr`/math.js ca la Stiintific (suporta matrice literale `[[...]]`, `det`, `inv`, `lusolve`, produs `*`) si afiseaza rezultatul sau eroarea. Efect identic la Enter in camp (linia 324).",
-              "howToTest": "(a) succes: click „Determinant” apoi „= Calculeaza” -> rezultat „-2”. (b) eroare: scrie o expresie invalida (ex. matrice cu dimensiuni incompatibile la produs) -> afiseaza mesajul brut de eroare math.js (text rosu) in zona de rezultat.",
+              "howToTest": "(a) succes: click „Determinant” apoi „= Calculeaza” -> rezultat „-2”. (b) eroare: scrie o expresie invalida (ex. matrice cu dimensiuni incompatibile la produs) -> afiseaza mesajul brut de eroare math.js (text rosu) in zona de rezultat. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): (a) confirmat — Determinant + Calculeaza -> „-2”, corect matematic (det([[1,2],[3,4]])=1*4-2*3=-2). (b) neexersat (nu s-a testat caz de eroare pe matrice, aceeasi cale de cod ca „=” din Stiintific, deja confirmata acolo).",
               "errorCodes": [],
               "actionableMessage": "Fara cod de eroare — aceleasi confirmari ca la butonul „=” din Stiintific (niciun `reportFailure`, nicio intrare in error_codes.json/error-catalog.ts). Mesajul brut al erorii math.js (variabil, ex. dimensiuni incompatibile), cu fallback \"Eroare de sintaxa\" daca mesajul e gol; input gol -> afiseaza doar „…”.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:299,324,329-333,334-345; frontend/src/lib/calculator-eval.ts:41-57",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "calculator-insereaza-rezultat-matrice",
               "label": "+ Insereaza rezultatul in editor",
               "executes": "Identic cu varianta Stiintific — randat doar daca exista rezultat de succes, trimite `${expr} = ${res.value}` catre editor (comuta tab + insert dupa ~150ms).",
-              "howToTest": "Calculeaza cu succes (ex. Determinant -> „=”), verifica ca butonul apare, click -> tab Editor, text inserat „det([[1, 2], [3, 4]]) = -2”.",
+              "howToTest": "Calculeaza cu succes (ex. Determinant -> „=”), verifica ca butonul apare, click -> tab Editor, text inserat „det([[1, 2], [3, 4]]) = -2”. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): confirmat exact — textul „det([[1, 2], [3, 4]]) = -2” a aparut complet in Editor. AL 3-LEA buton „→Editor” din modulul Calculator (nu era in directiva initiala a lotului de test, descoperit prin verificarea directa a data.json — caietul.md nu-l afisase in extrasul citit anterior, dar exista in inventarul complet de 15 butoane). NEREPRODUS — al 8-lea test al riscului sistemic din toata Faza 4.",
               "errorCodes": [],
               "actionableMessage": "N/A — butonul dispare daca rezultatul curent e o eroare sau daca `onInsertTextToEditor` nu e furnizat.",
               "source": "frontend/src/components/calculator/CalculatorPanel.tsx:346-355",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         }
