@@ -28,6 +28,7 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 4. **(R-DIAG-AUTO)** Verifica log-urile de eroare recente (Supabase tabela `logs` / `/api/logs` / ce lipeste Roland), grupeaza pe `error_code`, confirma cauza in cod si remediaza proactiv — NU astepta ca Roland sa raporteze. Vezi `config/error_codes.json` (`cause`/`fix`).
 5. Continua cu primul task [ ] nemarcat din planul activ
 6. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` + planul (bifeaza [x] cu data) + memoria; commit/push (deploy = outward-facing, cu confirmare)
+7. **(R-AUDIT-FAZA — OBLIGATORIU, cerut de Roland) La finalul FIECAREI faze, INAINTE de raportul catre Roland, ruleaza cei trei auditori** din `.claude/agents/` (`auditor-dovezi`, `auditor-regresie`, `auditor-cerinte`) prin Agent tool. Verdictele lor (inclusiv cele negative) intra in raport; un item ramane 🟡 in `docs/Plan_in_Lucru.md` daca `auditor-dovezi` nu l-a confirmat live. NU inchide o faza fara ei. Detalii: `.claude/rules/project_rules.md` §R-AUDIT-FAZA.
 
 ## Stack v4.0
 
