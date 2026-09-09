@@ -553,31 +553,31 @@
               "id": "chat-trimite",
               "label": "Trimite",
               "executes": "Adauga mesajul utilizatorului la conversatie si cheama sendChat() prin lantul de provideri (Gemini Flash -> Gemini Flash (2) -> Groq gpt-oss-20b -> Mistral Small -> Mistral Small (2), prin /api/proxy). System-prompt-ul include automat continutul curent din Editor (getEditorText(), primele 4000 caractere) daca exista. La succes afiseaza raspunsul (randat KaTeX) si eticheta providerului activ; daca raspunsul a fost taiat la limita de tokeni (finishReason MAX_TOKENS / finish_reason length), apare butonul „Continua raspunsul ▸”.",
-              "howToTest": "Deschide tab-ul Chat AI (asistent). Scrie un text in campul de input (ex. „Cat e 2+2?”) si apasa „Trimite” (sau Enter fara Shift). Verifica: bula utilizatorului apare instant, indicatorul devine „AI gandeste…” (galben, pulsand), apoi apare raspunsul asistentului cu eticheta „Model activ: <provider>”.",
+              "howToTest": "Deschide tab-ul Chat AI (asistent). Scrie un text in campul de input (ex. „Cat e 2+2?”) si apasa „Trimite” (sau Enter fara Shift). Verifica: bula utilizatorului apare instant, indicatorul devine „AI gandeste…” (galben, pulsand), apoi apare raspunsul asistentului cu eticheta „Model activ: <provider>”. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): „Cat e 2+2?” -> „Model activ: Gemini Flash” + raspuns „2+2=4” randat KaTeX, instant.",
               "errorCodes": ["E-CHAT-001"],
               "actionableMessage": "Niciun provider AI n-a raspuns. Detalii: <eticheta provider>: HTTP <status> · <eticheta provider>: timeout · <eticheta provider>: raspuns gol · buget lant depasit (cod E-CHAT-001) — compus dinamic din erorile per-provider colectate in chat-providers.ts (etichetele posibile: Gemini Flash, Gemini Flash (2), Groq (gpt-oss-20b), Mistral Small, Mistral Small (2)).",
               "source": "frontend/src/components/chat/ChatPanel.tsx:139-146,395-403; frontend/src/lib/chat-providers.ts:189-266",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "chat-testeaza",
               "label": "Testeaza",
               "executes": "Trimite mesajul fix „Salut! Confirma intr-o propozitie ca functionezi.” prin acelasi ask()/sendChat(). ATENTIE: nu adauga la conversatia existenta — apeleaza ask([mesaj]), deci INLOCUIESTE complet mesages cu acest schimb de 2 mesaje (prompt-ul fix chiar apare vizibil in UI, spre deosebire de promptul ascuns al „Continua”). Nu are prop `disabled`; e blocat doar intern (`if (status === \"loading\") return;`), deci ramane clickabil vizual in timpul unei cereri in curs.",
-              "howToTest": "Cu sau fara conversatie existenta, apasa „Testeaza” din bara de sus. Verifica: orice conversatie anterioara dispare si e inlocuita cu mesajul „Salut! Confirma intr-o propozitie ca functionezi.” + raspunsul modelului.",
+              "howToTest": "Cu sau fara conversatie existenta, apasa „Testeaza” din bara de sus. Verifica: orice conversatie anterioara dispare si e inlocuita cu mesajul „Salut! Confirma intr-o propozitie ca functionezi.” + raspunsul modelului. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): cu o conversatie existenta („Cat e 2+2?”), click „Testeaza” -> conversatia veche a disparut COMPLET, inlocuita cu mesajul fix + raspunsul „Salut! Confirm ca functionez perfect...” — confirma comportamentul de INLOCUIRE, nu adaugare.",
               "errorCodes": ["E-CHAT-001"],
               "actionableMessage": "Niciun provider AI n-a raspuns. Detalii: <eticheta provider>: <motiv> ... (cod E-CHAT-001) — identic ca sablon cu Trimite (flow=\"chat.send\").",
               "source": "frontend/src/components/chat/ChatPanel.tsx:148-156,259-267",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "chat-continua-raspunsul",
               "label": "Continua raspunsul ▸",
               "executes": "Vizibil DOAR cand raspunsul precedent a fost trunchiat la plafonul de tokeni (truncated=true), status nu e \"loading\", si ultimul mesaj e al asistentului. Trimite din nou istoricul plus un mesaj ascuns („Continua exact de unde ai ramas, fara sa reiei ce ai scris deja.” — NU apare in UI, doar in payload) prin sendChat(), si adauga continuarea ca mesaj nou al asistentului.",
-              "howToTest": "Forteaza un raspuns foarte lung (ex. cere „Rezolva pas cu pas 30 de exercitii diferite de ecuatii, cu explicatii detaliate la fiecare”) pana depaseste plafonul implicit de 8192 tokeni de iesire (DEFAULT_MAX_TOKENS). Cand apare butonul, apasa-l si verifica ca textul continua coerent, fara sa repete ce era deja scris.",
+              "howToTest": "Forteaza un raspuns foarte lung (ex. cere „Rezolva pas cu pas 30 de exercitii diferite de ecuatii, cu explicatii detaliate la fiecare”) pana depaseste plafonul implicit de 8192 tokeni de iesire (DEFAULT_MAX_TOKENS). Cand apare butonul, apasa-l si verifica ca textul continua coerent, fara sa repete ce era deja scris. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): cererea de 30 exercitii de ecuatii s-a trunchiat exact la mijlocul exercitiului 25 (\"...Desfacem parantezele din st\"); click „Continua raspunsul” -> raspuns nou care incepe EXACT cu \"ânga:\" (continua cuvantul \"stânga\" intrerupt), fara sa repete nimic, complet pana la exercitiul 30. Important: continuarea e adaugata ca mesaj ASISTENT SEPARAT (nu concatenata in acelasi mesaj) — vezi nota la chat-in-editor.",
               "errorCodes": ["E-CHAT-001"],
               "actionableMessage": "Niciun provider AI n-a raspuns. Detalii: <eticheta provider>: <motiv> ... (cod E-CHAT-001) — identic ca sablon, dar flow=\"chat.continue\" in log.",
               "source": "frontend/src/components/chat/ChatPanel.tsx:104-137,331-347",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         },
@@ -589,11 +589,11 @@
               "id": "chat-atasare-poza",
               "label": "📎 (Ataseaza o poza (OCR))",
               "executes": "Deschide un `<input type=\"file\" accept=\"image/*\">` ascuns; la selectarea unui fisier apeleaza onAttach(file). Daca fisierul e o imagine, o comprima cu ensureImageUnderCap(), o trimite ca multipart/form-data (source_lang=ro, engine=gemini) la `${API_URL}/api/ocr`, extrage textul din structured_pages primit si PRE-COMPLETEAZA (nu trimite automat) campul de input cu „Verifica si corecteaza aceasta rezolvare:\\n<text extras>”. Utilizatorul trebuie sa apese ulterior „Trimite”. Butonul nu are prop `disabled` — poate fi re-apasat vizual in timp ce o cerere OCR e in curs.",
-              "howToTest": "Apasa iconita 📎 din bara de input, selecteaza o poza (jpg/png) cu un exercitiu de matematica scris de mana sau tiparit. Verifica: nota „Citesc imaginea (OCR)…” apare temporar, apoi campul de input se populeaza cu textul extras prefixat de „Verifica si corecteaza aceasta rezolvare:”. Pentru eroare 413, ataseaza o poza mare (peste ~10MB efectiv, peste capul aplicat de ensureImageUnderCap daca acesta esueaza sau e ocolit) sau testeaza direct un fisier non-imagine (ex. .pdf/.txt) pentru mesajul de validare tip.",
+              "howToTest": "Apasa iconita 📎 din bara de input, selecteaza o poza (jpg/png) cu un exercitiu de matematica scris de mana sau tiparit. Verifica: nota „Citesc imaginea (OCR)…” apare temporar, apoi campul de input se populeaza cu textul extras prefixat de „Verifica si corecteaza aceasta rezolvare:”. Pentru eroare 413, ataseaza o poza mare (peste ~10MB efectiv, peste capul aplicat de ensureImageUnderCap daca acesta esueaza sau e ocolit) sau testeaza direct un fisier non-imagine (ex. .pdf/.txt) pentru mesajul de validare tip. VERIFICAT LIVE (Faza 4, 2026-09-09, prod), 2 cazuri: (1) succes — atasat `IMG-20250914-WA0001.jpg` (poza reala, 299KB) -> campul „Mesaj” s-a populat corect cu „Verifica si corecteaza aceasta rezolvare:” + text OCR real extras (exercitii despre fractii ordinare, divizori); (2) eroare fara cod — atasat un fisier .txt -> mesajul EXACT „Ataseaza o POZA (jpg/png) a temei — PDF-urile se importa din Editor.” a aparut, fara cod. Nota metodologica: valoarea campului nu apare in document.body.innerText (e un <input>, nu textContent) — verificata direct prin el.value.",
               "errorCodes": ["E-CHAT-002", "E-NET-003"],
               "actionableMessage": "Trei mesaje distincte posibile: (1) fisier non-imagine, fara cod: \"Ataseaza o POZA (jpg/png) a temei — PDF-urile se importa din Editor.\"; (2) OCR reusit dar fara text extras, fara cod (status revine la idle, nu e considerat eroare): \"N-am putut extrage text din imagine.\"; (3) esec real prin reportFailure — la 413: \"Poza e prea mare. Fa-o din nou la rezolutie mai mica sau decupeaza doar exercitiul. (cod E-CHAT-002)\"; la orice alt esec (HTTP non-ok, JSON corupt neirecuperabil via readJson, eroare de retea): mesaj derivat din tipul erorii + \" (cod E-CHAT-002)\" (ex. \"Serverul a raspuns cu eroare. Incearca din nou peste cateva momente. (cod E-CHAT-002)\"). Nota: E-NET-003 poate aparea in paralel ca log `warn` (recuperare silentioasa a unui raspuns JSON cu framing Vercel scurs), fara mesaj vizibil pentru utilizator.",
               "source": "frontend/src/components/chat/ChatPanel.tsx:182-233,360-381; frontend/src/lib/json-response.ts:40-98",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         },
@@ -605,31 +605,31 @@
               "id": "chat-sterge",
               "label": "🗑 Sterge",
               "executes": "Vizibil doar cand `messages.length > 0`. Goleste complet conversatia (messages=[]), reseteaza provider, note, truncated si status la idle. Nu apeleaza niciun API — operatie pur locala, nu poate esua identificabil.",
-              "howToTest": "Trimite cel putin un mesaj astfel incat butonul „🗑 Sterge” sa apara in bara de sus. Apasa-l. Verifica: conversatia dispare complet, revine mesajul de bun-venit („Intreaba orice de matematica...”), indicatorul de stare revine la gri.",
+              "howToTest": "Trimite cel putin un mesaj astfel incat butonul „🗑 Sterge” sa apara in bara de sus. Apasa-l. Verifica: conversatia dispare complet, revine mesajul de bun-venit („Intreaba orice de matematica...”), indicatorul de stare revine la gri. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): cu o conversatie de 3 mesaje asistent, click „Sterge conversatia” -> revenire completa la mesajul de bun-venit, butoanele Sterge/Testeaza-cu-istoric au disparut.",
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT",
               "source": "frontend/src/components/chat/ChatPanel.tsx:158-166,268-280",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "chat-copiaza",
               "label": "⧉ Copiaza",
               "executes": "Apare sub fiecare mesaj al asistentului. Copiaza textul brut al raspunsului in clipboard prin navigator.clipboard.writeText(). La succes arata temporar (1.5s) nota „✓ Copiat in clipboard.”",
-              "howToTest": "Obtine cel putin un raspuns al asistentului, apasa „⧉ Copiaza” de sub el, apoi lipeste (Ctrl+V) intr-un alt camp text pentru a confirma continutul copiat.",
+              "howToTest": "Obtine cel putin un raspuns al asistentului, apasa „⧉ Copiaza” de sub el, apoi lipeste (Ctrl+V) intr-un alt camp text pentru a confirma continutul copiat. VERIFICAT LIVE (Faza 4, 2026-09-09, prod): click pe „⧉ Copiaza” -> nota „✓ Copiat in clipboard.” a aparut (confirmat cu un mic delay de asteptare — writeText() e asincron, un check imediat la 0ms poate rata nota, nu e defect).",
               "errorCodes": [],
               "actionableMessage": "Nu am putut copia (permisiune clipboard). — text hardcodat, fara cod de eroare (nu trece prin reportFailure).",
               "source": "frontend/src/components/chat/ChatPanel.tsx:169-180,308-316",
-              "status": "unverified"
+              "status": "live_ok"
             },
             {
               "id": "chat-in-editor",
               "label": "➕ In editor",
               "executes": "Apare sub fiecare mesaj al asistentului, DOAR daca prop-ul `onSendToEditor` a fost pasat (e pasat din page.tsx). Comuta tab-ul activ pe Editor, apoi (dupa 150ms, pentru settle cross-tab) insereaza textul raspunsului in editor prin insertEditorText() — formulele LaTeX devin editabile acolo.",
-              "howToTest": "Obtine un raspuns al asistentului, apasa „➕ In editor” de sub el. Verifica: aplicatia comuta automat pe tab-ul Editor si textul raspunsului apare inserat, cu formulele matematice randate/editabile.",
+              "howToTest": "Obtine un raspuns al asistentului, apasa „➕ In editor” de sub el. Verifica: aplicatia comuta automat pe tab-ul Editor si textul raspunsului apare inserat, cu formulele matematice randate/editabile. VERIFICAT LIVE (Faza 4, 2026-09-09, prod) — AL 5-LEA TEST al riscului sistemic „no-op 150ms” (editor-commands.ts:49-63), dupa 2 din Scolare si 2 din Teste: conversatie cu 3 mesaje asistent (fiecare cu propriul buton „➕ In editor”, cate un buton per mesaj, cf. cod liniile 307-326). Document nou (Editor golit) -> click pe butonul mesajului 3 (continuarea, ex. 26-30) selectat DETERMINIST prin querySelectorAll (nu prin coordonate/ref cache-uite) -> continutul complet (4058 caractere, incepe exact cu „ânga:” = continuarea cuvantului „stânga” intrerupt, se termina la exercitiul 30) a aparut COMPLET in Editor. NEREPRODUS a 5-a oara. ATENTIE metodologica: la o incercare initiala am crezut ca am gasit pierdere partiala de continut, dar era o eroare PROPRIE de testare — am clicat butonul mesajului 2 (gresit identificat de `find` ca fiind \"ultimul\"), nu al mesajului 3; continutul mesajului 2 s-a inserat corect si complet, doar ca nu era mesajul pe care credeam ca-l testez. Verificat riguros: nicio pierdere reala. Risc de cod ramane real (optional chaining silentios), dar tot NEREPRODUS live dupa 5 tentative in Faza 4.",
               "errorCodes": [],
               "actionableMessage": "NECUNOSCUT — ChatPanel.tsx nu prinde nicio eroare din onSendToEditor/insertEditorText; daca inserarea esueaza, nu exista cod sau mesaj dedicat in acest fisier.",
               "source": "frontend/src/components/chat/ChatPanel.tsx:317-326; frontend/src/app/page.tsx:114-121",
-              "status": "unverified"
+              "status": "live_ok"
             }
           ]
         }

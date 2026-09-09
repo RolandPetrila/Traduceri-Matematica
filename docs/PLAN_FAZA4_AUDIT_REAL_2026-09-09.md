@@ -196,8 +196,12 @@ fișier + caiet, nu prin context tacit).
        2 defecte noi (jurnal #9-#10): eșec total la teste mari (18-35 itemi) prin timeout pe ambii
        Gemini fără a ajunge la Groq/Mistral; markdown bold literal (`**...**`) în previzualizarea
        baremului.
-6. [ ] Chat AI — trimitere mesaj + testează + continuă + atașare imagine OCR + gestiune
-       conversație + „➕ In editor" (repet scenariul de risc) — 7 butoane.
+6. [x] Chat AI — 7/7 butoane confirmate live (Trimite, Testează, Continua răspunsul, 📎 atașare
+       OCR — succes cu `IMG-20250914-WA0001.jpg` + eroare fără cod pe fișier non-imagine —,
+       Șterge, Copiază, ➕ In editor). Riscul „➕ In editor": al 5-lea test din Faza 4 (după 2×
+       Școlare + 2× Teste) — din nou NEREPRODUS, cu o corecție metodologică notată explicit
+       (eroare proprie de identificare a butonului „ultimul mesaj", nu defect al aplicației).
+       Fără defecte noi. Fișiere: `docs/caiet_de_sarcini/data.json`, `.md`, `.html` (regenerate).
 7. [ ] Convertor — conversie/merge (cu cele 2 PDF-uri non-matematice)/split/compress/editare PDF
        — 5 butoane (Proceseaza deja parțial confirmat la pasul 3).
 8. [ ] Calculator — științific/funcții/control-rezultat/grafic + cele 2 butoane „→ Editor" (repet
