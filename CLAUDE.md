@@ -29,6 +29,7 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 5. Continua cu primul task [ ] nemarcat din planul activ
 6. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` + planul (bifeaza [x] cu data) + memoria; commit/push (deploy = outward-facing, cu confirmare)
 7. **(R-AUDIT-FAZA — OBLIGATORIU, cerut de Roland) La finalul FIECAREI faze, INAINTE de raportul catre Roland, ruleaza cei trei auditori** din `.claude/agents/` (`auditor-dovezi`, `auditor-regresie`, `auditor-cerinte`) prin Agent tool. Verdictele lor (inclusiv cele negative) intra in raport; un item ramane 🟡 in `docs/Plan_in_Lucru.md` daca `auditor-dovezi` nu l-a confirmat live. NU inchide o faza fara ei. Detalii: `.claude/rules/project_rules.md` §R-AUDIT-FAZA.
+8. **(R-STOP-FAZA — OBLIGATORIU, cerut de Roland) O FAZA PER SESIUNE.** Dupa auditori + salveaza tot (handoff rescris cu faza urmatoare + plan bifat + memorie + commit/push) → **OPRESTE-TE. NU incepe faza urmatoare**, chiar daca ai context si timp. Spune-i lui Roland: „Faza X inchisa. Deschide o sesiune noua cu `/onboard` pentru Faza X+1." Regulile sunt PERMANENTE si se re-incarca singure la sesiunea noua prin acest fisier. Detalii: `.claude/rules/project_rules.md` §R-STOP-FAZA.
 
 ## Stack v4.0
 

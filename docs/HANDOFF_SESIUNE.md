@@ -25,6 +25,12 @@ din `.claude/agents/*.md`, regula R-AUDIT-FAZA):
 **DE DECIS de Roland înainte de Faza 3:** mutarea A5 (mesaje acționabile pe TOATE modulele, nu doar
 cele 9 fluxuri centrale reparate) → propusă pentru Faza 3+4. Vezi `docs/Plan_in_Lucru.md` §Cerințe MUTATE.
 
+**⚠️ PROTOCOL PERMANENT (R-STOP-FAZA, cerut de Roland 09.09.2026): O FAZĂ PER SESIUNE.** Execuți
+UNA singură fază, rulezi cei trei auditori, salvezi tot (rescrii acest bloc cu faza următoare +
+bifezi planul + memorie + commit/push), apoi **TE OPREȘTI** și îi spui lui Roland să deschidă o
+sesiune nouă cu `/onboard` pentru faza următoare. NU înlănțui faze, chiar dacă ai context. Regulile
+se re-încarcă singure — sesiunea nouă pornește cu exact aceleași reguli.
+
 **Cei 3 auditori** (`auditor-dovezi`, `auditor-regresie`, `auditor-cerinte`) rulează la finalul
 fiecărei faze — au prins 5 clase de defecte pe care poarta verde nu le vedea. `auditor-dovezi` și
 `auditor-cerinte` au nevoie de browser (fără listă `tools:`); `auditor-regresie` doar de poartă.

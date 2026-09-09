@@ -106,6 +106,28 @@ Definitiile lor: `.claude/agents/*.md`. Reguli de aplicare:
 Motivul: auditul din 2026-09-07 a declarat „toate butoanele executa comanda reala"; Roland a apasat
 SK si a primit eroare in 10 secunde. Un auditor independent, care cere dovada, ar fi prins-o.
 
+## R-STOP-FAZA: O faza per sesiune — opreste, salveaza, sesiune noua (OBLIGATORIU)
+
+Cerut de Roland, 09.09.2026. Scopul: fiecare faza incepe cu CONTEXT CURAT, ca aglomerarea sa nu
+mai ascunda defecte (lectia celor 5 runde de audit din Faza 2).
+
+La finalul FIECAREI faze, in aceasta ordine EXACTA:
+
+1. Ruleaza cei trei auditori (R-AUDIT-FAZA) si treci validarile lor. Un item neconfirmat ramane 🟡.
+2. **Salveaza TOT:** `docs/HANDOFF_SESIUNE.md` (blocul „REIA DE AICI" rescris la starea din acel
+   minut, cu faza urmatoare numita) + `docs/Plan_in_Lucru.md` (bifat) + memoria proiectului +
+   `git commit` + `git push`. Deploy daca faza a atins productia (cu confirmarea lui Roland).
+3. **OPRESTE-TE. NU incepe faza urmatoare.** Raporteaza-i lui Roland: „Faza X inchisa. Deschide o
+   sesiune noua cu `/onboard` pentru Faza X+1." Chiar daca ai context si timp — te opresti.
+
+Regulile sunt PERMANENTE si se re-incarca singure la fiecare sesiune noua prin `CLAUDE.md`
+(auto-incarcat) → pasii 7-8 din „PRIMA ACTIUNE" → aceste reguli. Deci sesiunea noua porneste cu
+EXACT aceleasi reguli, fara ca Roland sa le re-mentioneze. NU trata acest STOP ca pe o intrerupere
+de context — e protocolul, nu o pierdere.
+
+Exceptie: reparatiile marunte cerute de auditori PE faza curenta (nu o faza noua) se fac inainte de
+STOP — fac parte din inchiderea fazei, nu din urmatoarea.
+
 ## R-HANDOFF: Context transferabil intre sesiuni (OBLIGATORIU)
 
 Scopul: orice sesiune noua sa reia munca la ~100% context, fara pierdere, ca si cum ar continua.
