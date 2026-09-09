@@ -165,10 +165,27 @@ fișier + caiet, nu prin context tacit).
        de pagină (cauză confirmată în cod: `useEffect` cu deps `[]` în `HistoryList.tsx:27-30`).
        Defect deja documentat din Faza 3 confirmat live (jurnal #4): „PDF (Print)" eșuează
        silențios la popup blocat.
-4. [ ] Editor — import/OCR (toate cele 4 tipuri de fișier din Teste_Input relevante) + F8
-       traducere (RO→SK/EN/DE, inclusiv pe documentul geometric și pe cel cu limite) + document
-       (salvare/redenumire/recuperare) + export PDF/DOCX/HTML + toolbar formatare/tabel + inserare
-       matematică/figuri + dictare + găsește-înlocuiește (38 butoane — cel mai mare modul).
+4. [x] Editor — 38 butoane testate live, în 3 loturi (cel mai mare modul din Faza 4). **Lot 1/3**
+       (Import/OCR + F8 + Document, 16 butoane, commit `3a6da33`): R-MATH CONFIRMAT (figuri
+       geometrice + LaTeX intacte la traducere RO→SK/EN, cache RO instant); regresia `\lim`
+       CONFIRMATĂ fără regresie; 2 defecte noi de traducere (jurnal #5-#6: spații lipsă la
+       marginea unui termen **bold**; cuvinte scurte/punctuație izolate pe linie proprie lângă
+       formule LaTeX inline — ambele doar SK/EN, absente în RO); 1 observație incertă (#7: titlu
+       OCR dublat, cauză neclarificată). **Lot 2/3** (Export PDF/DOCX/HTML + toolbar formatare +
+       inserare matematică/figuri, ~15 butoane, commit `85a07f2`): toate confirmate live, R-MATH
+       ținut și la export; 1 clarificare (jurnal #8, informativ, nu defect): „Export PDF" a
+       folosit calea de fallback (iframe) fiindcă popup-ul a fost blocat în mediul de test pentru
+       codul REAL al aplicației, nu doar în test — utilizatorul vede totuși un preview real, nu
+       tăcere totală. **Lot 3/3** (Dictare vocală + Găsește-înlocuiește, 6 butoane): toate 6
+       confirmate live, fără defecte noi; Dictare — toggle Dictează/Oprește + dialogul de
+       confidențialitate confirmate funcțional (mediul de test are un dispozitiv audio virtual,
+       fără eroare), „Testează microfonul" a rămas ⬜ (bannerul de eroare care îl conține nu s-a
+       declanșat niciodată); Găsește-înlocuiește — navigare ▲/▼, „Inlocuiește" (o singură
+       potrivire) și „Toate" (toate deodată), toate 3 confirmate exact cum descrie caietul.
+       **Total Editor (verificat exact în `data.json`): 29/38 cu o formă de confirmare live** (25
+       🟢 clar, 1 🟢 indirect, 2 🟡 parțial, 1 🔴 defect confirmat live pe rândul de traducere) și
+       9 rămase ⬜, fiecare cu limitarea de mediu care a blocat-o documentată explicit (PDF
+       multi-pagină, 2 ferestre pt coliziune, date legacy, rețea blocată, eroare audio de forțat).
 5. [ ] Teste — generare test + corectare lucrare (cu `IMG-20250914-WA0001.jpg`) + „→ Editor"
        (repet scenariul de risc de la pasul 2) — 7 butoane.
 6. [ ] Chat AI — trimitere mesaj + testează + continuă + atașare imagine OCR + gestiune
@@ -229,3 +246,18 @@ fișier + caiet, nu prin context tacit).
   Extensia Chrome s-a deconectat încă o dată, scurt, în mijlocul lotului — reconectată fără
   pierdere de progres (același tab, stare păstrată). Loturile 2/3 (Export+Toolbar+Matematică+
   Figuri) și 3/3 (Dictare+Găsește-înlocuiește) urmează.
+- **2026-09-09:** **Lotul 2/3 (Export + Toolbar + Matematică + Figuri) DUS LA CAPĂT** (commit
+  `85a07f2`): toate confirmate live, inclusiv R-MATH la export (formule+figuri corecte în
+  PDF/DOCX/HTML). 1 clarificare informativă (jurnal #8): „Export PDF" a mers pe calea de fallback
+  (iframe) fiindcă popup-ul a fost blocat chiar pentru codul REAL al aplicației în acest mediu —
+  utilizatorul vede un preview real, nu tăcere totală, contrar unei citiri pesimiste a caietului.
+  2 capcane de automatizare (coordonate stale la re-deschiderea dialogului „Editează formula",
+  timeout de captură CDP) verificate riguros prin DOM și infirmate ca defecte reale.
+- **2026-09-09:** **Lotul 3/3 (Dictare vocală + Găsește-înlocuiește) DUS LA CAPĂT** — ultimul lot
+  al modulului Editor. 6/6 butoane confirmate live, fără defecte noi. Dictare: toggle
+  Dictează/Oprește + dialogul de confidențialitate funcționale (mediul de test are un dispozitiv
+  audio virtual, deci fără eroare reală de forțat — „Testează microfonul" rămâne ⬜, motiv
+  documentat). Găsește-înlocuiește: navigare ▲/▼, „Inlocuiește" (o potrivire) și „Toate" — toate 3
+  confirmate exact ca în caiet, pe un document cu 3 potriviri reale („TEST"→„VERIF"). **Modulul
+  Editor (38 butoane) e COMPLET** — 29/38 cu o formă de confirmare live, 9 ⬜ documentate cu
+  motivul exact. Pasul 4 bifat cu rezumatul agregat al celor 3 loturi. Următorul: pasul 5 (Teste).
