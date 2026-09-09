@@ -155,6 +155,61 @@ fișier + caiet, nu prin context tacit).
 | 15  | Planșe     | „Unește" — lot incomplet GARANTAT, CONFIRMAT live (defect deja documentat din cod)             | Formă=„stea" (fixă, nu „Amestecat") + Număr planșe=2 → „⚠ Doar 1 din 2 au putut fi generate. Mai apasă o dată pentru altele noi." Exact comportamentul descris în caiet din citire de cod, acum confirmat empiric: cu o formă fixă, `buildOne()` face o singură încercare (break imediat), deci pentru Număr planșe > 1 lotul incomplet e GARANTAT, nu doar posibil.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | MICĂ-MEDIE — nu e pierdere de date (planșa generată e validă), dar utilizatorul cere N și primește mereu 1 fără avertisment prealabil în formular, doar după click.              | Reprodus determinist 2026-09-09; `docs/caiet_de_sarcini/data.json` (`planse-uneste-genereaza`, status `live_defect_confirmed`).                                  |
 | 16  | Planșe     | „Dictare" — lot incomplet GARANTAT, CONFIRMAT live (defect deja documentat din cod)            | Formă=„patrat" (fixă) + Număr planșe=2 → „1 planșă (doar atâtea forme distincte la această dificultate) · ... ⚠ Doar 1 din 2 au putut fi generate." Același tipar ca „Unește" (#15), aceeași cauză de cod, confirmată empiric separat, cu nota suplimentară de „forme distincte" pe care caietul o menționa specific pentru Dictare.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | MICĂ-MEDIE — identică cu #15.                                                                                                                                                    | Reprodus determinist 2026-09-09; `docs/caiet_de_sarcini/data.json` (`planse-dictare-genereaza`, status `live_defect_confirmed`).                                 |
 
+## Sinteza Faza 4 -> propunere Faza 4.5
+
+Cele 16 rânduri din jurnal grupate pe cauza reala de cod (nu pe modul), in ordine de prioritate
+propusa. Aceasta e o PROPUNERE pentru Faza 4.5 - Roland decide ce se repara si in ce ordine.
+
+**P1 - MARE - Istoric conversii nu se actualizeaza live (#3).** Cauza unica:
+`HistoryList.tsx:27-30`, `useEffect` cu `[]` citeste localStorage o singura data la montare. Fix
+tinta: asculta evenimentul `storage` sau re-citeste la fiecare activare a tab-ului Istoric.
+
+**P2 - MEDIE-MARE - Teste: esec total la teste mari, prin timeout (#9).** Lantul de providori
+epuizeaza bugetul de timp pe 2 incercari Gemini, nu ajunge la Groq/Mistral (spre diferenta de
+Chat AI, care are toti 5). Fix tinta: rebalans buget timeout per provider in lantul Teste, sau
+adauga providorii ramasi cu buget redus in loc de 0.
+
+**P3 - MEDIE - Traducere F8: text stricat langa termeni bold/formule LaTeX inline (#5, #6).**
+Aceeasi familie de cauza (reasamblarea textului dupa protectia placeholder-elor de
+bold/LaTeX la traducere) - spatii inghitite la marginea bold-ului (#5) si cuvinte scurte/
+punctuatie impinse pe linie proprie langa o formula inline (#6). Fix tinta: revizuire
+`math_protect.py`/logica de reasamblare a placeholder-elor dupa raspunsul DeepL.
+
+**P4 - MICA-MEDIE - Esecuri silentioase la popup blocat (window.open null) (#4, #8).** Aceeasi
+clasa de problema in 2 locuri diferite: Istoric > detaliu > "PDF (Print)" (#4, ZERO feedback,
+defect real) si Editor > "Export PDF" (#8, are fallback iframe care functioneaza, deci doar
+informativ). Planse (`openPrintWindow`) are DEJA mesajul corect ("Fereastra de print a fost
+blocata...") - propun sa se extinda acelasi tipar la Istoric si, daca se doreste consecventa,
+la ramura fara fallback din Editor.
+
+**P5 - MICA-MEDIE - Convertor: validare/state pe campul Pagini (#11, #12).** Doua defecte
+inrudite, nu identice: (11) eroarea bruta Python la interval invalid la Split, (12) campul
+Pagini nu se reseteaza la comutarea intre operatii. Fix tinta: validare front-end a formatului
+paginilor inainte de trimitere + reset la schimbarea operatiei.
+
+**P6 - MICA-MEDIE - Planse: lot incomplet garantat la forma fixa (#15, #16).** Confirmat live
+(era deja stiut din citire de cod la Faza 3). Fix tinta: avertisment in formular INAINTE de
+click (nu doar dupa) cand forma e fixa si Numarul de planse > 1, sau elimina limitarea de o
+singura incercare pentru forma fixa.
+
+**P7 - MICA - Cosmetice de randare (#10).** Markdown `**bold**` neconvertit in previzualizarea
+baremului din Teste.
+
+**Grup separat, NECLASIFICAT - riscul "-> Editor" (no-op 150ms, `editor-commands.ts:49-63`).**
+Testat determinist de **8 ori** in toata Faza 4 (Scolare x2, Teste x2, Chat AI x1, Calculator x3)
+si **NEREPRODUS niciodata**. Era prioritatea 1 explicita a lui Roland la inceputul Fazei 4.
+Recomandarea mea: nu se poate declara "inchis" doar din 8 nereproduceri (e o conditie de cursa,
+nu un test determinist), dar investitia intr-un test cu throttling explicit CPU/retea (DevTools)
+ar mai costa o sesiune fara garantia reproducerii. Alternativa mai ieftina si mai sigura: un fix
+DEFENSIV in `editor-commands.ts` (ex. coada de comenzi + retry cu timeout mai mare/evenimente de
+"editor montat" in loc de `setTimeout(150)` fix) - elimina riscul indiferent daca s-ar fi
+reprodus vreodata. Propun aceasta a doua varianta la Faza 4.5, ca discutie cu Roland.
+
+**Documentatie corectata, nu defecte de cod (informativ):** #1 (Scolare, AI nu respecta strict
+numarul de exercitii cerut - comportament AI, nu bug), #7 (titlu OCR dublat, INCERT - necesita
+comparatie cu imaginea sursa, neefectuata), #13-#14 (2 erori de documentatie din Faza 3, deja
+corectate direct in `data.json`).
+
 ## Pași
 
 1. [x] **Confirmare Roland pe acest plan** — confirmat 2026-09-09, inclusiv ordinea propusă
@@ -236,8 +291,8 @@ fișier + caiet, nu prin context tacit).
        Coșul multi-fișă: „Printează coșul" (se golește DOAR după print reușit), „Golește coșul”,
        ștergere individuală — toate confirmate cu localStorage (`planse:history:v1.cart`) verificat
        direct. Fără defecte NOI (dincolo de cele 2 deja cunoscute, acum confirmate empiric).
-10. [ ] Sintetizez jurnalul de defecte: grupez pe cauză reală (nu pe modul — ex. cele 6 butoane
-        „→ Editor" devin UN singur grup de reparație, nu 6), propun lista pentru **Faza 4.5**.
+10. [x] Sintetizez jurnalul de defecte (16 rânduri) grupat pe cauză reală — vezi
+        „## Sinteza Faza 4 -> propunere Faza 4.5" de mai jos.
 11. [ ] Rulez cei trei auditori (R-AUDIT-FAZA) pe rezultatul Faza 4.
 12. [ ] Actualizez `HANDOFF_SESIUNE.md` + `Plan_in_Lucru.md` (bifează Faza 4) + memorie +
         commit/push (R-HANDOFF).
