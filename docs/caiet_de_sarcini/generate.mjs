@@ -74,7 +74,7 @@ function buildMarkdown(data) {
       lines.push("| --- | --- | --- | --- | --- | --- | --- |");
       for (const b of sub.buttons) {
         lines.push(
-          `| ${md(b.label)} | ${md(b.executes)} | ${md(b.howToTest)} | ${md(
+          `| ${md(b.label)} | ${md(b.executes)} | ${md(combinedTest(b))} | ${md(
             (b.errorCodes || []).join(", ") || "—"
           )} | ${md(b.actionableMessage || "—")} | \`${b.source || "—"}\` | ${
             STATUS_LABEL[b.status] || b.status || "⬜"
@@ -89,6 +89,15 @@ function buildMarkdown(data) {
 
 function md(s) {
   return String(s ?? "—").replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
+// Combina instructiunile de test (howToTest) cu dovada live (howToTestLive, cand exista),
+// ca dovada sa apara in .md/.html — nu doar in data.json. Pentru randurile fara howToTestLive
+// iesirea ramane identica (fara text suplimentar).
+function combinedTest(b) {
+  const base = b.howToTest ?? "";
+  if (b.howToTestLive) return `${base} — [DOVADĂ LIVE] ${b.howToTestLive}`;
+  return base;
 }
 
 function slug(id) {
@@ -111,7 +120,7 @@ function buildHtml(data) {
                       sub.name,
                       b.label,
                       b.executes,
-                      b.howToTest,
+                      combinedTest(b),
                       (b.errorCodes || []).join(" "),
                       b.actionableMessage,
                       b.source,
@@ -124,7 +133,7 @@ function buildHtml(data) {
                   return `<tr data-search="${searchBlob}">
         <td class="col-label">${esc(b.label)}</td>
         <td>${esc(b.executes)}</td>
-        <td>${esc(b.howToTest)}</td>
+        <td>${esc(combinedTest(b))}</td>
         <td>${esc((b.errorCodes || []).join(", ") || "—")}</td>
         <td>${esc(b.actionableMessage || "—")}</td>
         <td><code>${esc(b.source || "—")}</code></td>
