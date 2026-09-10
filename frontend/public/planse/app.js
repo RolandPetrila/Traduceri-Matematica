@@ -743,7 +743,7 @@
       '        <input type="number" id="un-np" min="1" max="8" value="2" inputmode="numeric">' +
       '        <button type="button" class="chalk-mini" id="un-pplus">+</button>' +
       "      </div>" +
-      '      <p class="adv-note">„Amestecat" alege forme diferite; o formă anume dă o singură planșă.</p>' +
+      '      <p class="adv-note" id="un-note">„Amestecat" alege forme diferite; o formă anume dă o singură planșă.</p>' +
       "    </fieldset>" +
       '    <details class="adv"><summary>Avansat</summary>' +
       '      <div class="adv-row"><label>Seed (opțional) <input type="number" id="un-seed" placeholder="aleator" inputmode="numeric"></label></div>' +
@@ -769,6 +769,8 @@
     var printBtn = document.getElementById("un-print");
     var cartBtn = document.getElementById("un-cart");
     var meta = document.getElementById("un-meta");
+    var noteEl = document.getElementById("un-note");
+    var noteDefaultText = noteEl.textContent;
     cartBtn.addEventListener("click", function () {
       addBatchToCart("uneste", state.items, cartBtn);
     });
@@ -786,12 +788,36 @@
       npInput.value = v;
       return v;
     }
+    // P6 (Faza 4.5a): o formă fixă dă mereu O SINGURĂ planșă (vezi `generate()`,
+    // `if (forma !== "aleator") break`) — cu N>1 lotul e garantat incomplet, nu
+    // ocazional. Avertisment reactiv, ÎNAINTE de click pe „Generează", nu doar
+    // notă statică.
+    function updateFormaWarning() {
+      var isFixed = formaSel.value !== "aleator";
+      var npRaw = parseInt(npInput.value, 10);
+      var np = isNaN(npRaw) ? 1 : npRaw;
+      if (isFixed && np > 1) {
+        noteEl.textContent =
+          "⚠ O formă fixă dă mereu O SINGURĂ planșă — cu N=" +
+          np +
+          " vei primi un lot incomplet.";
+        noteEl.classList.add("warn");
+      } else {
+        noteEl.textContent = noteDefaultText;
+        noteEl.classList.remove("warn");
+      }
+    }
+    formaSel.addEventListener("change", updateFormaWarning);
+    npInput.addEventListener("input", updateFormaWarning);
     document.getElementById("un-pminus").addEventListener("click", function () {
       npInput.value = Math.max(1, clampNp() - 1);
+      updateFormaWarning();
     });
     document.getElementById("un-pplus").addEventListener("click", function () {
       npInput.value = Math.min(8, clampNp() + 1);
+      updateFormaWarning();
     });
+    updateFormaWarning();
 
     function randomSeed() {
       if (window.crypto && window.crypto.getRandomValues) {
@@ -975,7 +1001,7 @@
       '        <input type="number" id="di-np" min="1" max="8" value="2" inputmode="numeric">' +
       '        <button type="button" class="chalk-mini" id="di-pplus">+</button>' +
       "      </div>" +
-      '      <p class="adv-note">„Amestecat" alege forme din banda dificultății; o formă anume dă o singură planșă. La dificultate mai mare grila se mărește ca să încapă forma.</p>' +
+      '      <p class="adv-note" id="di-note">„Amestecat" alege forme din banda dificultății; o formă anume dă o singură planșă. La dificultate mai mare grila se mărește ca să încapă forma.</p>' +
       "    </fieldset>" +
       '    <details class="adv"><summary>Avansat</summary>' +
       '      <div class="adv-row"><label>Seed (opțional) <input type="number" id="di-seed" placeholder="aleator" inputmode="numeric"></label></div>' +
@@ -1001,6 +1027,8 @@
     var printBtn = document.getElementById("di-print");
     var cartBtn = document.getElementById("di-cart");
     var meta = document.getElementById("di-meta");
+    var noteEl = document.getElementById("di-note");
+    var noteDefaultText = noteEl.textContent;
     cartBtn.addEventListener("click", function () {
       addBatchToCart("dictare", state.items, cartBtn);
     });
@@ -1018,12 +1046,35 @@
       npInput.value = v;
       return v;
     }
+    // P6 (Faza 4.5a): fix replicat 1:1 din mountUneste — o formă fixă dă mereu
+    // O SINGURĂ planșă (`if (forma !== "aleator") break` mai jos), N>1 e
+    // garantat incomplet.
+    function updateFormaWarning() {
+      var isFixed = formaSel.value !== "aleator";
+      var npRaw = parseInt(npInput.value, 10);
+      var np = isNaN(npRaw) ? 1 : npRaw;
+      if (isFixed && np > 1) {
+        noteEl.textContent =
+          "⚠ O formă fixă dă mereu O SINGURĂ planșă — cu N=" +
+          np +
+          " vei primi un lot incomplet.";
+        noteEl.classList.add("warn");
+      } else {
+        noteEl.textContent = noteDefaultText;
+        noteEl.classList.remove("warn");
+      }
+    }
+    formaSel.addEventListener("change", updateFormaWarning);
+    npInput.addEventListener("input", updateFormaWarning);
     document.getElementById("di-pminus").addEventListener("click", function () {
       npInput.value = Math.max(1, clampNp() - 1);
+      updateFormaWarning();
     });
     document.getElementById("di-pplus").addEventListener("click", function () {
       npInput.value = Math.min(8, clampNp() + 1);
+      updateFormaWarning();
     });
+    updateFormaWarning();
 
     function randomSeed() {
       if (window.crypto && window.crypto.getRandomValues) {

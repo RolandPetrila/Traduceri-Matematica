@@ -263,6 +263,11 @@ body {
   font-size: 0.82rem;
   color: var(--chalk-muted);
 }
+/* P6 (Faza 4.5a): avertisment reactiv la forma fixa + N>1 (lot garantat incomplet) */
+.adv-note.warn {
+  color: var(--chalk-yellow);
+  font-weight: 700;
+}
 .chalk-cta {
   align-self: flex-end;
   padding: 10px 22px;

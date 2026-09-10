@@ -1,8 +1,60 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-10 (Faza 4 închisă — audit real live pe 9 module/104 butoane + cei 3 auditori). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-09-10 (Faza 4.5a închisă — 6 reparații live pe producție + cei 3 auditori). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 4 ÎNCHISĂ (audit real live, 9 module/104 butoane) · urmează FAZA 4.5 (reparațiile)
+## ▶️ REIA DE AICI — FAZA 4.5a ÎNCHISĂ (6 reparații deploy + verificate live) · urmează FAZA 4.5b (traducere F8 + timeout Teste)
+
+> **Ce s-a livrat în FAZA 4.5a (2026-09-10):** 6 reparații contenite din lista Fazei 4, alese de
+> Roland pe criteriu de risc (nu severitate) — P1, riscul „→ Editor", P4, P5, P6, P7. Plan complet
+> (diagnostic per item, fix, verificare, jurnal execuție, verdictele auditorilor):
+> `docs/PLAN_FAZA4.5A_REPARATII_2026-09-10.md` — **citește-l dacă ai nevoie de detalii tehnice**.
+>
+> **Cele 6 reparații** (fișiere atinse, pe scurt):
+>
+> - **P1** — Istoric nu se actualiza live după o conversie: `storage.ts` acum dispatch-uiește
+>   `history-updated`, `HistoryList.tsx` ascultă.
+> - **Riscul „→ Editor"** — no-op tăcut la inserare cross-tab: `editor-commands.ts` are acum coadă
+>   defensivă (flush la montare editor, prag 4s cu eroare vizibilă `E-EDIT-004` dacă expiră).
+> - **P4** — popup blocat la „PDF (Print)" în Istoric raporta succes pe eșec: `HistoryDetail.tsx`
+>   are acum link de rezervă (Blob) + `reportFailure` obligatoriu, cu cod dedicat `E-HIST-002`
+>   (corectat DUPĂ auditul de cerințe — vezi mai jos).
+> - **P5** — Convertor: mesaj Python brut la „Pagini" invalid + câmp nereset între operații:
+>   `api/convert.py` (mesaj românesc) + `convertor/page.tsx` (reset).
+> - **P6** — Planșe: formă fixă + N>1 = lot garantat incomplet, fără avertisment:
+>   `planse/app.js` are acum avertisment reactiv pe Unește ȘI Dictare.
+> - **P7** — bold lângă o formulă (`**b) $6\sqrt{3}$**`) nu se randa în previzualizarea Teste:
+>   `math-html.ts` protejează matematica cu placeholdere înainte de markdown (tiparul
+>   `math_protect.py`). **Diagnosticul inițial al meu a fost GREȘIT** (credeam bold peste linie
+>   nouă) — Roland l-a corectat cu cazul exact din jurnal; fix-ul actual rezolvă ambele cazuri.
+>
+> **Poartă finală:** `tsc 0 · jest 438/438 (28 suite) · build OK · pytest 89/89` — fără regresie
+> față de baseline (`428/428` · `83/83`, consemnat ÎNAINTE de prima modificare, la cererea lui
+> Roland). `CACHE_VERSION` v71→v73 (al doilea bump după fix-ul post-audit). Deploy: frontend
+> (`traduceri-frontend.vercel.app`) + API (`traduceri-api.vercel.app`), ambele READY/production.
+>
+> **Toate 6 + riscul „→ Editor" au dovadă LIVE pe producție** (browser real, Claude in Chrome —
+> profil de automatizare izolat, NU dispozitivul Cristinei), detaliată în plan.
+>
+> **Verdicte auditori (R-AUDIT-FAZA):** regresie = FĂRĂ REGRESIE (rulată independent, cifre
+> identice); dovezi = 7/7 CONFIRMAT (verificare live proprie, inclusiv curl direct pe API-ul de
+> producție); cerințe = toate cele 3 corecții explicite ale lui Roland ONORATE, dar **1 abatere
+> reală găsită**: P4 reutiliza `E-HIST-001` (catalog scris pt eșecul DOCX, nu pt popup blocat) →
+> **corectat imediat** (cod nou `E-HIST-002`, redeploy, re-verificat live în Supabase).
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** O FAZĂ PER SESIUNE — sesiunea Fazei 4.5a s-a oprit aici.
+> Deschide o sesiune nouă cu `/onboard` pentru **FAZA 4.5b** (P3 — traducere F8, atinge pipeline-ul
+> R-MATH; P2 — timeout lanț AI la Teste mari, defect LATENT). Motivul separării (decizia lui
+> Roland): pipeline-ul de traducere merge singur, într-o fază proprie, ca o regresie acolo să fie
+> izolabilă.
+>
+> **De dus înapoi la Roland la începutul Fazei 4.5b:** (a) P3 și P2 se fac împreună sau separat?
+> (b) pt P3, ce măsurare pe providerul real e acceptabilă înainte de a ridica bugetul de timp la
+> Teste (P2)? Ambele sunt încă doar diagnosticate (Faza 4), nu are fix propus încă — Faza 4.5b
+> începe cu diagnostic detaliat + plan, la fel ca 4.5a.
+
+---
+
+## FAZA 4 ÎNCHISĂ (audit real live, 9 module/104 butoane) — istoric
 
 > **Ce s-a livrat în FAZA 4 (2026-09-09 → 2026-09-10):** audit REAL în browser pe producție
 > (`https://traduceri-frontend.vercel.app`), toate cele 8 module (Editor testat în 3 loturi),

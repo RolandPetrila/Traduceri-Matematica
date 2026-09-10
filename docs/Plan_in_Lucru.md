@@ -20,7 +20,31 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-10 (Faza 4 închisă) · **Producție:** frontend **v71** (Faza 4 = audit read-only, fără deploy) · **FAZA 4 ÎNCHISĂ** · **Următoarea:** FAZA 4.5 (reparațiile)
+**Ultima actualizare:** 2026-09-10 (Faza 4.5a închisă) · **Producție:** frontend **v73** + API redeploy (Faza 4.5a = 6 reparații live) · **FAZA 4.5a ÎNCHISĂ** · **Următoarea:** FAZA 4.5b (P3 traducere F8 + P2 timeout Teste)
+
+> ### ✅ FAZA 4.5a — ÎNCHISĂ
+>
+> 6 reparații (P1, riscul „→ Editor", P4, P5, P6, P7), alese de Roland din lista strânsă la Faza 4,
+> pe criteriu de risc (contenite, verificabile determinist — P3/P2 amânate la 4.5b). Plan complet:
+> `docs/PLAN_FAZA4.5A_REPARATII_2026-09-10.md`.
+>
+> |     | Item                                     | Dovadă                                                                                                                                             |
+> | --- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | 🟢  | P1 — Istoric nu se actualiza live        | `storage.ts` dispatch `history-updated` + `HistoryList.tsx` listener; live: conversie reală → Istoric fără reload, intrare instant                 |
+> | 🟢  | Riscul „→ Editor" — no-op tăcut          | Coadă defensivă în `editor-commands.ts` (prag 4s, `E-EDIT-004` la expirare); live: click real din Teste → Editor 1→4 pagini, conținut corect       |
+> | 🟢  | P4 — popup blocat, telemetrie mincinoasă | Link de rezervă + `reportFailure` obligatoriu; live: banner + `E-HIST-002` confirmat în Supabase (cod dedicat, corectat post-audit — vezi mai jos) |
+> | 🟢  | P5 — mesaj Python brut + câmp nereset    | Backend mesaj românesc + frontend reset; live: `curl` direct pe API producție confirmă ambele                                                      |
+> | 🟢  | P6 — avertisment lipsă la formă fixă+N>1 | Replicat pe Unește ȘI Dictare; live: avertisment galben înainte de click, pe ambele generatoare                                                    |
+> | 🟢  | P7 — bold lângă formulă nerandat         | Placeholdere (tipar `math_protect.py`); live: `**b) $6\sqrt{3}$**` randat corect, specimen salvat în `Teste_Output`                                |
+>
+> Poartă: `tsc 0 · jest 438/438 · build OK · pytest 89/89` — fără regresie (baseline consemnat
+> ÎNAINTE de prima modificare, la cererea lui Roland: `428/428` · `83/83`).
+>
+> **Verdicte auditori:** regresie FĂRĂ REGRESIE (rulată independent) · dovezi 7/7 CONFIRMAT
+> (verificare live proprie, inclusiv `curl` pe API producție) · cerințe: cele 3 corecții explicite
+> ale lui Roland ONORATE, dar **1 abatere reală găsită** — P4 reutiliza `E-HIST-001` (catalog scris
+> pt DOCX, nu pt popup blocat) → **corectat imediat**, cod nou `E-HIST-002`, redeploy, re-verificat
+> live.
 
 > ### ✅ FAZA 2 — ÎNCHISĂ
 >
@@ -45,13 +69,14 @@ build OK · pytest 83/83 · planse sintaxă OK`.
 ## Ordinea confirmată de Roland
 
 ```
-1. FAZA 2   — riscul „originalul se pierde" ÎNTÂI, apoi bug-ul SK
-2. FAZA 2.5 — cei trei agenți de audit
-3. FAZA 3   — caietul de sarcini (viu, .md + .html cu căutare)
-4. FAZA 4   — auditul real în browser, cu fișierele din Teste_Input
-5. FAZA 4.5 — reparațiile din lista strânsă la 4c
-6. FAZA 5   — unificarea documentației + memorie + mediu nativ + /onboard
-7. FAZA 6   — automatizarea + lista de pornire
+1. FAZA 2    — riscul „originalul se pierde" ÎNTÂI, apoi bug-ul SK
+2. FAZA 2.5  — cei trei agenți de audit
+3. FAZA 3    — caietul de sarcini (viu, .md + .html cu căutare)
+4. FAZA 4    — auditul real în browser, cu fișierele din Teste_Input
+5. FAZA 4.5a — reparațiile contenite, risc redus (P1, „→ Editor", P4, P5, P6, P7) — ÎNCHISĂ
+6. FAZA 4.5b — traducere F8 (P3, R-MATH) + timeout Teste (P2) — izolate într-o fază proprie
+7. FAZA 5    — unificarea documentației + memorie + mediu nativ + /onboard
+8. FAZA 6    — automatizarea + lista de pornire
 ```
 
 ---

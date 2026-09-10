@@ -114,23 +114,26 @@ export default function Home() {
         <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
           <ChatPanel
             onSendToEditor={(text) => {
-              // Comută pe Editor, apoi inserează răspunsul (settle cross-tab).
+              // Comută pe Editor, apoi inserează răspunsul. Faza 4.5a: nu mai
+              // e nevoie de setTimeout — coada din editor-commands.ts absoarbe
+              // întârzierea de montare a editorului (risc „→ Editor").
               handleTabChange("editor");
-              setTimeout(() => insertEditorText(text), 150);
+              insertEditorText(text);
             }}
           />
         </div>
         <div style={{ display: activeTab === "calculator" ? "block" : "none" }}>
           <CalculatorPanel
             onInsertToEditor={(src, alt) => {
-              // Comută pe Editor, apoi inserează graficul ca figură (settle cross-tab).
+              // Comută pe Editor, apoi inserează graficul ca figură. Faza 4.5a:
+              // coada din editor-commands.ts absoarbe montarea întârziată.
               handleTabChange("editor");
-              setTimeout(() => insertEditorImage(src, alt), 150);
+              insertEditorImage(src, alt);
             }}
             onInsertTextToEditor={(text) => {
               // #13 (/improve) — Științific/Matrice trimit rezultatul ca text.
               handleTabChange("editor");
-              setTimeout(() => insertEditorText(text), 150);
+              insertEditorText(text);
             }}
           />
         </div>
@@ -138,7 +141,7 @@ export default function Home() {
           <TestePanel
             onSendToEditor={(text) => {
               handleTabChange("editor");
-              setTimeout(() => insertEditorText(text), 150);
+              insertEditorText(text);
             }}
           />
         </div>
@@ -148,24 +151,23 @@ export default function Home() {
               handleTabChange("editor");
               // R5 (audit 2026-09-07): fișele cu desene `[[DESEN]]` (grădiniță+primar)
               // se inserează ca segmente — text ca text/KaTeX, desenele ca imagini SVG
-              // (înainte markerul brut ajungea ca text literal în editor).
-              setTimeout(() => {
-                const segs = scolareToSegments(text);
-                if (!segs.some((s) => s.kind === "svg")) {
-                  insertEditorText(text);
-                  return;
+              // (înainte markerul brut ajungea ca text literal în editor). Faza 4.5a:
+              // fără setTimeout — fiecare insert intră în coada din editor-commands.ts.
+              const segs = scolareToSegments(text);
+              if (!segs.some((s) => s.kind === "svg")) {
+                insertEditorText(text);
+                return;
+              }
+              for (const s of segs) {
+                if (s.kind === "text") {
+                  if (s.text.trim()) insertEditorText(s.text);
+                } else {
+                  insertEditorImage(
+                    `data:image/svg+xml;utf8,${encodeURIComponent(s.svg)}`,
+                    "desen",
+                  );
                 }
-                for (const s of segs) {
-                  if (s.kind === "text") {
-                    if (s.text.trim()) insertEditorText(s.text);
-                  } else {
-                    insertEditorImage(
-                      `data:image/svg+xml;utf8,${encodeURIComponent(s.svg)}`,
-                      "desen",
-                    );
-                  }
-                }
-              }, 150);
+              }
             }}
           />
         </div>

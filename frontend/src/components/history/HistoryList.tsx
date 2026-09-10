@@ -25,8 +25,16 @@ export default function HistoryList() {
   const [viewMode, setViewMode] = useState<ViewMode>("conversii");
 
   useEffect(() => {
-    setEntries(getHistory());
-    setConvEntries(getConversionHistory());
+    const refresh = () => {
+      setEntries(getHistory());
+      setConvEntries(getConversionHistory());
+    };
+    refresh();
+    // P1 (Faza 4.5a): componenta stă montată permanent (display:none/block la
+    // schimbare de tab) — fără listener, o conversie reușită în alt tab nu ar
+    // mai apărea aici până la reload. Vezi storage.ts (notifyHistoryUpdated).
+    window.addEventListener("history-updated", refresh);
+    return () => window.removeEventListener("history-updated", refresh);
   }, []);
 
   const hasTranslations = entries.length > 0;

@@ -33,4 +33,22 @@ describe("renderMathText", () => {
     expect(renderMathText("<script>")).toContain("&lt;script&gt;");
     expect(renderMathText("<script>")).not.toContain("<script>");
   });
+
+  // P7 (Faza 4.5a, 2026-09-10): defectul REAL din jurnalul Faza 4 (#10) —
+  // bold ÎN JURUL unei formule, pe o singură linie. `**b) $...$**` tăia
+  // cele două `**` în bucăți de text separate de KaTeX; regexul de bold nu
+  // vedea niciodată perechea. Diagnosticul inițial (bold peste linie nouă)
+  // era un bug real, dar diferit — nu reproducea acest caz.
+  it("P7: bold ÎN JURUL unei formule, pe o singură linie — cazul real din jurnal", () => {
+    const html = renderMathText("**b) $6\\sqrt{3}$**");
+    expect(html).toContain("<strong>");
+    expect(html).toContain("katex");
+    expect(html).not.toContain("*");
+  });
+
+  it("P7: bold întins pe două linii — bug secundar, reparat în aceeași trecere", () => {
+    expect(renderMathText("**Titlu\ncontinuare**")).toBe(
+      "<strong>Titlu<br>continuare</strong>",
+    );
+  });
 });

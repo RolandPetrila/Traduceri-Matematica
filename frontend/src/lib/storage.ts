@@ -1,5 +1,15 @@
 import type { HistoryEntry, ConversionHistoryEntry } from "./types";
 
+// P1 (Faza 4.5a): componentele de istoric (HistoryList) stau montate PERMANENT
+// (display:none/block, nu unmount/remount la schimbare de tab) — citirea din
+// localStorage la mount nu se mai repetă niciodată. Notificăm explicit orice
+// listener interesat, ca lista să se actualizeze live fără reload.
+function notifyHistoryUpdated(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("history-updated"));
+  }
+}
+
 // --- Translation History ---
 const HISTORY_KEY = "sistem_traduceri_history";
 const MAX_HISTORY = 20; // Keep low — each entry has full HTML (~10-20KB)
@@ -22,18 +32,21 @@ export function addToHistory(entry: HistoryEntry): void {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch {
     // localStorage full — remove oldest entries and retry
+    let saved = false;
     while (history.length > 5) {
       history.pop();
       try {
         localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-        return;
+        saved = true;
+        break;
       } catch {
         continue;
       }
     }
     // Still full — clear everything
-    localStorage.removeItem(HISTORY_KEY);
+    if (!saved) localStorage.removeItem(HISTORY_KEY);
   }
+  notifyHistoryUpdated();
 }
 
 export function clearHistory(): void {
@@ -61,17 +74,20 @@ export function addConversionToHistory(entry: ConversionHistoryEntry): void {
   try {
     localStorage.setItem(CONV_HISTORY_KEY, JSON.stringify(history));
   } catch {
+    let saved = false;
     while (history.length > 5) {
       history.pop();
       try {
         localStorage.setItem(CONV_HISTORY_KEY, JSON.stringify(history));
-        return;
+        saved = true;
+        break;
       } catch {
         continue;
       }
     }
-    localStorage.removeItem(CONV_HISTORY_KEY);
+    if (!saved) localStorage.removeItem(CONV_HISTORY_KEY);
   }
+  notifyHistoryUpdated();
 }
 
 export function clearConversionHistory(): void {

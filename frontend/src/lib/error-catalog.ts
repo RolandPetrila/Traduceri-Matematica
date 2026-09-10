@@ -204,6 +204,14 @@ export const ERROR_CATALOG: Record<string, ErrorInfo> = {
     severity: "error",
     area: "editor",
   },
+  "E-EDIT-004": {
+    message: "Inserarea de continut din alt modul in Editor nu s-a produs",
+    cause:
+      "Editorul TipTap nu s-a inregistrat ca destinatar in fereastra de asteptare (coada de comenzi din editor-commands.ts) — de obicei o comutare de tab foarte rapida sau un bug de montare a editorului. Faza 4.5a (2026-09-10): inainte, acest caz era un no-op tacut (continutul se pierdea fara eroare).",
+    fix: "Verifica editor-commands.ts (coada pendingText/pendingImages + flush la inregistrare) si EditorTiptap.tsx (setEditorTextInserter/setEditorImageInserter). Reproduce cu comutare rapida intre module si Editor, eventual cu throttling in DevTools.",
+    severity: "error",
+    area: "editor",
+  },
   "E-CHAT-001": {
     message: "Lantul de provideri AI (Chat) s-a epuizat",
     cause:
@@ -265,6 +273,15 @@ export const ERROR_CATALOG: Record<string, ErrorInfo> = {
     cause:
       "Refacerea fisierului dintr-o intrare veche de istoric a esuat: datele salvate lipsesc ori sunt corupte, sau serverul a refuzat cererea.",
     fix: "Vezi context.status si context.cause. Intrarile peste 2MB nu au output_data salvat si nu pot fi re-descarcate — se reface conversia in Convertor.",
+    severity: "error",
+    area: "istoric",
+  },
+  "E-HIST-002": {
+    message:
+      "Re-printarea PDF din Istoric a esuat — fereastra de print a fost blocata",
+    cause:
+      "window.open() a intors null — browserul a blocat popup-ul declansat de butonul PDF (Print). Faza 4.5a (2026-09-10): gasit de auditor-cerinte — inainte, acest caz refolosea codul E-HIST-001 (scris pt esecul DOCX), care arata cauza/fix gresite pe /diagnostics.",
+    fix: "UI ofera deja un link de rezerva (Blob+URL.createObjectURL) langa mesajul de eroare — utilizatorul poate deschide foaia de print manual din el. Daca apare des la Cristina, verifica setarea de pop-up-uri a browserului ei pt acest domeniu.",
     severity: "error",
     area: "istoric",
   },

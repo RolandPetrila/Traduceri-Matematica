@@ -60,6 +60,9 @@ async function downloadAsDocx(html: string, filename: string) {
 
 export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
   const [docxError, setDocxError] = useState<string | null>(null);
+  // P4 (Faza 4.5a): la popup blocat, link de rezervă (tiparul Planșe —
+  // frontend/public/planse/app.js) în loc de eșec tăcut.
+  const [printFallbackUrl, setPrintFallbackUrl] = useState<string | null>(null);
 
   const handleDownloadHtml = () => {
     if (!entry.html) return;
@@ -98,6 +101,10 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
 
   const handlePrintPdf = () => {
     if (!entry.html) return;
+    if (printFallbackUrl) {
+      URL.revokeObjectURL(printFallbackUrl);
+      setPrintFallbackUrl(null);
+    }
     const win = window.open("", "_blank");
     if (win) {
       // S2: NU scrie HTML nesanitizat în fereastra nouă (XSS). Același
@@ -106,8 +113,24 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
       win.document.write(sanitizeHtml(entry.html));
       win.document.close();
       setTimeout(() => win.print(), 1500);
+      logAction("Re-print PDF din istoric", { entryId: entry.id });
+      return;
     }
-    logAction("Re-print PDF din istoric", { entryId: entry.id });
+    // P4 (Faza 4.5a): popup blocat. Defectul original — telemetria raporta
+    // succes pe un eșec (logAction rula necondiționat). Acum: (a) link de
+    // rezervă vizibil (tiparul Planșe, app.js:421-435), (b) eroare cu COD
+    // vizibilă pe /diagnostics (R-DIAG) — jumătate din fix fără cealaltă
+    // nu era o reparație completă.
+    const blob = new Blob([sanitizeHtml(entry.html)], { type: "text/html" });
+    setPrintFallbackUrl(URL.createObjectURL(blob));
+    reportFailure({
+      code: "E-HIST-002",
+      flow: "istoric.reprint.pdf",
+      error: new Error("Fereastra de print a fost blocată (popup blocker)"),
+      context: { entryId: entry.id, popupBlocked: true },
+      userHint:
+        "Fereastra de print a fost blocată. Folosește linkul de rezervă de mai jos sau permite pop-up-urile pentru această pagină.",
+    });
   };
 
   return (
@@ -137,6 +160,23 @@ export default function HistoryDetail({ entry, onBack }: HistoryDetailProps) {
           className="rounded-md border border-red-400/60 bg-red-500/10 p-2 text-sm text-red-200"
         >
           ⚠ Export DOCX esuat: {docxError}
+        </div>
+      )}
+
+      {printFallbackUrl && (
+        <div
+          role="alert"
+          className="rounded-md border border-red-400/60 bg-red-500/10 p-2 text-sm text-red-200"
+        >
+          ⚠ Fereastra de print a fost blocată.{" "}
+          <a
+            href={printFallbackUrl}
+            target="_blank"
+            rel="noopener"
+            className="underline text-chalk-yellow"
+          >
+            Deschide foaia de print →
+          </a>
         </div>
       )}
 

@@ -352,6 +352,9 @@ export default function ConvertorPage() {
               logAction("Convertor: operatie schimbata", { operation: op.id });
               setOperation(op.id);
               setPdfAction("");
+              // P5 (Faza 4.5a): "Pagini" are semantica diferita per operatie
+              // (split vs extras) - fara reset, valoarea veche se refolosea tacit.
+              setPageRange("");
             }}
             className={`chalk-btn text-sm ${
               operation === op.id ? "!border-chalk-yellow !bg-white/10" : ""

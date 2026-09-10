@@ -36,39 +36,69 @@ function inlineMd(s: string): string {
     .replace(/`([^`]+?)`/g, "<code>$1</code>");
 }
 
-/** O linie de text (deja escape-uit): titlu markdown → bold, listă → bullet. */
-function markdownLine(escapedLine: string): string {
-  const h = escapedLine.match(/^\s*#{1,6}\s+(.*)$/);
-  if (h) return `<strong>${inlineMd(h[1])}</strong>`;
-  const li = escapedLine.match(/^\s*[*-]\s+(.*)$/);
-  if (li) return `• ${inlineMd(li[1])}`;
-  return inlineMd(escapedLine);
+/**
+ * O linie de text DEJA escape-uită ȘI cu markdown inline aplicat (bold/cod):
+ * doar detectează titlu → bold, listă → bullet. NU mai apelează `inlineMd` —
+ * ar proceda de două ori acelaşi text (vezi `renderMathText`).
+ */
+function formatLine(line: string): string {
+  const h = line.match(/^\s*#{1,6}\s+(.*)$/);
+  if (h) return `<strong>${h[1]}</strong>`;
+  const li = line.match(/^\s*[*-]\s+(.*)$/);
+  if (li) return `• ${li[1]}`;
+  return line;
 }
+
+/**
+ * P7 (Faza 4.5a, 2026-09-10): un `**bold**` care înconjoară o formulă, ex.
+ * `**b) $6\sqrt{3}$**`, NU se randa — `renderMathText` tăia textul la
+ * delimitatorii de matematică, iar cele două `**` ajungeau în bucăți de text
+ * separate de KaTeX, deci regexul de bold din `inlineMd` nu vedea niciodată
+ * perechea în aceeași invocare. Fix: protejează matematica cu placeholdere
+ * OPACE înainte de trecerea de markdown (același tipar ca la traducere,
+ * `api/lib/math_protect.py`), aplică markdown pe textul ÎNTREG dintr-o
+ * bucată, apoi restaurează. Repară gratuit și bold-ul întins pe două linii
+ * (al doilea bug real, diferit de cel din jurnal).
+ */
+const MARK_START = "";
+const MARK_END = "";
 
 export function renderMathText(text: string): string {
   const src = normalizeMathDelimiters(text);
   const re = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
-  const out: string[] = [];
+
+  const tokens: string[] = [];
+  let withPlaceholders = "";
   let last = 0;
   let m: RegExpExecArray | null;
-  const plain = (t: string) =>
-    escapeHtml(t).split("\n").map(markdownLine).join("<br>");
   while ((m = re.exec(src)) !== null) {
-    out.push(plain(src.slice(last, m.index)));
+    withPlaceholders += src.slice(last, m.index);
     const tex = m[1] ?? m[2] ?? "";
+    let html: string;
     try {
-      out.push(
-        katex.renderToString(tex, {
-          throwOnError: false,
-          strict: false,
-          displayMode: m[1] != null,
-        }),
-      );
+      html = katex.renderToString(tex, {
+        throwOnError: false,
+        strict: false,
+        displayMode: m[1] != null,
+      });
     } catch {
-      out.push(escapeHtml(m[0]));
+      html = escapeHtml(m[0]);
     }
+    tokens.push(html);
+    withPlaceholders += MARK_START + (tokens.length - 1) + MARK_END;
     last = re.lastIndex;
   }
-  out.push(plain(src.slice(last)));
-  return out.join("");
+  withPlaceholders += src.slice(last);
+
+  // Bold/cod pe tot textul, dintr-o bucată — placeholderele nu conțin `*`/`\n`,
+  // deci nu pot rupe o pereche `**...**` și nici nu sunt atinse de escapeHtml
+  // (care schimbă doar &, <, >).
+  const withMarkdown = inlineMd(escapeHtml(withPlaceholders));
+  const withLines = withMarkdown.split("\n").map(formatLine).join("<br>");
+
+  const restoreRe = new RegExp(`${MARK_START}(\\d+)${MARK_END}`, "g");
+  return withLines.replace(
+    restoreRe,
+    (_match, idx: string) => tokens[Number(idx)],
+  );
 }

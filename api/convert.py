@@ -471,21 +471,34 @@ def merge_pdfs(files: list[dict]) -> dict:
 
 
 def _parse_page_range(spec: str, total: int) -> list[int]:
-    """Parse page range spec like '1-3,5,7-10' into 0-based page indices."""
+    """Parse page range spec like '1-3,5,7-10' into 0-based page indices.
+
+    P5 (Faza 4.5a, 2026-09-10): `int()` arunca direct pe input invalid, iar
+    handler-ul de exceptii trimite ORICE ValueError neschimbat la client
+    (decizia H2, 2026-08-10 - corect pt mesaje scrise de mana, gresit pt
+    mesajul intern al lui Python). Fix: prinde ValueError de la int() aici,
+    unde stim exact ce a fost invalid, si re-arunca cu un mesaj romanesc.
+    """
     if not spec or spec.strip().lower() == "all":
         return list(range(total))
     pages: list[int] = []
     for part in spec.split(","):
         part = part.strip()
-        if "-" in part:
-            start, end = part.split("-", 1)
-            s = max(1, int(start.strip()))
-            e = min(total, int(end.strip()))
-            pages.extend(range(s - 1, e))
-        else:
-            p = int(part) - 1
-            if 0 <= p < total:
-                pages.append(p)
+        try:
+            if "-" in part:
+                start, end = part.split("-", 1)
+                s = max(1, int(start.strip()))
+                e = min(total, int(end.strip()))
+                pages.extend(range(s - 1, e))
+            else:
+                p = int(part) - 1
+                if 0 <= p < total:
+                    pages.append(p)
+        except ValueError:
+            raise ValueError(
+                f"Interval de pagini invalid: '{part}'. "
+                "Foloseste cifre si virgule/liniute (ex: 1,3,5-8)."
+            )
     return sorted(set(pages)) if pages else list(range(total))
 
 
