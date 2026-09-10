@@ -158,5 +158,40 @@ class TestSuccessRoundTrip:
         assert called_bytes == fake_image
 
 
+class TestTierSelector:
+    """Faza 4.5d (2026-09-11): câmpul `tier` din form-data selectează cheia Google
+    (free implicit, `paid` pt corectarea lucrărilor elevilor — vezi TestePanel.tsx)."""
+
+    def _post(self, fields: dict):
+        fake_image = b"\x89PNG\r\n\x1a\nFAKE-PNG-BYTES-FOR-TEST"
+        body = _multipart_body(
+            fields,
+            files=[{"filename": "p1.png", "mime_type": "image/png", "data": fake_image}],
+        )
+        inst = _make_handler(
+            body=body,
+            headers={
+                "Content-Type": "multipart/form-data; boundary=TESTBOUNDARY",
+                "Content-Length": str(len(body)),
+            },
+        )
+        fake_page = {"title": "", "sections": [{"type": "paragraph", "content": "x"}]}
+        with patch("lib.rate_limiter.reject_if_limited", return_value=False), \
+             patch("ocr.ocr_structured", return_value=fake_page) as mock_ocr:
+            inst.do_POST()
+        return mock_ocr
+
+    def test_tier_paid_passes_paid_key_env_to_ocr_structured(self):
+        mock_ocr = self._post({"source_lang": "ro", "engine": "gemini", "tier": "paid"})
+        mock_ocr.assert_called_once()
+        assert mock_ocr.call_args.kwargs.get("key_env") == "GOOGLE_AI_API_KEY_PAID"
+
+    def test_tier_omitted_defaults_to_free_key_env(self):
+        """Editor import (Cristina) nu trimite `tier` — trebuie să rămână pe cheia free."""
+        mock_ocr = self._post({"source_lang": "ro", "engine": "gemini"})
+        mock_ocr.assert_called_once()
+        assert mock_ocr.call_args.kwargs.get("key_env") == "GOOGLE_AI_API_KEY"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

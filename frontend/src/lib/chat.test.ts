@@ -4,9 +4,11 @@ import {
   parseReply,
   isTruncated,
   sendChat,
-  CHAIN,
   GENERATION_CHAIN,
   GENERATION_OPTS,
+  CORRECTION_CHAIN,
+  CORRECTION_OPTS,
+  type ProviderStep,
 } from "./chat-providers";
 import { buildSystemPrompt, buildLibraryIndex } from "./chat-context";
 
@@ -62,36 +64,35 @@ describe("chat-providers · payloads", () => {
     );
     expect(isTruncated("groq", {})).toBe(false);
   });
-
-  it("CHAIN = Gemini → Gemini2 → Groq → Mistral → Mistral2 (3 vendori independenți, revived 2026-09-07)", () => {
-    expect(CHAIN.map((c) => c.id)).toEqual([
-      "gemini",
-      "gemini2",
-      "groq",
-      "mistral",
-      "mistral2",
-    ]);
-    // Morți verificați live prin sondă directă (scratchpad/chat_providers_probe.mjs): scoși/neincluși.
-    expect(CHAIN.some((c) => c.id === "cerebras")).toBe(false); // 402 Payment required (R-COST)
-    expect(CHAIN.some((c) => c.id === "openrouter")).toBe(false); // slug :free = 404, scos anterior
-    // Modele actualizate la cele VII pe free-tier (large=403 tier-locked, llama-uri Groq=404 retrase):
-    expect(CHAIN.find((c) => c.id === "groq")?.model).toBe(
-      "openai/gpt-oss-20b",
-    );
-    expect(CHAIN.find((c) => c.id === "mistral")?.model).toBe(
-      "mistral-small-latest",
-    );
-    expect(CHAIN.find((c) => c.id === "mistral2")?.model).toBe(
-      "mistral-small-latest",
-    );
-    // fiecare treaptă are format explicit (gemini vs openai)
-    expect(
-      CHAIN.every((c) => c.format === "gemini" || c.format === "openai"),
-    ).toBe(true);
-  });
 });
 
 describe("sendChat · fallback + instrumentare", () => {
+  // Fixture local (Faza 4.5d: `chain` e obligatoriu, nu mai există un CHAIN
+  // implicit de Chat) — testează mecanismul GENERIC de fallback al `sendChat`
+  // (primul răspuns câștigă, sare peste eșec, colectează toate erorile), NU
+  // conținutul exact al GENERATION_CHAIN/CORRECTION_CHAIN de producție.
+  const TEST_CHAIN: ProviderStep[] = [
+    { id: "gemini", label: "Gemini Flash", format: "gemini" },
+    { id: "gemini2", label: "Gemini Flash (2)", format: "gemini" },
+    {
+      id: "groq",
+      label: "Groq (gpt-oss-20b)",
+      model: "openai/gpt-oss-20b",
+      format: "openai",
+    },
+    {
+      id: "mistral",
+      label: "Mistral Small",
+      model: "mistral-small-latest",
+      format: "openai",
+    },
+    {
+      id: "mistral2",
+      label: "Mistral Small (2)",
+      model: "mistral-small-latest",
+      format: "openai",
+    },
+  ];
   const geminiOk = {
     candidates: [{ content: { parts: [{ text: "salut" }] } }],
   };
@@ -108,7 +109,7 @@ describe("sendChat · fallback + instrumentare", () => {
 
   it("întoarce primul provider care răspunde și NU mai încearcă restul", async () => {
     global.fetch = jest.fn().mockResolvedValueOnce(mkRes(200, geminiOk));
-    const r = await sendChat(q, "SYS");
+    const r = await sendChat(q, "SYS", { chain: TEST_CHAIN });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.provider).toBe("Gemini Flash");
     expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(1);
@@ -125,7 +126,7 @@ describe("sendChat · fallback + instrumentare", () => {
       ],
     };
     global.fetch = jest.fn().mockResolvedValueOnce(mkRes(200, cut));
-    const r = await sendChat(q, "SYS");
+    const r = await sendChat(q, "SYS", { chain: TEST_CHAIN });
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.truncated).toBe(true);
   });
@@ -135,23 +136,23 @@ describe("sendChat · fallback + instrumentare", () => {
       .fn()
       .mockResolvedValueOnce(mkRes(500, { error: "x" })) // gemini
       .mockResolvedValueOnce(mkRes(200, geminiOk)); // gemini2
-    const r = await sendChat(q, "SYS");
+    const r = await sendChat(q, "SYS", { chain: TEST_CHAIN });
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.provider).toBe(CHAIN[1].label);
+    if (r.ok) expect(r.provider).toBe(TEST_CHAIN[1].label);
   });
 
   it("la eșec total colectează TOATE erorile (nu doar ultima)", async () => {
     global.fetch = jest.fn().mockResolvedValue(mkRes(429, { error: "rate" }));
-    const r = await sendChat(q, "SYS");
+    const r = await sendChat(q, "SYS", { chain: TEST_CHAIN });
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(r.errors).toHaveLength(CHAIN.length); // câte o eroare per provider
+      expect(r.errors).toHaveLength(TEST_CHAIN.length); // câte o eroare per provider
       expect(r.errors.every((e) => e.includes("HTTP 429"))).toBe(true);
       expect(r.error).toContain("Gemini Flash");
       expect(r.error).toContain("Mistral Small (2)");
     }
     expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(
-      CHAIN.length,
+      TEST_CHAIN.length,
     );
   });
 });
@@ -225,15 +226,21 @@ describe("GENERATION_CHAIN · realocarea bugetului (Faza 4.5c, P2)", () => {
     ); // budgetul acoperă ÎNTREG cele 3 încercări realiste, nu doar prima
   });
 
-  it("CHAIN (Chat) rămâne complet NEATINS — fără timeoutMs per pas, ordinea originală", () => {
-    expect(CHAIN.every((c) => c.timeoutMs === undefined)).toBe(true);
-    expect(CHAIN.map((c) => c.id)).toEqual([
-      "gemini",
-      "gemini2",
-      "groq",
-      "mistral",
-      "mistral2",
-    ]);
+  // Faza 4.5d (2026-09-11): Chat (și CHAIN) au fost eliminate — garda de mai jos
+  // înlocuiește testul „CHAIN rămâne neatins" cu ce contează acum: cele DOUĂ
+  // lanțuri vii (GENERATION_CHAIN, CORRECTION_CHAIN — cheie plătită, corectarea
+  // lucrărilor elevilor) nu se amestecă, ca o modificare la unul să nu „scurgă"
+  // silențios în celălalt.
+  it("GENERATION_CHAIN și CORRECTION_CHAIN sunt independente — niciun id comun, opțiuni separate", () => {
+    expect(GENERATION_OPTS.chain).not.toBe(CORRECTION_OPTS.chain);
+    const generationIds = new Set(GENERATION_CHAIN.map((c) => c.id));
+    const correctionIds = CORRECTION_CHAIN.map((c) => c.id);
+    correctionIds.forEach((id) => {
+      expect(generationIds.has(id)).toBe(false);
+    });
+    // CORRECTION_CHAIN nu conține niciun provider free (Groq/Mistral) — vezi
+    // motivul de confidențialitate din chat-providers.ts.
+    expect(CORRECTION_CHAIN.every((c) => c.id === "gemini_paid")).toBe(true);
   });
 
   it("GENERATION_CHAIN reordonează Groq înaintea lui gemini2 (fallback rapid dovedit, nu o a doua încercare lentă)", () => {
@@ -244,6 +251,20 @@ describe("GENERATION_CHAIN · realocarea bugetului (Faza 4.5c, P2)", () => {
       "mistral",
       "mistral2",
     ]);
+  });
+
+  // Faza 4.5d (2026-09-11): Groq are plafon 8000 TPM — cerând 16384 (flat, ca
+  // Gemini) garanta 429 la a treia încercare (măsurat în Faza 4.5c). Gardă
+  // explicită: dacă cineva șterge `maxTokens` de pe pasul Groq, sau îl adaugă
+  // din greșeală pe Gemini, testul pică.
+  it("DOAR pasul Groq are maxTokens redus (6000) — Gemini rămâne pe flat (16384)", () => {
+    expect(GENERATION_CHAIN.find((c) => c.id === "groq")?.maxTokens).toBe(6000);
+    expect(
+      GENERATION_CHAIN.find((c) => c.id === "gemini")?.maxTokens,
+    ).toBeUndefined();
+    expect(
+      GENERATION_CHAIN.find((c) => c.id === "gemini2")?.maxTokens,
+    ).toBeUndefined();
   });
 });
 

@@ -1,8 +1,57 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-10 (Faza 4.5c ÎNCHISĂ — P2 implementat + deployat + confirmat de Roland, rămâne 🟡 cu bună știință, nu 🟢). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-09-11 (Faza 4.5d ÎNCHISĂ — free tier + cheie plătită corectare + fix
+> RECITATION + fix scară bbox + eliminare Chat AI + Groq TPM, toate deployate + verificate live).
+> Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 4.5c ÎNCHISĂ (P2 timeout lanț AI) · urmează o fază nouă, nestabilită încă
+## ▶️ REIA DE AICI — FAZA 4.5d ÎNCHISĂ (free tier + plătit corectare + OCR + Chat + Groq) · urmează o fază nouă, nestabilită încă
+
+> **⚠️ ATENȚIE, situație specifică acestei faze — DOUĂ sesiuni paralele pe același nume:** în
+> paralel cu asta, o ALTĂ sesiune a scris `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`,
+> numind „Faza 4.5d" partea Python/OCR și „Faza 4.5e" ce s-a livrat aici (frontend/corectare/Chat).
+> Coliziune de NUME, nu de scope — dar 2 reparații din documentul ei (fix RECITATION, fix scară
+> bbox Lite) au fost absorbite ȘI livrate aici, cu acordul explicit al lui Roland (vezi §8 din
+> `docs/PLAN_FAZA4.5D_FREE_TIER_2026-09-11.md`). **Dacă acea sesiune mai are ceva neconfirmat
+> (Opțiunea A/B pt mesaj de cotă OCR, split-ul propus) — verifică cu Roland ce mai e de făcut acolo
+> înainte să presupui că tot ce scrie documentul ei e încă deschis.**
+
+> **Ce s-a livrat (2026-09-11):** trecere pe free tier pt Gemini (3 chei dedicate, confidențialitate
+> pt lucrările elevilor pe cheie plătită separată), test A/B OCR (Lite pică, rămâne fallback),
+> selector de tier per cerere pe `/api/ocr`, provider `gemini_paid` + `CORRECTION_CHAIN` pt
+> corectare, eliminare completă Chat AI, Groq `maxTokens:6000`, fix RECITATION (OCR nu mai eșuează
+> dur pe filtrul de copyright Google), fix scară bbox Lite (÷1000, scala nativă Gemini). Plan
+> complet, cu toate deciziile lui Roland citate exact + dovezile live: `docs/PLAN_FAZA4.5D_FREE_TIER_2026-09-11.md` — **citește-l pt detalii**.
+>
+> **Poartă finală:** `tsc 0 · jest 444/444 (28 suite) · build OK · pytest 115/115` (baseline
+> dinaintea fazei: jest 444/444, pytest 104/104 — jest revine exact la 444 după 2 șterse+2
+> adăugate; pytest +11 teste noi: 5 selector tier + 3 RECITATION + 3 bbox). Cei trei auditori
+> (R-AUDIT-FAZA) au rulat: **regresie** — FĂRĂ REGRESIE, cifre proprii confirmate independent;
+> **dovezi** — CONFIRMAT pe toate cele 8 piese majore, live pe Supabase + re-rulare proprie a
+> scripturilor de verificare; **cerințe** — a prins coliziunea de nume cu sesiunea paralelă
+> (rezolvată, vezi mai sus) + un gol de test pe Groq (corectat, vezi test nou în `chat.test.ts`).
+>
+> **Deploy**: `traduceri-frontend.vercel.app` + `traduceri-api.vercel.app`, ambele redeployate,
+> `sw.js` `CACHE_VERSION` v75→v76. 5 env vars migrate pe cele 2 proiecte Vercel corecte (descoperire
+> importantă: `GOOGLE_AI_API_KEY` — Python, OCR+traducere F8 — e o cheie SEPARATĂ de `GOOGLE_API_KEY`
+> — JS, proxy chat — pe un proiect Vercel DIFERIT, `traduceri-api` vs `traduceri-frontend`).
+>
+> **Rămâne 🟡, nu 🟢, cu bună știință:** traseul Groq (`maxTokens:6000`) din `GENERATION_CHAIN` NU a
+> fost exercitat live (corectarea de test a reușit direct pe primul provider) — dovedit doar prin
+> test + aritmetică. Fixul de scară bbox — dovedit prin test unitar (reproduce exact valoarea de
+> referință) + aritmetică, NU exercitat live end-to-end (Lite nu e atins decât la eșecul lui
+> 3.6-flash). RECITATION — dovedit LIVE (documentul real din testul A/B, redeployat, funcționează).
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI. Deschide o sesiune nouă cu
+> `/onboard` pentru faza următoare — nu era stabilită la închiderea acestei sesiuni. Verifică ȘI
+> starea sesiunii paralele (nota de mai sus) înainte de a decide ce urmează.
+
+---
+
+## FAZA 4.5c ÎNCHISĂ (P2 timeout lanț AI) — istoric
+
+> Ce s-a livrat, verdicte auditori, protocol: vezi blocul original mai jos.
+
+## ▶️ (istoric) FAZA 4.5c ÎNCHISĂ (P2 timeout lanț AI) · urmează o fază nouă, nestabilită încă
 
 > **Ce s-a livrat (2026-09-10):** fix la defectul ARITMETIC din lanțul AI de generare (Teste +
 > Școlare, `GENERATION_OPTS` din `frontend/src/lib/chat-providers.ts`): bugetul total (58000ms)

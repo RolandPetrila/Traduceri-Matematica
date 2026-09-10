@@ -1,0 +1,1144 @@
+<title>Harta furnizorilor AI</title>
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap"
+/>
+<style>
+  :root {
+    --tabla: #2d5016;
+    --tabla-adanc: #24400f;
+    --tabla-panou: #35601b;
+    --rama: #4a7029;
+    --creta: #f2f0e6;
+    --creta-galben: #f5d76e;
+    --creta-stins: #a9bd97;
+    --creta-slab: #86a072;
+    --bun: #8fd49a;
+    --atentie: #f0b268;
+    --rau: #ec8a84;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--tabla);
+    color: var(--creta);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 20px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .spina {
+    max-width: 74ch;
+    margin: 0 auto;
+  }
+  .lat {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  header.cap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 0 28px;
+    border-bottom: 2px solid var(--rama);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--creta-slab);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.12;
+    text-wrap: balance;
+    margin: 0 0 14px;
+    color: var(--creta-galben);
+  }
+  .subtitlu {
+    font-size: 17px;
+    color: var(--creta-stins);
+    max-width: 68ch;
+    margin: 0;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(23px, 2.6vw, 30px);
+    line-height: 1.2;
+    text-wrap: balance;
+    margin: 64px 0 6px;
+    color: var(--creta-galben);
+  }
+  h2 .nr {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--creta-slab);
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 17px;
+    margin: 34px 0 8px;
+    color: var(--creta);
+  }
+  p {
+    margin: 0 0 16px;
+  }
+  a {
+    color: var(--creta-galben);
+  }
+
+  .lead {
+    font-size: 18px;
+    color: var(--creta-stins);
+  }
+  strong {
+    color: var(--creta);
+    font-weight: 600;
+  }
+  em {
+    color: var(--creta-galben);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* --- Panoul de verdict --- */
+  .verdict {
+    background: var(--tabla-adanc);
+    border: 2px solid var(--creta-galben);
+    border-radius: 3px;
+    padding: 26px 30px;
+    margin: 34px auto 0;
+    max-width: 1180px;
+  }
+  .verdict h2 {
+    margin-top: 0;
+    font-size: 22px;
+  }
+  .verdict p:last-child {
+    margin-bottom: 0;
+  }
+
+  /* --- Rutare sarcina -> model --- */
+  .rutare {
+    display: grid;
+    gap: 1px;
+    background: var(--rama);
+    border: 1px solid var(--rama);
+    margin: 22px 0 0;
+  }
+  .rutare-rand {
+    display: grid;
+    grid-template-columns: minmax(150px, 1.1fr) minmax(150px, 1.2fr) minmax(
+        200px,
+        1.6fr
+      );
+    gap: 1px;
+    background: var(--rama);
+  }
+  .rutare-rand > div {
+    background: var(--tabla-panou);
+    padding: 12px 16px;
+  }
+  .rutare-rand.antet > div {
+    background: var(--tabla-adanc);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--creta-slab);
+  }
+  .sarcina {
+    font-weight: 600;
+  }
+  .model {
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--creta-galben);
+  }
+  .motiv {
+    color: var(--creta-stins);
+    font-size: 14.5px;
+  }
+
+  /* --- Tabele --- */
+  .tabel-wrap {
+    overflow-x: auto;
+    margin: 22px 0 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    font-variant-numeric: tabular-nums;
+    min-width: 640px;
+  }
+  th {
+    text-align: left;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--creta-slab);
+    padding: 0 14px 9px;
+    border-bottom: 1px solid var(--rama);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(74, 112, 41, 0.55);
+    vertical-align: top;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  td.num {
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+  .furnizor {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .sub {
+    display: block;
+    color: var(--creta-slab);
+    font-size: 12.5px;
+    font-weight: 400;
+  }
+
+  /* --- Pastile de stare --- */
+  .p {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+    border: 1px solid;
+  }
+  .p-bun {
+    color: var(--bun);
+    border-color: rgba(143, 212, 154, 0.5);
+  }
+  .p-atentie {
+    color: var(--atentie);
+    border-color: rgba(240, 178, 104, 0.5);
+  }
+  .p-rau {
+    color: var(--rau);
+    border-color: rgba(236, 138, 132, 0.5);
+  }
+  .p-neutru {
+    color: var(--creta-stins);
+    border-color: rgba(169, 189, 151, 0.4);
+  }
+
+  /* --- Note laterale --- */
+  .nota {
+    border-left: 3px solid var(--rama);
+    padding: 4px 0 4px 18px;
+    margin: 24px 0;
+    color: var(--creta-stins);
+    font-size: 15px;
+  }
+  .nota strong {
+    color: var(--creta-galben);
+  }
+  .nota.alerta {
+    border-left-color: var(--rau);
+  }
+  .nota.alerta strong {
+    color: var(--rau);
+  }
+
+  /* --- Lista de module --- */
+  .module {
+    display: grid;
+    gap: 1px;
+    background: var(--rama);
+    border: 1px solid var(--rama);
+    margin: 22px 0;
+  }
+  .modul {
+    display: grid;
+    grid-template-columns: minmax(130px, 0.9fr) minmax(90px, 0.5fr) minmax(
+        240px,
+        2fr
+      );
+    gap: 1px;
+    background: var(--rama);
+  }
+  .modul > div {
+    background: var(--tabla-panou);
+    padding: 12px 16px;
+  }
+  .modul.antet > div {
+    background: var(--tabla-adanc);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--creta-slab);
+  }
+  .modul.offline > div:first-child {
+    color: var(--creta-slab);
+  }
+
+  ul {
+    margin: 0 0 16px;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 7px;
+  }
+  li::marker {
+    color: var(--creta-slab);
+  }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--tabla-adanc);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--creta-galben);
+  }
+
+  footer {
+    max-width: 1180px;
+    margin: 72px auto 0;
+    padding-top: 22px;
+    border-top: 1px solid var(--rama);
+    color: var(--creta-slab);
+    font-size: 13.5px;
+  }
+  footer a {
+    color: var(--creta-stins);
+  }
+
+  @media (max-width: 720px) {
+    .rutare-rand,
+    .modul {
+      grid-template-columns: 1fr;
+    }
+    .rutare-rand.antet,
+    .modul.antet {
+      display: none;
+    }
+    .rutare-rand > div,
+    .modul > div {
+      padding: 10px 14px;
+    }
+    .rutare-rand > div:first-child,
+    .modul > div:first-child {
+      padding-top: 14px;
+    }
+  }
+</style>
+
+<header class="cap">
+  <p class="eyebrow">
+    Sistem Traduceri Matematică · decizie de infrastructură · 10-11.09.2026
+  </p>
+  <h1>Harta furnizorilor AI</h1>
+  <p class="subtitlu">
+    Toate opțiunile de API pentru cele cinci fluxuri unde aplicația cheamă un
+    model — gratuite și plătite, cu limitele reale, costul real și ce se
+    întâmplă când expiră. Măsurat pe consumul acestui proiect, nu pe estimări.
+    <strong>Deciziile sunt luate — vezi panoul următor.</strong>
+  </p>
+</header>
+
+<div class="verdict" style="border-color: var(--bun)">
+  <h2 style="color: var(--bun); margin-top: 0">
+    Decis și executat · 11.09.2026
+  </h2>
+  <div class="rutare" style="margin-top: 16px">
+    <div class="rutare-rand antet">
+      <div>Decizie</div>
+      <div>Alegerea</div>
+      <div>Stare</div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Confidențialitate</div>
+      <div class="model">Hibrid</div>
+      <div class="motiv">
+        Free peste tot;
+        <strong>plătit doar la corectarea lucrărilor de elevi</strong>, ca
+        pozele cu teme de copii să nu treacă prin tier-ul unde Google citește și
+        antrenează.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Chei Google</div>
+      <div class="model">3 chei dedicate</div>
+      <div class="motiv">
+        ✅ Executat: proiect nou creat, billing dezactivat pe el, două chei auth
+        emise și procesate în sistemul central, verificate live. Cheile expuse
+        accidental — șterse.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">OCR pe model ușor</div>
+      <div class="model">Doar după test A/B</div>
+      <div class="motiv">
+        Nu se comută pe <code>3.5-flash-lite</code> până nu se compară pe
+        fișiere reale calitatea la LaTeX, figuri și tabele.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Chat AI</div>
+      <div class="model">Eliminat</div>
+      <div class="motiv">
+        Consumă din aceeași cotă ca fluxurile de care Cristina depinde, fără o
+        sarcină definită în munca ei.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Generator offline</div>
+      <div class="model">Backlog</div>
+      <div class="motiv">
+        Free tier rezolvă costul complet la volumul actual. Se reia când motivul
+        devine baremul garantat corect, nu banii.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="verdict">
+  <h2 style="color: var(--creta-galben)">Verdictul, în trei propoziții</h2>
+  <p>
+    Aplicația rulează acum pe o cheie Google de pe cont de facturare (<span
+      class="p p-rau"
+      >Tier 1 · Postpay</span
+    >), deși folosește <strong>0,22% din capacitatea plătită</strong> — vârf de
+    22 de cereri pe zi dintr-un plafon de 10.000.
+  </p>
+  <p>
+    Free tier acoperă tot, cu o singură condiție:
+    <strong>munca de volum (OCR) trece pe un model cu cotă mare</strong>, iar
+    modelul bun rămâne pentru munca grea (generare, corectare). Cu două proiecte
+    Google dedicate rezultă
+    <strong>1.000 de pagini OCR și 40 de teste pe zi</strong>, permanent, fără
+    card.
+  </p>
+  <p>
+    Claude API intră în discuție doar ca etalon de calitate —
+    <strong>nu are free tier</strong>, deci nu poate fi parte dintr-o strategie
+    „zero costuri".
+  </p>
+</div>
+
+<div class="lat">
+  <h2><span class="nr">01 — inventar</span>Unde cheamă aplicația un model</h2>
+</div>
+<div class="spina">
+  <p class="lead">
+    Cinci fluxuri consumă AI. Patru module nu ating niciun model — merg deja
+    complet offline, și sunt dovada că abordarea deterministă funcționează în
+    acest cod.
+  </p>
+</div>
+<div class="lat">
+  <div class="module">
+    <div class="modul antet">
+      <div>Flux</div>
+      <div>Volum</div>
+      <div>Ce cere de la model</div>
+    </div>
+    <div class="modul">
+      <div><strong>Editor → import OCR</strong></div>
+      <div>
+        <span class="p p-atentie">MARE</span
+        ><span class="sub">1 cerere / pagină</span>
+      </div>
+      <div>
+        Transcrie ce vede: text, LaTeX, poziția figurilor. Sarcină de percepție,
+        nu de raționament. <strong>Aici se sparg cotele.</strong>
+      </div>
+    </div>
+    <div class="modul">
+      <div><strong>Teste → generare</strong></div>
+      <div>
+        <span class="p p-neutru">MIC</span
+        ><span class="sub">1–3 cereri / test</span>
+      </div>
+      <div>
+        Matematică corectă, barem corect, programa clasei. Cea mai sensibilă la
+        calitate din toate.
+      </div>
+    </div>
+    <div class="modul">
+      <div><strong>Teste → corectare</strong></div>
+      <div>
+        <span class="p p-neutru">MIC</span><span class="sub">1–2 cereri</span>
+      </div>
+      <div>
+        Citește lucrarea unui elev și pune notă. O greșeală aici e o notă
+        greșită.
+      </div>
+    </div>
+    <div class="modul">
+      <div><strong>Școlare → fișe</strong></div>
+      <div>
+        <span class="p p-neutru">MIC</span
+        ><span class="sub">1–3 cereri / fișă</span>
+      </div>
+      <div>
+        Identic cu generarea de teste, plus regulamentul curricular al nodului.
+      </div>
+    </div>
+    <div class="modul">
+      <div><strong>Editor → traducere F8</strong></div>
+      <div>
+        <span class="p p-neutru">MEDIU</span
+        ><span class="sub">1 cerere / document</span>
+      </div>
+      <div>
+        Nu are nevoie de LLM: merge pe DeepL, un traducător dedicat, mai bun la
+        asta decât orice model generalist.
+      </div>
+    </div>
+    <div class="modul">
+      <div><strong>Chat AI</strong></div>
+      <div><span class="p p-neutru">VARIABIL</span></div>
+      <div>
+        Singurul flux fără o sarcină definită — consumă din aceeași cotă ca
+        lucrurile de care Cristina chiar depinde.
+      </div>
+    </div>
+    <div class="modul offline">
+      <div>Planșe · Calculator · Convertor · Istoric</div>
+      <div><span class="p p-bun">ZERO AI</span></div>
+      <div>
+        Deja 100% offline. Planșe are șase generatoare deterministe cu solver
+        propriu — precedentul care contează pentru secțiunea 06.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lat">
+  <h2><span class="nr">02 — gratuit</span>Ce e gratuit permanent</h2>
+</div>
+<div class="spina">
+  <p>
+    Ordonate după cât de mult poți conta pe ele. Distincția care contează nu e
+    „cât de mare e cota", ci <em>dacă se resetează</em>: o cotă lunară care
+    revine e infrastructură, un pachet de credite care se consumă e o bombă cu
+    ceas.
+  </p>
+</div>
+<div class="lat">
+  <div class="tabel-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Furnizor / model</th>
+          <th>Cotă gratuită</th>
+          <th>Card?</th>
+          <th>Durabilitate</th>
+          <th>Bun la</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="furnizor">
+            Gemini 3.6 Flash<span class="sub">Google AI Studio</span>
+          </td>
+          <td class="num">
+            5 RPM · 250K TPM<br /><strong>20 cereri/zi</strong>
+          </td>
+          <td>Nu</td>
+          <td>
+            <span class="p p-bun">PERMANENT</span
+            ><span class="sub">cotă per proiect</span>
+          </td>
+          <td>
+            Generare teste, corectare, fișe. Calitate de vârf pe matematică.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            Gemini 3.5 Flash Lite<span class="sub">Google AI Studio</span>
+          </td>
+          <td class="num">
+            15 RPM · 250K TPM<br /><strong>500 cereri/zi</strong>
+          </td>
+          <td>Nu</td>
+          <td>
+            <span class="p p-bun">PERMANENT</span
+            ><span class="sub">cotă per proiect</span>
+          </td>
+          <td>OCR de volum. De 25 de ori mai multă cotă zilnică decât 3.6.</td>
+        </tr>
+        <tr>
+          <td class="furnizor">DeepL Free<span class="sub">două chei</span></td>
+          <td class="num">500.000 caractere<br />/lună <em>per cheie</em></td>
+          <td>Nu</td>
+          <td><span class="p p-bun">PERMANENT</span></td>
+          <td>
+            Traducerea F8. Consum actual: 47.457 din 500.000 pe cheia #1, a doua
+            intactă.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            Azure Translator<span class="sub">două chei, plan F0</span>
+          </td>
+          <td class="num">2.000.000 caractere<br />/lună per cheie</td>
+          <td>Nu</td>
+          <td><span class="p p-bun">PERMANENT</span></td>
+          <td>Rezervă de traducere. De patru ori cota DeepL, nefolosită.</td>
+        </tr>
+        <tr>
+          <td class="furnizor">Groq · gpt-oss-20b</td>
+          <td class="num">
+            30 RPM · <strong>8K TPM</strong><br />1.000 cereri/zi
+          </td>
+          <td>Nu</td>
+          <td><span class="p p-bun">PERMANENT</span></td>
+          <td>
+            Fallback rapid (3,6–4,3s măsurat). Plafonul de tokeni e strâmt —
+            vezi nota.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Mistral Small</td>
+          <td class="num">
+            <strong>2 cereri/minut</strong><br />~1 miliard tok/lună
+          </td>
+          <td>Nu</td>
+          <td><span class="p p-bun">PERMANENT</span></td>
+          <td>
+            Fallback lent dar cu cotă lunară uriașă. Ritmul e suficient pentru
+            un om.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            Azure Doc Intelligence<span class="sub">două chei, plan F0</span>
+          </td>
+          <td class="num">500 pagini/lună<br />per cheie</td>
+          <td>Nu</td>
+          <td><span class="p p-bun">PERMANENT</span></td>
+          <td>Rezervă OCR, dedicată documentelor. Nefolosită.</td>
+        </tr>
+        <tr>
+          <td class="furnizor">Cloudflare Workers AI</td>
+          <td class="num">10.000 neurons/zi</td>
+          <td>Nu</td>
+          <td><span class="p p-atentie">PERMANENT DAR MIC</span></td>
+          <td>1–4 cereri pe zi la modele reale. Prea puțin ca să conteze.</td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            OpenRouter<span class="sub">modele <code>:free</code></span>
+          </td>
+          <td class="num">50 cereri/zi<br />fără sold</td>
+          <td>Nu</td>
+          <td><span class="p p-atentie">VOLATIL</span></td>
+          <td>
+            Modelele gratuite apar și dispar — ți-a rupt deja lanțul o dată, în
+            august.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Cohere · command-r</td>
+          <td class="num">1.000 apeluri/lună</td>
+          <td>Nu</td>
+          <td><span class="p p-rau">INTERZIS AICI</span></td>
+          <td>
+            Cheile trial sunt explicit <em>„not permitted for production"</em>.
+            Licența exclude exact folosirea asta.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Cerebras</td>
+          <td class="num">
+            1M tokeni/zi<br /><span class="sub">din 5 $ credite</span>
+          </td>
+          <td><strong>DA</strong></td>
+          <td><span class="p p-rau">EXPIRĂ ÎN 30 ZILE</span></td>
+          <td>
+            Catalogul tău îl trece drept „permanent". Nu e. Trial cu card
+            obligatoriu.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">GitHub Models</td>
+          <td class="num">—</td>
+          <td>—</td>
+          <td><span class="p p-rau">SE RETRAGE</span></td>
+          <td>
+            Verificat azi: întoarce
+            <code>github_models_retirement_brownout</code>. Nu-l cabla.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            xAI · SambaNova · NVIDIA<span class="sub"
+              >Fireworks · Scaleway · Reka</span
+            >
+          </td>
+          <td class="num">credite de signup</td>
+          <td>variază</td>
+          <td><span class="p p-rau">SE CONSUMĂ</span></td>
+          <td>
+            Toate sunt sume finite deghizate în free tier. Nu se pun în calea
+            critică.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="spina">
+    <div class="nota">
+      <strong>Groq, capcana de 8K tokeni pe minut.</strong> Aplicația îi cere
+      azi <code>max_tokens: 16384</code> — de două ori plafonul lui pe minut.
+      De-aia a răspuns de două ori și a treia oară a dat 429. Fallback-ul nu are
+      nevoie de altă cheie, ci de o cerere mai mică.
+    </div>
+  </div>
+</div>
+
+<div class="lat">
+  <h2><span class="nr">03 — plătit</span>Cât costă, dacă plătești</h2>
+</div>
+<div class="spina">
+  <p>
+    Prețuri per milion de tokeni, verificate la sursă azi. Coloana din dreapta e
+    ce ar costa <em>un test generat în aplicația ta</em> — calculat pe consumul
+    măsurat: ~1.200 tokeni la intrare, ~2.000 la ieșire, adică un răspuns de
+    ~4.800 de caractere (media a zece rulări reale).
+  </p>
+</div>
+<div class="lat">
+  <div class="tabel-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Input /1M</th>
+          <th>Output /1M</th>
+          <th>Un test</th>
+          <th>Are free tier?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="furnizor">
+            Claude Opus 5<span class="sub">etalon de calitate</span>
+          </td>
+          <td class="num">5,00 $</td>
+          <td class="num">25,00 $</td>
+          <td class="num">≈ 0,056 $</td>
+          <td><span class="p p-rau">NU</span></td>
+        </tr>
+        <tr>
+          <td class="furnizor">Claude Sonnet 5</td>
+          <td class="num">2,00 $</td>
+          <td class="num">10,00 $</td>
+          <td class="num">≈ 0,022 $</td>
+          <td><span class="p p-rau">NU</span></td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            Claude Haiku 4.5<span class="sub">cel mai ieftin Claude</span>
+          </td>
+          <td class="num">1,00 $</td>
+          <td class="num">5,00 $</td>
+          <td class="num">≈ 0,011 $</td>
+          <td><span class="p p-rau">NU</span></td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            Gemini 3.6 Flash<span class="sub">modelul folosit acum</span>
+          </td>
+          <td class="num">0,75 $<span class="sub">1,50 $ din 2027</span></td>
+          <td class="num">3,75 $<span class="sub">7,50 $ din 2027</span></td>
+          <td class="num">≈ 0,008 $</td>
+          <td><span class="p p-bun">DA · 20/zi</span></td>
+        </tr>
+        <tr>
+          <td class="furnizor">Gemini 2.5 Flash</td>
+          <td class="num">0,30 $</td>
+          <td class="num">2,50 $</td>
+          <td class="num">≈ 0,005 $</td>
+          <td><span class="p p-bun">DA</span></td>
+        </tr>
+        <tr>
+          <td class="furnizor">
+            Gemini 2.5 Flash-Lite<span class="sub"
+              >cel mai ieftin din tot tabelul</span
+            >
+          </td>
+          <td class="num">0,10 $</td>
+          <td class="num">0,40 $</td>
+          <td class="num">≈ 0,001 $</td>
+          <td><span class="p p-bun">DA</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="spina">
+    <p>
+      Tradus în lună de utilizare, pe cele trei regimuri plauzibile pentru un
+      profesor:
+    </p>
+  </div>
+  <div class="tabel-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Regim</th>
+          <th>Volum lunar</th>
+          <th>Gemini 3.6 Flash</th>
+          <th>Din ian. 2027</th>
+          <th>Pe Claude Haiku</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Ușor</td>
+          <td class="num">20 teste + 50 pagini</td>
+          <td class="num">0,6 $</td>
+          <td class="num">1,2 $</td>
+          <td class="num">0,9 $</td>
+        </tr>
+        <tr>
+          <td>Tipic</td>
+          <td class="num">60 teste + 200 pagini</td>
+          <td class="num">2,3 $</td>
+          <td class="num">4,6 $</td>
+          <td class="num">3,4 $</td>
+        </tr>
+        <tr>
+          <td>Intens</td>
+          <td class="num">150 teste + 600 pagini</td>
+          <td class="num">6,6 $</td>
+          <td class="num">13,2 $</td>
+          <td class="num">9,8 $</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="spina">
+    <div class="nota alerta">
+      <strong>Suma nu e problema — expunerea e.</strong> Chiar la regim intens
+      vorbim de ~7 $ pe lună. Dar aplicația are auto-continuare (până la două
+      runde suplimentare per generare) și un lanț de cinci provideri. Diferența
+      dintre „7 $" și „700 $" e un bug, nu o decizie. Pe free tier, un bug se
+      oprește singur: primești 429 și atât.
+    </div>
+  </div>
+</div>
+
+<div class="lat">
+  <h2>
+    <span class="nr">04 — configurație</span>Cum le pui la treabă, fiecare unde
+    e bun
+  </h2>
+</div>
+<div class="spina">
+  <p class="lead">
+    Principiul:
+    <em>volumul merge la cotă, dificultatea merge la calitate.</em> OCR-ul face
+    multe cereri ușoare; generarea face puține cereri grele. Sunt nevoi opuse,
+    deci merită modele diferite — nu același model pentru tot.
+  </p>
+</div>
+<div class="lat">
+  <div class="rutare">
+    <div class="rutare-rand antet">
+      <div>Flux</div>
+      <div>Model</div>
+      <div>De ce el</div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Import OCR</div>
+      <div class="model">
+        Gemini 3.5 Flash Lite<span class="sub">free · 500/zi</span>
+      </div>
+      <div class="motiv">
+        Un document de 10 pagini = 10 cereri. Pe 3.6 Flash ar mânca jumătate din
+        cota zilnică dintr-o apăsare. Lite are 500.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Generare teste</div>
+      <div class="model">
+        Gemini 3.6 Flash<span class="sub">free · 20/zi</span>
+      </div>
+      <div class="motiv">
+        Puține cereri, dar matematica trebuie să fie corectă. 20 de teste pe zi
+        e peste ce face un profesor.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Corectare lucrări</div>
+      <div class="model">
+        Gemini 3.6 Flash<span class="sub">free · aceeași cotă</span>
+      </div>
+      <div class="motiv">Pune notă unui elev. Nu e loc de model mai slab.</div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Fișe Școlare</div>
+      <div class="model">
+        Gemini 3.6 Flash<span class="sub">free · aceeași cotă</span>
+      </div>
+      <div class="motiv">
+        Identic cu generarea de teste — folosește deja aceleași opțiuni în cod.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Traducere F8</div>
+      <div class="model">
+        DeepL Free<span class="sub">free · 1M car./lună</span>
+      </div>
+      <div class="motiv">
+        Nu e sarcină de LLM. Traducător dedicat, deja cablat, la 10% din cotă.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Fallback 1</div>
+      <div class="model">
+        Groq gpt-oss-20b<span class="sub">free · cerere redusă</span>
+      </div>
+      <div class="motiv">
+        Cel mai rapid (3,6s), dar cu <code>max_tokens</code> scăzut la 8K ca să
+        încapă în plafonul lui.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Fallback 2</div>
+      <div class="model">
+        Gemini 3.6 Flash<span class="sub">al doilea proiect</span>
+      </div>
+      <div class="motiv">
+        Cotă complet separată — Google aplică limitele per proiect, nu per
+        cheie.
+      </div>
+    </div>
+    <div class="rutare-rand">
+      <div class="sarcina">Fallback 3</div>
+      <div class="model">
+        Mistral Small<span class="sub">free · 2/min</span>
+      </div>
+      <div class="motiv">
+        Lent la ritm, dar cu cotă lunară care nu se termină niciodată la volumul
+        ăsta.
+      </div>
+    </div>
+  </div>
+  <div class="spina">
+    <h3>Ce capacitate iese din configurația asta</h3>
+    <p>
+      Cu <strong>două proiecte Google dedicate</strong> (cotele se dublează,
+      fiindcă sunt per proiect):
+      <strong>1.000 de pagini OCR și 40 de generări pe zi</strong>, plus 2.000
+      de cereri Groq și cota lunară Mistral ca plasă. Consumul real de vârf
+      măsurat în aplicație e de 22 de cereri pe zi — din care jumătate au fost
+      sondele mele de azi.
+    </p>
+    <div class="nota">
+      <strong>Ce trebuie verificat înainte de a comuta:</strong> dacă
+      <code>3.5-flash-lite</code> citește la fel de bine ca
+      <code>3.6-flash</code> formulele LaTeX și pozițiile figurilor. Se testează
+      A/B pe fișierele reale din <code>99_Roland_Work/Teste_Input/</code>.
+      Modelul e deja al doilea în lanțul OCR din
+      <code>api/lib/ocr_structured.py</code>, deci schimbarea e o reordonare, nu
+      o rescriere. Dacă pică testul, rezerva e tot gratuită: Mistral OCR sau
+      Azure Document Intelligence.
+    </div>
+  </div>
+</div>
+
+<div class="lat">
+  <h2><span class="nr">05 — risc</span>Ce se poate strica singur</h2>
+</div>
+<div class="lat">
+  <div class="tabel-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Risc</th>
+          <th>Stare azi</th>
+          <th>Ce faci</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="furnizor">Cheia din producție e pe cont de facturare</td>
+          <td>
+            <span class="p p-rau">ACTIV</span
+            ><span class="sub">proiectul „Traduceri", Tier 1 Postpay</span>
+          </td>
+          <td>
+            Muți producția pe cheia gratuită dedicată. Consola arată deja un
+            avertisment de trecere forțată la prepay.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Fallback-ul e cheia altui proiect</td>
+          <td>
+            <span class="p p-atentie">ACTIV</span
+            ><span class="sub">proiectul „Livada"</span>
+          </td>
+          <td>
+            Al doilea proiect dedicat. Altfel, munca la Livada îi taie Cristinei
+            fallback-ul fără nicio legătură vizibilă.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Chei Google de tip „Standard"</td>
+          <td><span class="p p-atentie">DE VERIFICAT</span></td>
+          <td>
+            Google le respinge din septembrie 2026 — luna asta. Se verifică în
+            Cloud Console → Credentials, coloana <em>Restrictions</em>: „None" =
+            Standard.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Model retras de furnizor</td>
+          <td><span class="p p-atentie">S-A ÎNTÂMPLAT DEJA</span></td>
+          <td>
+            În august, Groq și Mistral au retras modelele din lanț. Redundanța
+            reală vine din cote independente, nu din nume de vendori.
+          </td>
+        </tr>
+        <tr>
+          <td class="furnizor">Tariful se dublează</td>
+          <td><span class="p p-neutru">1 IAN. 2027</span></td>
+          <td>Relevant doar dacă rămâi pe plătit. Pe free tier, irelevant.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="lat">
+  <h2>
+    <span class="nr">06 — alternativa</span>Cât de departe se poate merge fără
+    AI
+  </h2>
+</div>
+<div class="spina">
+  <p class="lead">
+    Întrebarea pusă: AI doar pentru OCR, Chat eliminat, generarea de teste și
+    lecții mutată offline. Răspunsul scurt:
+    <em
+      >se poate în mare parte, și pe o bucată ar fi chiar mai bine decât
+      acum.</em
+    >
+  </p>
+
+  <h3>Chatul — eliminare curată</h3>
+  <p>
+    E un tab nativ (<code>ChatPanel.tsx</code>), nu are dependențe în alte
+    module. Se scoate din <code>config/tabs.json</code> și dispare. Câștigi cotă
+    și o suprafață de defect mai mică; pierzi o funcție pe care Cristina nu o
+    are ca sarcină definită.
+  </p>
+
+  <h3>Generarea de teste — fezabilă, cu un câștig neașteptat</h3>
+  <p>
+    Un generator determinist înseamnă: șablon parametrizat („simplifică
+    <code>√(a·b)</code>") + valori alese aleator +
+    <strong>răspunsul calculat, nu inventat</strong>. Ai deja toate piesele:
+  </p>
+  <ul>
+    <li>
+      <strong>337 de formule</strong> în <code>math-data.json</code>,
+      structurate pe clasă (V–XII) și grup, fiecare cu LaTeX și explicație.
+    </li>
+    <li>
+      <strong>Un evaluator matematic</strong> — <code>calculator-eval.ts</code>,
+      209 linii, deja testat.
+    </li>
+    <li>
+      <strong>Precedentul complet</strong> — modulul Planșe are șase generatoare
+      offline cu solver, iar Școlare are un motor de desen determinist pentru
+      grădiniță și primar. Tiparul e demonstrat în codul tău, nu împrumutat.
+    </li>
+  </ul>
+  <p>
+    Câștigul neașteptat: <strong>baremul devine garantat corect.</strong> Un
+    model poate greși un calcul și îl scrie cu aceeași siguranță ca pe unul
+    corect — riscul real pentru o profesoară care tipărește 30 de exemplare. Un
+    generator care calculează răspunsul nu poate greși aritmetica.
+  </p>
+  <p>
+    Unde se oprește: problemele cu enunț de viață reală („un tren pleacă
+    din...") ies din șabloane cu varietate limitată și încep să se repete.
+    Geometria cu figuri cere motorul de desen extins. Estimare onestă:
+    <strong
+      >itemii de calcul — grilă, completare, ecuații, radicali, arii, procente —
+      acoperă majoritatea unui test tipic și se fac offline. Restul, nu.</strong
+    >
+  </p>
+
+  <h3>Lecțiile — doar parțial</h3>
+  <p>
+    Aici alternativa e mai slabă. Cele 337 de câmpuri
+    <code>explicatie</code> sunt material de lecție real și pot alimenta fișe de
+    teorie, dar o lecție adaptată unei clase anume, cu exemple noi, e exact ce
+    face bine un model și prost un șablon.
+  </p>
+
+  <h3>Ce ar rămâne să cheme AI</h3>
+  <p>
+    OCR-ul, și atât. Adică <strong>exact fluxul de volum</strong>, care pe
+    <code>3.5-flash-lite</code> are 500 de cereri gratuite pe zi, per proiect.
+    Cu 1.000 pe zi din două proiecte, aplicația ar deveni practic imposibil de
+    blocat.
+  </p>
+
+  <div class="nota">
+    <strong>Costul acestei variante e timp, nu bani.</strong> Un generator
+    parametric per temă curriculară e muncă reală și incrementală — se începe cu
+    temele cele mai folosite de Cristina, nu cu toate cele 337. Iar decizia nu e
+    „ori-ori": generatorul offline poate fi prima încercare, cu AI-ul ca rezervă
+    pentru ce nu are încă șablon.
+  </div>
+</div>
+
+<footer>
+  <p>
+    <strong>Surse și măsurători.</strong> Tarife: documentația oficială Gemini
+    API și tabelul de modele Claude, consultate la 10.09.2026. Limite free tier
+    Gemini: consola AI Studio a proiectului, pagina Rate Limit, fereastră de 28
+    de zile. Limite Groq: documentația proprie plus mesajul de eroare al
+    providerului. Consum și latențe: măsurate în acest proiect la 10.09.2026 —
+    zece generări reale pe cazul greu (Radicali, clasa VII, 10 itemi cu barem),
+    datele brute în <code>99_Roland_Work/Teste_Output/</code>. Starea cheilor:
+    verificată live, fără expunerea vreunei valori.
+  </p>
+  <p>
+    Cifrele de cost per operație sunt estimări derivate din lungimea măsurată a
+    răspunsurilor și dintr-o măsurătoare anterioară de tokeni; tarifele și
+    limitele sunt citate exact.
+  </p>
+</footer>

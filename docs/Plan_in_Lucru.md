@@ -20,7 +20,43 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-10 (Faza 4.5c ÎNCHISĂ — P2 implementat + deployat + confirmat) · **Producție:** frontend redeploy (Faza 4.5c = realocare buget lanț AI Teste/Școlare, live) · **FAZA 4.5c ÎNCHISĂ** (rămâne 🟡 cu bună știință — defect latent, nu 🟢) · **Următoarea:** de stabilit
+**Ultima actualizare:** 2026-09-11 (Faza 4.5d ÎNCHISĂ — free tier + plătit corectare + OCR fixuri + eliminare Chat + Groq) · **Producție:** `traduceri-frontend.vercel.app` + `traduceri-api.vercel.app`, ambele redeployate · **FAZA 4.5d ÎNCHISĂ** (🟢 pe majoritatea itemilor, 🟡 pe 2 — vezi mai jos) · **Următoarea:** de stabilit (verifică și `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`, scris de o sesiune paralelă sub același nume — vezi nota din `docs/HANDOFF_SESIUNE.md`)
+
+> ### 🟢 FAZA 4.5d — ÎNCHISĂ — free tier, cheie plătită corectare, fix RECITATION + bbox, eliminare Chat, Groq TPM
+>
+> Plan complet, cu toate deciziile lui Roland citate exact + dovezile live:
+> `docs/PLAN_FAZA4.5D_FREE_TIER_2026-09-11.md`.
+>
+> - 🟢 **§0 Test A/B OCR** — Lite pică (bbox pixel brut pe 2/2 fișiere cu figuri, typo corectat
+>   silențios); `gemini-3.6-flash` rămâne model principal. Dovadă: 14 rezultate reale în
+>   `99_Roland_Work/Teste_Output/ocr_ab_2026-09-11/`.
+> - 🟢 **§1/§1b Selector de tier pe `/api/ocr`** (`free`/`paid`) + migrare `GOOGLE_AI_API_KEY` pe
+>   `traduceri-api` (proiect Vercel separat de `traduceri-frontend`, descoperire făcută la
+>   implementare). Dovadă live: import Editor (free) — 200 OK, conținut corect.
+> - 🟢 **§2 Provider `gemini_paid` + `CORRECTION_CHAIN`** — corectarea lucrărilor elevilor pe cheie
+>   plătită, fără fallback pe Groq/Mistral (confidențialitate). Dovadă LIVE: upload poză reală →
+>   „Corectat cu Gemini Flash (plătit)", confirmat în Supabase (`provider=gemini_paid`, `200 OK`).
+> - 🟢 **§3 Migrare env vars** — 5 variabile pe 2 proiecte Vercel corecte, verificat cu
+>   `vercel env ls production` (nume, nu valori).
+> - 🟢 **§4 Eliminare Chat AI** — `tabs.json` ×2, `ChatPanel.tsx` șters, `CHAIN`/`PROVIDER_TIMEOUT_MS`/
+>   `CHAIN_BUDGET_MS` șterse (R-MINIMAL), testele înlocuite (nu doar șterse). Dovadă live: sidebar
+>   fără tab Asistent, zero erori consolă.
+> - 🟡 **§5 Groq `maxTokens:6000`** — implementat + test de regresie nou, dar NEexercitat live
+>   (fallback-ul n-a fost atins în testul reușit). Dovedit prin test + aritmetică, nu prin trafic
+>   real pe Groq.
+> - 🟢 **§8 Fix RECITATION** (absorbit din planul paralel, confirmat de Roland) — OCR nu mai eșuează
+>   dur pe filtrul de copyright Google. Dovadă LIVE: documentul real din testul A/B, redeployat,
+>   funcționează (12 secțiuni extrase corect).
+> - 🟡 **§8 Fix scară bbox Lite** (÷1000, absorbit din planul paralel) — dovedit prin test unitar
+>   (reproduce exact valoarea de referință) + aritmetică, NU exercitat live end-to-end (Lite nu e
+>   atins decât la eșecul lui 3.6-flash).
+>
+> **Poartă finală:** `tsc 0 · jest 444/444 (28 suite) · build OK · pytest 115/115` (baseline
+> 444/104 — jest revine exact la 444, pytest +11 teste noi). Cei trei auditori (R-AUDIT-FAZA) au
+> rulat: regresie FĂRĂ REGRESIE · dovezi CONFIRMAT pe toate piesele majore, live · cerințe a prins
+> coliziunea de nume cu sesiunea paralelă (rezolvată) + un gol de test pe Groq (corectat).
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI.
 
 > ### 🟡 FAZA 4.5c — ÎNCHISĂ — P2 (timeout lanț AI Teste/Școlare), rămâne 🟡 (NU 🟢, cu bună știință)
 >

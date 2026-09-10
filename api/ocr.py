@@ -47,11 +47,24 @@ def _has_table(sections: list) -> bool:
     return False
 
 
-def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str) -> dict:
+_OCR_KEY_ENV_BY_TIER = {
+    # Faza 4.5d (2026-09-11): selector de tier PER CERERE, nu o migrare globală a
+    # OCR-ului — doar corectarea lucrărilor elevilor (TestePanel.tsx, câmpul
+    # `tier=paid` din form-data) cere cheia plătită. Editor import (documentele
+    # Cristinei, conținut neutru) NU trimite `tier` → cade pe "free" implicit.
+    "free": "GOOGLE_AI_API_KEY",
+    "paid": "GOOGLE_AI_API_KEY_PAID",
+}
+
+
+def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str, tier: str = "free") -> dict:
     """OCR one page. engine='azure' → Azure layout (business docs) with a Gemini
     fallback when Azure finds NO table (R-MATH: never lose math) or errors out.
     engine='gemini' (default) → Gemini math OCR unchanged.
+    `tier`: "free" (default, GOOGLE_AI_API_KEY) or "paid" (GOOGLE_AI_API_KEY_PAID,
+    lucrări de elevi — vezi _OCR_KEY_ENV_BY_TIER).
     """
+    key_env = _OCR_KEY_ENV_BY_TIER.get(tier, _OCR_KEY_ENV_BY_TIER["free"])
     if engine == "azure":
         # R8 (audit 2026-09-07): maxDuration REAL e 300s (vercel.json), nu 60s — vechea
         # calibrare (48-elapsed, cap 45) dădea fallback-ului Gemini doar ~13s când Azure
@@ -66,12 +79,12 @@ def _ocr_page(image_bytes: bytes, mime_type: str, source_lang: str, engine: str)
             page_data = azure_layout(image_bytes, mime_type, source_lang)
             if not _has_table(page_data.get("sections", [])):
                 print("[OCR] Azure found no table -> Gemini fallback (R-MATH)", file=sys.stderr)
-                page_data = ocr_structured(image_bytes, mime_type, source_lang, timeout_s=_gemini_budget())
+                page_data = ocr_structured(image_bytes, mime_type, source_lang, timeout_s=_gemini_budget(), key_env=key_env)
             return page_data
         except Exception as e:
             print(f"[OCR] Azure failed ({e}) -> Gemini fallback", file=sys.stderr)
-            return ocr_structured(image_bytes, mime_type, source_lang, timeout_s=_gemini_budget())
-    return ocr_structured(image_bytes, mime_type, source_lang)
+            return ocr_structured(image_bytes, mime_type, source_lang, timeout_s=_gemini_budget(), key_env=key_env)
+    return ocr_structured(image_bytes, mime_type, source_lang, key_env=key_env)
 
 
 def _pdf_to_images(pdf_bytes: bytes, dpi: int = 150, max_pages: int = 1) -> list[tuple[bytes, str]]:
@@ -154,6 +167,7 @@ class handler(BaseHTTPRequestHandler):
 
             source_lang = parts.get("source_lang", "ro")
             engine = parts.get("engine", "gemini")
+            tier = parts.get("tier", "free")
             files = parts.get("files", [])
 
             if not files:
@@ -199,7 +213,7 @@ class handler(BaseHTTPRequestHandler):
             for idx, file_info in enumerate(expanded_files):
                 print(f"[OCR] Processing page {idx+1}/{len(expanded_files)}", file=sys.stderr)
                 try:
-                    page_data = _ocr_page(file_info["data"], file_info.get("mime_type", "image/jpeg"), source_lang, engine)
+                    page_data = _ocr_page(file_info["data"], file_info.get("mime_type", "image/jpeg"), source_lang, engine, tier)
                     # Embed cropped figures from original image (Option C). Azure bboxes
                     # are tight → skip the Gemini content-snap (would clip logos/seals).
                     use_snap = page_data.get("source") != "azure-layout"
@@ -240,7 +254,7 @@ class handler(BaseHTTPRequestHandler):
 
     def _parse_multipart(self, body: bytes, boundary: str) -> dict:
         import re
-        parts_data = {"files": [], "source_lang": "ro"}
+        parts_data = {"files": [], "source_lang": "ro", "tier": "free"}
         boundary_bytes = f"--{boundary}".encode()
         sections = body.split(boundary_bytes)
         for section in sections[1:]:
@@ -257,7 +271,7 @@ class handler(BaseHTTPRequestHandler):
             if not name_match:
                 continue
             name = name_match.group(1)
-            if name in ("source_lang", "engine"):
+            if name in ("source_lang", "engine", "tier"):
                 parts_data[name] = content.decode("utf-8").strip()
             elif name == "files" or "filename" in header:
                 ct_match = re.search(r"Content-Type:\s*(\S+)", header)

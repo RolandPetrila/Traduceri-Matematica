@@ -2,7 +2,6 @@
   "tabs": [
     { "id": "convertor", "label": "Convertor", "icon": "🔄" },
     { "id": "editor", "label": "Editor", "icon": "✏️", "default": true },
-    { "id": "asistent", "label": "Asistent AI", "icon": "🤖" },
     {
       "id": "calculator",
       "label": "Calculator",

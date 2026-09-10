@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // eliminat complet acolo, fără shim). Comportament IDENTIC, doar API-ul
 // Node (req/res) → Fetch API (Request/Response) al App Router-ului.
 // Cheile stau DOAR server-side (env vars Vercel), niciodată în browser.
-// Client: fetch('/api/proxy?provider=<groq|gemini|mistral|cerebras|openrouter|gemini2|mistral2|deepl|deepl2|tavily|brave>', {method:'POST', body: <payload upstream>})
+// Client: fetch('/api/proxy?provider=<groq|gemini|mistral|cerebras|openrouter|gemini2|mistral2|gemini_paid|deepl|deepl2|tavily|brave>', {method:'POST', body: <payload upstream>})
 // Proxy injectează cheia + forwardează la upstream + întoarce răspunsul brut.
 
 // gemini-3.6-flash: upgrade de la gemini-2.5-flash (2026-08-08, cercetare de
@@ -60,6 +60,12 @@ const PROVIDERS: Record<string, ProviderCfg> = {
   // --- Chei secundare = failover automat la rate-limit/429 (acopera si OCR via gemini2) ---
   gemini2: { url: GEMINI_URL, env: "GOOGLE_API_KEY_2", auth: "query" },
   mistral2: { url: MISTRAL_URL, env: "MISTRAL_API_KEY_2", auth: "bearer" },
+  // --- Cheie PLATITA (Faza 4.5d, 2026-09-11) — DOAR corectarea lucrarilor elevilor
+  // (TestePanel.tsx correctText, via CORRECTION_CHAIN) — vezi chat-providers.ts.
+  // Acelasi model (gemini-3.6-flash), alt proiect Google Cloud (Tier 1 Postpay):
+  // termenii free-tier permit "human reviewers may read... your API input and
+  // output" — o poza/lucrare de elev nu trece prin acel tier.
+  gemini_paid: { url: GEMINI_URL, env: "GOOGLE_API_KEY_PAID", auth: "query" },
   // --- Traducere ---
   deepl: { url: DEEPL_URL, env: "DEEPL_API_KEY", auth: "deepl" },
   deepl2: { url: DEEPL_URL, env: "DEEPL_API_KEY_2", auth: "deepl" },

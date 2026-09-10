@@ -23,7 +23,8 @@ except ImportError:
 
 
 def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
-                   *, timeout_s: int = 60, max_retries: int = 0) -> dict:
+                   *, timeout_s: int = 60, max_retries: int = 0,
+                   key_env: str = "GOOGLE_AI_API_KEY") -> dict:
     """Extract structured content from an image using Gemini JSON mode.
 
     Returns dict with "title" and "sections" list.
@@ -35,10 +36,16 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
     ~30-44s; 45 tăia evitabil). ``max_retries=0``: un timeout ridică imediat + cascadează
     pe modelul următor (5xx/timeout → fallback). Apelantul (``api/ocr.py`` fallback
     Azure→Gemini) trece bugetul rămas (≤120s). Lanțul complet ≪ 300s.
+
+    ``key_env`` (Faza 4.5d, 2026-09-11): numele env var-ului cu cheia Google — implicit
+    ``GOOGLE_AI_API_KEY`` (free). ``api/ocr.py`` trece ``GOOGLE_AI_API_KEY_PAID`` DOAR pt
+    corectarea lucrărilor elevilor (câmpul ``tier=paid``, TestePanel.tsx) — lucrarea unui
+    minor nu trece prin tier-ul free-tier, citit de oameni. ``api/translate_text.py``
+    (F8) nu trimite acest parametru → rămâne pe ``GOOGLE_AI_API_KEY``, neatins.
     """
-    api_key = os.environ.get("GOOGLE_AI_API_KEY", "").strip()
+    api_key = os.environ.get(key_env, "").strip()
     if not api_key:
-        raise RuntimeError("GOOGLE_AI_API_KEY not set")
+        raise RuntimeError(f"{key_env} not set")
 
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     # Third site of the same trap (found by the requirements auditor, 08.09.2026):
@@ -143,6 +150,39 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
 
             data = retry_with_backoff(_call, max_retries=max_retries, base_delay=1.0)
             increment_gemini_counter(model_name)
+            # Faza 4.5d — descoperire din testul A/B OCR: un răspuns HTTP 200 cu
+            # `finishReason` non-STOP/non-MAX_TOKENS (RECITATION = filtru copyright,
+            # SAFETY, PROHIBITED_CONTENT) vine cu `content: {}` — FĂRĂ excepție, deci
+            # ieșea din buclă ca "succes", iar parsarea de mai jos arunca KeyError
+            # NEprins de niciun fallback (reprodus live pe 2 documente reale în testul
+            # A/B, ambele PDF-uri germane de laborator). Verificare EXPLICITĂ înainte
+            # de a ieși din buclă — nu un try/except pe KeyError, care ar masca și alte
+            # bug-uri de parsare — tratată ca tranzitorie, exact ca 429/5xx.
+            finish_reason = (
+                (data.get("candidates") or [{}])[0].get("finishReason", "STOP")
+            )
+            has_parts = bool(
+                (data.get("candidates") or [{}])[0].get("content", {}).get("parts")
+            )
+            if not has_parts and finish_reason not in ("STOP", "MAX_TOKENS"):
+                print(
+                    f"[OCR-STRUCT] {model_name} finishReason={finish_reason}, content gol "
+                    "(filtru Google, nu eroare de rețea) — trecem la modelul următor",
+                    file=sys.stderr,
+                )
+                if model_name != MODELS[-1]:
+                    continue
+                if key_env != "GOOGLE_AI_API_KEY":
+                    raise RuntimeError(
+                        f"Toate modelele Gemini (tier plătit) au eșuat (finishReason="
+                        f"{finish_reason}); fallback Mistral OMIS pt confidențialitate "
+                        "(lucrare de elev)."
+                    )
+                print(
+                    "[OCR-STRUCT] All Gemini tiers blocked (finishReason), trying Mistral OCR fallback",
+                    file=sys.stderr,
+                )
+                return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
             print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
             break
         except urllib.error.HTTPError as e:
@@ -158,6 +198,14 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
             error_body = e.read().decode("utf-8", errors="replace")[:300]
             print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)
             if model_name == MODELS[-1]:
+                if key_env != "GOOGLE_AI_API_KEY":
+                    # Faza 4.5d: tier PLĂTIT (lucrare de elev) — Mistral OCR e un
+                    # procesator free terț, exact tier-ul pe care cheia plătită
+                    # trebuie să-l evite. Eșuează vizibil, nu leak silențios.
+                    raise RuntimeError(
+                        f"Toate modelele Gemini (tier plătit) au eșuat ({e.code}); "
+                        "fallback Mistral OMIS pt confidențialitate (lucrare de elev)."
+                    )
                 # All Gemini tiers exhausted — try Mistral OCR as last resort
                 print("[OCR-STRUCT] All Gemini tiers exhausted, trying Mistral OCR fallback", file=sys.stderr)
                 return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
@@ -178,6 +226,11 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
                 continue
             print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
             if model_name == MODELS[-1]:
+                if key_env != "GOOGLE_AI_API_KEY":
+                    raise RuntimeError(
+                        f"Toate modelele Gemini (tier plătit) au eșuat ({e}); "
+                        "fallback Mistral OMIS pt confidențialitate (lucrare de elev)."
+                    )
                 print("[OCR-STRUCT] All Gemini tiers failed, trying Mistral OCR fallback", file=sys.stderr)
                 return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
             raise
@@ -210,9 +263,25 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
                 if section.get("type") == "figure":
                     bbox = section.get("bbox")
                     if bbox and isinstance(bbox, dict):
-                        # Clamp all values to 0.0–1.0
+                        # Faza 4.5d — cauza reală a bug-ului de bbox găsit în testul
+                        # A/B (gemini-3.5-flash-lite): pe coordonata `y`, modelul
+                        # revine uneori la scala NATIVĂ Gemini de "grounding" (0-1000),
+                        # ignorând instrucțiunea explicită din prompt (fracție 0.0-1.0).
+                        # Catalogat programatic pe cele 14 răspunsuri din testul A/B:
+                        # exact valorile >1.0 apar DOAR pe `y`, niciodată pe x/w/h — nu
+                        # e "tot bbox-ul e în pixeli" (asta ar strica și x/w/h). Verificat
+                        # ARITMETIC (÷1000 reproduce exact valoarea de referință a lui
+                        # 3.6-flash pe aceeași figură, ex. 551.0→0.551) ȘI VIZUAL (crop-ul
+                        # rezultat e identic cu crop-ul de referință). ÷1000 e o constantă
+                        # FIXĂ (scala Gemini), nu ÷dimensiunea imaginii (care nici nu ar
+                        # da rezultatul corect — verificat, ar da 0.318 în loc de 0.551).
+                        # Per câmp, nu tot bbox-ul deodată — x/w/h rămân neatinse dacă
+                        # sunt deja în 0-1. Clamp-ul 0-1 de mai jos rămâne ca plasă de
+                        # siguranță finală pt orice altă anomalie, nu doar scala 0-1000.
                         for k in ("x", "y", "w", "h"):
                             v = float(bbox.get(k, 0))
+                            if v > 1.0:
+                                v = v / 1000.0
                             bbox[k] = max(0.0, min(1.0, v))
                         if bbox.get("w", 0) < 0.01 or bbox.get("h", 0) < 0.01:
                             print(f"[OCR-STRUCT] Bbox too small, removed: {bbox}", file=sys.stderr)

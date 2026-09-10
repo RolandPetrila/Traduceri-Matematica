@@ -1,15 +1,13 @@
 /**
- * Lanț AI cu fallback pentru Chat (2026-08-05, extins pe dovadă). Reutilizează
- * ruta same-origin securizată `/api/proxy` (chei server-side, rate-limit, cost-cap).
- * Încearcă providerii ÎN ORDINE; primul care răspunde câștigă; `provider` (eticheta)
- * alimentează indicatorul de stare.
+ * Lanț AI cu fallback (2026-08-05, extins pe dovadă; Chat eliminat Faza 4.5d,
+ * 2026-09-11 — modulul deservește acum GENERARE Teste/Școlare + CORECTARE lucrări
+ * elevi). Reutilizează ruta same-origin securizată `/api/proxy` (chei server-side,
+ * rate-limit, cost-cap). Încearcă providerii dintr-un `chain` explicit, ÎN ORDINE;
+ * primul care răspunde câștigă; `provider` (eticheta) alimentează indicatorul de stare.
  *
- * Ordine (toate GRATIS, toate dovedite 200 pe prod 2026-08-05):
- *   Gemini Flash → Gemini Flash (2) → Cerebras 120B → Groq 70B → Mistral Large → Mistral Large (2)
- * OpenRouter a fost SCOS din lanț: modelul `:free` a fost retras de OpenRouter
- * (404 „unavailable for free") — era un fallback mort care nu putea salva mesajul.
- * Cerebras (1M tokeni/zi) + Mistral (1 mld/lună) + a doua cheie Gemini acoperă
- * „durata maximă" complet gratis, fără slug volatil de întreținut.
+ * Două lanțuri VII, independente (nu se amestecă — vezi `chain.test.ts`):
+ *   `GENERATION_CHAIN` — Gemini → Groq → Gemini(2) → Mistral → Mistral(2), free-tier.
+ *   `CORRECTION_CHAIN` — Gemini (plătit) → retry, pt lucrări de elevi (confidențial).
  *
  * `buildGeminiPayload`/`buildOpenAiPayload`/`parseReply` sunt PURE (testabile);
  * `sendChat` face fetch-ul (chain, cu timeout per provider + colectare erori).
@@ -33,62 +31,14 @@ export type ProviderStep = {
    * provider are un plafon dimensionat pe distribuția LUI reală — un Gemini lent nu
    * mai poate mânca tot bugetul din fața unui fallback rapid dovedit (Groq). */
   timeoutMs?: number;
+  /** Plafon propriu de tokeni de ieșire al PASULUI, dacă diferă de `opts.maxTokens`
+   * flat. Faza 4.5d (2026-09-11): Groq are plafon 8000 TPM — cerând `maxTokens`
+   * identic cu Gemini (16384, de 2× peste) garanta aproape sigur 429 când Groq era
+   * atins ca fallback. Doar pasul Groq îl suprascrie; Gemini rămâne pe flat. */
+  maxTokens?: number;
 };
 
-/**
- * Lanțul confirmat de Roland (2026-08-05). Toți providerii sunt free-tier și au
- * cheile deja setate pe `traduceri-frontend` (verificat: 200 pe prod). Modelele
- * OpenAI-compatibile trebuie să fie în `MODEL_ALLOW` din `app/api/proxy/route.ts`
- * (migrat din `pages/api/proxy.js` la App Router, 2026-08-07, prerequisit Next 16).
- */
-// Lanț rescris (2026-09-07) pe baza unei sonde DIRECTE cu cheile reale
-// (scratchpad/chat_providers_probe.mjs) — cauza „se ating limitele": lanțul vechi
-// era efectiv RUPT, doar Gemini rămăsese viu:
-//   gemini/gemini2 200 ✓ · groq gpt-oss-20b 200 ✓ · mistral-small/ministral-8b 200 ✓
-//   mistral-large-latest = 403 "not available in your subscription tier" (tier-locked, NU 429) → SCOS model
-//   groq llama-3.3-70b / llama-3.1-8b = 404 (retrase de Groq); gemma2 = 400 (decomisionat) → model schimbat
-//   cerebras 402 (plată) · sambanova 410/402 · fireworks 404 · nvidia 410 EOL · scaleway 403 → toate moarte
-// Rezultat: 3 VENDORI independenți (Google ×2 chei, Groq, Mistral ×2 chei) = reziliență reală, free-tier.
-// Cohere (command-r) e VIU ca rezervă suplimentară (necablat încă — quota 1000/lună, vezi inventar).
-export const CHAIN: ProviderStep[] = [
-  { id: "gemini", label: "Gemini Flash", format: "gemini" },
-  { id: "gemini2", label: "Gemini Flash (2)", format: "gemini" },
-  {
-    id: "groq",
-    label: "Groq (gpt-oss-20b)",
-    model: "openai/gpt-oss-20b",
-    format: "openai",
-  },
-  {
-    id: "mistral",
-    label: "Mistral Small",
-    model: "mistral-small-latest",
-    format: "openai",
-  },
-  {
-    id: "mistral2",
-    label: "Mistral Small (2)",
-    model: "mistral-small-latest",
-    format: "openai",
-  },
-];
-
-/** Timeout per provider — un provider blocat nu mai mănâncă bugetul întregului lanț.
- * Ridicat 20s→40s (2026-08-20): log-urile de prod arătau Gemini terminând răspunsuri
- * LUNGI (ex. 9 limite pas-cu-pas) la 18–21s, iar plafonul de 20s le tăia fix pe linie
- * („signal is aborted"), forțând o a doua încercare gemini2 (încă 20s) = ~40s pierduți
- * degeaba. La 40s prima încercare se termină → răspuns în ~15–25s, o singură dată.
- * Sub maxDuration=60 al proxy-ului. Interogările normale rămân rapide (1–3s). */
-export const PROVIDER_TIMEOUT_MS = 40000;
-
-/** Buget TOTAL pt întregul lanț (2026-08-20). Fără el, un lanț complet epuizat
- * (ex. mobil pe rețea proastă: toți cei 4 provideri ating timeout-ul) ar aștepta
- * 4×40s = ~160s de mort. Cu buget de 50s, per-pas = min(40s, rămas): prima
- * încercare (Gemini) încă are 40s pt un răspuns lung, dar worst-case-ul întregului
- * lanț e mărginit la ~50s, nu 160s. */
-export const CHAIN_BUDGET_MS = 50000;
-
-/** Plafon implicit de tokeni de ieșire (Chat). Teste/Școlare cer explicit mai mult
+/** Plafon implicit de tokeni de ieșire. Teste/Școlare cer explicit mai mult
  * (16384) pt fișe lungi — vezi DEFAULT_MAX_TOKENS vs override-ul din opts. Măsurat
  * 2026-08-20 (scratchpad/token_probe.mjs): o fișă de 20 exerciții cu barem = ~4000
  * tokeni (finish=STOP), deci 8192 nu truncase deja; 16384 = headroom pt conținut
@@ -97,11 +47,10 @@ export const DEFAULT_MAX_TOKENS = 8192;
 
 /**
  * Lanț dedicat căii de GENERARE (Teste/Școlare, `GENERATION_OPTS` mai jos) — Faza
- * 4.5c (2026-09-10, P2). NU e o reordonare a `CHAIN` de bază (ar fi atins și Chat,
- * R-EXT) — e un array SEPARAT, transmis explicit prin `SendChatOptions.chain`.
- * `CHAIN` (Chat) rămâne complet neatins.
+ * 4.5c (2026-09-10, P2). Array SEPARAT, transmis explicit prin `SendChatOptions.chain`
+ * (`chain` e obligatoriu — orice apel `sendChat` trebuie să-l trimită, vezi mai jos).
  *
- * De ce reordonat gemini→groq→gemini2 (nu gemini→gemini2 ca la Chat): măsurat
+ * De ce reordonat gemini→groq→gemini2 (nu gemini→gemini2 ca vechiul Chat): măsurat
  * 2026-09-10 (`scratchpad/p2_measure_fallback_providers.mjs`) — Groq (gpt-oss-20b)
  * răspunde la ACEST caz greu în 3.6-4.3s; gemini2 e aceeași infrastructură/model ca
  * gemini (probabil aceeași distribuție lentă) — un candidat slab pt o fereastră
@@ -119,6 +68,17 @@ export const DEFAULT_MAX_TOKENS = 8192;
  * pe AMBELE chei, persistent, nu vârf trecător — problemă separată, raportată în
  * `docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md`), dar rămân în lanț pt când
  * își revin — un 429 eșuează aproape instant, nu consumă bugetul alocat.
+ *
+ * `maxTokens: 6000` pe pasul Groq (Faza 4.5d, 2026-09-11): Groq are plafon **8000
+ * TPM** (confirmat din mesajul exact al providerului) — cerând 16384 (flat, la fel
+ * ca Gemini) de 2× depășea plafonul, deci 429 aproape garantat la a treia încercare
+ * din măsurătoarea Fazei 4.5c. 6000 + ~1200 tokeni de prompt tipic = ~7200, sub
+ * 8000, într-o SINGURĂ cerere; acoperă confortabil fișele tipice (~4000 tokeni
+ * măsurați, Faza 4.5c). Risc rezidual NEREZOLVAT aici, semnalat de Roland: dacă
+ * generarea se continuă (butonul „Continuă", `teste.generate.continue`/
+ * `scolare.generate.continua`) și lanțul cascadează la Groq DE DOUĂ ORI în aceeași
+ * fereastră de 60s, cele două cereri însumate (6000+6000) tot depășesc 8000 TPM —
+ * fiecare cerere individuală respectă plafonul, dar nu și perechea. Nu tratat încă.
  */
 export const GENERATION_CHAIN: ProviderStep[] = [
   { id: "gemini", label: "Gemini Flash", format: "gemini", timeoutMs: 45000 },
@@ -128,6 +88,7 @@ export const GENERATION_CHAIN: ProviderStep[] = [
     model: "openai/gpt-oss-20b",
     format: "openai",
     timeoutMs: 15000,
+    maxTokens: 6000,
   },
   {
     id: "gemini2",
@@ -191,7 +152,11 @@ export function buildOpenAiPayload(
 /** Extrage textul răspunsului din JSON-ul provider-ului (Gemini vs OpenAI). */
 export function parseReply(providerId: string, json: unknown): string {
   const j = json as Record<string, unknown>;
-  if (providerId === "gemini" || providerId === "gemini2") {
+  if (
+    providerId === "gemini" ||
+    providerId === "gemini2" ||
+    providerId === "gemini_paid"
+  ) {
     const cand = (
       j?.candidates as { content?: { parts?: { text?: string }[] } }[]
     )?.[0];
@@ -211,7 +176,11 @@ export function parseReply(providerId: string, json: unknown): string {
  */
 export function isTruncated(providerId: string, json: unknown): boolean {
   const j = json as Record<string, unknown>;
-  if (providerId === "gemini" || providerId === "gemini2") {
+  if (
+    providerId === "gemini" ||
+    providerId === "gemini2" ||
+    providerId === "gemini_paid"
+  ) {
     const fr = (j?.candidates as { finishReason?: string }[])?.[0]
       ?.finishReason;
     return fr === "MAX_TOKENS";
@@ -227,23 +196,31 @@ export function isTruncated(providerId: string, json: unknown): boolean {
  * Fiecare apel are timeout propriu (AbortController): un provider care atârnă nu
  * blochează restul lanțului.
  */
-/** Opțiuni per-apel. Chat = default-uri; Teste/Școlare cer mai mult (fișe lungi):
- * maxTokens 16384 + timeout/buget mai mari (sub plafonul hard 60s al proxy-ului). */
+/** Timeout implicit per provider (ms), folosit DOAR când apelantul omite `timeoutMs`
+ * ȘI pasul curent n-are `timeoutMs` propriu — în practică GENERATION_OPTS/CORRECTION_OPTS
+ * setează ambele, deci e o plasă de siguranță, nu o cale exercitată azi. */
+const DEFAULT_STEP_TIMEOUT_MS = 40000;
+/** Buget total implicit pe lanț (ms) — aceeași plasă de siguranță ca mai sus. */
+const DEFAULT_CHAIN_BUDGET_MS = 50000;
+
+/** Opțiuni per-apel — `chain` e OBLIGATORIU (Faza 4.5d, 2026-09-11: nu mai există un
+ * lanț implicit de Chat; fiecare apelant trimite explicit `GENERATION_CHAIN` sau
+ * `CORRECTION_CHAIN`, ca TypeScript să prindă orice apel viitor care-l omite). */
 export interface SendChatOptions {
   maxTokens?: number;
   /** Timeout per provider (ms) — folosit ca fallback pt orice pas FĂRĂ `timeoutMs`
-   * propriu (vezi `ProviderStep.timeoutMs`). Default PROVIDER_TIMEOUT_MS (40s). */
+   * propriu (vezi `ProviderStep.timeoutMs`). Default `DEFAULT_STEP_TIMEOUT_MS`. */
   timeoutMs?: number;
-  /** Buget total pe lanț (ms). Default CHAIN_BUDGET_MS (50s). TREBUIE ≥ timeout-ul
+  /** Buget total pe lanț (ms). Default `DEFAULT_CHAIN_BUDGET_MS`. TREBUIE ≥ timeout-ul
    * PRIMULUI pas din `chain` (altfel garda de mai jos îl ridică oricum). */
   budgetMs?: number;
-  /** Lanț custom (Faza 4.5c, 2026-09-10) — implicit `CHAIN` (Chat, neatins).
-   * Teste/Școlare trimit `GENERATION_CHAIN` (ordine + plafoane proprii pt calea grea). */
-  chain?: ProviderStep[];
+  /** Lanțul de provideri de încercat, în ordine (Faza 4.5c/4.5d — `GENERATION_CHAIN`
+   * pt Teste/Școlare, `CORRECTION_CHAIN` pt corectarea lucrărilor elevilor). */
+  chain: ProviderStep[];
 }
 
 /** Opțiuni pt GENERAREA de fișe/teste (Școlare, Teste): mai mulți tokeni, `GENERATION_CHAIN`
- * (ordine + plafoane proprii, nu `CHAIN` de Chat) și un buget mult mai mare.
+ * și un buget mult mai mare.
  *
  * Istoric: până la Faza 4.5c (2026-09-10), `timeoutMs: 52000, budgetMs: 58000` — defect
  * ARITMETIC găsit atunci: `58000 − 52000 = 6000ms` rămâneau restului lanțului de fiecare
@@ -269,19 +246,56 @@ export const GENERATION_OPTS: SendChatOptions = {
   chain: GENERATION_CHAIN,
 };
 
+/**
+ * Lanț dedicat corectării lucrărilor elevilor (Teste → Corectare) — Faza 4.5d
+ * (2026-09-11). Folosește cheia PLĂTITĂ (`gemini_paid`, proiect Google Cloud „Traduceri",
+ * Tier 1 Postpay) — termenii free-tier Google permit explicit „human reviewers may
+ * read, annotate, and process your API input and output"; lucrarea unui elev nu
+ * trece prin acel tier. Deliberat FĂRĂ Groq/Mistral: ar trimite conținutul elevului
+ * la alți procesatori free, aceeași problemă de confidențialitate. Al doilea pas
+ * repetă `gemini_paid` (retry pe transitoriu), nu un provider diferit — singura
+ * rezervă compatibilă cu scopul de confidențialitate. Dacă ambele încercări eșuează,
+ * corectarea eșuează vizibil (mesaj de eroare), nu cade silențios pe un tier
+ * neconfidențial.
+ */
+export const CORRECTION_CHAIN: ProviderStep[] = [
+  {
+    id: "gemini_paid",
+    label: "Gemini Flash (plătit)",
+    format: "gemini",
+    timeoutMs: 45000,
+  },
+  {
+    id: "gemini_paid",
+    label: "Gemini Flash (plătit, retry)",
+    format: "gemini",
+    timeoutMs: 45000,
+  },
+];
+
+/** Opțiuni pt CORECTAREA lucrărilor elevilor (Teste → Corectare) — cheie plătită,
+ * `CORRECTION_CHAIN`. Aceleași plafoane de tokeni/timp ca `GENERATION_OPTS`, buget
+ * mai mic (2 pași × 45s + marjă, nu 5). */
+export const CORRECTION_OPTS: SendChatOptions = {
+  maxTokens: 16384,
+  timeoutMs: 45000,
+  budgetMs: 95000,
+  chain: CORRECTION_CHAIN,
+};
+
 export async function sendChat(
   messages: ChatMessage[],
   system: string,
-  opts: SendChatOptions = {},
+  opts: SendChatOptions,
 ): Promise<ChatResult> {
   const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
-  const stepTimeout = opts.timeoutMs ?? PROVIDER_TIMEOUT_MS;
-  const chain = opts.chain ?? CHAIN;
+  const stepTimeout = opts.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
+  const chain = opts.chain;
   // Bugetul nu poate fi sub timeout-ul PRIMULUI pas (altfel garda l-ar ucide înainte
   // să apuce să ruleze) — vezi capcana prinsă de advisor 2026-08-20.
   const firstStepTimeout = chain[0]?.timeoutMs ?? stepTimeout;
   const budget = Math.max(
-    opts.budgetMs ?? CHAIN_BUDGET_MS,
+    opts.budgetMs ?? DEFAULT_CHAIN_BUDGET_MS,
     firstStepTimeout + 3000,
   );
   const errors: string[] = [];
@@ -295,10 +309,18 @@ export async function sendChat(
       break;
     }
     try {
+      // Per-pas: `step.maxTokens` suprascrie flat-ul din opts (vezi ProviderStep —
+      // Faza 4.5d, plafonul TPM al Groq).
+      const stepMaxTokens = step.maxTokens ?? maxTokens;
       const body =
         step.format === "gemini"
-          ? buildGeminiPayload(system, messages, maxTokens)
-          : buildOpenAiPayload(step.model || "", system, messages, maxTokens);
+          ? buildGeminiPayload(system, messages, stepMaxTokens)
+          : buildOpenAiPayload(
+              step.model || "",
+              system,
+              messages,
+              stepMaxTokens,
+            );
       const ctrl = new AbortController();
       // Per-pas = min(timeout PROPRIU al pasului (sau flat-ul din opts), timp rămas
       // din bugetul total).
@@ -360,8 +382,8 @@ export async function sendChat(
  * a P2 e o promisiune goală. Apelat EXPLICIT de la locurile de apel (TestePanel.tsx,
  * ScolarePanel.tsx) după fiecare `sendChat(..., GENERATION_OPTS)`, NU automat din
  * interiorul `sendChat` — `sendChat` rămâne neatins comportamental (nu adaugă un
- * apel `fetch` suplimentar care ar strica numărătorile din testele existente pe
- * `CHAIN`/Chat). Scrie în Supabase (`logs`, nivel info/warn) cu `context.flow`,
+ * apel `fetch` suplimentar care ar strica numărătorile din testele de fallback).
+ * Scrie în Supabase (`logs`, nivel info/warn) cu `context.flow`,
  * `context.provider`, `context.ms` — interogabil direct, nu mai trebuie reconstruit
  * din log-urile brute `/api/proxy` (cum a trebuit făcut manual la măsurarea P2).
  */

@@ -11,16 +11,6 @@ import { scolareToSegments } from "@/lib/scolare/drawing/parse-render";
 
 const ConvertorPage = dynamic(() => import("./convertor/page"), { ssr: false });
 const EditorPage = dynamic(() => import("./editor/page"), { ssr: false });
-// CHAT: Asistentul iframe vechi înlocuit de Chat AI nativ (matematică). Ruta
-// /asistent + public/asistent au fost ȘTERSE (2026-08-07, /improve #16) —
-// tab-ul păstrează id-ul "asistent" doar pt continuitatea localStorage["activeTab"].
-const ChatPanel = dynamic(
-  () =>
-    import("@/components/chat/ChatPanel").then((m) => ({
-      default: m.ChatPanel,
-    })),
-  { ssr: false },
-);
 // Calculatorul e un COMPONENT (nu rută App-Router) fiindcă primește props
 // (`onInsertToEditor`) — o pagină `app/*/page.tsx` acceptă doar PageProps.
 const CalculatorPanel = dynamic(
@@ -111,17 +101,6 @@ export default function Home() {
         <div style={{ display: activeTab === "editor" ? "block" : "none" }}>
           <EditorPage />
         </div>
-        <div style={{ display: activeTab === "asistent" ? "block" : "none" }}>
-          <ChatPanel
-            onSendToEditor={(text) => {
-              // Comută pe Editor, apoi inserează răspunsul. Faza 4.5a: nu mai
-              // e nevoie de setTimeout — coada din editor-commands.ts absoarbe
-              // întârzierea de montare a editorului (risc „→ Editor").
-              handleTabChange("editor");
-              insertEditorText(text);
-            }}
-          />
-        </div>
         <div style={{ display: activeTab === "calculator" ? "block" : "none" }}>
           <CalculatorPanel
             onInsertToEditor={(src, alt) => {
@@ -177,8 +156,8 @@ export default function Home() {
 
         {/* Generic iframe-modules (§16.3): any tab marked kind:"iframe" in
               tabs.json is rendered here automatically — no per-module wiring.
-              Existing tabs above (editor/asistent included) keep their own
-              wrappers untouched; only new modules ride this convention. */}
+              Existing tabs above keep their own wrappers untouched; only new
+              modules ride this convention. */}
         {TABS.filter((t) => t.kind === "iframe").map((t) => (
           <div
             key={t.id}

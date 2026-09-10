@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   sendChat,
   GENERATION_OPTS,
+  CORRECTION_OPTS,
   logGenerationResult,
   type ChatMessage,
 } from "@/lib/chat-providers";
@@ -55,7 +56,7 @@ export function TestePanel({
   );
 }
 
-/** Trunchiere la limita de tokeni (ChatPanel.tsx are acelasi pattern) — mesajul-prompt
+/** Trunchiere la limita de tokeni (ScolarePanel.tsx are acelasi pattern) — mesajul-prompt
  * de continuare, trimis modelului, nu afisat in UI. */
 const CONTINUE_PROMPT =
   "Continuă exact de unde ai rămas, fără să reiei ce ai scris deja.";
@@ -121,7 +122,7 @@ function GenerateTab({
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [note, setNote] = useState("");
   // Istoricul trimis modelului (pt continuare) + flag „ultimul raspuns a fost taiat
-  // la limita de tokeni" (acelasi pattern ca ChatPanel.tsx — un test lung, 10 itemi
+  // la limita de tokeni" (acelasi pattern ca ScolarePanel.tsx — un test lung, 10 itemi
   // + barem, poate atinge 8192 tok si s-ar taia MUT fara asta).
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [truncated, setTruncated] = useState(false);
@@ -482,7 +483,9 @@ function CorrectTab({
         { role: "user", content: buildCorrectPrompt(text) },
       ];
       const t0 = Date.now();
-      const r = await sendChat(initial, buildSystemPrompt(), GENERATION_OPTS);
+      // Cheie PLĂTITĂ (Faza 4.5d) — lucrarea elevului nu trece prin tier-ul free
+      // citit de oameni. Vezi CORRECTION_CHAIN, chat-providers.ts.
+      const r = await sendChat(initial, buildSystemPrompt(), CORRECTION_OPTS);
       // (1c) fără `sample` — lucrarea unui elev, doar mărimi structurale.
       logGenerationResult("teste.correct", Date.now() - t0, r, {
         textLen: text.length,
@@ -537,6 +540,9 @@ function CorrectTab({
       const fd = new FormData();
       fd.append("source_lang", "ro");
       fd.append("engine", "gemini");
+      // Faza 4.5d: poza e lucrarea unui elev — OCR pe cheia PLĂTITĂ (vezi api/ocr.py,
+      // api/lib/ocr_structured.py). Editor import NU trimite acest câmp → rămâne free.
+      fd.append("tier", "paid");
       fd.append("files", blob, file.name || "lucrare.jpg");
       const res = await fetch(`${API_URL}/api/ocr`, {
         method: "POST",
@@ -603,10 +609,11 @@ function CorrectTab({
     // pe "loading" permanent (identic cu continueGenerate).
     try {
       const t0 = Date.now();
+      // Continuarea unei corectări — tot cheie PLĂTITĂ, e tot lucrarea elevului.
       const r = await sendChat(
         nextHistory,
         buildSystemPrompt(),
-        GENERATION_OPTS,
+        CORRECTION_OPTS,
       );
       logGenerationResult("teste.correct.continua", Date.now() - t0, r);
       if (r.ok) {

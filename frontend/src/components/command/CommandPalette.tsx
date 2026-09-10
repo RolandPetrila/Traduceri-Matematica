@@ -73,7 +73,7 @@ export function CommandPalette({
   // Comenzi de editor: comută pe Editor, închide, apoi cheamă comanda. EditorShell
   // așteaptă intern ca editorul să devină VIZIBIL înainte s-o execute (poll rAF pe
   // `offsetParent`), deci NU e nevoie de un timing magic aici — robust chiar și când
-  // veneam de pe un modul iframe (planse/asistent) mai lent (advisor).
+  // veneam de pe un modul iframe (planse) mai lent (advisor).
   const runEditor = (id: EditorCommandId) => {
     switchModule("editor");
     onClose();
