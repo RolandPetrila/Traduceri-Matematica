@@ -1,8 +1,8 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-10 (Faza 4.5c — P2 implementat + deployat, rămâne 🟡, o abatere de confirmat cu Roland). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-09-10 (Faza 4.5c ÎNCHISĂ — P2 implementat + deployat + confirmat de Roland, rămâne 🟡 cu bună știință, nu 🟢). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 4.5c 🟡 (P2 timeout lanț AI, implementat + deployat) · UN SINGUR LUCRU de confirmat cu Roland înainte de următoarea fază
+## ▶️ REIA DE AICI — FAZA 4.5c ÎNCHISĂ (P2 timeout lanț AI) · urmează o fază nouă, nestabilită încă
 
 > **Ce s-a livrat (2026-09-10):** fix la defectul ARITMETIC din lanțul AI de generare (Teste +
 > Școlare, `GENERATION_OPTS` din `frontend/src/lib/chat-providers.ts`): bugetul total (58000ms)
@@ -45,15 +45,12 @@ pytest 104/104` — fără regresie (reprodusă independent de auditor-regresie)
 > care ar fi trecut și cu constantele vechi. Mecanismul de realocare are dovadă doar din teste cu
 > `fetch` mockuit + aritmetică verificată — suficient pt o închidere onestă, NU pt 🟢.
 >
-> **⚠️ UN SINGUR LUCRU rămas de confirmat cu Roland, găsit de `auditor-cerinte` (nu era greșeală de
-> cod, e o deviație de la cifra lui exactă):** el a cerut „buget ridicat la ~90000ms"; implementarea
-> a pus `budgetMs=110000` (justificat aritmetic — acoperă gemini+groq+gemini2 ÎNTREG:
-> 45000+15000+40000=100000, plus marjă — dar tot +22% peste cifra citată de el, nereconfirmată
-> explicit înainte de deploy). **Prima acțiune a următoarei sesiuni: du acest punct înapoi la
-> Roland** (păstrează 110000 cu argumentul aritmetic, sau ajustează la o valoare pe care el o
-> aprobă explicit — ex. undeva între 90000-100000). Nu e blocant funcțional (fix-ul merge, testat),
-> dar disciplina cerută explicit de Roland în această fază a fost „decide pe măsurători, nu pe
-> intuiție" — o cifră a lui, schimbată tacit, contrazice exact asta.
+> **Abaterea găsită de `auditor-cerinte`, ÎNCHISĂ prin confirmare explicită:** el ceruse „buget
+> ridicat la ~90000ms"; implementarea pusese `budgetMs=110000` (justificat aritmetic — acoperă
+> gemini+groq+gemini2 ÎNTREG: 45000+15000+40000=100000, plus marjă — dar +22% peste cifra citată,
+> nereconfirmată la momentul deploy-ului). Dus înapoi la Roland, cu opțiuni explicite (110000
+> recomandat / ~92000 cifra lui exactă / altă valoare) → **a ales explicit „Păstrează 110000ms
+> (Recomandat)"**. Cod neschimbat (era deja deployat corect); doar confirmarea lipsea, acum există.
 >
 > **Rămân deschise, descoperite colateral la măsurare, NEinvestigate în această fază (scope,
 > confirmat explicit de Roland — nu s-a atins nimic legat de ele):**
@@ -65,9 +62,8 @@ pytest 104/104` — fără regresie (reprodusă independent de auditor-regresie)
 >   providerului — o singură cerere grea (`max_tokens=16384`) poate epuiza aproape tot. Fereastra
 >   realocată garantează o ȘANSĂ la Groq, nu un succes garantat la a doua cerere grea la scurt timp.
 >
-> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI, după ce ai confirmarea de la
-> Roland pe punctul de mai sus (sau după ce el spune explicit „las-o cum e"). Deschide o sesiune
-> nouă cu `/onboard` pentru faza următoare — nu era stabilită încă la închiderea acestei sesiuni.
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI. Deschide o sesiune nouă cu
+> `/onboard` pentru faza următoare — nu era stabilită încă la închiderea acestei sesiuni.
 
 ---
 

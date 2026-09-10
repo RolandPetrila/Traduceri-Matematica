@@ -20,9 +20,9 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-10 (Faza 4.5c — P2 implementat + deployat, rămâne 🟡) · **Producție:** frontend redeploy (Faza 4.5c = realocare buget lanț AI Teste/Școlare, live) · **FAZA 4.5c 🟡 — vezi mai jos, o abatere de confirmat cu Roland înainte de STOP** · **Următoarea:** de stabilit după confirmarea abaterii
+**Ultima actualizare:** 2026-09-10 (Faza 4.5c ÎNCHISĂ — P2 implementat + deployat + confirmat) · **Producție:** frontend redeploy (Faza 4.5c = realocare buget lanț AI Teste/Școlare, live) · **FAZA 4.5c ÎNCHISĂ** (rămâne 🟡 cu bună știință — defect latent, nu 🟢) · **Următoarea:** de stabilit
 
-> ### 🟡 FAZA 4.5c — P2 (timeout lanț AI Teste/Școlare) — IMPLEMENTAT + DEPLOYAT, rămâne 🟡 (NU 🟢)
+> ### 🟡 FAZA 4.5c — ÎNCHISĂ — P2 (timeout lanț AI Teste/Școlare), rămâne 🟡 (NU 🟢, cu bună știință)
 >
 > Defect **structural, aritmetic**: bugetul total (58000ms) era cu doar 6000ms mai mare decât
 > timeout-ul primului provider (52000ms) — de fiecare dată când Gemini atingea propriul timeout,
@@ -63,10 +63,10 @@
 > `git stash`/`pop` reprodusă). Găsit + raportat: fișier orfan `:TEMP` la rădăcină (șters), producția
 > era live pe cod necomis (rezolvat prin commit-ul acestei sesiuni). **dovezi** — 6/6 CONFIRMAT, cu
 > precizarea de mai sus (dovada acoperă generarea normală, nu traseul de realocare). **cerințe** —
-> 7/8 ONORATĂ direct; **1 PARȚIAL, de dus înapoi la Roland**: `budgetMs=110000` vs „~90000ms" citat
-> explicit de Roland în chat — justificarea aritmetică e solidă (45000+15000+40000=100000, acoperă
-> gemini+groq+gemini2 întreg), dar valoarea finală (+22% peste cifra lui) nu a fost reconfirmată
-> explicit înainte de deploy.
+> 7/8 ONORATĂ direct; **1 PARȚIAL, ÎNCHIS prin confirmare explicită**: `budgetMs=110000` vs
+> „~90000ms" citat de Roland în chat — dus înapoi la el cu opțiuni explicite (110000 recomandat /
+> ~92000 cifra lui exactă / altă valoare) → **a ales explicit „Păstrează 110000ms (Recomandat)"**.
+> Cod neschimbat, doar confirmarea lipsea.
 
 > ### ✅ FAZA 4.5b — ÎNCHISĂ
 >

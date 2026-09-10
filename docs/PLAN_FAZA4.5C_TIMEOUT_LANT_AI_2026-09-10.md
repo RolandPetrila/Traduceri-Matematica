@@ -274,6 +274,9 @@ plafonează tot lanțul la 60s.
 1. „Opțiunea B — DA, prag gemini 45000ms... Dacă bugetul E ridicabil (varianta probabilă):
    B + buget ridicat la ~90000ms." → confirmat ridicabil → implementat: gemini 45000ms,
    `budgetMs` 110000 (acoperă gemini+groq+gemini2 ÎNTREG: 45000+15000+40000=100000, plus marjă).
+   **`auditor-cerinte` a prins abaterea de cifră** (110000 vs „~90000" citat) — dus înapoi la
+   Roland cu opțiuni explicite (110000 recomandat / ~92000 cifra lui exactă / altă valoare) →
+   **a ales explicit „Păstrează 110000ms (Recomandat)"**, prin `AskUserQuestion`. Închis.
 2. „Opțiunea C — DA, acum, dar NU prin mutarea array-ului CHAIN... reordonarea doar pentru calea
    de generare, transmisă ca opțiune per-apel, prin același mecanism prin care Teste trimite deja
    GENERATION_OPTS. Chat rămâne neatins." → implementat: `GENERATION_CHAIN` (array SEPARAT) +
@@ -348,3 +351,13 @@ Roland nu l-a inclus în cele 4 decizii); rămâne problemă adiacentă deschis�
 explicit mai sus; codurile de eroare (E-TEST-001/E-SCOL-001/E-NET-001) rămân vizibile pe
 `/diagnostics` dacă defectul reapare, iar `logGenerationResult` face recidiva vizibilă direct în
 Supabase, fără arheologie manuală.
+
+## §ÎNCHIDERE FINALĂ (2026-09-10, după auditori)
+
+Singura abatere găsită (`auditor-cerinte`, `budgetMs=110000` vs „~90000ms" citat de Roland) —
+dusă înapoi la el cu 3 opțiuni explicite (110000 recomandat / ~92000 cifra lui exactă / altă
+valoare, prin `AskUserQuestion`) → **a ales explicit „Păstrează 110000ms (Recomandat)"**. Codul
+n-a necesitat nicio schimbare (era deja deployat corect); doar confirmarea lipsea. Fișier orfan
+`:TEMP` găsit de `auditor-regresie` — șters. Commit `08de211` (branch `faza-g-editor`), push
+confirmat. **FAZA 4.5c ÎNCHISĂ** — rămâne 🟡 CU BUNĂ ȘTIINȚĂ (defect latent, traseul de realocare
+n-a fost exercitat live), nu din lipsă de confirmare.
