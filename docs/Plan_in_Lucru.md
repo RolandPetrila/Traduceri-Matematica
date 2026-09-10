@@ -20,7 +20,7 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-09 (Faza 3 închisă) · **Producție:** frontend **v71** (Faza 3 = doar documentație, fără deploy) · **FAZA 3 ÎNCHISĂ** · **Următoarea:** FAZA 4
+**Ultima actualizare:** 2026-09-10 (Faza 4 închisă) · **Producție:** frontend **v71** (Faza 4 = audit read-only, fără deploy) · **FAZA 4 ÎNCHISĂ** · **Următoarea:** FAZA 4.5 (reparațiile)
 
 > ### ✅ FAZA 2 — ÎNCHISĂ
 >
@@ -234,13 +234,24 @@ editor” poate pierde COMPLET conținutul fișei, silențios, dacă editorul Ti
 modul — inclusiv verificarea live a Istoricului cu date reale și investigarea riscului de pierdere
 silențioasă la „➕ În editor” (Școlare).
 
-## ⬜ FAZA 4 — Auditul real în browser
+## 🟢 FAZA 4 — Auditul real în browser `ÎNCHISĂ (2026-09-10)`
 
 Decizii: **4a** fișiere reale din `99_Roland_Work\Teste_Input` → rezultate în `Teste_Output` ·
 **4b** de la cel mai folosit modul la cel mai rar · **4c** notez și continui, reparăm la final.
-**Preia:** proba pe fișe reale cu figuri (documentele grele ale Cristinei).
+
+|     | Ce                                                                                                | Dovadă                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 🟢  | Toate 8 modulele testate live (Editor în 3 loturi), 104 butoane cu status live în caiet           | `docs/caiet_de_sarcini/data.json` + `.md`/`.html` (câmp dovadă per buton); commit-uri per modul |
+| 🟢  | Fișiere reale folosite (4a): 7 din `Teste_Input`, 12 rezultate noi în `Teste_Output`              | `99_Roland_Work/Teste_Output/` (gitignored); confirmat de auditor-cerințe + auditor-dovezi      |
+| 🟢  | Ordinea 4b respectată: Școlare→Istoric→Editor→Teste→Chat→Convertor→Calculator→Planșe              | `git log f7ec15d..da3deb9`; confirmat de auditor-cerințe                                        |
+| 🟢  | 16 defecte notate (4c, zero reparate), grupate pe cauză în 7 priorități + riscul „→ Editor"       | `docs/PLAN_FAZA4_AUDIT_REAL_2026-09-09.md` §Jurnal defecte + §Sinteză                           |
+| 🟡  | Riscul „➕ In editor" (no-op 150ms) — testat 9×, NEREPRODUS; rămâne risc de cod, neconfirmat live | Jurnal #2; recomandare Faza 4.5: fix defensiv indiferent de reproducere                         |
+| 🟢  | Cei 3 auditori: regresie FĂRĂ REGRESIE · cerințe TOATE ONORATE (1 abatere proces) · dovezi 12/4/1 | `docs/PLAN_FAZA4_AUDIT_REAL_2026-09-09.md` §Verdictele celor trei auditori                      |
 
 ## ⬜ FAZA 4.5 — Reparațiile din lista de la 4c
+
+**Intrare:** lista P1-P7 + riscul „→ Editor" din `docs/PLAN_FAZA4_AUDIT_REAL_2026-09-09.md` §Sinteză.
+Roland alege ce se repară și în ce ordine (propunerea e a mea, decizia e a lui).
 
 ## ⬜ FAZA 5 — Unificarea documentației
 

@@ -1,27 +1,51 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-08-10 (`/audit full` — scor 94/100, 4 HIGH + 8 MEDIUM fixate). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-09-10 (Faza 4 închisă — audit real live pe 9 module/104 butoane + cei 3 auditori). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 3 ÎNCHISĂ (caiet de sarcini, 104 butoane/8 module) · urmează FAZA 4
+## ▶️ REIA DE AICI — FAZA 4 ÎNCHISĂ (audit real live, 9 module/104 butoane) · urmează FAZA 4.5 (reparațiile)
 
-> **Ce s-a livrat în FAZA 3 (2026-09-09):** caiet de sarcini modul→submodul→funcție→buton, în
-> `docs/caiet_de_sarcini/data.json` (sursă) → `docs/caiet_de_sarcini.md` + `.html` (generate cu
-> `docs/caiet_de_sarcini/generate.mjs`). **104 butoane de execuție / 38 submodule / 8 module.**
-> Plan + jurnal complet: `docs/PLAN_FAZA3_CAIET_SARCINI_2026-09-09.md`. Detalii metodă, mecanism
-> de adnotare (`.html` are acum textarea+autosave+export mențiuni, ca `Fazele.html`), defecte
-> reale găsite (7, read-only) și verdictele celor 3 auditori: `docs/Plan_in_Lucru.md` §FAZA 3.
+> **Ce s-a livrat în FAZA 4 (2026-09-09 → 2026-09-10):** audit REAL în browser pe producție
+> (`https://traduceri-frontend.vercel.app`), toate cele 8 module (Editor testat în 3 loturi),
+> cu fișierele reale din `99_Roland_Work/Teste_Input/`. Fiecare buton din caiet a primit status
+> live (🟢/🟡/🔴/⬜) + notă de dovadă în `docs/caiet_de_sarcini/data.json` (regenerat în `.md`/`.html`).
+> Plan + jurnal defecte + sinteză + verdictele celor 3 auditori: `docs/PLAN_FAZA4_AUDIT_REAL_2026-09-09.md`.
+> Rezultate de test salvate: `99_Roland_Work/Teste_Output/` (12 fișiere noi, gitignored).
 >
-> **Cel mai important defect găsit** (prioritate pt Faza 4): în Școlare, „➕ În editor” poate
-> pierde COMPLET conținutul unei fișe generate, silențios, fără nicio eroare vizibilă, dacă
-> editorul TipTap nu s-a montat încă în fereastra de 150ms folosită de `insertEditorText`.
+> **16 defecte în jurnal, grupate pe cauză reală (propunere Faza 4.5), în ordine de prioritate:**
 >
-> **Rămas nedovedit** (nu e defect, e limită a Fazei 3): submodulele Istoric nu au putut fi
-> verificate live cu date reale (profil de test fără istoric în localStorage) — de reluat la
-> Faza 4, cu fișierele din `Teste_Input`.
+> - **P1 MARE** — Istoric: lista „conversii" nu se actualizează live după o conversie reușită
+>   (`HistoryList.tsx:27-30`, `useEffect([])`); pare pierdere de date, nu e; reprodus + confirmat de auditor.
+> - **P2 MEDIE-MARE** — Teste: teste mari eșuează intermitent prin epuizarea bugetului de timp al
+>   lanțului AI (latent, nu determinist — auditorul a reprodus 3/3 reușite). ⚠️ diagnosticul „2/5 vs
+>   5/5 provideri" a fost INFIRMAT: `CHAIN` e un array unic de 5, partajat de Chat și Teste.
+> - **P3 MEDIE** — Traducere F8: text stricat lângă bold/formule LaTeX inline (#5 spații înghițite, #6 izolare).
+> - **P4** — eșec silențios la popup blocat (Istoric „PDF Print" #4 fără feedback; Editor „Export PDF" #8 are fallback).
+> - **P5** — Convertor: mesaj brut Python la interval invalid (#11) + câmpul „Pagini" nu se resetează între operații (#12).
+> - **P6** — Planșe: lot incomplet garantat la formă fixă + N>1 (#15/#16), fără avertisment prealabil.
+> - **P7** — cosmetic: markdown `**bold**` neconvertit în previzualizarea baremului Teste (#10).
 >
-> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** O FAZĂ PER SESIUNE — sesiunea Fazei 3 s-a oprit aici,
-> fără să înceapă Faza 4. Deschide o sesiune nouă cu `/onboard` pentru Faza 4 (audit real în
-> browser, modul cu modul, cu fișierele din `99_Roland_Work/Teste_Input`).
+> **Riscul „➕ In editor" (no-op 150ms, prioritatea 1 a lui Roland):** testat de **9 ori** în toată
+> Faza 4 (+ tentativa auditorului), **NEREPRODUS niciodată**. Rămâne risc de cod real (condiție de
+> cursă), neconfirmat live. Recomandare pt Faza 4.5: **fix defensiv** în `editor-commands.ts`
+> (coadă de comenzi / eveniment „editor montat" în loc de `setTimeout(150)` fix) indiferent de
+> reproducere — mai ieftin și mai sigur decât încă o sesiune de încercat throttling.
+>
+> **Verdicte auditori (R-AUDIT-FAZA):** regresie = FĂRĂ REGRESIE (`tsc 0 · jest 428/428 · build OK ·
+pytest 83/83`, zero cod atins); cerințe = toate deciziile ONORATE (1 abatere de proces: fork
+> Calculator a comis singur `dd28933` contra instrucțiunii; 1 obs. minoră: Teste/Chat nepersistate
+> ca fișiere); dovezi = 12 confirmate / 4 nedovedite / 1 infirmat. Corecțiile lor sunt aplicate
+> (commit `da3deb9`): generatorul randează acum `howToTestLive` (dovezile Teste erau într-un câmp
+> neredat), diagnostic #9 corectat.
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** O FAZĂ PER SESIUNE — sesiunea Fazei 4 s-a oprit aici,
+> fără să înceapă Faza 4.5. Deschide o sesiune nouă cu `/onboard` pentru **FAZA 4.5** (reparațiile:
+> Roland alege ce se repară din lista P1-P7 + riscul „→ Editor"; Faza 4 doar a notat, nu a reparat).
+>
+> **De dus înapoi la Roland ca decizii înainte de Faza 4.5:** (a) ce priorități se repară și în ce
+> ordine; (b) riscul „→ Editor" — fix defensiv acum, sau încă o sesiune de test cu throttling?;
+> (c) obs. A2 — vrea și output-uri text (Teste/Chat) salvate în `Teste_Output`, sau doar fișiere
+> descărcabile?; (d) disciplina sub-agenților: fork-ul Calculator a comis singur — de întărit în
+> prompturile viitoare că doar coordonatorul comite.
 
 ---
 

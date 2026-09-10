@@ -341,10 +341,12 @@ Constatări care au dus la corecții pe faza curentă (făcute înainte de STOP)
        direct. Fără defecte NOI (dincolo de cele 2 deja cunoscute, acum confirmate empiric).
 10. [x] Sintetizez jurnalul de defecte (16 rânduri) grupat pe cauză reală — vezi
         „## Sinteza Faza 4 -> propunere Faza 4.5" de mai jos.
-11. [ ] Rulez cei trei auditori (R-AUDIT-FAZA) pe rezultatul Faza 4.
-12. [ ] Actualizez `HANDOFF_SESIUNE.md` + `Plan_in_Lucru.md` (bifează Faza 4) + memorie +
-        commit/push (R-HANDOFF).
-13. [ ] STOP (R-STOP-FAZA) — raportez lui Roland; Faza 4.5 (reparațiile) într-o sesiune nouă.
+11. [x] Cei trei auditori rulați (R-AUDIT-FAZA, 2026-09-10) — verdicte în §Verdictele celor trei
+        auditori. Regresie FĂRĂ REGRESIE; cerințe TOATE ONORATE (1 abatere proces + 1 obs. minoră);
+        dovezi 12 confirmate / 4 nedovedite / 1 infirmat. Corecțiile lor aplicate pe faza curentă
+        (commit `da3deb9`): generatorul randează `howToTestLive`, diagnostic #9 corectat.
+12. [x] `HANDOFF_SESIUNE.md` + `Plan_in_Lucru.md` (Faza 4 bifată) + memorie + commit/push (R-HANDOFF).
+13. [x] STOP (R-STOP-FAZA) — raportat lui Roland; Faza 4.5 (reparațiile) într-o sesiune nouă.
 
 ## Reguli de siguranță
 
