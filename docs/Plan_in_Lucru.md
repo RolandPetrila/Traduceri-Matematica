@@ -54,7 +54,9 @@
 > mockuit + aritmetică verificată (inclusiv o contra-probă reprodusă de 2 ori independent: revenire
 > la 52000/58000 → 4 teste pică, printre care exact linia „Expected: not 58000"). Rămân deschise,
 > descoperite colateral la măsurare, NEinvestigate în această fază (scope, confirmat de Roland):
-> **Mistral (ambele chei) — 429 persistent**, nu un vârf trecător; **Groq — plafon confirmat 8000
+> **Mistral — NEDETERMINAT** (afirmația „429 persistent" CORECTATĂ 2026-09-10: free tier Mistral e
+> „2 req/min" per catalog, iar sonda a tras 6 cereri în ~20s → 429-urile vin de la sondă, nu de la
+> cont; retestare corectă = primul task din 4.5d); **Groq — plafon confirmat 8000
 > TPM**, o singură cerere grea poate epuiza aproape tot, deci fereastra realocată garantează o
 > ȘANSĂ, nu un succes.
 >

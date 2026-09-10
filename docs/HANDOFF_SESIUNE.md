@@ -55,9 +55,12 @@ pytest 104/104` — fără regresie (reprodusă independent de auditor-regresie)
 > **Rămân deschise, descoperite colateral la măsurare, NEinvestigate în această fază (scope,
 > confirmat explicit de Roland — nu s-a atins nimic legat de ele):**
 >
-> - **Mistral (ambele chei, `MISTRAL_API_KEY`/`_2`) — 429 „Rate limit exceeded" persistent**,
->   reconfirmat separat la distanță de minute cu o cerere minimă (20 tokeni) — nu e un vârf
->   trecător de trafic. Motiv necunoscut (cotă epuizată pe cheie? cont restricționat?).
+> - **Mistral — NEDETERMINAT (afirmația inițială „429 persistent" a fost CORECTATĂ).** Catalogul
+>   central (`~/.api-keys/catalog.md`) documentează free tier Mistral: „1 MILIARD tokens/luna,
+>   **2 req/min**". Sonda din 4.5c a tras 6 cereri în ~20s — a încălcat limita, deci cele 6× 429
+>   se explică prin sondă, nu prin cont mort. Reconfirmarea a fost UN SINGUR apel, iar cheile sunt
+>   partajate cu alte proiecte (alt proiect putea consuma atunci cele 2 req/min). **Retestare
+>   corectă = primul task din 4.5d:** apeluri spațiate ≥30s, sub 2/min, fiecare cheie separat.
 > - **Groq — plafon confirmat 8000 TPM** (`gpt-oss-20b`), din mesajul de eroare exact al
 >   providerului — o singură cerere grea (`max_tokens=16384`) poate epuiza aproape tot. Fereastra
 >   realocată garantează o ȘANSĂ la Groq, nu un succes garantat la a doua cerere grea la scurt timp.

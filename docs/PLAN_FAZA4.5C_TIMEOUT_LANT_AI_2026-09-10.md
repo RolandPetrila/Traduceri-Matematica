@@ -127,11 +127,18 @@ reprezintă configurația curentă. Probă directă, același prompt greu, făr�
 1. **Groq: plafon confirmat de 8000 TPM.** O SINGURĂ cerere grea (`max_tokens=16384`) poate
    epuiza aproape tot plafonul dintr-o mișcare — a doua cerere grea la scurt timp are șanse reale
    să pice, indiferent de orice fix de timeout.
-2. **Mistral (ambele chei) e indisponibil ACUM** — nu un vârf trecător de trafic (reconfirmat la
-   distanță de minute, cu o cerere minimală). Motiv necunoscut (cotă lunară/zilnică epuizată pe
-   cheie? restricție de cont?) — **nu am investigat mai departe** (n-ar fi fost o măsurătoare, ar
-   fi fost deja o reparație, iar Roland a cerut „fără cod până nu confirmi planul"). E o problemă
-   DISTINCTĂ de P2 — o semnalez, nu o includ tacit în fix.
+2. ~~**Mistral (ambele chei) e indisponibil ACUM** — nu un vârf trecător de trafic.~~
+   **⚠️ CORECTAT 2026-09-10, DUPĂ închiderea fazei — afirmația de mai sus NU se susține.**
+   Catalogul central de chei (`~/.api-keys/catalog.md`) documentează pt Mistral free tier:
+   „1 MILIARD tokens/luna, **2 req/min** — fara card". Sonda mea
+   (`scratchpad/p2_measure_fallback_providers.mjs`) a tras **6 cereri în ~20 de secunde**, adică de
+   câteva ori peste limita documentată — cele 6× 429 se explică integral prin limita pe care am
+   încălcat-o EU, nu printr-un cont mort. Reconfirmarea „la distanță de minute" a fost UN SINGUR
+   apel, iar cheile sunt partajate cu alte proiecte ale lui Roland (deci un alt proiect putea
+   consuma exact atunci cele 2 req/min). **Concluzia corectă: NEDETERMINAT.** Retestarea onestă
+   (apeluri spațiate la ≥30s, sub 2/min, pe fiecare cheie separat) e primul lucru din Faza 4.5d.
+   Lecția: am tratat un plafon documentat ca pe un defect, fiindcă n-am citit catalogul înainte de
+   sondă — exact tiparul „nu confrunta afirmația cu sursa" împotriva căruia are proiectul reguli.
 
 **Consecință pt întrebarea lui Roland „câți provideri REALIST":** răspunsul are două straturi —
 (a) _matematic_, prin realocare corectă, pot încăpea 2 încercări reale în cele 58s; (b) _practic,
