@@ -20,7 +20,7 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-11 (Faza 4.5d ÎNCHISĂ — free tier + plătit corectare + OCR fixuri + eliminare Chat + Groq) · **Producție:** `traduceri-frontend.vercel.app` + `traduceri-api.vercel.app`, ambele redeployate · **FAZA 4.5d ÎNCHISĂ** (🟢 pe majoritatea itemilor, 🟡 pe 2 — vezi mai jos) · **Următoarea:** de stabilit (verifică și `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`, scris de o sesiune paralelă sub același nume — vezi nota din `docs/HANDOFF_SESIUNE.md`)
+**Ultima actualizare:** 2026-09-11 (Faza 4.5d ÎNCHISĂ — free tier + plătit corectare + OCR fixuri + eliminare Chat + Groq) · **Producție:** `traduceri-frontend.vercel.app` + `traduceri-api.vercel.app`, ambele redeployate · **FAZA 4.5d ÎNCHISĂ** (🟢 pe majoritatea itemilor, 🟡 pe 2 — vezi mai jos) · **⚠️ închisă fără confirmarea lui Roland pe cele 3 întrebări deschise, via reluare externă a propriului fork al sesiunii (NU o sesiune paralelă — corectat, vezi `docs/HANDOFF_SESIUNE.md`)** · **Următoarea:** de stabilit; 3 itemi rămân deschiși în `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md` (mesaj cotă OCR, 2 propuneri verificare live)
 
 > ### 🟢 FAZA 4.5d — ÎNCHISĂ — free tier, cheie plătită corectare, fix RECITATION + bbox, eliminare Chat, Groq TPM
 >

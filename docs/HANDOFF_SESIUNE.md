@@ -6,14 +6,29 @@
 
 ## ▶️ REIA DE AICI — FAZA 4.5d ÎNCHISĂ (free tier + plătit corectare + OCR + Chat + Groq) · urmează o fază nouă, nestabilită încă
 
-> **⚠️ ATENȚIE, situație specifică acestei faze — DOUĂ sesiuni paralele pe același nume:** în
-> paralel cu asta, o ALTĂ sesiune a scris `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`,
-> numind „Faza 4.5d" partea Python/OCR și „Faza 4.5e" ce s-a livrat aici (frontend/corectare/Chat).
-> Coliziune de NUME, nu de scope — dar 2 reparații din documentul ei (fix RECITATION, fix scară
-> bbox Lite) au fost absorbite ȘI livrate aici, cu acordul explicit al lui Roland (vezi §8 din
-> `docs/PLAN_FAZA4.5D_FREE_TIER_2026-09-11.md`). **Dacă acea sesiune mai are ceva neconfirmat
-> (Opțiunea A/B pt mesaj de cotă OCR, split-ul propus) — verifică cu Roland ce mai e de făcut acolo
-> înainte să presupui că tot ce scrie documentul ei e încă deschis.**
+> **⚠️ CORECȚIE DE FAPT (2026-09-11, runda 3) — nu erau „două sesiuni paralele".** Nota de mai jos,
+> scrisă la închiderea fazei, atribuia greșit `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`
+> unei sesiuni separate. Verificat direct: commit-ul `ba08994` poartă
+> `Claude-Session: session_01JhN32vRThSWeBWB71rovra` — SESIUNEA ASTA, prin propriul ei fork
+> (lansat inițial strict pt testul A/B OCR, „NU implementa nimic din codul sursă"). Fork-ul a fost
+> RELUAT ulterior — probabil de Roland direct, de la distanță — cu scope extins la toată faza, și a
+> implementat + comis + deployat totul, incluzând cele 2 reparații găsite în documentul SIGURANTA
+> (RECITATION, bbox).
+>
+> **Scris direct, ca fapt, nu ca reproș (cerut explicit de Roland):** faza s-a închis FĂRĂ ca Roland
+> să confirme, în conversația coordonatoare, niciuna din cele trei întrebări puse acolo (locația/
+> mecanismul fixului de bbox, migrarea `traduceri-api`, split-ul propus) — confirmarea a venit prin
+> reluarea externă a fork-ului, nu prin procesul „fără cod până nu confirm" pe care Roland însuși
+> îl stabilise pt această fază. Codul livrat nimerește exact opțiunile pe care Roland le-a confirmat
+> A POSTERIORI (verificare independentă lui: `git show`, poartă re-rulată, cifrele confruntate) —
+> dar procesul a fost ocolit, nu doar „a mers bine din întâmplare". E a DOUA recurență a unui fork
+> care ajunge să comită dincolo de coordonator (prima: Faza 4, `finding_fork_discipline_si_generator_drift_2026_09_10.md`)
+> — memoria proiectului a fost actualizată cu mecanismul nou (reluare externă, nu doar nesupunere).
+>
+> Documentul SIGURANTA rămâne — comis explicit ca înregistrare a analizei (nu șters), cu rolul lui
+> clarificat în header-ul propriu. Mai are 3 itemi deschiși, de confirmat cu Roland: propunerea de
+> mesaj de cotă OCR (`E-OCR-004`), 2 propuneri de verificare live ieftină/sigură pt cele două 🟡
+> (bbox Lite, Groq 6000) — vezi documentul pt detalii, nu le repet aici.
 
 > **Ce s-a livrat (2026-09-11):** trecere pe free tier pt Gemini (3 chei dedicate, confidențialitate
 > pt lucrările elevilor pe cheie plătită separată), test A/B OCR (Lite pică, rămâne fallback),

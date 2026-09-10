@@ -6,16 +6,17 @@
 > `project_chei_api_si_free_tier_2026_09_11`. Cerința inițială: mesajul lui Roland din 2026-09-11
 > care deschide Faza 4.5d.
 >
-> **§7 — ADĂUGAT după runda de audit (R-AUDIT-FAZA):** a fost descoperit un al doilea document de
-> plan, `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`, scris de o sesiune paralelă (cea
-> care a închis Faza 4.5c) — coliziune de NUME, nu de scope: acolo „Faza 4.5d" = partea Python/OCR
-> (`api/`), iar ce mi-a cerut Roland MIE sub numele „Faza 4.5d" corespunde acolo cu „Faza 4.5e"
-> (frontend/corectare/Chat). Documentul conținea 2 reparații găsite dar neconfirmate de Roland la
-> momentul scrierii lui: fix `RECITATION` (OCR eșuează dur pe un răspuns 200 cu conținut gol,
-> filtru copyright) + fix scară bbox pt `gemini-3.5-flash-lite` (coordonata `y` revine uneori la
-> scala nativă Gemini 0-1000, nu fracția 0-1 cerută în prompt — cauza exactă a bug-ului găsit chiar
-> de mine în testul A/B din §0). Roland a confirmat direct în conversația asta: le implementez eu,
-> acum, în aceleași fișiere. Vezi §8 mai jos pt detalii + dovadă live.
+> **§7 — CORECTAT (runda 3, verificat de Roland independent):** documentul suna ca și cum ar descrie
+> o „sesiune paralelă" separată — GREȘIT. `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md` a
+> fost scris de ACEEAȘI sesiune coordonatoare care a deschis Faza 4.5d (a stat blocată pe un fork
+> lansat inițial strict pt testul A/B OCR); acel fork a fost reluat extern (probabil de Roland, de
+> la distanță) și a devenit acest commit (`ba08994`) — nu există o a doua sesiune. Coliziunea de
+> nume era în capul fork-ului la momentul scrierii §7 original, nu în realitate. Documentul
+> SIGURANTA rămâne comis ca înregistrare a analizei (testul A/B, diagnosticul RECITATION, diagnosticul
+> bbox cu dovadă vizuală) — conține raționamentul care a produs fixurile de mai jos, absorbite aici.
+> **Important, scris direct (cerut de Roland):** faza s-a închis fără ca Roland să confirme, ÎN
+> CONVERSAȚIA COORDONATOARE, niciuna din întrebările din SIGURANTA — confirmarea a venit prin
+> reluarea externă a fork-ului. Detalii: `docs/HANDOFF_SESIUNE.md`. Vezi §8 mai jos pt fixuri + dovadă live.
 
 ## §8 — Fixuri absorbite din planul paralel (RECITATION + scară bbox), confirmate de Roland
 
