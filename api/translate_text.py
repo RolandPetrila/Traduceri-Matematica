@@ -104,6 +104,34 @@ def _run_translation_chain(batch: str, source_lang: str, target_lang: str, engin
     raise last_err or RuntimeError("Niciun provider de traducere disponibil")
 
 
+def _reattach_boundary_whitespace(original: str, translated: str) -> str:
+    """Restaureaza spatiul de la marginea sectiunii EXACT din sursa, indiferent ce
+    a facut providerul cu el (DeepL, la traducerea batch-ului unit cu SEP, nu
+    pastreaza sistematic spatiul de margine al fiecarui fragment).
+
+    Sectiunile trimise la traducere sunt fragmente dintr-o SINGURA propozitie,
+    rupte la fiecare granita de marcaj (bold/italic) de `segmentInline`
+    (editor-translate.ts) — spatiul de la margine e SINGURUL lucru care le leaga
+    de vecini ("Triunghiul este " + "dreptunghic" trebuie sa redea "Triunghiul
+    este dreptunghic", nu "...estedreptunghic"). Un `.strip()` necondiționat pe
+    rezultatul providerului distrugea exact acel spatiu (P3, Faza 4.5b — vezi
+    docs/PLAN_FAZA4.5B_TRADUCERE_F8_2026-09-10.md).
+
+    Spatiul nu are nevoie de traducere — e identic in orice limba. Deci: extrage
+    lead/trail din SURSA, ia doar miezul tradus (strip pe orice a scurs de la
+    provider, inclusiv reziduuri de separator), reataseaza spatiul original.
+    O sectiune formata DOAR din spatiu (sau goala) nu are ce sa traduca — trece
+    neschimbata, byte-exact (acopera si spatiul insecabil U+00A0, care e tratat
+    ca whitespace de `str.strip()`).
+    """
+    core_src = original.strip()
+    if not core_src:
+        return original
+    lead = original[: len(original) - len(original.lstrip())]
+    trail = original[len(original.rstrip()):]
+    return lead + translated.strip() + trail
+
+
 def _apply_translations_recursive(sections: list, parts_iter) -> list:
     """Recursively apply translated texts back to sections in order."""
     result = []
@@ -117,9 +145,10 @@ def _apply_translations_recursive(sections: list, parts_iter) -> list:
             result.append(new_s)
         else:
             new_s = dict(s)
+            original = s.get("content", "") or ""
             translated_text = next(parts_iter, None)
             if translated_text is not None:
-                new_s["content"] = translated_text.strip()
+                new_s["content"] = _reattach_boundary_whitespace(original, translated_text)
             result.append(new_s)
     return result
 

@@ -1,8 +1,75 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-10 (Faza 4.5a închisă — 6 reparații live pe producție + cei 3 auditori). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-09-10 (Faza 4.5b închisă — fix P3 traducere F8 live pe producție + cei 3 auditori). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 4.5a ÎNCHISĂ (6 reparații deploy + verificate live) · urmează FAZA 4.5b (traducere F8 + timeout Teste)
+## ▶️ REIA DE AICI — FAZA 4.5b ÎNCHISĂ (fix P3 traducere F8 deploy + verificat live) · urmează FAZA 4.5c (timeout Teste, P2)
+
+> **Ce s-a livrat în FAZA 4.5b (2026-09-10):** fix pt P3 — traducerea F8 (RO→SK/EN/DE) pierdea
+> spațiul de la granița dintre secțiuni la fiecare schimbare de marcaj (bold/italic) sau lângă o
+> formulă LaTeX inline (jurnal Faza 4: `"priliehavéak"` în loc de `"priliehavé ak"`). Plan complet
+> (diagnostic, opțiuni R2, cele 8 condiții impuse de Roland, dovezi, verdicte auditori):
+> `docs/PLAN_FAZA4.5B_TRADUCERE_F8_2026-09-10.md` — **citește-l dacă ai nevoie de detalii tehnice**.
+>
+> **Cauza reală** (confirmată prin cod + reproducere live 3/3 determinist pe producție, NU pontul
+> inițial al lui Roland cu `math_protect.py`, verificat și infirmat): `api/translate_text.py`,
+> `_apply_translations_recursive` aplica `.strip()` necondiționat pe fiecare secțiune tradusă —
+> secțiunile astea NU sunt paragrafe de-sine-stătătoare (cum presupunea codul), ci fragmente dintr-o
+> SINGURĂ propoziție rupte la fiecare graniță de marcaj de `segmentInline` (`editor-translate.ts`);
+> spațiul de la marginea lor e singurul lucru care le leagă de vecini, iar `.strip()` îl distrugea
+> garantat. Lângă o formulă LaTeX (KaTeX = `inline-block`), aceeași lipsă de spațiu elimină punctul
+> de rupere de linie al browserului → fragmentul scurt lipit sare întreg pe linia următoare, perceput
+> ca „izolare pe linie proprie" (simptomul #6 din jurnal) — aceeași cauză ca lipirea de cuvinte (#5).
+>
+> **Fix:** funcție nouă `_reattach_boundary_whitespace(original, translated)` — extrage spațiul de
+> graniță din SURSĂ (nu are nevoie de traducere, e identic în orice limbă), ia doar miezul tradus
+> (strip pe orice a scurs de la provider), re-atașează spațiul original. Independent de provider prin
+> construcție (aceeași funcție pt DeepL/Azure/NLLB/OpenRouter/Gemini). Nu atinge clientul
+> (`editor-translate.ts` — verificat, zero `.trim()`/`.strip()` acolo) — un singur capăt era stricat.
+>
+> **15 teste noi** (`api/tests/test_translate_text_boundary.py`): toate cazurile de margine cerute
+> de Roland (doar-spațiu, ambele capete, spații multiple, NBSP, linie nouă) + contra-probă (provider
+> cel mai defavorabil) + `two_column`. Cache invalidat pt traducerile vechi corupte:
+> `translation-cache.ts` v3→v4, `sw.js` (PWA precache) v73→v74.
+>
+> **Poartă finală:** `tsc 0 · jest 438/438 (28 suite) · build OK · pytest 104/104` (+15 față de
+> baseline 89/89) — fără regresie. Deploy: API (`traduceri-api.vercel.app`) + frontend
+> (`traduceri-frontend.vercel.app`), ambele READY/production.
+>
+> **Dovadă live:** reproducerea sintetică (3 cazuri, granița bold/formulă/5-secțiuni) confirmată
+> reparată pe producție (A: 3/3 determinist) + document real construit direct în editor pe
+> producție (bold + formulă inline + tabel 3×3), tradus RO→SK live, spații intacte la fiecare
+> graniță, R-MATH confirmat (formula intactă), fără `E-VALID-003` în Supabase.
+>
+> **Verdicte auditori (R-AUDIT-FAZA):** regresie FĂRĂ REGRESIE (rulată independent + control
+> negativ: fix revenit temporar → testele pică corect, confirmă empiric că nu sunt teste-decor) ·
+> dovezi 6/6 puncte cerute CONFIRMAT (reprodus independent, cu Playwright, granița bold ȘI, separat
+> prin API, granița formulă) · cerințe 7/8 ONORATĂ direct. **3 constatări, toate cu aceeași cauză**
+> (probele de diagnostic `p3_repro*.mjs` erau scrise doar în scratchpad-ul DE SESIUNE, nu în
+> `scratchpad/` al PROIECTULUI — citare înșelătoare în plan; plus porțiunea de tabel din documentul
+> real neconfirmată independent de auditor) → **corectate imediat**: fișierele mutate în
+> `scratchpad/` al proiectului + re-rulate, plus o probă API sintetică nouă
+> (`scratchpad/p3_repro_table.mjs`) pt tabel. Niciun defect de fix găsit de niciun auditor.
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** O FAZĂ PER SESIUNE — sesiunea Fazei 4.5b s-a oprit aici.
+> Deschide o sesiune nouă cu `/onboard` pentru **FAZA 4.5c** (P2 — timeout lanț AI la Teste mari,
+> defect LATENT, nu determinist ca P3). Motivul separării (decizia lui Roland, din chat-ul care a
+> confirmat Opțiunea B la P3): P3 e determinist și atinge R-MATH (fluxul central al Cristinei), P2 e
+> latent și se verifică statistic — puse împreună, verdictul auditorilor devine tulbure (tiparul „4
+> comenzi verzi peste un modul rupt" din Faza 2).
+>
+> **De dus înapoi la Roland la începutul Fazei 4.5c:** măsurare ÎNAINTE de orice fix — ~10 generări
+> reale ale celui mai greu caz Teste (10+ itemi, „cu barem", dificultate greu), latență înregistrată
+> per provider ȘI timp total al lanțului, distribuție (p50/p90/max, nu doar medie), salvată în
+> `99_Roland_Work/Teste_Output`. Abia după aceea, propunere de fix cu opțiuni R2 (Roland a semnalat
+> explicit interesul pt „plafonez primul provider ca fallback-ul să prindă mereu fereastra lui
+> întreagă" vs. simpla ridicare a bugetului total — decide pe măsurători, nu pe intuiție). **Atenție
+> la felul în care se închide P2:** dacă defectul nu se reproduce determinist, NU se marchează 🟢 pe
+> baza a câtorva rulări reușite — se închide onest ca „măsurat + calibrat + monitorizat", cu prag nou
+> scris explicit și cod de eroare vizibil pe `/diagnostics` dacă reapare. Preferă un 🟡 sincer.
+
+---
+
+## FAZA 4.5a ÎNCHISĂ (6 reparații live pe producție, cei 3 auditori) — istoric
 
 > **Ce s-a livrat în FAZA 4.5a (2026-09-10):** 6 reparații contenite din lista Fazei 4, alese de
 > Roland pe criteriu de risc (nu severitate) — P1, riscul „→ Editor", P4, P5, P6, P7. Plan complet

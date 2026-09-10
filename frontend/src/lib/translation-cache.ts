@@ -7,7 +7,9 @@
  */
 
 const CACHE_KEY = "translation_cache";
-const CACHE_VERSION = "v3"; // Increment on major pipeline changes (v3: SHA-256 content-hash keys)
+const CACHE_VERSION = "v4"; // v4 (2026-09-10, Faza 4.5b): translate_text.py reatașează spațiul
+// de graniță din sursă (P3) — traducerile cache-uite ÎNAINTE de fix aveau spații
+// pierdute la marginea bold/formulă; bump-ul le invalidează la deploy (v3: SHA-256 content-hash keys)
 const MAX_ENTRIES = 50; // ~5 MB limit (100KB avg per entry)
 
 interface CacheEntry {

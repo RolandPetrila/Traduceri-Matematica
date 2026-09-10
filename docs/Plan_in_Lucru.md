@@ -20,7 +20,23 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-10 (Faza 4.5a închisă) · **Producție:** frontend **v73** + API redeploy (Faza 4.5a = 6 reparații live) · **FAZA 4.5a ÎNCHISĂ** · **Următoarea:** FAZA 4.5b (P3 traducere F8 + P2 timeout Teste)
+**Ultima actualizare:** 2026-09-10 (Faza 4.5b închisă) · **Producție:** frontend redeploy + API redeploy (Faza 4.5b = fix P3 spații traducere F8, live) · **FAZA 4.5b ÎNCHISĂ** · **Următoarea:** FAZA 4.5c (P2 timeout lanț AI la Teste mari)
+
+> ### ✅ FAZA 4.5b — ÎNCHISĂ
+>
+> P3 SINGUR (P2 mutat separat în Faza 4.5c, la cererea lui Roland — „puse împreună, verdictul
+> auditorilor devine tulbure"). Plan complet (diagnostic, opțiuni R2, cele 8 condiții ale lui
+> Roland, dovezi, verdicte auditori): `docs/PLAN_FAZA4.5B_TRADUCERE_F8_2026-09-10.md`.
+>
+> |     | Item                                                                       | Dovadă                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+> | --- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+> | 🟢  | P3 — traducerea F8 pierdea spații la granița bold/formulă (`priliehavéak`) | Cauză confirmată: `.strip()` necondiționat pe fiecare secțiune tradusă în `_apply_translations_recursive` (`api/translate_text.py`), NU `math_protect.py` (ipoteza inițială a lui Roland, infirmată prin verificare). Fix: `_reattach_boundary_whitespace` — spațiul de graniță vine din SURSĂ, nu din provider. Reprodus 3/3 determinist ÎNAINTE de fix; live pe producție DUPĂ fix, pe document real (bold + formulă + tabel), confirmat independent de `auditor-dovezi` (bold + formulă via Playwright/API separat) + probă API sintetică suplimentară pt tabel |
+>
+> Poartă: `tsc 0 · jest 438/438 · build OK · pytest 104/104` (+15 teste noi, `test_translate_text_boundary.py`) — fără regresie (baseline consemnat ÎNAINTE de prima modificare: `89/89`, identic cu închiderea 4.5a).
+>
+> **Verdicte auditori:** regresie FĂRĂ REGRESIE (rulată independent + control negativ: fix revenit temporar → testele pică corect) · dovezi 6/6 puncte cerute CONFIRMAT (reprodus independent bold + formulă) · cerințe 7/8 ONORATĂ direct, 1 corectată imediat. **3 constatări, toate cu aceeași cauză** (probe de diagnostic scrise în scratchpad-ul de sesiune, nu în `scratchpad/` al proiectului) — corectate în aceeași sesiune, înainte de raport. Niciun defect de fix găsit.
+>
+> Cache invalidat pt traducerile vechi corupte: `translation-cache.ts` v3→v4, `sw.js` v73→v74.
 
 > ### ✅ FAZA 4.5a — ÎNCHISĂ
 >
@@ -74,9 +90,11 @@ build OK · pytest 83/83 · planse sintaxă OK`.
 3. FAZA 3    — caietul de sarcini (viu, .md + .html cu căutare)
 4. FAZA 4    — auditul real în browser, cu fișierele din Teste_Input
 5. FAZA 4.5a — reparațiile contenite, risc redus (P1, „→ Editor", P4, P5, P6, P7) — ÎNCHISĂ
-6. FAZA 4.5b — traducere F8 (P3, R-MATH) + timeout Teste (P2) — izolate într-o fază proprie
-7. FAZA 5    — unificarea documentației + memorie + mediu nativ + /onboard
-8. FAZA 6    — automatizarea + lista de pornire
+6. FAZA 4.5b — traducere F8 (P3, R-MATH) — ÎNCHISĂ
+7. FAZA 4.5c — timeout lanț AI la Teste mari (P2) — izolată într-o fază proprie (defect LATENT,
+   necesită măsurare pe providerul real înainte de fix — vezi Roland, decizia din 4.5b)
+8. FAZA 5    — unificarea documentației + memorie + mediu nativ + /onboard
+9. FAZA 6    — automatizarea + lista de pornire
 ```
 
 ---
