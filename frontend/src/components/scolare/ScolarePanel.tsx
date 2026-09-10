@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   sendChat,
   GENERATION_OPTS,
+  logGenerationResult,
   type ChatMessage,
 } from "@/lib/chat-providers";
 import { renderScolareContent } from "@/lib/scolare/drawing/parse-render";
@@ -168,11 +169,20 @@ export function ScolarePanel({
         capitole: selectedCapitole,
       });
       const initial: ChatMessage[] = [{ role: "user", content: prompt }];
+      const t0 = Date.now();
       const r = await sendChat(
         initial,
         buildScolareSystemPrompt(cycle, level),
         GENERATION_OPTS,
       );
+      logGenerationResult("scolare.generate", Date.now() - t0, r, {
+        node: node.id,
+        level: level.id,
+        cycle: cycleId,
+        nrEx,
+        dificultate,
+        attempt,
+      });
       if (!r.ok) {
         setStatus("error");
         setNote(
@@ -217,10 +227,20 @@ export function ScolarePanel({
       let contFailed = false;
       for (let round = 0; wasTruncated && round < 2; round++) {
         setNote(`Completez fișa (partea ${round + 2})…`);
+        const tCont0 = Date.now();
         const cont = await sendChat(
           [...msgs, { role: "user", content: CONTINUE_PROMPT }],
           buildScolareSystemPrompt(cycle, level),
           GENERATION_OPTS,
+        );
+        logGenerationResult(
+          "scolare.generate.continuare",
+          Date.now() - tCont0,
+          cont,
+          {
+            node: node.id,
+            round,
+          },
         );
         if (!cont.ok) {
           contFailed = true;
@@ -265,11 +285,15 @@ export function ScolarePanel({
       ...history,
       { role: "user", content: CONTINUE_PROMPT },
     ];
+    const t0 = Date.now();
     const r = await sendChat(
       next,
       buildScolareSystemPrompt(cycle, level),
       GENERATION_OPTS,
     );
+    logGenerationResult("scolare.generate.continua", Date.now() - t0, r, {
+      node: node.id,
+    });
     if (r.ok) {
       const merged = sanitizeFisa(result + "\n" + r.reply);
       // Bug găsit la code review: continueGenerate() nu apela record(), deci

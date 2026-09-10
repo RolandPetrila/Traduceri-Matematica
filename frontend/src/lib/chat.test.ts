@@ -5,6 +5,8 @@ import {
   isTruncated,
   sendChat,
   CHAIN,
+  GENERATION_CHAIN,
+  GENERATION_OPTS,
 } from "./chat-providers";
 import { buildSystemPrompt, buildLibraryIndex } from "./chat-context";
 
@@ -170,5 +172,114 @@ describe("chat-context · system prompt", () => {
   it("docContext se include când e dat", () => {
     const p = buildSystemPrompt("TEXT_DOCUMENT_CURENT");
     expect(p).toContain("TEXT_DOCUMENT_CURENT");
+  });
+});
+
+/**
+ * Faza 4.5c (2026-09-10, P2) — defectul era ARITMETIC, nu statistic: cu
+ * timeoutMs=52000/budgetMs=58000 (flat), primul provider care atingea propriul
+ * timeout lăsa doar 6000ms restului lanțului — insuficient matematic pt oricare
+ * din ceilalți, INDIFERENT dacă rulările reușesc sau nu (verificat pe cifrele
+ * reale din incidentul 2026-09-09). Testul de mai jos rulează pe CONSTANTELE
+ * VII (nu pe copii hardcodate) — dacă cineva reintroduce vechiul raport
+ * 52000/58000, testul PICĂ, fără să fie nevoie să reproducă vreun eșec de rețea.
+ * Echivalentul contra-probei din Faza 4.5b (fix revenit temporar → testele pică).
+ */
+describe("GENERATION_CHAIN · realocarea bugetului (Faza 4.5c, P2)", () => {
+  // Groq (gpt-oss-20b) măsurat 3.6-4.3s pe cazul cel mai greu folosit de Cristina
+  // (scratchpad/p2_measure_fallback_providers.mjs, 2026-09-10) — 10s e o marjă
+  // reală de siguranță, nu un fir de păr peste minimul observat.
+  const MIN_FALLBACK_WINDOW_MS = 10000;
+  const REALISTIC_ATTEMPT_IDS = ["gemini", "groq", "gemini2"];
+
+  it("gemini, groq ȘI gemini2 primesc FIECARE timeout-ul lor nominal ÎNTREG din buget — nu un rest trunchiat", () => {
+    let elapsed = 0;
+    for (const step of GENERATION_CHAIN) {
+      const remaining = (GENERATION_OPTS.budgetMs as number) - elapsed;
+      const nominal = step.timeoutMs as number;
+      const available = Math.min(nominal, remaining);
+      if (REALISTIC_ATTEMPT_IDS.includes(step.id)) {
+        // Dacă bugetul ar fi prea mic pt alocarea asta (cum era în raportul
+        // vechi), `available` ar fi TRUNCHIAT sub `nominal` — testul pică aici.
+        expect(available).toBe(nominal);
+        expect(available).toBeGreaterThanOrEqual(MIN_FALLBACK_WINDOW_MS);
+      }
+      // Worst-case pt pasul URMĂTOR: acest pas își consumă TOT alocatul (timeout).
+      elapsed += available;
+    }
+  });
+
+  it("CONTRA-PROBA: raportul de dinainte de fix (timeoutMs 52000 / budgetMs 58000, flat) lăsa <10s celui de-al doilea provider — constantele live trebuie să rămână departe de acel raport", () => {
+    const oldFlatStepTimeout = 52000;
+    const oldFlatBudget = 58000;
+    const secondProviderWouldGet = oldFlatBudget - oldFlatStepTimeout;
+    expect(secondProviderWouldGet).toBeLessThan(MIN_FALLBACK_WINDOW_MS); // documentează defectul vechi
+
+    // Gardă explicită: dacă cineva revine la exact aceste constante, testul pică.
+    expect(GENERATION_OPTS.budgetMs).not.toBe(oldFlatBudget);
+    expect(GENERATION_CHAIN[0].timeoutMs).not.toBe(oldFlatStepTimeout);
+    expect(GENERATION_OPTS.budgetMs as number).toBeGreaterThanOrEqual(
+      (GENERATION_CHAIN[0].timeoutMs as number) +
+        (GENERATION_CHAIN[1].timeoutMs as number) +
+        (GENERATION_CHAIN[2].timeoutMs as number),
+    ); // budgetul acoperă ÎNTREG cele 3 încercări realiste, nu doar prima
+  });
+
+  it("CHAIN (Chat) rămâne complet NEATINS — fără timeoutMs per pas, ordinea originală", () => {
+    expect(CHAIN.every((c) => c.timeoutMs === undefined)).toBe(true);
+    expect(CHAIN.map((c) => c.id)).toEqual([
+      "gemini",
+      "gemini2",
+      "groq",
+      "mistral",
+      "mistral2",
+    ]);
+  });
+
+  it("GENERATION_CHAIN reordonează Groq înaintea lui gemini2 (fallback rapid dovedit, nu o a doua încercare lentă)", () => {
+    expect(GENERATION_CHAIN.map((c) => c.id)).toEqual([
+      "gemini",
+      "groq",
+      "gemini2",
+      "mistral",
+      "mistral2",
+    ]);
+  });
+});
+
+describe("sendChat · cu GENERATION_OPTS (Faza 4.5c)", () => {
+  const mkRes = (status: number, json: unknown) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => json,
+  });
+  const q = [{ role: "user" as const, content: "generează un test" }];
+
+  afterEach(() => {
+    (global.fetch as unknown as jest.Mock)?.mockReset?.();
+  });
+
+  it("o generare normală reușește pe primul provider fără să atingă bugetul", async () => {
+    const geminiOk = {
+      candidates: [{ content: { parts: [{ text: "test generat" }] } }],
+    };
+    global.fetch = jest.fn().mockResolvedValueOnce(mkRes(200, geminiOk));
+    const r = await sendChat(q, "SYS", GENERATION_OPTS);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.provider).toBe("Gemini Flash");
+    expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(1);
+  });
+
+  it("dacă gemini pică, GENERATION_OPTS sare la Groq (NU la gemini2) — confirmă reordonarea live, nu doar datele", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce(mkRes(500, { error: "x" })) // gemini
+      .mockResolvedValueOnce(
+        mkRes(200, { choices: [{ message: { content: "răspuns groq" } }] }),
+      ); // groq — al DOILEA pas din GENERATION_CHAIN
+    const r = await sendChat(q, "SYS", GENERATION_OPTS);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.provider).toBe("Groq (gpt-oss-20b)");
+    expect((global.fetch as unknown as jest.Mock).mock.calls).toHaveLength(2);
   });
 });

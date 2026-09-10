@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   sendChat,
   GENERATION_OPTS,
+  logGenerationResult,
   type ChatMessage,
 } from "@/lib/chat-providers";
 import { buildSystemPrompt } from "@/lib/chat-context";
@@ -148,7 +149,13 @@ function GenerateTab({
     );
     const initial: ChatMessage[] = [{ role: "user", content: prompt }];
     try {
+      const t0 = Date.now();
       const r = await sendChat(initial, buildSystemPrompt(), GENERATION_OPTS);
+      logGenerationResult("teste.generate", Date.now() - t0, r, {
+        clasa,
+        tema: effectiveTema,
+        diff,
+      });
       if (r.ok) {
         // Auto-continuare: baremul/cheia de răspunsuri e la FINAL — dacă răspunsul
         // s-a truncat, completăm automat (max 2 runde) ca testul să fie complet =
@@ -163,10 +170,22 @@ function GenerateTab({
         let contFailed = false;
         for (let round = 0; wasTruncated && round < 2; round++) {
           setNote(`Completez testul (partea ${round + 2})…`);
+          const tCont0 = Date.now();
           const cont = await sendChat(
             [...msgs, { role: "user", content: CONTINUE_PROMPT }],
             buildSystemPrompt(),
             GENERATION_OPTS,
+          );
+          logGenerationResult(
+            "teste.generate.continuare",
+            Date.now() - tCont0,
+            cont,
+            {
+              clasa,
+              tema: effectiveTema,
+              diff,
+              round,
+            },
           );
           if (!cont.ok) {
             // NU raporta succes fals: o rundă de continuare eșuată = baremul poate
@@ -234,11 +253,16 @@ function GenerateTab({
     // sendChat lăsa `status` blocat pe "loading" → butonul „Continuă" dispare
     // (truncated && status!=="loading") și cel principal e dezactivat = tab blocat.
     try {
+      const t0 = Date.now();
       const r = await sendChat(
         nextHistory,
         buildSystemPrompt(),
         GENERATION_OPTS,
       );
+      logGenerationResult("teste.generate.continue", Date.now() - t0, r, {
+        clasa,
+        turns: history.length,
+      });
       if (r.ok) {
         setResult((prev) => prev + "\n" + r.reply);
         setStatus("idle");
@@ -457,7 +481,12 @@ function CorrectTab({
       const initial: ChatMessage[] = [
         { role: "user", content: buildCorrectPrompt(text) },
       ];
+      const t0 = Date.now();
       const r = await sendChat(initial, buildSystemPrompt(), GENERATION_OPTS);
+      // (1c) fără `sample` — lucrarea unui elev, doar mărimi structurale.
+      logGenerationResult("teste.correct", Date.now() - t0, r, {
+        textLen: text.length,
+      });
       if (r.ok) {
         setResult(r.reply);
         setStatus("idle");
@@ -573,11 +602,13 @@ function CorrectTab({
     // Gardă defensivă (audit 2026-09-07): fără try/catch, o excepție ar bloca `status`
     // pe "loading" permanent (identic cu continueGenerate).
     try {
+      const t0 = Date.now();
       const r = await sendChat(
         nextHistory,
         buildSystemPrompt(),
         GENERATION_OPTS,
       );
+      logGenerationResult("teste.correct.continua", Date.now() - t0, r);
       if (r.ok) {
         setResult((prev) => prev + "\n" + r.reply);
         setStatus("idle");

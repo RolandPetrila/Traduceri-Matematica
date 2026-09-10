@@ -1,8 +1,81 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-10 (Faza 4.5b închisă — fix P3 traducere F8 live pe producție + cei 3 auditori). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
+> Ultima actualizare: 2026-09-10 (Faza 4.5c — P2 implementat + deployat, rămâne 🟡, o abatere de confirmat cu Roland). Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 4.5b ÎNCHISĂ (fix P3 traducere F8 deploy + verificat live) · urmează FAZA 4.5c (timeout Teste, P2)
+## ▶️ REIA DE AICI — FAZA 4.5c 🟡 (P2 timeout lanț AI, implementat + deployat) · UN SINGUR LUCRU de confirmat cu Roland înainte de următoarea fază
+
+> **Ce s-a livrat (2026-09-10):** fix la defectul ARITMETIC din lanțul AI de generare (Teste +
+> Școlare, `GENERATION_OPTS` din `frontend/src/lib/chat-providers.ts`): bugetul total (58000ms)
+> era cu doar 6000ms mai mare decât timeout-ul primului provider (52000ms) — de fiecare dată când
+> Gemini atingea propriul timeout, ceilalți 4 provideri din lanț nu mai aveau matematic nicio
+> șansă (0 succese înregistrate pt gemini2/groq/mistral/mistral2 din 20.08.2026 încoace). Plan
+> complet, cu tot procesul de verificare + deciziile lui Roland citate exact + verdictele
+> auditorilor: `docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md` — **citește-l pt detalii**.
+>
+> **Verificare importantă, cerută de Roland — premisa inițială a sesiunii a fost GREȘITĂ, corectată
+> înainte de implementare:** `maxDuration=60` din `route.ts` mărginește FIECARE apel `/api/proxy`
+> individual, NU bugetul total — lanțul e orchestrat CLIENT-SIDE (browser), fără plafon de
+> platformă pe suma lui. Verificat în cod (nu presupus), confirmat și de mesajul exact de eroare
+> din incident (`"signal is aborted without reason"` = `AbortController` din browser, nu kill de
+> platformă). Consecință: bugetul total a putut fi ridicat real (58000→110000ms), nu doar realocat.
+>
+> **Fix:** `GENERATION_CHAIN` — array SEPARAT de `CHAIN` (Chat, complet neatins, verificat identic
+> byte-cu-byte cu commit-ul dinainte), cu plafon propriu per provider: gemini 45000ms, groq 15000ms
+> (reordonat AL DOILEA, nu al treilea — fallback rapid dovedit, nu o a doua încercare la fel de
+> lentă ca gemini2), gemini2 40000ms, mistral+mistral2 15000ms fiecare. Transmis prin
+> `SendChatOptions.chain` (opt-in), Chat neschimbat. Monitorizare nouă (`logGenerationResult`) la
+> toate cele 8 puncte de generare (Teste 5 + Școlare 3) — scrie provider+durată+rezultat direct în
+> Supabase `logs`, verificat live (`teste.generate | provider=Gemini Flash | 30999ms`).
+> `config/error_codes.json` (E-NET-001/E-TEST-001/E-SCOL-001) corectat — recomanda anterior exact
+> opusul fix-ului („ridică timeout-ul"). Regenerator lipsă (`scratchpad/gen-error-catalog.mjs`,
+> referit în comentariu dar inexistent) — recreat.
+>
+> **Contra-probă rulată efectiv (nu doar scrisă), REPRODUSĂ de 2 auditori independent:** revenire
+> temporară la constantele vechi (52000/58000) → 4 teste noi pică, inclusiv linia exactă
+> „Expected: not 58000" → revenire la fix → 18/18 din nou. Testul chiar prinde regresia.
+>
+> **Poartă:** `tsc 0 · jest 444/444 (28 suite, +6 față de baseline 438/438) · build OK ·
+pytest 104/104` — fără regresie (reprodusă independent de auditor-regresie). Deploy: frontend
+> (`traduceri-frontend.vercel.app`), `sw.js` `CACHE_VERSION` v74→v75, confirmat live prin `curl`.
+>
+> **De ce rămâne 🟡, NU 🟢** (P2 e defect LATENT — nu s-a reprodus determinist, nici acum, nici la
+> auditul din Faza 4): traseul pe care fix-ul îl schimbă de fapt — Gemini eșuează → Groq primește
+> o fereastră REALĂ de ~15s în loc de ~6s — n-a fost niciodată exercitat LIVE (imposibil de forțat
+> fără să strici artificial Gemini). Singura dovadă live e o generare reușită pe primul provider,
+> care ar fi trecut și cu constantele vechi. Mecanismul de realocare are dovadă doar din teste cu
+> `fetch` mockuit + aritmetică verificată — suficient pt o închidere onestă, NU pt 🟢.
+>
+> **⚠️ UN SINGUR LUCRU rămas de confirmat cu Roland, găsit de `auditor-cerinte` (nu era greșeală de
+> cod, e o deviație de la cifra lui exactă):** el a cerut „buget ridicat la ~90000ms"; implementarea
+> a pus `budgetMs=110000` (justificat aritmetic — acoperă gemini+groq+gemini2 ÎNTREG:
+> 45000+15000+40000=100000, plus marjă — dar tot +22% peste cifra citată de el, nereconfirmată
+> explicit înainte de deploy). **Prima acțiune a următoarei sesiuni: du acest punct înapoi la
+> Roland** (păstrează 110000 cu argumentul aritmetic, sau ajustează la o valoare pe care el o
+> aprobă explicit — ex. undeva între 90000-100000). Nu e blocant funcțional (fix-ul merge, testat),
+> dar disciplina cerută explicit de Roland în această fază a fost „decide pe măsurători, nu pe
+> intuiție" — o cifră a lui, schimbată tacit, contrazice exact asta.
+>
+> **Rămân deschise, descoperite colateral la măsurare, NEinvestigate în această fază (scope,
+> confirmat explicit de Roland — nu s-a atins nimic legat de ele):**
+>
+> - **Mistral (ambele chei, `MISTRAL_API_KEY`/`_2`) — 429 „Rate limit exceeded" persistent**,
+>   reconfirmat separat la distanță de minute cu o cerere minimă (20 tokeni) — nu e un vârf
+>   trecător de trafic. Motiv necunoscut (cotă epuizată pe cheie? cont restricționat?).
+> - **Groq — plafon confirmat 8000 TPM** (`gpt-oss-20b`), din mesajul de eroare exact al
+>   providerului — o singură cerere grea (`max_tokens=16384`) poate epuiza aproape tot. Fereastra
+>   realocată garantează o ȘANSĂ la Groq, nu un succes garantat la a doua cerere grea la scurt timp.
+>
+> **⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI, după ce ai confirmarea de la
+> Roland pe punctul de mai sus (sau după ce el spune explicit „las-o cum e"). Deschide o sesiune
+> nouă cu `/onboard` pentru faza următoare — nu era stabilită încă la închiderea acestei sesiuni.
+
+---
+
+## FAZA 4.5b ÎNCHISĂ (fix P3 traducere F8 live pe producție + cei 3 auditori) — istoric
+
+> Ce s-a livrat, verdicte auditori, protocol: vezi blocul original mai jos.
+
+## ▶️ (istoric) FAZA 4.5b ÎNCHISĂ (fix P3 traducere F8 deploy + verificat live) · urmează FAZA 4.5c (timeout Teste, P2)
 
 > **Ce s-a livrat în FAZA 4.5b (2026-09-10):** fix pt P3 — traducerea F8 (RO→SK/EN/DE) pierdea
 > spațiul de la granița dintre secțiuni la fiecare schimbare de marcaj (bold/italic) sau lângă o

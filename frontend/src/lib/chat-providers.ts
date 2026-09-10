@@ -28,6 +28,11 @@ export type ProviderStep = {
   label: string;
   model?: string;
   format: ProviderFormat;
+  /** Plafon propriu al PASULUI (ms), dacă diferă de `opts.timeoutMs` flat.
+   * Faza 4.5c (2026-09-10): pe calea de generare (vezi GENERATION_CHAIN), fiecare
+   * provider are un plafon dimensionat pe distribuția LUI reală — un Gemini lent nu
+   * mai poate mânca tot bugetul din fața unui fallback rapid dovedit (Groq). */
+  timeoutMs?: number;
 };
 
 /**
@@ -89,6 +94,62 @@ export const CHAIN_BUDGET_MS = 50000;
  * tokeni (finish=STOP), deci 8192 nu truncase deja; 16384 = headroom pt conținut
  * rar-verbos. Constrângerea reală e TIMPUL (~35s/20 ex.), nu tokenii — vezi opts.timeoutMs. */
 export const DEFAULT_MAX_TOKENS = 8192;
+
+/**
+ * Lanț dedicat căii de GENERARE (Teste/Școlare, `GENERATION_OPTS` mai jos) — Faza
+ * 4.5c (2026-09-10, P2). NU e o reordonare a `CHAIN` de bază (ar fi atins și Chat,
+ * R-EXT) — e un array SEPARAT, transmis explicit prin `SendChatOptions.chain`.
+ * `CHAIN` (Chat) rămâne complet neatins.
+ *
+ * De ce reordonat gemini→groq→gemini2 (nu gemini→gemini2 ca la Chat): măsurat
+ * 2026-09-10 (`scratchpad/p2_measure_fallback_providers.mjs`) — Groq (gpt-oss-20b)
+ * răspunde la ACEST caz greu în 3.6-4.3s; gemini2 e aceeași infrastructură/model ca
+ * gemini (probabil aceeași distribuție lentă) — un candidat slab pt o fereastră
+ * scurtă. Punând Groq al doilea, fereastra rămasă (vezi budgetMs) merge la
+ * fallback-ul cu șanse reale de succes RAPID, nu la o a doua încercare la fel de lentă.
+ *
+ * De ce timeoutMs per pas (nu un flat comun): măsurat pe cazul cel mai greu folosit
+ * de Cristina (Radicali/VII/greu/10 itemi/barem, 10 rulări live +
+ * istoric Supabase segmentat pe eră): Gemini succes p90=41237ms, max live=42961ms —
+ * un plafon de 45000ms acoperă marea majoritate a succeselor legitime (nu doar
+ * eșecurile agățate). Groq: 15000ms e generos față de cei 3.6-4.3s măsurați.
+ * Gemini2: 40000ms — presupus similar cu gemini (n-am date curate, doar 2 mostre
+ * istorice, ambele tăiate artificial la 6s de designul VECHI). Mistral/Mistral2:
+ * 15000ms fiecare — la data măsurării erau indisponibile (429 „Rate limit exceeded"
+ * pe AMBELE chei, persistent, nu vârf trecător — problemă separată, raportată în
+ * `docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md`), dar rămân în lanț pt când
+ * își revin — un 429 eșuează aproape instant, nu consumă bugetul alocat.
+ */
+export const GENERATION_CHAIN: ProviderStep[] = [
+  { id: "gemini", label: "Gemini Flash", format: "gemini", timeoutMs: 45000 },
+  {
+    id: "groq",
+    label: "Groq (gpt-oss-20b)",
+    model: "openai/gpt-oss-20b",
+    format: "openai",
+    timeoutMs: 15000,
+  },
+  {
+    id: "gemini2",
+    label: "Gemini Flash (2)",
+    format: "gemini",
+    timeoutMs: 40000,
+  },
+  {
+    id: "mistral",
+    label: "Mistral Small",
+    model: "mistral-small-latest",
+    format: "openai",
+    timeoutMs: 15000,
+  },
+  {
+    id: "mistral2",
+    label: "Mistral Small (2)",
+    model: "mistral-small-latest",
+    format: "openai",
+    timeoutMs: 15000,
+  },
+];
 
 /** Payload pentru Gemini (`contents` + `systemInstruction`, roluri user/model). */
 export function buildGeminiPayload(
@@ -170,20 +231,42 @@ export function isTruncated(providerId: string, json: unknown): boolean {
  * maxTokens 16384 + timeout/buget mai mari (sub plafonul hard 60s al proxy-ului). */
 export interface SendChatOptions {
   maxTokens?: number;
-  /** Timeout per provider (ms). Default PROVIDER_TIMEOUT_MS (40s). */
+  /** Timeout per provider (ms) — folosit ca fallback pt orice pas FĂRĂ `timeoutMs`
+   * propriu (vezi `ProviderStep.timeoutMs`). Default PROVIDER_TIMEOUT_MS (40s). */
   timeoutMs?: number;
-  /** Buget total pe lanț (ms). Default CHAIN_BUDGET_MS (50s). TREBUIE ≥ timeoutMs. */
+  /** Buget total pe lanț (ms). Default CHAIN_BUDGET_MS (50s). TREBUIE ≥ timeout-ul
+   * PRIMULUI pas din `chain` (altfel garda de mai jos îl ridică oricum). */
   budgetMs?: number;
+  /** Lanț custom (Faza 4.5c, 2026-09-10) — implicit `CHAIN` (Chat, neatins).
+   * Teste/Școlare trimit `GENERATION_CHAIN` (ordine + plafoane proprii pt calea grea). */
+  chain?: ProviderStep[];
 }
 
-/** Opțiuni pt GENERAREA de fișe/teste (Școlare, Teste): mai mulți tokeni + mai mult
- * timp decât la Chat, sub plafonul hard de 60s al proxy-ului (maxDuration). Măsurat:
- * o fișă de 20 exerciții+barem ~35s. Beyond ~20-25 exerciții → auto-continuare (baremul
- * ajunge mereu — fișă validă pt elevi). */
+/** Opțiuni pt GENERAREA de fișe/teste (Școlare, Teste): mai mulți tokeni, `GENERATION_CHAIN`
+ * (ordine + plafoane proprii, nu `CHAIN` de Chat) și un buget mult mai mare.
+ *
+ * Istoric: până la Faza 4.5c (2026-09-10), `timeoutMs: 52000, budgetMs: 58000` — defect
+ * ARITMETIC găsit atunci: `58000 − 52000 = 6000ms` rămâneau restului lanțului de fiecare
+ * dată când primul provider atingea propriul timeout — insuficient pt oricare din
+ * ceilalți 4, INDIFERENT de reproducere (verificat pe incidentul din 2026-09-09: 4 din 5
+ * provideri au 0 succese înregistrate de la introducerea acestor constante). Verificat
+ * ATUNCI (nu presupus): `sendChat` rulează CLIENT-SIDE (browser, apelat din componente
+ * "use client" — TestePanel.tsx/ScolarePanel.tsx), fiecare `fetch('/api/proxy?...')` e o
+ * invocare serverless SEPARATĂ, deci `maxDuration=60` din `route.ts` mărginește FIECARE
+ * PAS în parte, NU bugetul total orchestrat în browser — bugetul total NU are plafon de
+ * platformă, doar de UX (cât așteaptă rezonabil Cristina).
+ *
+ * Fix (Faza 4.5c): `budgetMs` ridicat la 110000 (nu mai era plafonat de `maxDuration`),
+ * `GENERATION_CHAIN` dă fiecărui pas plafonul lui NOMINAL (45s Gemini + 15s Groq + 40s
+ * Gemini2 + 15s+15s Mistral/Mistral2 = 130000ms teoretic — bugetul de 110000ms acoperă
+ * cele 3 încercări realiste, gemini+groq+gemini2, în ÎNTREGIME: 45000+15000+40000=100000).
+ * Worst-case Cristina: ~100-110s și un test, în loc de ~58s și o eroare (compromis
+ * confirmat explicit de Roland). Măsurat: o fișă de 20 exerciții+barem ~35s. */
 export const GENERATION_OPTS: SendChatOptions = {
   maxTokens: 16384,
-  timeoutMs: 52000,
-  budgetMs: 58000,
+  timeoutMs: 40000,
+  budgetMs: 110000,
+  chain: GENERATION_CHAIN,
 };
 
 export async function sendChat(
@@ -193,12 +276,17 @@ export async function sendChat(
 ): Promise<ChatResult> {
   const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
   const stepTimeout = opts.timeoutMs ?? PROVIDER_TIMEOUT_MS;
-  // Bugetul nu poate fi sub timeout-ul unui pas (altfel garda l-ar ucide înainte
+  const chain = opts.chain ?? CHAIN;
+  // Bugetul nu poate fi sub timeout-ul PRIMULUI pas (altfel garda l-ar ucide înainte
   // să apuce să ruleze) — vezi capcana prinsă de advisor 2026-08-20.
-  const budget = Math.max(opts.budgetMs ?? CHAIN_BUDGET_MS, stepTimeout + 3000);
+  const firstStepTimeout = chain[0]?.timeoutMs ?? stepTimeout;
+  const budget = Math.max(
+    opts.budgetMs ?? CHAIN_BUDGET_MS,
+    firstStepTimeout + 3000,
+  );
   const errors: string[] = [];
   const chainStart = Date.now();
-  for (const step of CHAIN) {
+  for (const step of chain) {
     // Buget total pe lanț: dacă timpul rămas e prea mic pt o încercare utilă,
     // oprim în loc să lăsăm worst-case-ul să crească nemărginit (mobil epuizat).
     const remaining = budget - (Date.now() - chainStart);
@@ -212,10 +300,11 @@ export async function sendChat(
           ? buildGeminiPayload(system, messages, maxTokens)
           : buildOpenAiPayload(step.model || "", system, messages, maxTokens);
       const ctrl = new AbortController();
-      // Per-pas = min(timeout provider, timp rămas din bugetul total).
+      // Per-pas = min(timeout PROPRIU al pasului (sau flat-ul din opts), timp rămas
+      // din bugetul total).
       const timer = setTimeout(
         () => ctrl.abort(),
-        Math.min(stepTimeout, remaining),
+        Math.min(step.timeoutMs ?? stepTimeout, remaining),
       );
       let res: Response;
       let json: unknown;
@@ -263,4 +352,48 @@ export async function sendChat(
     error: `Niciun provider AI n-a răspuns. Detalii: ${errors.join(" · ")}`,
     errors,
   };
+}
+
+/**
+ * Monitorizare pe calea de GENERARE (Faza 4.5c, 2026-09-10, cerut de Roland): „ce
+ * provider a servit + durata + rezultatul" — altfel „monitorizat" din închiderea 🟡
+ * a P2 e o promisiune goală. Apelat EXPLICIT de la locurile de apel (TestePanel.tsx,
+ * ScolarePanel.tsx) după fiecare `sendChat(..., GENERATION_OPTS)`, NU automat din
+ * interiorul `sendChat` — `sendChat` rămâne neatins comportamental (nu adaugă un
+ * apel `fetch` suplimentar care ar strica numărătorile din testele existente pe
+ * `CHAIN`/Chat). Scrie în Supabase (`logs`, nivel info/warn) cu `context.flow`,
+ * `context.provider`, `context.ms` — interogabil direct, nu mai trebuie reconstruit
+ * din log-urile brute `/api/proxy` (cum a trebuit făcut manual la măsurarea P2).
+ */
+export function logGenerationResult(
+  flow: string,
+  ms: number,
+  r: ChatResult,
+  extraContext?: Record<string, unknown>,
+): void {
+  // Import dinamic (nu la nivel de modul): chat-providers.ts e testat des cu
+  // `global.fetch` mockuit direct (chat.test.ts) — un import static de monitoring.ts
+  // ar lega inutil acest fișier de `logInfo`/`logWarn` pt teste care nu le ating.
+  import("./monitoring")
+    .then(({ logInfo, logWarn }) => {
+      if (r.ok) {
+        logInfo(
+          `${flow} | provider=${r.provider} | ${ms}ms | truncated=${r.truncated}`,
+          {
+            flow,
+            provider: r.provider,
+            ms,
+            truncated: r.truncated,
+            ...extraContext,
+          },
+        );
+      } else {
+        logWarn(`${flow} | eșec după ${ms}ms | ${r.errors.join(" · ")}`, {
+          context: { flow, ms, errors: r.errors, ...extraContext },
+        });
+      }
+    })
+    .catch(() => {
+      // Monitorizarea nu trebuie NICIODATĂ să rupă fluxul principal de generare.
+    });
 }

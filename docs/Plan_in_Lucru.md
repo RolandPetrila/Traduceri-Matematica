@@ -20,7 +20,53 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-10 (Faza 4.5b închisă) · **Producție:** frontend redeploy + API redeploy (Faza 4.5b = fix P3 spații traducere F8, live) · **FAZA 4.5b ÎNCHISĂ** · **Următoarea:** FAZA 4.5c (P2 timeout lanț AI la Teste mari)
+**Ultima actualizare:** 2026-09-10 (Faza 4.5c — P2 implementat + deployat, rămâne 🟡) · **Producție:** frontend redeploy (Faza 4.5c = realocare buget lanț AI Teste/Școlare, live) · **FAZA 4.5c 🟡 — vezi mai jos, o abatere de confirmat cu Roland înainte de STOP** · **Următoarea:** de stabilit după confirmarea abaterii
+
+> ### 🟡 FAZA 4.5c — P2 (timeout lanț AI Teste/Școlare) — IMPLEMENTAT + DEPLOYAT, rămâne 🟡 (NU 🟢)
+>
+> Defect **structural, aritmetic**: bugetul total (58000ms) era cu doar 6000ms mai mare decât
+> timeout-ul primului provider (52000ms) — de fiecare dată când Gemini atingea propriul timeout,
+> restul lanțului (4 din 5 provideri) nu mai avea matematic nicio șansă. Confirmat pe istoricul
+> Supabase: 0 succese înregistrate pt gemini2/groq/mistral/mistral2 de la introducerea acestor
+> constante (20.08.2026). Plan complet (măsurători, opțiuni R2, verificarea constrângerii de
+> platformă, deciziile lui Roland citate exact, verdictele auditorilor):
+> `docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md`.
+>
+> **Fix:** `GENERATION_CHAIN` (array separat de `CHAIN`-ul Chat, neatins) cu plafon propriu per
+> provider (gemini 45000ms / groq 15000ms / gemini2 40000ms / mistral+mistral2 15000ms fiecare),
+> buget total ridicat la 110000ms (verificat în cod, nu presupus: bugetul e orchestrat CLIENT-SIDE
+> în browser, `maxDuration=60` din `route.ts` mărginește FIECARE apel individual, nu suma lor —
+> Roland a contestat corect premisa inițială greșită „zid de 60s pe tot lanțul"). Monitorizare
+> nouă (`logGenerationResult`) la toate cele 8 puncte de generare (Teste 5 + Școlare 3) — scrie
+> provider+durată+rezultat direct în Supabase `logs`, interogabil, nu mai trebuie reconstruit
+> manual din log-uri brute. `config/error_codes.json` (E-NET-001/E-TEST-001/E-SCOL-001) corectat —
+> fix-ul vechi recomanda exact opusul („ridică timeout-ul").
+>
+> Poartă: `tsc 0 · jest 444/444 (28 suite, +6) · build OK · pytest 104/104` — fără regresie
+> (reprodusă independent de auditor-regresie, inclusiv un fals-negativ de build cauzat de cache
+> `.next` stale, diagnosticat ca atare, nu ca defect real).
+>
+> **De ce rămâne 🟡, nu 🟢 (formularea precisă a auditorului de dovezi, nu generică):** traseul pe
+> care fix-ul îl schimbă de fapt — Gemini eșuează → fallback-ul (Groq) primește o fereastră REALĂ
+> de ~15s în loc de ~6s — **n-a fost niciodată exercitat live**. Singura dovadă live (Supabase,
+> `teste.generate | provider=Gemini Flash | 30999ms`) e o generare reușită pe PRIMUL provider, care
+> ar fi trecut și cu constantele vechi. Mecanismul de realocare are dovadă doar din teste cu `fetch`
+> mockuit + aritmetică verificată (inclusiv o contra-probă reprodusă de 2 ori independent: revenire
+> la 52000/58000 → 4 teste pică, printre care exact linia „Expected: not 58000"). Rămân deschise,
+> descoperite colateral la măsurare, NEinvestigate în această fază (scope, confirmat de Roland):
+> **Mistral (ambele chei) — 429 persistent**, nu un vârf trecător; **Groq — plafon confirmat 8000
+> TPM**, o singură cerere grea poate epuiza aproape tot, deci fereastra realocată garantează o
+> ȘANSĂ, nu un succes.
+>
+> **Verdicte auditori (R-AUDIT-FAZA), Școlare + Mistral-ul mort explicit pe listă:**
+> **regresie** — FĂRĂ REGRESIE, reprodusă independent (poartă completă rulată de 3 ori, contra-proba
+> `git stash`/`pop` reprodusă). Găsit + raportat: fișier orfan `:TEMP` la rădăcină (șters), producția
+> era live pe cod necomis (rezolvat prin commit-ul acestei sesiuni). **dovezi** — 6/6 CONFIRMAT, cu
+> precizarea de mai sus (dovada acoperă generarea normală, nu traseul de realocare). **cerințe** —
+> 7/8 ONORATĂ direct; **1 PARȚIAL, de dus înapoi la Roland**: `budgetMs=110000` vs „~90000ms" citat
+> explicit de Roland în chat — justificarea aritmetică e solidă (45000+15000+40000=100000, acoperă
+> gemini+groq+gemini2 întreg), dar valoarea finală (+22% peste cifra lui) nu a fost reconfirmată
+> explicit înainte de deploy.
 
 > ### ✅ FAZA 4.5b — ÎNCHISĂ
 >

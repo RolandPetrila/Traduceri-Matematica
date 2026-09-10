@@ -102,7 +102,7 @@
     "E-NET-001": {
       "message": "Eroare de retea la apelul API",
       "cause": "Cerere abortata (timeout client) sau retea cazuta. Pe Chat: un provider lent (Gemini pe raspuns lung) atins de timeout-ul per-provider. NU e neaparat un bug — lantul face fallback.",
-      "fix": "Daca sunt aborturi SISTEMATICE la exact PROVIDER_TIMEOUT_MS (chat-providers.ts), ridica timeout-ul (facut 20s->40s 2026-08-20). Daca un provider apare mereu, scoate-l din CHAIN. Vezi scratchpad/provider_health.mjs.",
+      "fix": "NU ridica orbeste timeout-ul per-provider — pe calea de generare (Teste/Scolare, GENERATION_OPTS) bugetul total e partajat intre provideri: un timeout mai mare pe PRIMUL pas lasa mai putin timp REAL celorlalti (defect aritmetic gasit si fixat in Faza 4.5c, 2026-09-10 — vezi docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md). Verifica intai daca abortul e pe primul pas din GENERATION_CHAIN/CHAIN (chat-providers.ts) si daca bugetul total (GENERATION_OPTS.budgetMs / CHAIN_BUDGET_MS) lasa restului lantului macar 10s reali. Daca un provider apare mereu picat cu 429/402, verifica plafonul lui de cota (ex. Groq 8000 TPM, Mistral rate-limit persistent — scratchpad/p2_measure_fallback_providers.mjs) inainte sa presupui ca timeout-ul e cauza.",
       "severity": "error",
       "area": "network"
     },
@@ -178,8 +178,8 @@
     },
     "E-TEST-001": {
       "message": "Generarea testului a esuat",
-      "cause": "Generarea din modulul Teste s-a oprit: lantul AI n-a livrat, raspunsul a fost gol sau taiat, ori construirea testului a crapat.",
-      "fix": "Vezi context.cause si context.provider. Daca au picat toti providerii, cauza-mama e E-CHAT-001 pe acelasi lant. Vezi TestePanel.tsx + lib/test-generator.ts.",
+      "cause": "Generarea din modulul Teste s-a oprit: lantul AI n-a livrat, raspunsul a fost gol sau taiat, ori construirea testului a crapat. Pana in Faza 4.5c (2026-09-10), un caz frecvent era epuizarea ARITMETICA a bugetului: primul provider isi consuma tot timeout-ul propriu, lasand sub 10s celorlalti 4 (vezi E-NET-001). Fixat prin GENERATION_CHAIN/GENERATION_OPTS (chat-providers.ts) — daca reapare, e alta cauza, nu aceasta.",
+      "fix": "Vezi context.cause si context.provider. Verifica intai logurile teste.generate*/scolare.generate* (logGenerationResult, Faza 4.5c) pt provider+durata pe incercarea care a picat. Daca au picat toti providerii, cauza-mama e E-CHAT-001 pe acelasi lant. Vezi TestePanel.tsx + lib/test-generator.ts + docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md.",
       "severity": "error",
       "area": "teste"
     },
@@ -199,8 +199,8 @@
     },
     "E-SCOL-001": {
       "message": "Generarea fisei scolare a esuat",
-      "cause": "Generarea din modulul Scolare s-a oprit: lantul AI n-a livrat, raspunsul a fost gol sau taiat, ori construirea fisei a crapat. Nodul curricular cerut e in context.node.",
-      "fix": "Vezi context.cause si context.node. Daca au picat toti providerii, cauza-mama e E-CHAT-001. Vezi ScolarePanel.tsx + lib/scolare/.",
+      "cause": "Generarea din modulul Scolare s-a oprit: lantul AI n-a livrat, raspunsul a fost gol sau taiat, ori construirea fisei a crapat. Nodul curricular cerut e in context.node. Scolare foloseste ACELASI GENERATION_OPTS ca Teste (R-EXT) — expus la acelasi defect aritmetic de buget, fixat in Faza 4.5c (2026-09-10, vezi E-TEST-001/E-NET-001).",
+      "fix": "Vezi context.cause si context.node. Verifica logurile scolare.generate* (logGenerationResult, Faza 4.5c) pt provider+durata. Daca au picat toti providerii, cauza-mama e E-CHAT-001. Vezi ScolarePanel.tsx + lib/scolare/ + docs/PLAN_FAZA4.5C_TIMEOUT_LANT_AI_2026-09-10.md.",
       "severity": "error",
       "area": "scolare"
     },
