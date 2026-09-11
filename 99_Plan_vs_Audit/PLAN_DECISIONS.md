@@ -2,7 +2,11 @@
 
 # Proiect: Traduceri Matematica (LIVE Vercel+Supabase, PROD v46 la 2026-08-08)
 
-# Log de decizii tehnice ferme („nu re-litiga"). Sursa unica de status = docs/PLAN_MASTER.md.
+# Log de decizii tehnice ferme („nu re-litiga"). Sursa unica de status = docs/Plan_in_Lucru.md
+
+# (ce ramane) + docs/Plan_Finalizat.md (istoric) — docs/PLAN_MASTER.md absorbit+arhivat la Faza 5
+
+# (2026-09-11), acum docs/arhiva/PLAN_MASTER.md.
 
 # NOTĂ: workflow-ul vechi 3-terminale (T1/T2/T3) nu mai există — istoric în rundele de mai jos.
 
@@ -340,7 +344,7 @@ T2 a livrat AUDIT_FEEDBACK.md Runda 2. 0 probleme critice, 4 importante, 3 optio
 
 ### Decizii ferme (nu re-litiga)
 
-- D43: **S7 — `ALLOWED_ORIGIN` fail-open = RISC ACCEPTAT** (Roland, 2026-08-01). App fara auth/cookies → CORS `*` nu expune date. **NU „fixa" autonom** — e decizie, nu scapare. (PLAN_MASTER §2 S7.)
+- D43: **S7 — `ALLOWED_ORIGIN` fail-open = RISC ACCEPTAT** (Roland, 2026-08-01). App fara auth/cookies → CORS `*` nu expune date. **NU „fixa" autonom** — e decizie, nu scapare. (docs/arhiva/PLAN_MASTER.md §2 S7.)
 - D44: **M3 — Dark-mode RESPINS DEFINITIV** (2026-08-04). Ramane tema verde „tabla+creta" (R-THEME) in toate modulele. Nu se mai propune.
 - D45: **G5 — Overlay pixel-perfect ABANDONAT** (2026-07-30); backend overlay sters (C1). Nu se reia.
 - D46: **R-COPYRIGHT (Scolare) — sursa de continut = programa oficiala publica** (OMEN, rocnee.eu/ise.ro); manualele MEN = referinta de aliniere, NICIODATA stocate/redistribuite/committed; PDF-uri de referinta doar local gitignored. Grounding = continut original AI aliniat curricular. (Roland a re-cerut „manuale in folder" de 2× → reamintit decizia; nu proceda diferit fara reamintire.)

@@ -30,7 +30,7 @@ Astea stau la baza fazelor și nu se re-discută — sunt dovezi culese în sesi
 
 3. **Lecția de metodă** (răspunsul la punctele tale 1 și 4): auditul anterior a citit cod și a
    probat endpoint-uri cu payload minimal. Tu ai apăsat un buton real, pe un document real →
-   eroare imediată. Deci `docs/RAPORT_F5_AUDIT_2026-09-07.md` se tratează ca **inventar de butoane
+   eroare imediată. Deci `docs/arhiva/RAPORT_F5_AUDIT_2026-09-07.md` se tratează ca **inventar de butoane
    cu verdicte NEVERIFICATE**, nu ca audit terminat.
 
 4. **Decizii deja luate de tine:** subagenți **secvențiali per modul** (nu paralel);

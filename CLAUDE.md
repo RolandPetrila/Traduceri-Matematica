@@ -13,16 +13,16 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 ## Status
 
 - **Faza curenta**: v4.0 — LIVE pe Vercel + Supabase (migrat integral de pe Render; fara cold-start/keep-alive)
-- **Progres**: Vezi `docs/PLAN_MASTER.md` — **SURSA UNICA de adevar** (din 2026-07-30, prin audit in cod). Cele 11 planuri vechi au fost STERSE (2026-07-30, §11 din MASTER); cele 9 tracked sunt recuperabile din git la `54fac8f`.
+- **Progres**: Vezi `docs/Plan_in_Lucru.md` — **SURSA UNICA de adevar** pt ce ramane de facut · `docs/Plan_Finalizat.md` — istoricul complet al implementarilor (cronologic, index pe module). `docs/PLAN_MASTER.md` a fost sursa unica 2026-07-30→2026-09-11; absorbit + arhivat la Faza 5 (`docs/arhiva/PLAN_MASTER.md`).
 - **Deploy tinta**: Vercel (frontend + API Python serverless) + Supabase (log-uri). Free tier.
   - Domeniile finale se seteaza in env Vercel (`NEXT_PUBLIC_API_URL`, `ALLOWED_ORIGIN`).
   - Deploy real = confirmare explicita de la Roland (linkare conturi + env vars).
-- **Ultima sesiune**: vezi `docs/HANDOFF_SESIUNE.md` (intrarea de sus, „REIA DE AICI") + `docs/PLAN_MASTER.md` §CURENT — starea volatilă (versiune PROD, coadă module) NU se listează aici intenționat, driftează.
+- **Ultima sesiune**: vezi `docs/HANDOFF_SESIUNE.md` (intrarea de sus, „REIA DE AICI") + `docs/Plan_in_Lucru.md` — starea volatilă (versiune PROD, coadă module) NU se listează aici intenționat, driftează.
 
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 
 0. **Citeste `docs/HANDOFF_SESIUNE.md`** — starea curenta + prompt de reluare + context operational (URL canonic, deploy, testare mobil). Apoi planul ACTIV din `docs/PLAN_*.md`. (Vezi **R-HANDOFF** in `.claude/rules/project_rules.md`.)
-1. Citeste `docs/PLAN_MASTER.md` — **SURSA UNICA** de adevar (cerintele R1-R4, securitate, regresii, backlog, reguli de execuzie). Planurile vechi sunt stale.
+1. Citeste `docs/Plan_in_Lucru.md` — **SURSA UNICA** de adevar pt ce ramane de facut (backlog amanat constient, datorii tehnice deschise, reguli de execuzie). Pt istoricul implementarilor (cerintele R1-R4 etc.), vezi `docs/Plan_Finalizat.md`. `docs/PLAN_MASTER.md` e arhivat (`docs/arhiva/`), continutul absorbit la Faza 5 (2026-09-11).
 2. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
 3. Citeste `.claude/memory/*` si `.claude/rules/project_rules.md`
 4. **(R-DIAG-AUTO)** Verifica log-urile de eroare recente (Supabase tabela `logs` / `/api/logs` / ce lipeste Roland), grupeaza pe `error_code`, confirma cauza in cod si remediaza proactiv — NU astepta ca Roland sa raporteze. Vezi `config/error_codes.json` (`cause`/`fix`).
@@ -45,8 +45,8 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 
 ## Key Files
 
-- `docs/PLAN_MASTER.md` — **SURSA UNICA** de adevar (tracking [ ]/[x]) · `docs/PROMPT_SESIUNE_NOUA.md` — prompt de reluare direct executabil
-- `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice (backlog/imbunatatiri = acum in `docs/PLAN_MASTER.md` §7)
+- `docs/Plan_in_Lucru.md` — **SURSA UNICA** de adevar (tracking [ ]/[x]) · `docs/Plan_Finalizat.md` — istoricul complet al implementarilor, cronologic + index pe module · `docs/PROMPT_SESIUNE_NOUA.md` — prompt de reluare direct executabil
+- `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice (backlog/imbunatatiri = acum in `docs/Plan_in_Lucru.md` §⏳ amanat constient)
 - `vercel.json` — config functii Python (maxDuration 300s)
 - `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
 - `config/error_codes.json` — coduri de eroare (`E-<ARIE>-<NNN>`)
@@ -74,12 +74,13 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 - Editare: contentEditable persistat in cacheRef (supravietuieste switch limba + export)
 - Serverless: procesare grea per-pagina (limita `maxDuration` 300s pe Hobby, setat in vercel.json — per-pagina ramane buna practica); fara stare in memorie intre invocari (contoare in Supabase)
 - Commit/push: dupa modificari; deploy real doar cu confirmare (outward-facing)
+- CORS: apeluri browser → API Python Vercel = `text/plain` sau `multipart`, NICIODATA `application/json` (preflight OPTIONS primeste 503 la edge pe JSON)
 
 ## Flow UNIC traducere — livrat prin Editor + F8 (2 stări, nu 3 pași separați)
 
 > Metoda originală era 3 pași (Original read-only → RO → tradus, tab „Traduceri" dedicat). Pasul
 > „Original read-only" a dispărut (F7/G4) — originalul rămâne accesibil ca thumbnail+lightbox de
-> verificare (`SourcePreview`), nu ca pas de flux separat. Vezi `docs/PLAN_MASTER.md` §9 pt istoric.
+> verificare (`SourcePreview`), nu ca pas de flux separat. Vezi `docs/Plan_Finalizat.md` pt istoric.
 
 ```
 [IMPORT] Cristina incarca fisier (JPEG/PDF/DOCX) in Editor
@@ -107,21 +108,25 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 | Figuri (crop bbox)            | INTACT             | INTACT           |
 | Structura (ol/ul) + Layout A4 | INTACT             | INTACT           |
 
-## Module (8 total)
+## Module (7 total, + 1 ELIMINAT)
 
 > Modulul „Traduceri" original (viewer 3 pași: Original→RO→SK, tab dedicat) a fost RETRAS din UI la F7
 > (commit `2891d00`) — funcționalitatea a fost absorbită de Editor: import+OCR la import, traducere
 > on-demand prin F8 (switch limbă RO|SK|EN|DE, cache persistent). Backend-ul de translate/OCR a rămas,
 > doar tab-ul separat a dispărut. NU re-propune reintroducerea lui fără cerere explicită.
+>
+> **Chat AI a fost ELIMINAT COMPLET la Faza 4.5d (2026-09-11)** — `ChatPanel.tsx` șters, tab scos
+> din `tabs.json` ×2, `CHAIN`/`PROVIDER_TIMEOUT_MS`/`CHAIN_BUDGET_MS` șterse din cod (R-MINIMAL).
+> NU-l trata ca livrat — nu re-propune reintroducerea lui fără cerere explicită. Vezi
+> `docs/Plan_Finalizat.md` §„Faza 4.5d—4.5e".
 
 1. **Convertor fisiere** — functional, de polish
 2. **Editor matematic** (gimnaziu+liceu) — LIVRAT: **nativ TipTap** (iframe-ul vechi retras la F6), tema verde, quickbar + search matematic, 334+ formule V-XII; include import/OCR + traducere on-demand F8 (fostul modul Traduceri)
-3. **Chat AI** — panou nativ (`ChatPanel.tsx`), tab id „asistent" păstrat doar pt continuitatea `localStorage["activeTab"]` (fostul iframe `/asistent` a fost șters la /improve #16, 2026-08-07)
-4. **Calculator** — LIVRAT + DEPLOYAT (v30, 2026-08-04)
-5. **Corectare-Generare teste (Teste)** — LIVRAT + DEPLOYAT (v31/v32, 2026-08-04)
-6. **Istoric** — jurnal local (conversii Convertor + traduceri vechi, dacă există intrări legacy)
-7. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
-8. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — 112/112 noduri (grădiniță→liceu) grounded, deployat v49; motor de desen determinist (grădiniță+primar cl.0-1) deployat 2026-08-09
+3. **Calculator** — LIVRAT + DEPLOYAT (v30, 2026-08-04)
+4. **Corectare-Generare teste (Teste)** — LIVRAT + DEPLOYAT (v31/v32, 2026-08-04); corectarea lucrărilor elevilor rutată pe cheie plătită dedicată (Faza 4.5d)
+5. **Istoric** — jurnal local (conversii Convertor + traduceri vechi, dacă există intrări legacy)
+6. **Planșe** (fișe interactive offline) — LIVRAT: 6/6 generatoare (labirint/căutare/unește/dictare/numere/integramă) + coș multi-fișă (P4); integramă multi-formă + varietate extinsă (v39-v41)
+7. **Școlare 🌐** (fișe curriculare AI, grădiniță→liceu) — 112/112 noduri (grădiniță→liceu) grounded, deployat v49; motor de desen determinist (grădiniță+primar cl.0-1) deployat 2026-08-09
 
 ## Important
 
@@ -130,4 +135,4 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 - Utilizator principal: Cristina; owner proiect: Roland (petrilarolly@gmail.com)
 - Limbi: RO -> SK (principal), RO -> EN (secundar), DE (germana, ex. rapoarte/documente oficiale), extensibil
 - Toate serviciile: GRATUIT, fara exceptie
-- Editor matematic: NATIV TipTap (iframe-ul vechi retras la F6). Chat AI: panou nativ (iframe-ul `/asistent` retras la /improve #16, 2026-08-07). Vezi `docs/PLAN_MASTER.md`
+- Editor matematic: NATIV TipTap (iframe-ul vechi retras la F6). Chat AI: panou nativ (iframe-ul `/asistent` retras la /improve #16, 2026-08-07); Chat AI ca modul a fost ELIMINAT complet la Faza 4.5d (2026-09-11) — nu-l trata ca livrat. Vezi `docs/Plan_Finalizat.md`

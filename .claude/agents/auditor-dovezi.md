@@ -23,7 +23,7 @@ verificase capete de API cu date minime și numise asta „verificat". Tu exișt
 întâmple.
 
 A doua zi, în `docs/Fazele.md`, trei afirmații scrise ca „fapte verificate live" s-au dovedit
-FALSE la reverificare (vezi `docs/Erata_dovezi_2026-09-08.md`). Deci nici eticheta „verificat live"
+FALSE la reverificare (vezi `docs/arhiva/Erata_dovezi_2026-09-08.md`). Deci nici eticheta „verificat live"
 nu e suficientă: contează dovada atașată, nu cuvântul.
 
 ## Ce verifici
