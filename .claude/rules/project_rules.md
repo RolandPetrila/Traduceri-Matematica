@@ -70,8 +70,11 @@ Scopul (cerut de Roland, 2026-08-20): NU astepta ca Roland sa raporteze erori. L
 proactiv:
 
 1. **La START (dupa onboard):** citeste log-urile de eroare recente — Supabase (tabela `logs`, prin
-   MCP `claude_ai_Supabase` sau `GET /api/logs`) SAU log-urile pe care Roland le lipeste. Filtreaza
-   nivelele `ERROR`/`WARN` cu `error_code`.
+   MCP `claude_ai_Supabase` sau `GET /api/logs`) SAU log-urile pe care Roland le lipeste. **Citeste
+   TOATE nivelele** (`error`/`warn`/`action`/`info`), NU doar `ERROR`/`WARN` (corectat la Faza 6 —
+   bug-ul SK din Faza 1 era logat la nivel `action`, `error_code=null`, si regula veche, respectata
+   la literă, l-a filtrat afară — raport fals-liniștitor). Grupeaza pe `error_code` cand exista;
+   cand lipseste, cauta semnal de eșec in mesaj/context (status, cuvinte-cheie de eroare).
 2. **Grupeaza + diagnostica** pe cod de eroare: pentru fiecare, citeste `cause`/`fix` din
    `config/error_codes.json` + confirma cauza IN COD (nu presupune). Provideri morti/limite active
    (timeout, rate-limit, model 404/402) = candidati de remediere.
@@ -81,6 +84,30 @@ proactiv:
    `scratchpad/provider_health.mjs`), apoi gate (`tsc`/`jest`/`build`) + handoff + memorie.
 5. Nu inchide o eroare fara sa fi confirmat cauza reala si fixul empiric. Un log de eroare ignorat
    = regresie tacuta pt utilizatorul real (Cristina).
+
+## R-DOCS-GUARD: Garda anti-sprawl pt `docs/` (din Faza 6, OBLIGATORIU)
+
+Scopul (cerut de Roland, 2026-09-11): `docs/` NU mai are voie sa re-acumuleze fisiere
+necategorizate, cum s-a intamplat inainte de Faza 5. Mecanism verificabil, nu doar o propozitie:
+
+1. `.claude/scripts/check-docs-classification.mjs` scaneaza `docs/*.md` + `docs/*.html`
+   (top-level, NU `docs/arhiva/`, NU `docs/dovezi/`) si clasifica fiecare fisier: allowlist
+   explicit (nume stabile, in cod) · pattern `PLAN_FAZA<n>_*.md` (legitim DOAR cat faza `<n>` e
+   marcata deschisa intr-un titlu H2 din `docs/Plan_in_Lucru.md`; STALE daca titlul ei H2 e marcat
+   `✅`) · `.html` companion al unui `.md` alowlistat, sau intrare explicita separata. Orice altceva
+   → NECLASIFICAT.
+2. Ruleaza automat la `SessionStart` (hook local, `.claude/settings.local.json`, NU in
+   `~/.claude/` global) — output-ul (numarul `de_revizuit`) intra in context. Daca `de_revizuit >
+0` → `AskUserQuestion` cu Roland INAINTE de orice alta actiune (`CLAUDE.md` §PRIMA ACTIUNE
+   pasul 2).
+3. La finalul FIECAREI faze care produce documente noi in `docs/`: ruleaza scriptul manual
+   (`node .claude/scripts/check-docs-classification.mjs`) INAINTE de a declara faza inchisa —
+   **inclusiv planul propriei faze** (`PLAN_FAZA<n>_...md`), care devine el insusi STALE odata
+   faza inchisa si trebuie arhivat (`git mv` in `docs/arhiva/`) CU referintele lui reparate mai
+   intai (nu lasat sa creeze linkuri moarte — lecția Faza 5→6 la `PLAN_FAZA5_...md`).
+4. Allowlist-ul e in cod (`check-docs-classification.mjs`), NU intr-un fisier manifest separat —
+   un manifest ar deveni el insusi stale, exact boala pe care garda o previne. Adauga un nume nou
+   acolo DOAR cand se creeaza un document de sistem real (nu un raport de sesiune).
 
 ## R-AUDIT-FAZA: Cei trei auditori ruleaza la finalul FIECAREI faze (OBLIGATORIU)
 
@@ -140,7 +167,10 @@ Reguli obligatorii pentru FIECARE sesiune:
 1. **La START:** citeste `docs/HANDOFF_SESIUNE.md` + planul activ (`docs/PLAN_*.md`) inainte de a continua.
 2. **DUPA fiecare faza/livrabil:** actualizeaza la zi, IMEDIAT:
    - `docs/HANDOFF_SESIUNE.md` — progresul + "urmatorul pas" + orice context operational nou;
-   - planul activ — bifeaza [x]/[~] cu data;
+   - planul activ — bifeaza [x]/[~] cu data, **apoi TRANSFERA itemii [x] finalizati in
+     `docs/Plan_Finalizat.md`** (rezumat + link la commit-uri reale) — pas explicit, separat de
+     simpla bifare, INAINTE de commit (de la Faza 6 — o fază poate fi „închisă corect" și totuși
+     lăsa `Plan_Finalizat.md` fără secțiunea ei, cum s-a întâmplat la Faza 5);
    - memoria proiectului (`memory/*` + `MEMORY.md`) — decizii/capcane noi;
    - commit + push (jurnal in git).
 3. **Cand contextul se apropie de limita** (~sesiune lunga): verifica handoff-ul e complet, apoi

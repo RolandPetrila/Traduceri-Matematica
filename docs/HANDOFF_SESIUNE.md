@@ -1,6 +1,6 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-11 (Faza 5 — unificarea documentației, ULTIMUL pas al fazei).
+> Ultima actualizare: 2026-09-11/12 (Faza 6 — automatizarea procesului, ULTIMA fază din program).
 > Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional — fișier SCURT,
 > nu jurnal. **Istoricul complet al implementărilor (toate fazele, de la migrarea Vercel v4.0
 > până azi, cronologic + index pe module, cu linkuri la commit-uri reale) e în
@@ -8,38 +8,52 @@
 
 ---
 
-## ▶️ REIA DE AICI — FAZA 5 ÎNCHISĂ (unificarea documentației) · urmează FAZA 6 (automatizarea)
+## ▶️ REIA DE AICI — FAZA 6 ÎNCHISĂ (automatizarea) · PROGRAMUL DE REPARAȚIE E COMPLET ÎNCHIS
 
-**Ce s-a livrat (2026-09-11):** `docs/` a avut 36+ fișiere de nivel top, o parte stale/mințind
-(`CHANGELOG.md` zicea PROD v46 și „Chat AI livrat" — modul ȘTERS la 4.5d; `PLAN_MASTER.md` era
-numit „sursă unică" dar stale din 2026-08-09). Faza 5 a restructurat:
+**Nu există o „Faza 7".** Faza 6 a fost ultima din `§ORDINEA FAZELOR`
+(`99_Roland_Work/Fazele_mentiuni_Roland.md`). O sesiune nouă NU deschide automat o fază nouă —
+continuă ca mentenanță normală, pornind cu pasul 🟡 de mai jos.
 
-- **`docs/Plan_Finalizat.md`** — NOU. Istoricul complet, cronologic + index pe module, cu
-  hash-uri de commit reale (verificate în `git log`, nu inventate).
-- **`docs/arhiva/`** — NOU. 21 documente vechi mutate aici verbatim (`git mv`, istoric git
-  păstrat), inclusiv `PLAN_MASTER.md` și `CHANGELOG.md` (absorbite: §7 backlog → `Plan_in_Lucru.md`
-  §⏸️ amânat conștient, §9 decizii valabile → `CLAUDE.md`, restul → rezumat în `Plan_Finalizat.md`).
-- **3 poze `dovada_faza1_*.jpg`** mutate în `docs/dovezi/` (consistență de loc).
-- **Referințe fixate** — 24 fișiere de memorie + `CLAUDE.md` (6 locuri) actualizate să nu mai
-  arate spre căi moarte; 7 referințe DEJA moarte găsite (dinainte de Faza 5, din curățenia din
-  iulie) corectate/adnotate pe loc.
-- **Acest fișier** — trimis de la >1800 la <100 linii; istoricul detaliat migrat în
-  `Plan_Finalizat.md`.
-- **Linia F5/F6, confirmată de Roland:** F5 = structura de mai sus. F6 (următoarea) =
-  automatizarea — regula ca `docs/` să nu re-acumuleze fișiere necategorizate, documentația pt
-  un mediu nativ Claude Code, trigger `/onboard`→`AskUserQuestion` la modificări în proiect.
-  Vezi `docs/PLAN_FAZA5_UNIFICARE_DOCUMENTATIE_2026-09-11.md` §1.1.
-- **NU s-a touch-uit niciun cod de aplicație** — poarta e identică cu baseline-ul de
-  dinainte de fază (`tsc 0 · jest 447/447 · build OK · pytest 121/121`).
-- **3 datorii tehnice deschise, migrate în `docs/Plan_in_Lucru.md`** (nerezolvate cu bună
-  știință, nu sărite): retestare onestă Mistral „2 req/min", risc 429 Groq pe auto-continuare,
-  opțiunea B de capacitate OCR (~1040/zi, amânată conștient).
+**🟡 PRIMUL ACT AL SESIUNII URMĂTOARE (obligatoriu, înainte de orice altceva):** verifică dacă
+hook-ul `SessionStart` (`.claude/settings.local.json`) chiar a rulat automat
+`.claude/scripts/check-docs-classification.mjs` la pornirea acestei sesiuni noi și dacă output-ul
+lui a ajuns în context. Dacă `de_revizuit > 0` în acel output, declanșează `AskUserQuestion` cu
+Roland ÎNAINTE de orice altă acțiune (regulă nouă, `CLAUDE.md` pasul 2). Asta NU s-a putut dovedi
+din sesiunea Fazei 6 însăși (hook-ul nu se poate auto-testa retroactiv pe sesiunea care tocmai
+l-a creat) — e singurul item rămas 🟡 în `docs/Plan_in_Lucru.md`.
 
-**Plan complet + listă exactă de fișiere + cei trei auditori:**
-`docs/PLAN_FAZA5_UNIFICARE_DOCUMENTATIE_2026-09-11.md`.
+**Ce a livrat Faza 6 (2026-09-11/12), pe scurt — detaliu complet + verdicte auditori:
+`docs/Plan_Finalizat.md` §„Faza 6":**
 
-**⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI. Deschide o sesiune nouă cu
-`/onboard` pentru Faza 6.
+- **R-DOCS-GUARD** — mecanism verificabil (`.claude/scripts/check-docs-classification.mjs` +
+  hook `SessionStart` local, ZERO modificări la `~/.claude/`) împotriva re-acumulării `docs/`,
+  extins și la `.html`. Auto-consistent: la închidere, s-a arhivat pe el însuși
+  (`docs/PLAN_FAZA6_AUTOMATIZARE_2026-09-11.md` → `docs/arhiva/...`) — proba live e în plan.
+- **`docs/MEDIU_CLAUDE_CODE.md`** — mediul Claude Code nativ al acestui proiect (nou).
+- **Memorie unică** — `.claude/memory/` arhivat (`.claude/memory/arhiva/`), pointer scris spre
+  memoria canonică (`~/.claude/projects/.../memory/MEMORY.md`). **Întrebare nedecisă, pentru
+  Roland:** memoria canonică nu e în git — risc la o viitoare migrare de laptop. Recomandare (nu
+  decizie impusă): acceptă riscul conștient, nu export manual periodic — vezi
+  `docs/Plan_Finalizat.md` §Faza 6 pentru motivare completă.
+- **R-DIAG-AUTO lărgit** la toate nivelele de log (nu doar `ERROR`/`WARN`) — motivul exact: regula
+  veche a ratat bug-ul SK (Faza 1), logat la nivel `action` cu `error_code=null`. Probă live pe
+  Supabase: 846 rânduri anterior invizibile.
+- **Zero cod de aplicație atins.** Gate identic cu baseline: `tsc 0 · jest 447/447 · build OK ·
+pytest 121/121` (confirmat de `auditor-regresie`).
+
+**Verdicte auditori (complete în `docs/Plan_Finalizat.md` §Faza 6):** regresie → FĂRĂ REGRESIE.
+dovezi → 6 CONFIRMAT, 2 PARȚIAL (o referință moartă nouă + o imprecizie de citare, ambele
+corectate), 1 INFIRMAT-onest (auto-consistența nefăcută LA MOMENTUL auditului, corect marcată
+`[ ]`, făcută imediat după). cerințe → toate cele 4 completări obligatorii onorate.
+
+**3 datorii tehnice deschise, NEATINSE intenționat** (rămân în `docs/Plan_in_Lucru.md` §amânat
+conștient): retestare onestă Mistral „2 req/min", risc 429 Groq pe auto-continuare, opțiunea B de
+capacitate OCR (~1040/zi).
+
+**Plan complet + jurnal execuție:** `docs/arhiva/PLAN_FAZA6_AUTOMATIZARE_2026-09-11.md`.
+
+**⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI. Programul de reparație e
+complet închis — nu deschide o fază nouă din inerție.
 
 ---
 
@@ -78,7 +92,8 @@ numit „sursă unică" dar stale din 2026-08-09). Faza 5 a restructurat:
    - `docs/completari_pt_reparatie.md`.
 3. Verifică: `git branch --show-current` = `faza-g-editor`; `git log -1` = ultimul commit al
    fazei precedente (vezi blocul „REIA DE AICI" de mai sus pt care).
-4. Continuă cu Faza 6 (sau prima fază neînchisă din `docs/Plan_in_Lucru.md`).
+4. Verifică 🟡-ul din blocul de mai sus (trigger automat gardă `docs/`). Programul de reparație
+   e închis — nu deschide o fază nouă; continuă ca mentenanță normală sau la cererea lui Roland.
 
 > Notă: acest fișier + `Plan_in_Lucru.md` + `Plan_Finalizat.md` + memoria + git = „creierul"
 > transferabil. Actualizează-le la fiecare fază (așa rămâne handoff-ul mereu valid) — dar

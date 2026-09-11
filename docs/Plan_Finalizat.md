@@ -41,7 +41,7 @@
 - **Școlare** → [F0-F5 (skeleton 112 noduri + toate ciclurile)](#școlare-f0-f5-2026-08-07-→-08) · [motor de desen determinist](#școlare—motor-de-desen-determinist-2026-08-09) · [autonomie text (fără referințe la imagini)](#școlare—autonomie-text-2026-08-09) — origine: [conversația Carla](#origine-planșe--școlare-conversația-carla)
 - **Securitate** → [S1-S8](#securitate-s1-s8-2026-08-01) · [audit /audit full](#re-audit--curățenie-2026-08-10)
 - **Infra/Deploy (Vercel, Supabase, CI)** → [migrare v4.0](#migrare-vercel--supabase-v40-2026-07)· [CI GitHub Actions](#cerințele-r1-r8-2026-07-30-→-08-01) · [curățare cod mort C1-C7](#curățenie-c1-c7-2026-08-03)
-- **Proces / Auditori / Documentație** → [consolidare PLAN_MASTER](#consolidare-plan_master-2026-07-30) · [cei trei auditori (R-AUDIT-FAZA)](#faza-2-—-bug-sk-2026-09-08-→-09) · [R-STOP-FAZA](#faza-3-—-caiet-de-sarcini-2026-09-09)
+- **Proces / Auditori / Documentație** → [consolidare PLAN_MASTER](#consolidare-plan_master-2026-07-30) · [cei trei auditori (R-AUDIT-FAZA)](#faza-2-—-bug-sk-2026-09-08-→-09) · [R-STOP-FAZA](#faza-3-—-caiet-de-sarcini-2026-09-09) · [Faza 5 — unificare documentație (`Plan_Finalizat.md`+`docs/arhiva/`)](#faza-5-—-unificarea-documentației-în-două-fișiere-vii-2026-09-11) · [Faza 6 — automatizarea (gardă `docs/`, memorie unică, R-DIAG-AUTO lărgit)](#faza-6-—-automatizarea-procesului-2026-09-11)
 
 ---
 
@@ -447,6 +447,123 @@ niciodată făcută); riscul de 429 pe Groq la auto-continuare în același minu
 nerezolvat); opțiunea B de capacitate OCR (a doua cheie liberă cablată, ~1040/zi) — marcată
 [RELEVANT, nu necesar].
 
+### Faza 5 — „Unificarea documentației în două fișiere vii" (2026-09-11)
+
+**Ce s-a livrat (commit `a8f3ff1`):** `docs/` avea 36+ fișiere de nivel top, o parte stale/mințind
+(`CHANGELOG.md` zicea PROD v46 și „Chat AI livrat" — modul șters deja la 4.5d; `PLAN_MASTER.md`
+numit „sursă unică" dar stale din 2026-08-09). Restructurare:
+
+- **`docs/Plan_Finalizat.md`** (acest fișier) — nou, istoric complet cronologic + index pe module,
+  hash-uri de commit reale, verificate în `git log`, nu inventate.
+- **`docs/arhiva/`** — nou, 21 documente vechi mutate verbatim (`git mv`, istoric git păstrat),
+  inclusiv `PLAN_MASTER.md` și `CHANGELOG.md` (absorbite: §7 backlog → `docs/Plan_in_Lucru.md`
+  §⏳ amânat conștient, §9 decizii valabile → `CLAUDE.md`, restul → rezumat în acest fișier).
+- 3 poze `dovada_faza1_*.jpg` mutate în `docs/dovezi/` (consistență de loc).
+- Referințe fixate — 24 fișiere de memorie + `CLAUDE.md` (6 locuri) actualizate să nu mai arate
+  spre căi moarte; 7 referințe deja moarte dinaintea Fazei 5 (din curățenia din iulie) corectate.
+- `docs/HANDOFF_SESIUNE.md` trimis de la >1800 la <100 linii.
+- Zero cod de aplicație touch-uit. Gate identic cu baseline: `tsc 0 · jest 447/447 · build OK ·
+pytest 121/121`.
+- Plan complet + listă exactă de fișiere: `docs/arhiva/PLAN_FAZA5_UNIFICARE_DOCUMENTATIE_2026-09-11.md`
+  (arhivat la Faza 6, stale la top-level — vezi Faza 6 mai jos).
+
+### Faza 6 — „Automatizarea procesului" (2026-09-11)
+
+**Ultima fază din programul de reparație** (§ORDINEA FAZELOR, `99_Roland_Work/Fazele_mentiuni_Roland.md`).
+
+**Ce s-a livrat:** zero cod de aplicație atins — doar `docs/`, `.claude/`, `CLAUDE.md` (confirmat de
+`auditor-regresie`: niciun fișier sub `frontend/src/`, `api/*.py`, `api/lib/`).
+
+- **R-DOCS-GUARD** (regulă nouă) + mecanism verificabil: `.claude/scripts/check-docs-classification.mjs`
+  (pattern/titlu-H2 din `Plan_in_Lucru.md`, NU manifest separat) + hook `SessionStart` local
+  (`.claude/settings.local.json`, zero modificări la `~/.claude/`) + `AskUserQuestion` la
+  `de_revizuit > 0` (pas nou în `CLAUDE.md`). Extins la `.html` (Completarea 3): 2 companion legitimi,
+  1 orfan real documentat explicit (`OPTIUNI_API_AI_2026-09-10.html`), niciunul tăcut. **Bug de regex
+  găsit și corectat empiric** (proza confundată cu declarație de stare) — vezi `docs/MEDIU_CLAUDE_CODE.md`
+  §3.
+- **`docs/MEDIU_CLAUDE_CODE.md`** (nou) — mediul Claude Code nativ al acestui proiect: auditori,
+  reguli, gardă `docs/`, memoria unică, fluxul de fază, capcane operaționale.
+- **Memorie unică:** `.claude/memory/` (3 fișiere) arhivat în `.claude/memory/arhiva/` (`git mv`,
+  nimic șters), `.claude/memory/MEMORY.md` rescris ca pointer către memoria canonică auto-încărcată
+  (`~/.claude/projects/.../memory/MEMORY.md`), `CLAUDE.md` pasul 4 corectat.
+- **R-DIAG-AUTO lărgit** la toate nivelele (`error`/`warn`/`action`/`info`), nu doar `ERROR`/`WARN`
+  — motivul exact: regula veche a ratat bug-ul SK (Faza 1), logat la nivel `action` cu
+  `error_code=null`. Probă empirică live pe Supabase (`tenders-ro`): 846 rânduri `level=action` cu
+  `error_code=null`, din care 10 `editor:translate_error` (2026-08-20→09-06), 4
+  `editor:ocr_import_error` (2026-07-30→09-02), 61 `editor:dictation_error` (din 2026-07-26) —
+  toate invizibile regulii vechi. Nu a fost nevoie de log de test sintetic.
+- **Completare 1:** secțiune Faza 5 lipsă din acest fișier, adăugată ca prim pas + notă
+  retrospectivă despre golul de acoperire al celor trei auditori (mai sus).
+- **Completare 2:** arhivarea `PLAN_FAZA5_...md` condiționată de repararea celor 4 referințe
+  active (2 `HANDOFF_SESIUNE.md`, 2 `Plan_in_Lucru.md`) — făcută în această ordine.
+- **Completare 4 (auto-consistență):** la închidere, `docs/PLAN_FAZA6_AUTOMATIZARE_2026-09-11.md`
+  a devenit el însuși plan de fază închisă. Dovadă live, în ordine:
+  1. Titlul H2 din `Plan_in_Lucru.md` flipat la `✅ ÎNCHISĂ` →
+     `node .claude/scripts/check-docs-classification.mjs` → `{"de_revizuit":1, "PLAN_FAZA6_AUTOMATIZARE_2026-09-11.md":"STALE"}` (exit 1) — mecanismul și-a prins propriul autor.
+  2. Referințe reparate repo-wide (nu doar `docs/`): comentariul din
+     `.claude/scripts/check-docs-classification.mjs` + linia din `Plan_in_Lucru.md` care numea planul.
+  3. Fișierul mutat în `docs/arhiva/PLAN_FAZA6_AUTOMATIZARE_2026-09-11.md`.
+  4. Guard rulat din nou → `{"scanate":15,"de_revizuit":0,"detalii":[]}` (exit 0).
+- **Întrebare deschisă, adusă lui Roland, NEDECISĂ unilateral:** memoria canonică
+  (`~/.claude/projects/.../memory/`) trăiește ÎN AFARA git-ului — o viitoare migrare de laptop
+  (deja pățită o dată) ar putea-o pierde dacă `.claude/memory/` a devenit doar un pointer.
+  Recomandare (nu decizie): acceptă riscul conștient — Faza 5/6 au făcut deliberat din repo sursa
+  de adevăr, iar un export manual periodic ar recrea exact fragilitatea „cineva trebuie să-și
+  amintească" pe care R-DOCS-GUARD există s-o elimine. Dacă Roland vrea o plasă de siguranță, ar
+  trebui să fie un hook automat, nu un obicei. Decizia rămâne a lui Roland.
+- **Datorii tehnice** (Mistral „2 req/min", Groq 429 auto-continuare, OCR opțiunea B): NEATINSE,
+  intenționat, în afara scopului Fazei 6 — rămân în `docs/Plan_in_Lucru.md` §amânat conștient.
+
+**Notă de proces (auto-corecție găsită prin `advisor()`, nu de Roland):** în timpul execuției, un
+checkbox `[x]` fals a fost bifat pentru Completarea 4 înainte ca arhivarea să existe efectiv, plus
+o ancoră moartă a fost adăugată în indexul de mai sus spre această secțiune înainte ca ea să
+existe — exact defectul de clasă pe care Faza 6 există să-l prevină, reprodus de propriul ei
+autor. Corectat imediat, înainte de auditori. `auditor-cerinte` și `auditor-dovezi` au confirmat
+independent starea tranzitorie (au prins-o falsă, apoi corectă, la citiri succesive) — vezi
+verdictele lor mai jos.
+
+**Verdicte auditori:**
+
+- **`auditor-regresie`** → **FĂRĂ REGRESIE.** `tsc 0 · jest 447/447 (28 suite) · pytest 121/121 ·
+build OK` (prima rulare de build a picat pe `ENOENT` — contenție `.next` cu 40+ procese `node`
+  concurente pe mașină, nu regresie de cod; a doua rulare, fără nicio modificare, a trecut curat).
+  Confirmat prin `git diff --stat`: zero fișiere `frontend/src/`/`api/*.py`/`api/lib/` atinse.
+  Semnalat: la momentul auditului nu exista încă niciun commit pentru Faza 6 (corect — R-STOP-FAZA
+  cere commit/push înainte de închidere, făcut după acest raport).
+- **`auditor-dovezi`** → 6 CONFIRMAT direct (baseline gate, Completare 2, garda `docs/` cu test
+  independent propriu, `MEDIU_CLAUDE_CODE.md`, `CLAUDE.md` pas 1, R-HANDOFF §2, arhivare memorie),
+  2 PARȚIAL: Completarea 1 avea o referință moartă NOUĂ la linia 468 de mai sus („vezi Faza 6 mai
+  jos" spre o secțiune care încă nu exista — **corectată prin scrierea acestei secțiuni**), iar
+  §2.7 avea o imprecizie de citare a cifrelor Supabase (**corectată** — vezi mai sus). 1 INFIRMAT
+  onest: auto-consistența Faza 6 nu era încă făcută LA MOMENTUL auditului, dar planul o marca deja
+  corect `[ ]`, nu `[x]` — făcută imediat după, cu dovada de mai sus.
+- **`auditor-cerinte`** → toate cele 4 completări onorate; a confirmat independent aceeași
+  referință moartă la linia 468 (a doua sursă independentă pentru același defect) și a semnalat
+  corect că la momentul auditului Faza 6 nu era încă închisă (zero commit) — adevărat atunci,
+  închisă acum, după acest raport.
+
+**Gate final, identic cu baseline:** `tsc 0 · jest 447/447 · build OK · pytest 121/121`.
+
+**Verdicte auditori:** regresie — FĂRĂ REGRESIE de cod; a găsit 5 referințe suplimentare deja-moarte
+în fișiere neatinse de Faza 5 (`.claude/agents/auditor-dovezi.md`, `docs/PROMPT_SESIUNE_NOUA.md`,
+`README.md`, `99_Plan_vs_Audit/PLAN_DECISIONS.md`, `docs/Fazele.md`) — corectate imediat, înainte
+de commit. dovezi — 6 CONFIRMAT, 1 PARȚIAL (o referință ratată în sampling, corectată), 1
+CONFIRMAT-cu-rezervă (2 puncte operaționale minore, necritice, absente din noul HANDOFF — notă
+rămasă în plan). cerințe — a găsit o **abatere reală majoră**: `docs/Plan_in_Lucru.md` NU fusese
+încă golit de fazele închise cum promitea §0 al planului (dublură cu acest fișier, exact ce Faza 5
+interzicea explicit) — **corectată imediat, ÎNAINTE de commit**; `CLAUDE.md` mai avea Chat AI
+listat ca modul livrat, la 14 linii de propria notă că a fost eliminat — corectat.
+
+**Notă retrospectivă (2026-09-11, scrisă la Faza 6):** această secțiune a lipsit din
+`Plan_Finalizat.md` o fază întreagă — referința „vezi Faza 5 mai jos" din §Consolidare
+`PLAN_MASTER.md` (mai sus în acest fișier) a țintit spre nimic, nedescoperită de niciunul din cei
+trei auditori ai Fazei 5. Motivul, verificat: mandatul lor nu acoperă acest tip de defect —
+`auditor-dovezi` verifică dovada per-item din `Plan_in_Lucru.md`, `auditor-regresie` verifică
+poarta, `auditor-cerințe` compară livrarea cu mențiunile scrise de Roland. Niciunul nu verifică
+**completitudinea internă a `Plan_Finalizat.md` însuși** — că o fază declarată închisă chiar are o
+secțiune proprie aici, nu doar o referință către una. Reparat la cererea explicită a lui Roland, ca
+prim pas al Fazei 6, înaintea oricărei alte modificări din acea fază.
+
 ---
 
 ## Notă de proces — capcane recurente de reținut (nu re-descoperi)
@@ -459,3 +576,8 @@ nerezolvat); opțiunea B de capacitate OCR (a doua cheie liberă cablată, ~1040
 - **„Nimic gata fără dovadă live"** — lecția centrală a Fazei 2 (5 runde de audit au găsit defecte
   pe care poarta verde nu le prinsese) și a Fazei 1 (auditul din 07.09 declarase „toate butoanele
   funcționează"; Roland a spart una în 10 secunde).
+- **Cei trei auditori nu verifică completitudinea INTERNĂ a acestui fișier** — doar dovada
+  per-item, poarta, și conformitatea cu mențiunile lui Roland. O fază poate fi „închisă corect" și
+  totuși lăsa `Plan_Finalizat.md` fără secțiunea ei (Faza 5 — prins abia la Faza 6, prin cererea
+  lui Roland, nu prin auditori). La finalul fiecărei faze, verifică manual că secțiunea ei există
+  aici ÎNAINTE de a declara „istoric complet".

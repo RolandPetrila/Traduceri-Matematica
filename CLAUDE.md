@@ -22,14 +22,31 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 ## PRIMA ACTIUNE LA SESIUNE NOUA
 
 0. **Citeste `docs/HANDOFF_SESIUNE.md`** — starea curenta + prompt de reluare + context operational (URL canonic, deploy, testare mobil). Apoi planul ACTIV din `docs/PLAN_*.md`. (Vezi **R-HANDOFF** in `.claude/rules/project_rules.md`.)
-1. Citeste `docs/Plan_in_Lucru.md` — **SURSA UNICA** de adevar pt ce ramane de facut (backlog amanat constient, datorii tehnice deschise, reguli de execuzie). Pt istoricul implementarilor (cerintele R1-R4 etc.), vezi `docs/Plan_Finalizat.md`. `docs/PLAN_MASTER.md` e arhivat (`docs/arhiva/`), continutul absorbit la Faza 5 (2026-09-11).
-2. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
-3. Citeste `.claude/memory/*` si `.claude/rules/project_rules.md`
-4. **(R-DIAG-AUTO)** Verifica log-urile de eroare recente (Supabase tabela `logs` / `/api/logs` / ce lipeste Roland), grupeaza pe `error_code`, confirma cauza in cod si remediaza proactiv — NU astepta ca Roland sa raporteze. Vezi `config/error_codes.json` (`cause`/`fix`).
-5. Continua cu primul task [ ] nemarcat din planul activ
-6. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` + planul (bifeaza [x] cu data) + memoria; commit/push (deploy = outward-facing, cu confirmare)
-7. **(R-AUDIT-FAZA — OBLIGATORIU, cerut de Roland) La finalul FIECAREI faze, INAINTE de raportul catre Roland, ruleaza cei trei auditori** din `.claude/agents/` (`auditor-dovezi`, `auditor-regresie`, `auditor-cerinte`) prin Agent tool. Verdictele lor (inclusiv cele negative) intra in raport; un item ramane 🟡 in `docs/Plan_in_Lucru.md` daca `auditor-dovezi` nu l-a confirmat live. NU inchide o faza fara ei. Detalii: `.claude/rules/project_rules.md` §R-AUDIT-FAZA.
-8. **(R-STOP-FAZA — OBLIGATORIU, cerut de Roland) O FAZA PER SESIUNE.** Dupa auditori + salveaza tot (handoff rescris cu faza urmatoare + plan bifat + memorie + commit/push) → **OPRESTE-TE. NU incepe faza urmatoare**, chiar daca ai context si timp. Spune-i lui Roland: „Faza X inchisa. Deschide o sesiune noua cu `/onboard` pentru Faza X+1." Regulile sunt PERMANENTE si se re-incarca singure la sesiunea noua prin acest fisier. Detalii: `.claude/rules/project_rules.md` §R-STOP-FAZA.
+1. Citeste `docs/Plan_in_Lucru.md` — **SURSA UNICA** de adevar pt ce ramane de facut (backlog amanat constient, datorii tehnice deschise, reguli de execuzie) — **+ `docs/completari_pt_reparatie.md`** (fisierul de reclamatii al lui Roland, citit AUTOMAT de acum, nu doar la cerere explicita — lipsea din acest pas pana la Faza 6). Pt istoricul implementarilor (cerintele R1-R4 etc.), vezi `docs/Plan_Finalizat.md`. `docs/PLAN_MASTER.md` e arhivat (`docs/arhiva/`), continutul absorbit la Faza 5 (2026-09-11).
+2. **(R-DOCS-GUARD, din Faza 6)** Hook `SessionStart` local ruleaza automat
+   `.claude/scripts/check-docs-classification.mjs` la pornire (rezultatul apare in context, ca
+   stdout). Daca `de_revizuit` > 0 → **`AskUserQuestion`** cu Roland (mutare in `docs/arhiva/` /
+   redenumire / exceptie explicita in allowlist-ul scriptului) INAINTE de a continua cu orice
+   altceva. Detalii + raționament: `docs/MEDIU_CLAUDE_CODE.md`.
+3. Citeste `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii
+4. Citeste memoria proiectului — sursa canonica e cea auto-incarcata la fiecare sesiune,
+   `~/.claude/projects/C--Proiecte-Traduceri-Matematica/memory/MEMORY.md` (deja in context, inclusiv la
+   aceasta sesiune) — **+** `.claude/rules/project_rules.md`. `.claude/memory/` din proiect e
+   arhivat (`.claude/memory/arhiva/`, de la Faza 6) — istoric pre-2026-07, NU se mai citeste automat.
+5. **(R-DIAG-AUTO, corectata la Faza 6)** Verifica log-urile de eroare recente (Supabase tabela
+   `logs` / `/api/logs` / ce lipeste Roland) — **citeste TOATE nivelele** (`error`/`warn`/`action`/
+   `info`), NU doar `ERROR`/`WARN`. Grupeaza pe `error_code` cand exista; cand lipseste (`null`),
+   cauta semnal de esec in mesaj/context (exact defectul care a ascuns bug-ul SK din Faza 1: log
+   la nivel `action`, `error_code=null`, filtrat de o regula prea ingusta). Confirma cauza in cod
+   si remediaza proactiv — NU astepta ca Roland sa raporteze. Vezi `config/error_codes.json`
+   (`cause`/`fix`).
+6. Continua cu primul task [ ] nemarcat din planul activ
+7. **Dupa FIECARE faza/livrabil (R-HANDOFF):** actualizeaza la zi `docs/HANDOFF_SESIUNE.md` +
+   planul (bifeaza [x] cu data, **apoi transfera itemii finalizati in `docs/Plan_Finalizat.md`
+   INAINTE de commit** — pas explicit, nu doar bifare, de la Faza 6) + memoria; commit/push
+   (deploy = outward-facing, cu confirmare)
+8. **(R-AUDIT-FAZA — OBLIGATORIU, cerut de Roland) La finalul FIECAREI faze, INAINTE de raportul catre Roland, ruleaza cei trei auditori** din `.claude/agents/` (`auditor-dovezi`, `auditor-regresie`, `auditor-cerinte`) prin Agent tool. Verdictele lor (inclusiv cele negative) intra in raport; un item ramane 🟡 in `docs/Plan_in_Lucru.md` daca `auditor-dovezi` nu l-a confirmat live. NU inchide o faza fara ei. Detalii: `.claude/rules/project_rules.md` §R-AUDIT-FAZA.
+9. **(R-STOP-FAZA — OBLIGATORIU, cerut de Roland) O FAZA PER SESIUNE.** Dupa auditori + salveaza tot (handoff rescris cu faza urmatoare + plan bifat + memorie + commit/push) → **OPRESTE-TE. NU incepe faza urmatoare**, chiar daca ai context si timp. Spune-i lui Roland: „Faza X inchisa. Deschide o sesiune noua cu `/onboard` pentru Faza X+1." Regulile sunt PERMANENTE si se re-incarca singure la sesiunea noua prin acest fisier. Detalii: `.claude/rules/project_rules.md` §R-STOP-FAZA.
 
 ## Stack v4.0
 
@@ -46,6 +63,7 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
 ## Key Files
 
 - `docs/Plan_in_Lucru.md` — **SURSA UNICA** de adevar (tracking [ ]/[x]) · `docs/Plan_Finalizat.md` — istoricul complet al implementarilor, cronologic + index pe module · `docs/PROMPT_SESIUNE_NOUA.md` — prompt de reluare direct executabil
+- `docs/MEDIU_CLAUDE_CODE.md` (nou, Faza 6) — cum functioneaza mediul Claude Code local al acestui proiect (auditori, reguli, memorie, garda `docs/`, fluxul de faza) · `.claude/scripts/check-docs-classification.mjs` — garda anti-sprawl `docs/` (rulata automat la `SessionStart`)
 - `99_Plan_vs_Audit/PLAN_DECISIONS.md` — log decizii tehnice (backlog/imbunatatiri = acum in `docs/Plan_in_Lucru.md` §⏳ amanat constient)
 - `vercel.json` — config functii Python (maxDuration 300s)
 - `supabase/schema.sql` — referinta tabele Supabase (logs + contoare)
