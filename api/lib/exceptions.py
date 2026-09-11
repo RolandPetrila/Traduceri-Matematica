@@ -53,6 +53,26 @@ class OCRProvidersExhausted(AppError):
     public_message = "Toti providerii OCR au esuat (Gemini + Mistral)"
 
 
+class OCRCorrectionUnavailable(AppError):
+    """Faza 4.5e (2026-09-11): tier PLATIT (corectare lucrari elevi) epuizat.
+
+    Fallback pe Mistral e OMIS deliberat pe acest tier (Mistral e un procesator
+    free tert, incompatibil cu confidentialitatea lucrarii unui minor) — vezi
+    ocr_structured.py. Status 503 (nu 500): serviciul e temporar indisponibil,
+    nu o eroare de aplicatie; mesajul confirma explicit ca poza n-a fost
+    trimisa nicaieri altundeva, ca elevul/Cristina sa nu creada ca a "scapat"
+    o lucrare catre un tier neconfidential.
+    """
+
+    error_code = "E-OCR-005"
+    status = 503
+    public_message = (
+        "Corectarea nu e disponibila momentan (cheia platita e indisponibila). "
+        "Poza NU a fost trimisa catre niciun alt procesator — incearca din nou "
+        "in cateva minute."
+    )
+
+
 class TranslationError(AppError):
     error_code = "E-TRANS-001"
     public_message = "Traducerea a esuat"

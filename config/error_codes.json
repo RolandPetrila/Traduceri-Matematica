@@ -22,6 +22,20 @@
       "severity": "error",
       "area": "ocr"
     },
+    "E-OCR-004": {
+      "message": "OCR cazut pe rezerva Mistral - fara figuri/LaTeX",
+      "cause": "Toate cele 3 modele Gemini (tier free) au esuat pe aceasta pagina - cota zilnica epuizata (429 pe toate) sau provider temporar indisponibil (5xx/RECITATION/timeout). Continutul text a fost extras cu Mistral OCR, dar fara figuri geometrice/formule LaTeX (Mistral nu le genereaza).",
+      "fix": "Vezi context.fallback_reason: quota = asteapta reinnoirea cotei zilnice sau reincearca maine; unavailable = reincearca in cateva minute. Doar pe tier free (import Editor) - tier-ul platit (corectare) nu cade niciodata pe Mistral, vezi E-OCR-005.",
+      "severity": "warn",
+      "area": "ocr"
+    },
+    "E-OCR-005": {
+      "message": "Cheia de corectare (tier platit) e indisponibila",
+      "cause": "Toate modelele Gemini pe cheia PLATITA (GOOGLE_AI_API_KEY_PAID) au esuat pentru corectarea unei lucrari de elev. Fallback pe Mistral e OMIS deliberat pe acest tier (Mistral e un procesator free tert, incompatibil cu confidentialitatea lucrarii unui minor) - poza NU a fost trimisa catre niciun alt procesator.",
+      "fix": "Verifica GOOGLE_AI_API_KEY_PAID setata in Vercel (traduceri-api) si cota/statusul proiectului Google Cloud plati (Tier 1 Postpay). Ruleaza o proba directa pe cheia platita inainte de a presupune ca modelul e jos.",
+      "severity": "error",
+      "area": "ocr"
+    },
     "E-TRANS-001": {
       "message": "Traducerea on-demand a esuat",
       "cause": "Providerul de traducere (DeepL principal, apoi lant fallback) a intors eroare; posibil cota DeepL Free epuizata (lunar) sau textul depaseste limita.",

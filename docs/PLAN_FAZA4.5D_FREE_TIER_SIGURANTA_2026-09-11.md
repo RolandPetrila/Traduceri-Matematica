@@ -1,5 +1,12 @@
 # PLAN FAZA 4.5d — Trecere în siguranță pe free tier (chei dedicate + provider plătit corectare + Chat eliminat + Groq)
 
+> **🟢 FAZA 4.5e ÎNCHISĂ (2026-09-11, runda 3) — toate cele 3 itemi rămași din acest document sunt
+> acum FĂCUȚI, cu confirmarea lui Roland ÎN CONVERSAȚIA COORDONATOARE (spre deosebire de 4.5d):**
+> mesajul de cotă OCR (E-OCR-004 + E-OCR-005, implementat + testat), cele două 🟡 (Groq, bbox Lite)
+> devenite 🟢 cu dovadă live executată efectiv, corecția de capacitate (520/zi TOTAL, nu „per
+> proiect" — corectată de Roland, verificată în cod). Vezi secțiunile de mai jos pt fiecare, marcate
+> „IMPLEMENTAT"/„🟢, dovadă live". Restul acestei note (istoricul absorbției din fork) rămâne mai jos.
+
 > **🔴 ABSORBIT — NU mai e documentul activ. CORECȚIE (nu „sesiune paralelă" — propriul fork al
 > acestei sesiuni).** Un fork lansat de sesiunea asta pt testul A/B OCR (strict scope: „NU implementa
 > nimic din codul sursă"), a fost RELUAT ulterior (probabil direct de Roland, la distanță — sesiunea
@@ -386,10 +393,15 @@ bucla `for model_name in MODELS` (liniile 140-236) cascadează `gemini-3.6-flash
 pe 3.6-flash NU oprește pagina, cade automat pe Lite. Cu fixul de bbox live (÷1000, `_validate_figures`,
 liniile 281-285), acele crop-uri sunt acum corecte, nu goale.
 
-**Capacitate reală per proiect Google: 20 (3.6-flash, calitate mai bună) + 500 (Lite, acum SIGUR) =
-520 pagini/zi.** Un PDF de 10 pagini = 10 cereri → **~52 documente de 10 pagini/zi**, nu ~2. Cu
-ambele proiecte gratuite (`GOOGLE_AI_API_KEY` + `_TRADUCERI_2`) cablate ca fallback suplimentar —
-NU implementat azi, ar fi cod nou în `ocr_structured.py` — teoretic **~1040/zi**.
+**Capacitate reală: 20 (3.6-flash, calitate mai bună) + 500 (Lite, acum SIGUR) = 520 pagini/zi ÎN
+TOTAL — nu „per proiect" (corecție Roland, verificată în cod: `api/ocr.py:50-57`,
+`_OCR_KEY_ENV_BY_TIER`, cunoaște DOAR 2 chei — `free`→`GOOGLE_AI_API_KEY`, `paid`→`_PAID`. A doua
+cheie liberă, `_TRADUCERI_2`, e cablată DOAR în `/api/proxy` pe `traduceri-frontend`, ca provider
+`gemini2` pt Chat/corectare — nu există nicio a doua rezervă gratuită pe traseul OCR. Formularea
+inițială („per proiect", implicând mai multe surse) era înșelătoare, chiar dacă concluzia rămânea
+aceeași.)** Un PDF de 10 pagini = 10 cereri → **~52 documente de 10 pagini/zi**, nu ~2. Cu
+`GOOGLE_AI_API_KEY_TRADUCERI_2` cablată ca a doua sursă ÎN OCR (cod nou, NU implementat azi) —
+teoretic **~1040/zi**.
 
 **520/zi RĂSPUNDE DECISIV la „ajunge free tier-ul" pt un instrument de o singură profesoară** — nu
 mai e o presupunere fără date, e concluzia care justifică toată strategia de trecere pe free tier
@@ -408,7 +420,33 @@ implementarea 4.5d — verificat, nu e în lista celor 18 fișiere din `ba08994`
 păstrează motivul căderii pe Mistral (429 vs 5xx vs RECITATION vs timeout) — doar îl loghează în
 stderr, pierdut la returnare.
 
-### Propunere concretă (NEIMPLEMENTATĂ — doar propusă, cum a cerut Roland)
+### IMPLEMENTAT (Faza 4.5e, 2026-09-11 — extins la 3 cazuri, cerut de Roland)
+
+Propunerea de mai jos a fost implementată, testată (6 teste pytest noi + 3 jest noi) și extinsă cu
+un al treilea caz pe care Roland l-a cerut explicit: cheia de CORECTARE (tier plătit) indisponibilă
+— distinct de cotă/indisponibilitate pe tier-ul free, cu propriul cod (`E-OCR-005`), fiindcă pe
+tier-ul plătit codul NU cade pe Mistral (confidențialitate lucrare elev) — eșuează vizibil, iar
+mesajul trebuie să confirme explicit că poza n-a fost trimisă nicăieri altundeva.
+
+- `api/lib/exceptions.py` — `OCRCorrectionUnavailable` (E-OCR-005, status 503) alături de
+  `OCRProvidersExhausted` existent.
+- `api/lib/ocr_structured.py` — `fail_reasons: list[str]` acumulat pe parcursul buclei;
+  `_ocr_with_mistral_structured` primește lista, derivă `fallback_reason` (`"quota"` DOAR dacă
+  toate au fost 429); tier plătit ridică acum `OCRCorrectionUnavailable()` (nu `RuntimeError` generic).
+- `api/ocr.py` — `except AppError: raise` ÎNAINTE de catch-all-ul generic din bucla per-pagină, ca
+  `OCRCorrectionUnavailable` să ajungă ca răspuns de eroare REAL (503 + `error_code`), nu îngropat
+  în text `[Eroare OCR pagina N: ...]` (care trecea garda de „text gol" din `TestePanel.tsx` și
+  ajungea la AI ca lucrarea elevului).
+- `config/error_codes.json` + `error-catalog.ts` (regenerat cu `scratchpad/gen-error-catalog.mjs`)
+  — `E-OCR-004` (warn) + `E-OCR-005` (error, 503).
+- `ocr-map.ts`/`editor-import.tsx` — `fallbackReason` propagat, banner cu 2 mesaje distincte
+  (`quota`/`unavailable`) + logat în Supabase (`E-OCR-004`, warn) — vizibil pe `/diagnostics`.
+- `TestePanel.tsx` (`onFile`) — citește `error_code` din corpul non-200, mesaj distinct pt
+  `E-OCR-005` cu asigurarea explicită („poza NU a fost trimisă către niciun alt procesator").
+
+**Poartă:** `tsc 0 · jest 447/447 (+3) · build OK · pytest 121/121 (+6)`.
+
+### Propunere originală (istoric, sub asta — implementată exact cum era scrisă, plus E-OCR-005)
 
 **1. Backend (`ocr_structured.py`):** în bucla `for model_name in MODELS`, acumulează motivul
 fiecărui eșec într-o listă locală (`fail_reasons: list[str]`, ex. `"429"`/`"5xx"`/`"RECITATION"`).
@@ -460,10 +498,37 @@ lanțului pe a doua cheie) — cod nou în `ocr_structured.py`. Cu 520/zi deja c
 utilizator, marchez asta [RELEVANT] doar dacă Roland are un motiv concret (volum real mai mare
 decât presupun) — nu propun implementarea acum.
 
-## Cele două 🟡 rămân 🟡 — propuneri ieftine/sigure de verificare live (NEEXECUTATE)
+## Cele două 🟡 → 🟢, cu dovadă live (EXECUTAT, 2026-09-11)
 
-Cerut explicit de Roland: nu rotunjesc niciunul la 🟢, dar dacă există o cale ieftină și sigură de
-verificare live, o propun — fără să consum cele 20 cereri/zi ca s-o forțez.
+Cerut explicit de Roland: nu rotunjesc fără dovadă — ambele verificări au fost EXECUTATE efectiv,
+nu doar propuse. Rezultate + scripturi mai jos; devin 🟢 pe baza asta, nu prin rotunjire.
+
+### Groq `maxTokens:6000` — 🟢, dovadă live
+
+O singură cerere reală la `/api/proxy?provider=groq` (endpoint DEPLOYAT), payload exact ca pasul
+`groq` din `GENERATION_CHAIN` (`model: "openai/gpt-oss-20b"`, `max_tokens: 6000`, prompt realist
+~1279 caractere). **Rezultat:** `HTTP 200` în 3523ms, `finish_reason: "stop"` (nu truncat),
+`total_tokens: 2484` (prompt 404 + completion 2080) — confortabil sub plafonul de 8000 TPM, zero 429. Script: `scratchpad/verify_groq_6000_live_2026-09-11.mjs`.
+
+### Fix scară bbox Lite — 🟢, dovadă live (aritmetic + vizual + acum și end-to-end)
+
+`MODELS` e local în `ocr_structured()`, nu se poate suprascrie din exterior — în loc de asta, am
+interceptat `urllib.request.urlopen`: orice cerere către `gemini-3.6-flash` primește un 429 FALS,
+INSTANT (zero cerere de rețea, zero cotă consumată), iar cererea către `gemini-3.5-flash-lite`
+trece NEATINSĂ la `urlopen`-ul real — apel live autentic, cu `GOOGLE_AI_API_KEY_TRADUCERI_2`
+(liberă, neatinsă de producție). Codul rulat e `ocr_structured.py` chiar cel deployat, neschimbat.
+
+Pagina: `2.0_test_page_1.jpeg` (aceeași din testul A/B, 6 figuri, 4/6 aveau bbox corupt înainte de
+fix — Roland a permis explicit reutilizarea). **Rezultat: 6/6 bbox-uri valide (0.0-1.0), 6 crop-uri
+reale generate** (2.5-33.7 KB fiecare, nu placeholder-uri goale) — verificat și vizual pe 2 din 6
+(fig1 „Unghiul MNy" — construcția unghiului cu 40°/60° corectă; fig6 „Triunghiul ABC" — triunghi
+dreptunghic 3-4-5 corect). Zero cereri către `gemini-3.6-flash`, deci zero impact asupra celor
+20/zi. Script + crop-uri: `scratchpad/verify_bbox_lite_live_2026-09-11.py`,
+`99_Roland_Work/Teste_Output/bbox_lite_live_2026-09-11/`.
+
+---
+
+### (istoric) Propunerile originale, înainte de execuție
 
 **Fix scară bbox Lite — propunere:** un script mic care importă `ocr_structured` direct (nu prin
 `/api/ocr`, deci fără să treacă prin `gemini-3.6-flash` deloc) și îl apelează cu
@@ -507,22 +572,22 @@ Runda anterioară a acestui document propunea separarea `api/` (OCR) de `fronten
 implementat totul UNIFICAT, într-un singur commit (`ba08994`) — split-ul nu s-a mai întâmplat.
 Rămâne aici doar ca raționament (de ce ar fi fost o tăietură naturală), nu ca propunere activă.
 
-## Ce mai e deschis — starea finală (2026-09-11, runda 3)
+## Starea finală — Faza 4.5e ÎNCHISĂ (2026-09-11, runda 3)
 
-Confirmate/închise (nu se mai reconfirmă): fixul de scală bbox (÷1000, `ocr_structured.py`, implementat
+Toate cele 3 puncte lăsate deschise la finalul rundei 2 sunt acum FĂCUTE, cu confirmarea lui Roland
+ÎN CONVERSAȚIA COORDONATOARE (nu prin reluare externă, spre deosebire de 4.5d):
 
-- deployat + dovadă vizuală/aritmetică), migrarea `traduceri-api`/`GOOGLE_AI_API_KEY` (făcută, 5 env
-  vars pe cele 2 proiecte), RECITATION (implementat + dovadă LIVE), Punctul 2 (selector de tier,
-  implementat), Punctul 4 (Chat șters, teste înlocuite), Punctul 5 (Groq 6000, implementat).
+1. ✅ Mesajul de cotă OCR — `E-OCR-004` (quota/unavailable, tier free) + `E-OCR-005` (cheia de
+   corectare indisponibilă, tier plătit, cerut ca extindere de Roland) — IMPLEMENTAT, testat (6
+   pytest + 3 jest noi), poartă completă verde.
+2. ✅ Cele două verificări live pt cele două 🟡 — EXECUTATE efectiv (nu doar propuse): Groq 6000
+   confirmat live (200, 2484 tokeni, fără 429); bbox Lite confirmat live end-to-end (6/6 bbox
+   valide, crop-uri reale, verificate și vizual) — ambele 🟡 → 🟢.
+3. ✅ Corecția de capacitate a lui Roland (520/zi TOTAL, nu „per proiect") — integrată în secțiunea
+   „Capacitate OCR" de mai sus.
 
-**Rămân deschise, pt runda următoare cu Roland:**
+Opțiunea B de capacitate (a doua cheie liberă cablată în `ocr_structured.py`, ~1040/zi) rămâne
+[RELEVANT, nu necesar] — nu s-a cerut implementarea.
 
-1. Propunerea de mesaj de cotă OCR (`E-OCR-004` + `fallback_reason` + textele din secțiunea
-   „Capacitate OCR" de mai sus) — de confirmat înainte de implementare.
-2. Cele două propuneri de verificare live ieftină/sigură pt cele două 🟡 (bbox Lite, Groq 6000) —
-   de confirmat înainte de rulare.
-3. Opțiunea B de capacitate (a doua cheie liberă cablată în `ocr_structured.py`, ~1040/zi) — rămâne
-   [RELEVANT, nu necesar] cu 520/zi deja confortabil; nu se implementează fără un motiv concret.
-
-Niciun cod nu se scrie din cele de mai sus până Roland nu confirmă explicit — de data asta prin
-răspunsul lui direct în conversație, nu presupus.
+Rămân de făcut, în afara acestui document: `CACHE_VERSION` bump + deploy + auditori + handoff +
+memorie + commit/push — vezi `docs/HANDOFF_SESIUNE.md` pt starea curentă exactă a acestor pași.

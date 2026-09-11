@@ -180,6 +180,38 @@ describe("structuredPagesToBlocks — pagini + semnale", () => {
     expect(mistralFallback).toBe(true);
   });
 
+  // Faza 4.5e (E-OCR-004): DE CE a căzut pe Mistral, nu doar CE — cerut de Roland
+  // ("mesaj clar și acționabil"). `fallback_reason` vine din server (ocr_structured.py).
+  it("propagă fallbackReason='quota' de la server", () => {
+    const { fallbackReason } = structuredPagesToBlocks([
+      {
+        source: "mistral-ocr",
+        fallback_reason: "quota",
+        sections: [{ type: "paragraph", content: "brut" }],
+      },
+    ]);
+    expect(fallbackReason).toBe("quota");
+  });
+
+  it("propagă fallbackReason='unavailable' de la server", () => {
+    const { fallbackReason } = structuredPagesToBlocks([
+      {
+        source: "mistral-ocr",
+        fallback_reason: "unavailable",
+        sections: [{ type: "paragraph", content: "brut" }],
+      },
+    ]);
+    expect(fallbackReason).toBe("unavailable");
+  });
+
+  it("fallbackReason rămâne undefined fără fallback Mistral", () => {
+    const { fallbackReason, mistralFallback } = structuredPagesToBlocks([
+      { sections: [{ type: "paragraph", content: "text normal" }] },
+    ]);
+    expect(mistralFallback).toBe(false);
+    expect(fallbackReason).toBeUndefined();
+  });
+
   it("pagini goale → un paragraf onest, niciodată doc gol invalid", () => {
     const { blocks } = structuredPagesToBlocks([{ sections: [] }]);
     expect(blocks.length).toBeGreaterThan(0);

@@ -193,5 +193,36 @@ class TestTierSelector:
         assert mock_ocr.call_args.kwargs.get("key_env") == "GOOGLE_AI_API_KEY"
 
 
+class TestCorrectionUnavailablePropagation:
+    """Faza 4.5e (2026-09-11): E-OCR-005 (cheia plătită epuizată) trebuie să ajungă
+    ca răspuns de eroare REAL (status + error_code) — NU îngropat în text
+    `[Eroare OCR pagina N: ...]` cu status 200 (Bug#3 rescris: TestePanel.tsx tot
+    ar strip-ui markerul și ar arăta "poză neclară", mesaj greșit pt acest caz)."""
+
+    def test_correction_unavailable_returns_503_with_error_code_not_embedded_text(self):
+        from lib.exceptions import OCRCorrectionUnavailable
+
+        fake_image = b"\x89PNG\r\n\x1a\nFAKE-PNG-BYTES-FOR-TEST"
+        body = _multipart_body(
+            {"source_lang": "ro", "engine": "gemini", "tier": "paid"},
+            files=[{"filename": "p1.png", "mime_type": "image/png", "data": fake_image}],
+        )
+        inst = _make_handler(
+            body=body,
+            headers={
+                "Content-Type": "multipart/form-data; boundary=TESTBOUNDARY",
+                "Content-Length": str(len(body)),
+            },
+        )
+        with patch("lib.rate_limiter.reject_if_limited", return_value=False), \
+             patch("ocr.ocr_structured", side_effect=OCRCorrectionUnavailable()):
+            inst.do_POST()
+        status, data = _response(inst)
+        assert status == 503
+        assert data["status"] == "error"
+        assert data["error_code"] == "E-OCR-005"
+        assert "niciun alt procesator" in data["error"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

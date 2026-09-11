@@ -552,7 +552,30 @@ function CorrectTab({
         throw new UserFacingError(
           "Poza e prea mare. Fă-o din nou la rezoluție mai mică sau decupează doar lucrarea — reîncercarea aceleiași poze va eșua la fel.",
         );
-      if (!res.ok) throw new Error(`OCR HTTP ${res.status}`);
+      if (!res.ok) {
+        // Faza 4.5e (E-OCR-005): tier plătit (poza elevului) epuizat — mesaj DISTINCT
+        // de „poză neclară", ca elevul/Cristina să știe sigur că poza NU a ajuns pe
+        // vreun alt procesator (nu doar că „n-a mers"). Corpul poate fi neparsabil
+        // (eroare de rețea brută) — cade pe mesajul generic de mai jos.
+        let errorCode: string | undefined;
+        try {
+          const body = await readJson<{ error_code?: string }>(
+            res,
+            "teste.ocr",
+            {
+              report: false,
+            },
+          );
+          errorCode = body.error_code;
+        } catch {
+          /* corp neparsabil — errorCode rămâne undefined */
+        }
+        if (errorCode === "E-OCR-005")
+          throw new UserFacingError(
+            "Corectarea nu e disponibilă momentan (cheia plătită e indisponibilă). Poza NU a fost trimisă către niciun alt procesator — încearcă din nou în câteva minute. (cod E-OCR-005)",
+          );
+        throw new Error(`OCR HTTP ${res.status}`);
+      }
       const data = await readJson<{
         structured_pages?: { title?: string; sections?: OcrSectionLite[] }[];
       }>(res, "teste.ocr");

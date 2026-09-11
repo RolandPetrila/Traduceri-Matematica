@@ -43,6 +43,9 @@ export interface OcrPage {
   sections?: OcrSection[];
   /** Flag din server: „mistral-ocr" = fallback fără figuri/LaTeX (doar text brut). */
   source?: string;
+  /** Faza 4.5e (E-OCR-004): DE CE a căzut pe Mistral — "quota" (toate cele 3
+   * modele Gemini free au dat 429) sau "unavailable" (motiv amestecat/tranzitoriu). */
+  fallback_reason?: "quota" | "unavailable";
 }
 
 /** Numele nodurilor (vezi extensions.ts): matematica = @tiptap/extension-mathematics. */
@@ -315,15 +318,22 @@ export interface MappedContent {
   blocks: JSONContent[];
   /** Vreo pagină a venit prin fallback Mistral (fără figuri/LaTeX). */
   mistralFallback: boolean;
+  /** Faza 4.5e (E-OCR-004): DE CE, dacă `mistralFallback` — ultima pagină cu
+   * fallback câștigă dacă documentul are pagini cu motive diferite (rar). */
+  fallbackReason?: "quota" | "unavailable";
 }
 
 /** `structured_pages` → noduri-bloc TipTap. `pageBreak` între pagini (paginare la print). */
 export function structuredPagesToBlocks(pages: OcrPage[]): MappedContent {
   const blocks: JSONContent[] = [];
   let mistralFallback = false;
+  let fallbackReason: "quota" | "unavailable" | undefined;
 
   pages.forEach((page, i) => {
-    if (page.source === "mistral-ocr") mistralFallback = true;
+    if (page.source === "mistral-ocr") {
+      mistralFallback = true;
+      if (page.fallback_reason) fallbackReason = page.fallback_reason;
+    }
     if (i > 0) blocks.push({ type: "pageBreak" });
     const title = (page.title || "").trim();
     if (title) {
@@ -340,7 +350,7 @@ export function structuredPagesToBlocks(pages: OcrPage[]): MappedContent {
   if (blocks.length === 0) {
     blocks.push(makeParagraph("[Documentul importat nu conține text.]"));
   }
-  return { blocks, mistralFallback };
+  return { blocks, mistralFallback, fallbackReason };
 }
 
 /** Text brut (docx/txt/md/pdf-cu-text) → paragrafe. Onest: FĂRĂ matematică transcrisă. */

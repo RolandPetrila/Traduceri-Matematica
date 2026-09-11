@@ -28,6 +28,7 @@ from lib.ocr_structured import ocr_structured
 from lib.azure_layout import azure_layout
 from lib.figure_crop import embed_crops_in_sections
 from lib.multipart import parse_boundary, log_to_file
+from lib.exceptions import AppError
 
 # DoS guard (decompression-bomb variant for PDF rendering): a small PDF can
 # declare an enormous MediaBox, which at a fixed DPI would still force
@@ -219,6 +220,15 @@ class handler(BaseHTTPRequestHandler):
                     use_snap = page_data.get("source") != "azure-layout"
                     page_data["sections"] = embed_crops_in_sections(file_info["data"], page_data.get("sections", []), snap=use_snap)
                     all_structured_pages.append(page_data)
+                except AppError:
+                    # Faza 4.5e (2026-09-11): o eroare TIPIZATĂ (ex. OCRCorrectionUnavailable,
+                    # E-OCR-005 — tier plătit epuizat, fallback Mistral omis deliberat pt
+                    # confidențialitate) trebuie să ajungă vizibilă la utilizator ca răspuns
+                    # de eroare REAL (status + error_code), NU îngropată în text `[Eroare OCR
+                    # pagina N: ...]` care trecea garda de „text gol" din TestePanel.tsx și
+                    # ajungea la AI ca și cum ar fi lucrarea elevului. `MAX_PAGES=1` mereu azi
+                    # (vezi mai sus) — nicio pagină „bună" n-ar fi pierdută propagând asta.
+                    raise
                 except Exception as e:
                     print(f"[OCR] Page {idx+1} failed: {e}", file=sys.stderr)
                     all_structured_pages.append({"title": "", "sections": [

@@ -60,6 +60,8 @@ interface ImportMeta {
   count: number;
   usedOcr: boolean;
   mistralFallback: boolean;
+  /** Faza 4.5e (E-OCR-004): DE CE, dacă `mistralFallback` — "quota" sau "unavailable". */
+  fallbackReason?: "quota" | "unavailable";
   failedPages: number;
   pageCapped: number; // 0 = nu s-a plafonat; altfel = nr. total de pagini
   bruteNoMath: boolean;
@@ -212,6 +214,7 @@ async function processFile(
       blocks: mapped.blocks,
       usedOcr: true,
       mistralFallback: mapped.mistralFallback,
+      fallbackReason: mapped.fallbackReason,
       sourceBlobs: [blob], // G4 — poza-sursă pt comparație
     };
   }
@@ -307,6 +310,7 @@ async function processFile(
         blocks: mapped.blocks,
         usedOcr: true,
         mistralFallback: mapped.mistralFallback,
+        fallbackReason: mapped.fallbackReason,
         failedPages,
         pageCapped,
         sourceBlobs: srcBlobs,
@@ -335,6 +339,7 @@ async function processFiles(
   const acc = {
     usedOcr: false,
     mistralFallback: false,
+    fallbackReason: undefined as "quota" | "unavailable" | undefined,
     failedPages: 0,
     pageCapped: 0,
     bruteNoMath: false,
@@ -352,6 +357,8 @@ async function processFiles(
     blocks.push(...r.blocks);
     acc.usedOcr ||= r.usedOcr;
     acc.mistralFallback ||= r.mistralFallback;
+    if (r.fallbackReason && !acc.fallbackReason)
+      acc.fallbackReason = r.fallbackReason;
     acc.failedPages += r.failedPages;
     acc.pageCapped = Math.max(acc.pageCapped, r.pageCapped);
     acc.bruteNoMath ||= r.bruteNoMath;
@@ -396,8 +403,31 @@ function buildNotice(
   if (meta.bruteNoMath)
     msg +=
       " Text brut — matematica din imagini NU a fost transcrisă (doar OCR-ul pe poze/PDF-scanat extrage formule).";
-  if (meta.mistralFallback)
-    msg += " OCR de rezervă (Mistral) — fără figuri/LaTeX.";
+  if (meta.mistralFallback) {
+    // Faza 4.5e (E-OCR-004): DE CE, nu doar CE — cerință explicită Roland ("mesaj
+    // clar și acționabil, nu o eroare tăcută"). `fallbackReason` absent (documente
+    // vechi din cache/teste) → cade pe mesajul generic de mai jos.
+    if (meta.fallbackReason === "quota")
+      msg +=
+        " Cota gratuită zilnică Gemini s-a epuizat azi (E-OCR-004) — am folosit OCR de rezervă (Mistral), document fără figuri/formule LaTeX. Reîncearcă mâine pentru rezultat complet, sau adaugă figurile manual acum.";
+    else if (meta.fallbackReason === "unavailable")
+      msg +=
+        " Providerii Gemini sunt temporar indisponibili (E-OCR-004) — am folosit OCR de rezervă (Mistral), document fără figuri/formule LaTeX. Reîncearcă în câteva minute.";
+    else msg += " OCR de rezervă (Mistral) — fără figuri/LaTeX.";
+    // Vizibil pe /diagnostics, nu doar în banner-ul din editor (R-DIAG).
+    reportFailure({
+      code: "E-OCR-004",
+      flow: "editor.import.ocr",
+      error: new Error(
+        `Mistral fallback (${meta.fallbackReason ?? "necunoscut"})`,
+      ),
+      severity: "warn",
+      context: {
+        fallbackReason: meta.fallbackReason ?? null,
+        filename: meta.filename,
+      },
+    });
+  }
   if (meta.failedPages > 0)
     msg += ` ${meta.failedPages} pagină(i) au eșuat la OCR (marcate în text).`;
   if (meta.pageCapped > 0)

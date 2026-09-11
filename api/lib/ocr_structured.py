@@ -17,9 +17,11 @@ import urllib.request
 try:
     from .retry import retry_with_backoff
     from .gemini_counter import increment_gemini_counter
+    from .exceptions import OCRCorrectionUnavailable
 except ImportError:
     from lib.retry import retry_with_backoff
     from lib.gemini_counter import increment_gemini_counter
+    from lib.exceptions import OCRCorrectionUnavailable
 
 
 def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
@@ -136,6 +138,12 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
     # 200 cu cheia gratuită curentă (ambiguu, nu o dovadă de gratuitate).
     MODELS = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
     data = None
+    # Faza 4.5e (2026-09-11): motivul fiecărui eșec, ca la epuizarea completă să
+    # putem spune Cristinei DE CE, nu doar CE (E-OCR-004/005). "429" = cotă; orice
+    # altceva ("blocked" finishReason, cod HTTP diferit, timeout) = tranzitoriu,
+    # nu neapărat cotă. `fallback_reason` = "quota" DOAR dacă TOATE eșecurile au
+    # fost 429 — un singur motiv diferit înseamnă cauză amestecată, nu cotă curată.
+    fail_reasons: list[str] = []
 
     for model_name in MODELS:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
@@ -170,19 +178,18 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
                     "(filtru Google, nu eroare de rețea) — trecem la modelul următor",
                     file=sys.stderr,
                 )
+                fail_reasons.append(f"blocked:{finish_reason}")
                 if model_name != MODELS[-1]:
                     continue
                 if key_env != "GOOGLE_AI_API_KEY":
-                    raise RuntimeError(
-                        f"Toate modelele Gemini (tier plătit) au eșuat (finishReason="
-                        f"{finish_reason}); fallback Mistral OMIS pt confidențialitate "
-                        "(lucrare de elev)."
-                    )
+                    raise OCRCorrectionUnavailable()
                 print(
                     "[OCR-STRUCT] All Gemini tiers blocked (finishReason), trying Mistral OCR fallback",
                     file=sys.stderr,
                 )
-                return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
+                return _ocr_with_mistral_structured(
+                    image_bytes, mime_type, src, timeout_s=timeout_s, fail_reasons=fail_reasons
+                )
             print(f"[OCR-STRUCT] Success with {model_name}", file=sys.stderr)
             break
         except urllib.error.HTTPError as e:
@@ -194,21 +201,22 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
             # în loc să oprim tot lanțul (503 e cel mai frecvent la ore de vârf).
             if e.code in (429, 404, 500, 502, 503, 529) and model_name != MODELS[-1]:
                 print(f"[OCR-STRUCT] {model_name} HTTP {e.code}, trying next model", file=sys.stderr)
+                fail_reasons.append(str(e.code))
                 continue
             error_body = e.read().decode("utf-8", errors="replace")[:300]
             print(f"[OCR-STRUCT] HTTP {e.code}: {error_body}", file=sys.stderr)
+            fail_reasons.append(str(e.code))
             if model_name == MODELS[-1]:
                 if key_env != "GOOGLE_AI_API_KEY":
                     # Faza 4.5d: tier PLĂTIT (lucrare de elev) — Mistral OCR e un
                     # procesator free terț, exact tier-ul pe care cheia plătită
                     # trebuie să-l evite. Eșuează vizibil, nu leak silențios.
-                    raise RuntimeError(
-                        f"Toate modelele Gemini (tier plătit) au eșuat ({e.code}); "
-                        "fallback Mistral OMIS pt confidențialitate (lucrare de elev)."
-                    )
+                    raise OCRCorrectionUnavailable()
                 # All Gemini tiers exhausted — try Mistral OCR as last resort
                 print("[OCR-STRUCT] All Gemini tiers exhausted, trying Mistral OCR fallback", file=sys.stderr)
-                return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
+                return _ocr_with_mistral_structured(
+                    image_bytes, mime_type, src, timeout_s=timeout_s, fail_reasons=fail_reasons
+                )
             raise
         except Exception as e:
             # Tranzitoriu = merită modelul următor: 5xx/429 SAU read-timeout. Log-urile
@@ -221,18 +229,26 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
                 or isinstance(e, TimeoutError)
                 or "timed out" in str(e).lower()
             )
+            # "429" în text -> tot cotă, la fel ca HTTPError.code == 429 (retry_with_backoff
+            # poate re-ridica un 429 ca eroare generică, nu doar ca HTTPError). Altfel,
+            # "timeout" e categoria lui proprie (nu cotă) — vezi clasificarea fallback_reason.
+            if "429" in str(e):
+                fail_reasons.append("429")
+            elif isinstance(e, TimeoutError) or "timed out" in str(e).lower():
+                fail_reasons.append("timeout")
+            else:
+                fail_reasons.append("error")
             if transient and model_name != MODELS[-1]:
                 print(f"[OCR-STRUCT] {model_name} transient error, trying next model: {e}", file=sys.stderr)
                 continue
             print(f"[OCR-STRUCT] Error: {e}", file=sys.stderr)
             if model_name == MODELS[-1]:
                 if key_env != "GOOGLE_AI_API_KEY":
-                    raise RuntimeError(
-                        f"Toate modelele Gemini (tier plătit) au eșuat ({e}); "
-                        "fallback Mistral OMIS pt confidențialitate (lucrare de elev)."
-                    )
+                    raise OCRCorrectionUnavailable()
                 print("[OCR-STRUCT] All Gemini tiers failed, trying Mistral OCR fallback", file=sys.stderr)
-                return _ocr_with_mistral_structured(image_bytes, mime_type, src, timeout_s=timeout_s)
+                return _ocr_with_mistral_structured(
+                    image_bytes, mime_type, src, timeout_s=timeout_s, fail_reasons=fail_reasons
+                )
             raise
 
     if data is None:
@@ -309,12 +325,20 @@ def ocr_structured(image_bytes: bytes, mime_type: str, source_lang: str = "ro",
 
 
 def _ocr_with_mistral_structured(image_bytes: bytes, mime_type: str, src_lang_name: str,
-                                 *, timeout_s: int = 45) -> dict:
+                                 *, timeout_s: int = 45,
+                                 fail_reasons: list[str] | None = None) -> dict:
     """G2 — Mistral OCR fallback when all Gemini tiers are exhausted.
 
     Uses Mistral OCR API (1B tokens/month free, EU servers).
     Returns structured dict compatible with html_builder.py.
     Note: returns Markdown text sections only — no SVG figures generated.
+
+    ``fail_reasons`` (Faza 4.5e, 2026-09-11): motivele celor 3 eșecuri Gemini care
+    au dus aici — folosite să derivăm ``fallback_reason`` ("quota" DOAR dacă TOATE
+    au fost 429, altfel "unavailable"), ca frontend-ul (E-OCR-004) să-i spună
+    Cristinei DE CE, nu doar CE. Tier plătit nu ajunge niciodată aici (vezi
+    ``OCRCorrectionUnavailable`` mai sus) — ``fallback_reason`` e mereu relevant
+    doar pt tier-ul free (import Editor).
     """
     api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
     if not api_key:
@@ -358,11 +382,18 @@ def _ocr_with_mistral_structured(image_bytes: bytes, mime_type: str, src_lang_na
                 "content": markdown_text,
             })
 
-    print(f"[OCR-STRUCT] Mistral OCR fallback: {len(pages)} pages, {len(sections)} sections", file=sys.stderr)
+    reasons = fail_reasons or []
+    fallback_reason = "quota" if reasons and all(r == "429" for r in reasons) else "unavailable"
+    print(
+        f"[OCR-STRUCT] Mistral OCR fallback: {len(pages)} pages, {len(sections)} sections, "
+        f"fallback_reason={fallback_reason} (fail_reasons={reasons})",
+        file=sys.stderr,
+    )
     return {
         "title": "",
         "sections": sections,
         "source": "mistral-ocr",  # Flag for downstream: no SVG figures available
+        "fallback_reason": fallback_reason,  # Faza 4.5e — E-OCR-004: "quota"|"unavailable"
     }
 
 

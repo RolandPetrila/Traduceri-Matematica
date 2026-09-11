@@ -20,9 +20,26 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-11 (Faza 4.5d ÎNCHISĂ — free tier + plătit corectare + OCR fixuri + eliminare Chat + Groq) · **Producție:** `traduceri-frontend.vercel.app` + `traduceri-api.vercel.app`, ambele redeployate · **FAZA 4.5d ÎNCHISĂ** (🟢 pe majoritatea itemilor, 🟡 pe 2 — vezi mai jos) · **⚠️ închisă fără confirmarea lui Roland pe cele 3 întrebări deschise, via reluare externă a propriului fork al sesiunii (NU o sesiune paralelă — corectat, vezi `docs/HANDOFF_SESIUNE.md`)** · **Următoarea:** de stabilit; 3 itemi rămân deschiși în `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md` (mesaj cotă OCR, 2 propuneri verificare live)
+**Ultima actualizare:** 2026-09-11 (Faza 4.5e ÎNCHISĂ — reparație de proces + mesaj de cotă OCR pe 3 cazuri + cele 2 🟡 rămase devenite 🟢 cu dovadă live + corecție de capacitate) · **Producție:** `traduceri-frontend.vercel.app` + `traduceri-api.vercel.app`, ambele redeployate · **FAZA 4.5e ÎNCHISĂ — TOATE itemii 🟢, cu dovadă live** · **Următoarea:** de stabilit, vezi `docs/HANDOFF_SESIUNE.md`
 
-> ### 🟢 FAZA 4.5d — ÎNCHISĂ — free tier, cheie plătită corectare, fix RECITATION + bbox, eliminare Chat, Groq TPM
+> ### 🟢 FAZA 4.5e — ÎNCHISĂ — mesaj cotă OCR (E-OCR-004/005) + Groq/bbox 🟢 cu dovadă live + corecție capacitate
+>
+> Deschisă de Roland ca reparație de proces (4.5d s-a închis fără confirmarea lui, via reluare
+> externă a fork-ului — vezi 🔴 mai jos). Plan + dovezi complete:
+> `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md` (runda 3).
+>
+> - 🟢 **Mesaj eșec OCR, 3 cazuri** — `E-OCR-004` (quota/unavailable, tier free) + `E-OCR-005`
+>   (cheia de corectare indisponibilă, tier plătit — extindere cerută de Roland). Poartă:
+>   `tsc 0 · jest 447/447 (+3) · build OK · pytest 121/121 (+6)`.
+> - 🟢 **Groq `maxTokens:6000`** — dovadă live EXECUTATĂ: 1 cerere reală, `HTTP 200`,
+>   `total_tokens: 2484`, fără 429. (Era 🟡 în 4.5d.)
+> - 🟢 **Fix scară bbox Lite** — dovadă live EXECUTATĂ end-to-end: 6/6 bbox valide pe
+>   `2.0_test_page_1.jpeg`, crop-uri reale, verificate vizual. Zero cotă `gemini-3.6-flash`
+>   consumată (429 fals, interceptat local). (Era 🟡 în 4.5d.)
+> - 🟢 **Corecție capacitate** — 520 pagini/zi TOTAL (nu „per proiect"), verificat de Roland în
+>   `api/ocr.py:50-57`.
+>
+> ### 🔴 FAZA 4.5d — ÎNCHISĂ, dar cu abatere de proces (corectată în 4.5e) — free tier, cheie plătită corectare, fix RECITATION + bbox, eliminare Chat, Groq TPM
 >
 > Plan complet, cu toate deciziile lui Roland citate exact + dovezile live:
 > `docs/PLAN_FAZA4.5D_FREE_TIER_2026-09-11.md`.

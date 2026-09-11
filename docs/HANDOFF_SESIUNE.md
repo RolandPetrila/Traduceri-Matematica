@@ -1,10 +1,60 @@
 # HANDOFF SESIUNE — reluare context 100% (editor TipTap + stare proiect)
 
-> Ultima actualizare: 2026-09-11 (Faza 4.5d ÎNCHISĂ — free tier + cheie plătită corectare + fix
-> RECITATION + fix scară bbox + eliminare Chat AI + Groq TPM, toate deployate + verificate live).
+> Ultima actualizare: 2026-09-11 (Faza 4.5e ÎNCHISĂ — închiderea onestă a lui 4.5d: mesaj de cotă
+> OCR pe 3 cazuri, cele două 🟡 rămase devenite 🟢 cu dovadă live, corecție de capacitate).
 > Scop: o sesiune NOUĂ reia exact de unde am rămas, cu tot contextul operațional.
 
-## ▶️ REIA DE AICI — FAZA 4.5d ÎNCHISĂ (free tier + plătit corectare + OCR + Chat + Groq) · urmează o fază nouă, nestabilită încă
+## ▶️ REIA DE AICI — FAZA 4.5e ÎNCHISĂ (mesaj de cotă OCR + verificări live + corecție capacitate) · urmează o fază nouă, nestabilită încă
+
+> **Context:** Faza 4.5e a fost deschisă de Roland EXPLICIT ca reparație de proces — 4.5d (mai jos,
+> istoric) s-a închis fără confirmarea lui pe conversația coordonatoare, prin reluarea externă a
+> unui fork. Roland a verificat el însuși codul (`git show`, poartă re-rulată independent), a
+> confirmat că fix-ul de bbox e corect, a găsit o corecție reală (capacitatea e 520/zi TOTAL, nu
+> „per proiect" — `api/ocr.py:50-57` are DOAR 2 chei, nu o a doua rezervă gratuită), și a cerut 3
+> lucruri, TOATE FĂCUTE de data asta cu confirmarea lui directă în conversație:
+
+**1. Mesaj de eșec OCR, pe 3 cazuri distincte (extins de Roland de la propunerea inițială pe 2):**
+
+- `E-OCR-004` (warn) — tier FREE (import Editor), cotă epuizată pe toate 3 modele Gemini →
+  `fallback_reason`: `"quota"` (toate eșecurile 429) sau `"unavailable"` (cauză amestecată) →
+  mesaj distinct în banner-ul din `editor-import.tsx`, logat în Supabase (vizibil pe `/diagnostics`).
+- `E-OCR-005` (error, 503) — tier PLĂTIT (corectare lucrare elev), toate modelele plătite eșuează →
+  eroare REALĂ (nu mai e îngropată în text `[Eroare OCR pagina N: ...]` care trecea garda de „text
+  gol" din `TestePanel.tsx` și arăta mesajul greșit „poză neclară") → mesaj în `TestePanel.tsx`
+  confirmă EXPLICIT că poza n-a fost trimisă către niciun alt procesator (cerința lui Roland: elevul/
+  Cristina trebuie să știe sigur, nu doar că „n-a mers").
+- Cod: `api/lib/exceptions.py` (`OCRCorrectionUnavailable`), `api/lib/ocr_structured.py`
+  (`fail_reasons` acumulat, `_ocr_with_mistral_structured` derivă `fallback_reason`), `api/ocr.py`
+  (`except AppError: raise` — propagă tipizat, nu mai înghite în text), `config/error_codes.json` +
+  `error-catalog.ts` (regenerat), `ocr-map.ts`, `editor-import.tsx`, `TestePanel.tsx`.
+- **Poartă:** `tsc 0 · jest 447/447 (+3) · build OK · pytest 121/121 (+6)`.
+
+**2. Cele două verificări live propuse — EXECUTATE efectiv (nu doar propuse), ambele 🟡 → 🟢:**
+
+- **Groq `maxTokens:6000`:** o cerere reală la `/api/proxy?provider=groq` (endpoint deployat),
+  payload identic pasului `groq` din `GENERATION_CHAIN`. Rezultat: `HTTP 200`, `finish_reason: stop`,
+  `total_tokens: 2484` — sub plafonul de 8000 TPM, zero 429. Script:
+  `scratchpad/verify_groq_6000_live_2026-09-11.mjs`.
+- **Fix scară bbox Lite:** `urllib.request.urlopen` interceptat selectiv — cereri către
+  `gemini-3.6-flash` primesc 429 FALS instant (zero cotă consumată), cererea către
+  `gemini-3.5-flash-lite` trece REAL, cu `GOOGLE_AI_API_KEY_TRADUCERI_2` (liberă). Codul rulat e
+  `ocr_structured.py` cel deployat, neschimbat. Rezultat pe `2.0_test_page_1.jpeg` (aceeași din
+  testul A/B, 4/6 bbox corupte înainte): **6/6 bbox valide, 6 crop-uri reale**, verificate și vizual
+  pe 2 din 6 (figuri corecte, nu placeholder). Script + crop-uri:
+  `scratchpad/verify_bbox_lite_live_2026-09-11.py`,
+  `99_Roland_Work/Teste_Output/bbox_lite_live_2026-09-11/`.
+
+**3. Corecția de capacitate a lui Roland — integrată:** 520 pagini/zi e capacitatea TOTALĂ (20
+3.6-flash + 500 Lite, acum sigur), NU „per proiect" — nu există o a doua cheie liberă cablată pe
+traseul OCR (`api/ocr.py:50-57`, `_OCR_KEY_ENV_BY_TIER` are DOAR `free`/`paid`). Formularea inițială
+era înșelătoare, chiar dacă concluzia (520/zi ajunge decisiv pt un singur utilizator) rămânea corectă.
+
+**Document complet, cu toate detaliile + dovezile:**
+`docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md` (analiza + implementarea rundei 3).
+
+---
+
+## (istoric) FAZA 4.5d ÎNCHISĂ (free tier + plătit corectare + OCR + Chat + Groq) — vezi 4.5e mai sus pt reparația de proces
 
 > **⚠️ CORECȚIE DE FAPT (2026-09-11, runda 3) — nu erau „două sesiuni paralele".** Nota de mai jos,
 > scrisă la închiderea fazei, atribuia greșit `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md`

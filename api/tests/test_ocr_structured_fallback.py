@@ -162,16 +162,19 @@ def test_recitation_on_all_models_falls_to_mistral():
 @patch.dict("os.environ", {"GOOGLE_AI_API_KEY_PAID": "test-paid-key"})
 @patch("lib.ocr_structured.increment_gemini_counter", lambda *a, **k: None)
 def test_recitation_on_all_models_paid_tier_does_NOT_fall_to_mistral():
-    """RECITATION pe toate 3, tier PLĂTIT → eșuează vizibil, nu Mistral (free terț)."""
+    """RECITATION pe toate 3, tier PLĂTIT → eșuează vizibil (E-OCR-005), nu Mistral (free terț)."""
+    from lib.exceptions import OCRCorrectionUnavailable
+
     def _side(req, *a, **k):
         return _FakeResp(_gemini_recitation_bytes())
 
     png = b"\x89PNG\r\n\x1a\nFAKE"
     with patch("urllib.request.urlopen", side_effect=_side), \
          patch("lib.ocr_structured._ocr_with_mistral_structured") as m:
-        with pytest.raises(RuntimeError, match="Mistral OMIS"):
+        with pytest.raises(OCRCorrectionUnavailable) as exc_info:
             ocr_mod.ocr_structured(png, "image/png", "ro", key_env="GOOGLE_AI_API_KEY_PAID")
 
+    assert exc_info.value.error_code == "E-OCR-005"
     m.assert_not_called()
 
 
@@ -261,17 +264,21 @@ def ocr_structured_call():
 @patch("lib.ocr_structured.increment_gemini_counter", lambda *a, **k: None)
 def test_paid_tier_all_models_fail_does_NOT_fall_to_mistral():
     """Tier plătit (lucrare de elev): dacă toate modelele Gemini eșuează, NU cade pe
-    Mistral (procesator free terț) — eșuează vizibil. Contra-probă la
+    Mistral (procesator free terț) — eșuează vizibil (E-OCR-005). Contra-probă la
     test_all_models_503_falls_to_mistral (comportamentul free rămâne neatins)."""
+    from lib.exceptions import OCRCorrectionUnavailable
+
     def _side(req, *a, **k):
         raise _http_503(getattr(req, "full_url", ""))
 
     png = b"\x89PNG\r\n\x1a\nFAKE"
     with patch("urllib.request.urlopen", side_effect=_side), \
          patch("lib.ocr_structured._ocr_with_mistral_structured") as m:
-        with pytest.raises(RuntimeError, match="Mistral OMIS"):
+        with pytest.raises(OCRCorrectionUnavailable) as exc_info:
             ocr_mod.ocr_structured(png, "image/png", "ro", key_env="GOOGLE_AI_API_KEY_PAID")
 
+    assert exc_info.value.error_code == "E-OCR-005"
+    assert exc_info.value.status == 503
     m.assert_not_called()
 
 
@@ -299,6 +306,78 @@ def test_paid_tier_missing_key_raises_clear_error():
         ocr_mod.ocr_structured(
             b"\x89PNG\r\n\x1a\nFAKE", "image/png", "ro", key_env="GOOGLE_AI_API_KEY_PAID"
         )
+
+
+# --- Faza 4.5e (2026-09-11): `fallback_reason` ("quota"|"unavailable") pe rezultatul
+# Mistral — cerut de Roland ca frontend-ul (E-OCR-004) să spună Cristinei DE CE, nu
+# doar CE. "quota" DOAR dacă TOATE eșecurile au fost 429; orice cauză amestecată = "unavailable" ---
+
+
+def _mistral_ok_bytes() -> bytes:
+    return json.dumps({"pages": [{"markdown": "text extras"}]}).encode("utf-8")
+
+
+@patch.dict("os.environ", {"MISTRAL_API_KEY": "test-mistral-key"})
+def test_mistral_fallback_reason_quota_when_all_429():
+    """3 eșecuri, toate 429 -> fallback_reason='quota' (cota zilnică, curat)."""
+    with patch("urllib.request.urlopen", return_value=_FakeResp(_mistral_ok_bytes())):
+        result = ocr_mod._ocr_with_mistral_structured(
+            b"fake", "image/png", "Romanian", fail_reasons=["429", "429", "429"]
+        )
+    assert result["fallback_reason"] == "quota"
+    assert result["source"] == "mistral-ocr"
+
+
+@patch.dict("os.environ", {"MISTRAL_API_KEY": "test-mistral-key"})
+def test_mistral_fallback_reason_unavailable_on_mixed_causes():
+    """Un singur eșec non-429 în amestec -> 'unavailable', NU 'quota' — cauza nu e
+    curat cota, nu promitem 'reîncearcă mâine' pe un motiv nesigur."""
+    with patch("urllib.request.urlopen", return_value=_FakeResp(_mistral_ok_bytes())):
+        result = ocr_mod._ocr_with_mistral_structured(
+            b"fake", "image/png", "Romanian", fail_reasons=["429", "503", "429"]
+        )
+    assert result["fallback_reason"] == "unavailable"
+
+
+@patch.dict("os.environ", {"MISTRAL_API_KEY": "test-mistral-key"})
+def test_mistral_fallback_reason_unavailable_on_recitation_block():
+    """finishReason blocat (RECITATION/SAFETY) nu e niciodată 429 -> 'unavailable'."""
+    with patch("urllib.request.urlopen", return_value=_FakeResp(_mistral_ok_bytes())):
+        result = ocr_mod._ocr_with_mistral_structured(
+            b"fake", "image/png", "Romanian",
+            fail_reasons=["blocked:RECITATION", "blocked:RECITATION", "blocked:RECITATION"],
+        )
+    assert result["fallback_reason"] == "unavailable"
+
+
+@patch.dict("os.environ", {"MISTRAL_API_KEY": "test-mistral-key"})
+def test_mistral_fallback_reason_defaults_to_unavailable_without_fail_reasons():
+    """Apel fără `fail_reasons` (compatibilitate/apel direct) -> nu explodează,
+    cade sigur pe 'unavailable' (nu presupune cotă fără dovadă)."""
+    with patch("urllib.request.urlopen", return_value=_FakeResp(_mistral_ok_bytes())):
+        result = ocr_mod._ocr_with_mistral_structured(b"fake", "image/png", "Romanian")
+    assert result["fallback_reason"] == "unavailable"
+
+
+@patch.dict("os.environ", {"GOOGLE_AI_API_KEY": "test-key", "MISTRAL_API_KEY": "test-mistral-key"})
+@patch("lib.ocr_structured.increment_gemini_counter", lambda *a, **k: None)
+def test_all_models_429_end_to_end_falls_to_mistral_with_quota_reason():
+    """Traseul REAL, capăt-la-capăt: toate 3 modele 429 (cotă epuizată azi) -> Mistral,
+    fallback_reason='quota'. Nu mockuiește `_ocr_with_mistral_structured` (ca testele
+    RECITATION de mai sus) — exercită și calculul real al `fallback_reason`."""
+    def _side(req, *a, **k):
+        url = getattr(req, "full_url", "")
+        if "generativelanguage" in url:
+            raise urllib.error.HTTPError(
+                url, 429, "quota exceeded", {}, io.BytesIO(b'{"error":{"code":429}}')
+            )
+        return _FakeResp(_mistral_ok_bytes())
+
+    with patch("urllib.request.urlopen", side_effect=_side):
+        result = ocr_structured_call()
+
+    assert result["source"] == "mistral-ocr"
+    assert result["fallback_reason"] == "quota"
 
 
 if __name__ == "__main__":
