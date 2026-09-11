@@ -6,6 +6,25 @@
 > devenite 🟢 cu dovadă live executată efectiv, corecția de capacitate (520/zi TOTAL, nu „per
 > proiect" — corectată de Roland, verificată în cod). Vezi secțiunile de mai jos pt fiecare, marcate
 > „IMPLEMENTAT"/„🟢, dovadă live". Restul acestei note (istoricul absorbției din fork) rămâne mai jos.
+>
+> **Cei trei auditori (R-AUDIT-FAZA), verdicte complete:**
+>
+> - **regresie** — FĂRĂ REGRESIE. Poartă re-rulată independent, cifre identice (`tsc 0 · jest 447/447
+· build OK · pytest 121/121`), lint neschimbat, testele vechi (`RuntimeError("Mistral OMIS")`)
+>   confirmate ca EDITATE corect la `OCRCorrectionUnavailable`, nu șterse.
+> - **cerințe** — toate cele 3 puncte ONORATE (3 mesaje distincte confirmate cod+UI, ambele
+>   verificări EXECUTATE nu doar propuse, zero cotă consumată la bbox, nimic deschis în plus). A
+>   prins 2 abateri de proces la momentul auditului (capcana de mediu + `MEMORY.md` neactualizate) —
+>   AMBELE corectate imediat după (`finding_shell_hook_heredoc_diacritics_2026_09_11`,
+>   `project_faza4_5e_mesaj_ocr_verificari_live_2026_09_11`).
+> - **dovezi** — 7 CONFIRMAT, **inclusiv prin RE-EXECUȚIE INDEPENDENTĂ completă** a ambelor
+>   verificări live (Groq: cerere nouă, `total_tokens:2794`, tot fără 429; bbox: rulare de la zero,
+>   6/6 valide din nou, `fig6.caption == "Triunghiul ABC"` reprodus) — cea mai tare formă de dovadă
+>   posibilă. **1 NEDOVEDIT, marcat onest, nu rotunjit**: verificarea de regresie pe care am făcut-o
+>   eu manual după deploy (`curl` pe `limite_matematica.jpeg`, tier free) n-a lăsat niciun artefact
+>   (script/log) — a fost o cerere efemeră, neverificabilă retroactiv de un auditor independent.
+>   Deploy-ul propriu-zis (commit `963e780` = HEAD = origin, ambele proiecte production/READY) e
+>   confirmat independent prin API Vercel. 0 INFIRMAT.
 
 > **🔴 ABSORBIT — NU mai e documentul activ. CORECȚIE (nu „sesiune paralelă" — propriul fork al
 > acestei sesiuni).** Un fork lansat de sesiunea asta pt testul A/B OCR (strict scope: „NU implementa

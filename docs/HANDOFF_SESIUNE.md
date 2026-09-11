@@ -52,6 +52,16 @@ era înșelătoare, chiar dacă concluzia (520/zi ajunge decisiv pt un singur ut
 **Document complet, cu toate detaliile + dovezile:**
 `docs/PLAN_FAZA4.5D_FREE_TIER_SIGURANTA_2026-09-11.md` (analiza + implementarea rundei 3).
 
+**Cei trei auditori:** regresie FĂRĂ REGRESIE · cerințe toate 3 ONORATE (2 abateri de proces prinse
+la momentul auditului, corectate imediat — memorie) · dovezi 7 CONFIRMAT (inclusiv re-execuție
+INDEPENDENTĂ a ambelor verificări live, cu rezultate noi consistente) + **1 NEDOVEDIT onest**:
+verificarea de regresie manuală post-deploy (`limite_matematica.jpeg`, tier free) n-a lăsat
+artefact — raportată, nu dovedită retroactiv. Deploy-ul propriu-zis (commit = HEAD = origin, ambele
+proiecte production/READY) confirmat independent prin API Vercel.
+
+**⚠️ PROTOCOL PERMANENT (R-STOP-FAZA):** sesiunea se oprește AICI. Deschide o sesiune nouă cu
+`/onboard` pentru faza următoare — nu era stabilită la închiderea acestei faze.
+
 ---
 
 ## (istoric) FAZA 4.5d ÎNCHISĂ (free tier + plătit corectare + OCR + Chat + Groq) — vezi 4.5e mai sus pt reparația de proces
