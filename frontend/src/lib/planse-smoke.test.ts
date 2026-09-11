@@ -195,3 +195,130 @@ describe("Planșe — fiecare generator răspunde la „Generează” fără să
     },
   );
 });
+
+/**
+ * E-PLAN-001 (diagnosticat 2026-09-12) — `dictare`/`uneste` au un catalog FIX de
+ * forme (23, respectiv 36 semnături posibile TOTAL — vezi config/error_codes.json).
+ * Bucla din `generate()` e CORECTĂ (nu repetă o semnătură deja „văzută"); ce era
+ * greșit era sfatul din avertisment ("Mai apasă o dată pentru altele noi.") —
+ * înșelător când chiar TOATE variantele posibile la acea dificultate s-au epuizat,
+ * caz în care reîncercarea nu poate produce nimic nou. Testele de mai jos verifică
+ * mesajul corectat, nu doar citirea codului.
+ */
+describe("Planșe — avertisment corect la epuizarea catalogului (dictare/uneste)", () => {
+  beforeAll(() => {
+    if (!window.matchMedia) {
+      // @ts-expect-error — completăm doar ce lipsește din jsdom
+      window.matchMedia = () => ({
+        matches: false,
+        addListener() {},
+        removeListener() {},
+        addEventListener() {},
+        removeEventListener() {},
+      });
+    }
+    incarcaModulul();
+  });
+
+  function montezaTab(id: string) {
+    const buton = Array.from(
+      document.querySelectorAll<HTMLElement>(".subtab"),
+    ).find((b) => b.dataset.id === id)!;
+    buton.click();
+  }
+
+  function selecteazaRadio(name: string, valoare: string) {
+    const radios = Array.from(
+      document.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`),
+    );
+    radios.forEach((r) => {
+      r.checked = r.value === valoare;
+    });
+  }
+
+  it("dictare, Greu (DOAR 6 forme posibile TOTAL) + cerere de 8 → avertisment care spune adevărul, nu 'mai apasă o dată'", () => {
+    montezaTab("dictare");
+    selecteazaRadio("didif", "Greu");
+    (document.getElementById("di-forma") as HTMLSelectElement).value =
+      "aleator";
+    (document.getElementById("di-np") as HTMLInputElement).value = "8";
+
+    document
+      .getElementById("di-form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+
+    // pigeonhole: 8 cerute, DOAR 6 posibile TOTAL la "Greu" -> incomplet garantat,
+    // indiferent de seed/random (nu depinde de istoricul localStorage).
+    const meta = document.getElementById("di-meta")!;
+    expect(meta.textContent).toContain("doar atâtea forme distincte");
+
+    const avertisment = document.querySelector(".lot-incomplet");
+    expect(avertisment).toBeTruthy();
+    expect(avertisment!.textContent).toContain(
+      "Există doar atâtea forme distincte la această dificultate",
+    );
+    expect(avertisment!.textContent).not.toContain("Mai apasă o dată");
+  });
+
+  it("uneste, catalog epuizat (toate cele 12 forme deja 'văzute' la Standard) + cerere de 2 → avertisment corect", () => {
+    montezaTab("uneste");
+    const uneste = (
+      window as unknown as {
+        PlanseGen: {
+          uneste: {
+            SHAPE_IDS: string[];
+            buildOne: (
+              params: { forma: string; dificultate: string },
+              seed: number,
+            ) => { semnatura: string };
+          };
+        };
+      }
+    ).PlanseGen.uneste;
+    const istoric = (
+      window as unknown as {
+        PlanseHistory: { remember: (sig: string, tip: string) => void };
+      }
+    ).PlanseHistory;
+    const dif = "Standard";
+
+    // marcheaza TOATE cele 12 forme ca deja vazute la aceasta dificultate ->
+    // 0 semnaturi noi posibile, indiferent de seed (deterministic, fara flake).
+    uneste.SHAPE_IDS.forEach((forma) => {
+      const it = uneste.buildOne({ forma, dificultate: dif }, 0);
+      istoric.remember(it.semnatura, "uneste");
+    });
+
+    selecteazaRadio("undif", dif);
+    (document.getElementById("un-forma") as HTMLSelectElement).value =
+      "aleator";
+    (document.getElementById("un-np") as HTMLInputElement).value = "2";
+
+    document
+      .getElementById("un-form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+
+    const avertisment = document.querySelector(".lot-incomplet");
+    expect(avertisment).toBeTruthy();
+    expect(avertisment!.textContent).toContain("0 din 2");
+    expect(avertisment!.textContent).toContain(
+      "Există doar atâtea forme distincte la această dificultate",
+    );
+    expect(avertisment!.textContent).not.toContain("Mai apasă o dată");
+  });
+
+  it("lot COMPLET (labirint, generator neafectat) — avertismentul default rămâne neschimbat", () => {
+    montezaTab("labirint");
+    document
+      .getElementById("lab-form")!
+      .dispatchEvent(
+        new window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+    // labirint nu are catalog fix -> lot complet, fara avertisment.
+    expect(document.querySelector(".lot-incomplet")).toBeNull();
+  });
+});

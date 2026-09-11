@@ -14,13 +14,49 @@
 (`99_Roland_Work/Fazele_mentiuni_Roland.md`). O sesiune nouă NU deschide automat o fază nouă —
 continuă ca mentenanță normală, pornind cu pasul 🟡 de mai jos.
 
-**🟡 PRIMUL ACT AL SESIUNII URMĂTOARE (obligatoriu, înainte de orice altceva):** verifică dacă
-hook-ul `SessionStart` (`.claude/settings.local.json`) chiar a rulat automat
-`.claude/scripts/check-docs-classification.mjs` la pornirea acestei sesiuni noi și dacă output-ul
-lui a ajuns în context. Dacă `de_revizuit > 0` în acel output, declanșează `AskUserQuestion` cu
-Roland ÎNAINTE de orice altă acțiune (regulă nouă, `CLAUDE.md` pasul 2). Asta NU s-a putut dovedi
-din sesiunea Fazei 6 însăși (hook-ul nu se poate auto-testa retroactiv pe sesiunea care tocmai
-l-a creat) — e singurul item rămas 🟡 în `docs/Plan_in_Lucru.md`.
+**🟡 PRIMUL ACT AL SESIUNII URMĂTOARE (obligatoriu, înainte de orice altceva) — actualizat
+2026-09-12, cauză identificată + fix aplicat, NEDOVEDIT ÎNCĂ LIVE:**
+
+- **Verificare:** la pornire, caută în context un mesaj `SessionStart hook success:` cu conținut
+  JSON de forma `{"scanate":N,"de_revizuit":M,"detalii":[...]}`. Dacă apare → mecanismul
+  funcționează, fix confirmat, poți bifa 🟢 în `docs/Plan_in_Lucru.md` și șterge acest bloc. Dacă
+  NU apare din nou → fixul de mai jos n-a rezolvat-o, revino cu alt diagnostic (nu repeta „nu știm
+  de ce" — pornește de la ce s-a exclus deja, vezi mai jos).
+- Dacă `de_revizuit > 0` în acel output → `AskUserQuestion` cu Roland ÎNAINTE de orice altă acțiune
+  (`CLAUDE.md` pasul 2).
+
+**Diagnostic făcut 2026-09-12 (sesiune de mentenanță, nu fază nouă) — verificat cu documentația
+oficială Claude Code (`code.claude.com/docs/en/hooks.md`), NU presupus:**
+
+- **EXCLUS:** `matcher: ""` la `SessionStart` — confirmat în documentație ca echivalent cu
+  omiterea câmpului ("match all"). Nu era cauza.
+- **EXCLUS:** shell-ul pe Windows — Claude Code folosește Git Bash (îl avem instalat), unde `;`
+  e separator valid. Nu era cauza (ipoteză proprie, infirmată).
+- **CAUZA PROBABILĂ:** comanda folosea o cale RELATIVĂ (`node .claude/scripts/check-docs-classification.mjs`)
+  fără `${CLAUDE_PROJECT_DIR}`. Documentația spune explicit că astfel de căi se rezolvă față de
+  `cwd` la momentul lansării hook-ului (nu garantat = rădăcina proiectului) și recomandă
+  `${CLAUDE_PROJECT_DIR}` tocmai pentru acest caz. Dacă `cwd` la lansarea automată a hook-ului nu
+  era rădăcina proiectului, `node` ar fi eșuat cu `MODULE_NOT_FOUND` pe stderr, cu stdout GOL — iar
+  `; exit 0` (adăugat ca să nu blocheze sesiunea la `de_revizuit>0`) ar fi mascat exit code-ul,
+  explicând tăcerea completă (nici succes, nici eroare vizibilă) observată la pornirea sesiunii
+  Fazei 6 următoare. **Nu s-a putut testa direct** — Bash tool-ul folosit pt diagnostic NU are
+  `${CLAUDE_PROJECT_DIR}` în mediul lui (verificat: variabilă goală), deci nu e un mediu echivalent
+  cu cel în care Claude Code lansează hook-urile; testul acolo ar fi fost fals.
+- **FIX APLICAT:** `"command": "node \"${CLAUDE_PROJECT_DIR}/.claude/scripts/check-docs-classification.mjs\"; exit 0"`.
+- **Migrare confirmată de Roland (AskUserQuestion, 2026-09-12):** hook-ul mutat din
+  `.claude/settings.local.json` (negit-uit) în **`.claude/settings.json` (nou, versionat)** —
+  motiv: declanșatorul gărzii R-DOCS-GUARD trebuie să supraviețuiască unei clonări noi/migrări de
+  laptop, nu doar scriptul. Confirmat sigur: hook-urile din cele două fișiere SE COMBINĂ (merge),
+  nu se exclud — documentat oficial. `settings.local.json` păstrează doar `permissions`. La
+  auditul de dovezi (2026-09-12): fișierul era încă `??` (netracat) la momentul auditului, deci
+  „versionat" devine adevărat abia după commit-ul acestei sesiuni.
+
+**A doua reparație de mentenanță, aceeași sesiune (2026-09-12) — `E-PLAN-001` la modulul Planșe
+(`dictare`, `uneste`):** diagnosticat complet (bucla e CORECTĂ, catalogul de erori era imprecis,
+mesajul din UI era înșelător la epuizare totală de catalog), corectat + 3 teste noi de
+non-regresie + `CACHE_VERSION` bump-uit (`v77-20260911`→`v78-20260912`, altfel PWA-urile deja
+instalate nu ar fi văzut fixul, prins de `auditor-regresie`). Detaliu complet, verdictele ambilor
+auditori și gate-ul final: `docs/Plan_in_Lucru.md` §🔧 Mentenanță (2026-09-12).
 
 **Ce a livrat Faza 6 (2026-09-11/12), pe scurt — detaliu complet + verdicte auditori:
 `docs/Plan_Finalizat.md` §„Faza 6":**

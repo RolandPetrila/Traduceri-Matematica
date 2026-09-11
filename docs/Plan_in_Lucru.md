@@ -25,12 +25,66 @@
 > (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
 > laptop** (sincronizare oră Windows), nu în cod.
 
-**Ultima actualizare:** 2026-09-11 (Faza 5 ÎNCHISĂ — unificarea documentației: `docs/arhiva/` +
-`docs/Plan_Finalizat.md` noi, `PLAN_MASTER.md`+`CHANGELOG.md` absorbite+arhivate, referințe fixate
-în memorie/CLAUDE.md, cele 3 datorii tehnice + backlogul amânat migrate mai jos, ACEST fișier
-golit de fazele închise — vezi mai jos) · **Producție:** `traduceri-frontend.vercel.app` +
-`traduceri-api.vercel.app` (neschimbată de Faza 5 — nu s-a touch-uit cod de aplicație) ·
-**Următoarea:** Faza 6, vezi `docs/HANDOFF_SESIUNE.md`
+**Ultima actualizare:** 2026-09-12 (mentenanță post-Faza 6 — programul de reparație e ÎNCHIS,
+nicio fază nouă; vezi §🔧 Mentenanță mai jos pt task-urile curente) · **Producție:**
+`traduceri-frontend.vercel.app` + `traduceri-api.vercel.app` (neschimbată — nu s-a touch-uit cod
+de aplicație încă în sesiunea curentă) · Faza 6 (ultima) închisă 2026-09-11/12, vezi
+`docs/HANDOFF_SESIUNE.md`
+
+---
+
+## 🔧 Mentenanță (2026-09-12) — fără fază nouă, aceeași disciplină
+
+- [x] **Hook `SessionStart` (R-DOCS-GUARD) nu rula vizibil automat** — diagnosticat cu documentația
+      oficială Claude Code (matcher `""` și shell Windows EXCLUSE ca și cauze; cale relativă fără
+      `${CLAUDE_PROJECT_DIR}` = cauza probabilă) + fix aplicat + hook mutat în `.claude/settings.json`
+      (versionat, confirmat de Roland prin `AskUserQuestion`). Detaliu: `docs/HANDOFF_SESIUNE.md`
+      §REIA DE AICI. **Rămâne 🟡** — fixul nu se poate dovedi în sesiunea care îl aplică, se
+      confirmă la pornirea sesiunii următoare.
+- [x] **`E-PLAN-001` la Planșe (`dictare`, `uneste`) — diagnosticat COMPLET, cu dovadă rulată, nu
+      presupunere:**
+      **a) Bug sau comportament corect?** COMPORTAMENT CORECT — bucla respectă contractul ei (nu
+      repetă o semnătură deja „văzută"). Cauza reală: `dictare.js`/`uneste.js` au un catalog FIX de
+      forme numite (nu geometrie procedurală ca labirint/căutare/numere/integramă), iar
+      `signature()` depinde DOAR de (formă, dificultate), nu de seed. Rulat direct generatoarele
+      reale (`scratchpad/planse_pool_size_check.js`) → spațiu TOTAL de rezultate posibile:
+      `dictare` = 23 (Ușor 8/Standard 9/Greu 6), `uneste` = 36 (12 forme × 3 dificultăți).
+      `MAX_SEEN` (istoric global, comun la toate 6 generatoarele) = 300. Cu doar 6-9 rezultate
+      posibile/dificultate, istoricul se epuizează prin uz normal (fiecare planșă
+      printată/adăugată-în-coș e marcată definitiv „văzută"), nu doar prin testare. **Nu s-a atins
+      bucla — funcționează cum trebuie.**
+      **b) Codul de eroare corect?** PARȚIAL — tiparul E-HIST-001/002. Catalogul
+      (`config/error_codes.json` + oglinda generată `error-catalog.ts`, regenerată cu
+      `scratchpad/gen-error-catalog.mjs`, NU editată manual) descria doar cazul „excepție reală"
+      (`context.kind:"logic"`); a fost extins să acopere și cazul real întâlnit (`kind:"unknown"` =
+      epuizare pool, fără excepție) — **corectat 2026-09-12**, gate verificat identic cu baseline
+      (`tsc 0 · jest 447/447 · build OK · pytest 121/121`).
+      **Decizie confirmată (AskUserQuestion, 2026-09-12):** doar corectez mesajul din UI, nu ating
+      politica de istoric (fără buton reset, fără mărire catalog acum). Implementat: `diag.js`
+      (`notaLot`) primește un 4-lea parametru opțional `advice` care înlocuiește textul generic
+      "Mai apasă o dată pentru altele noi." (înșelător când chiar TOATE variantele posibile la acea
+      dificultate sunt deja văzute) — omis → comportament identic ca înainte pt labirint/căutare/
+      numere/integramă (spațiu de semnături practic nelimitat, unde sfatul chiar ajută). `app.js`
+      (generate() la `dictare` + `uneste`) trimite acum textul corect: „Există doar atâtea forme
+      distincte la această dificultate — încearcă altă dificultate sau altă formă." + adăugat
+      hint-ul lipsă din `uneste` (dictare îl avea deja parțial, doar în `meta`, nu și în banner).
+      **Test non-regresie NOU** (`planse-smoke.test.ts`, 3 teste, deterministe fără flake — rulează
+      generatoarele reale prin jsdom, nu mock-uri): dictare/Greu (6 posibile TOTAL) + cerere 8 →
+      pigeonhole garantat incomplet; uneste/Standard cu toate cele 12 forme marcate „văzute" +
+      cerere 2 → 0 produse; labirint (generator neafectat) → avertisment vechi neschimbat (probă că
+      fix-ul nu a scăpat la celelalte 4 generatoare). **Gate final: `tsc 0 · jest 450/450 (447+3) ·
+    build OK · pytest 121/121`** — zero regresie.
+      **Verdictele celor doi auditori (R-AUDIT-FAZA, 2026-09-12, aplicat și în mentenanță):**
+      `auditor-dovezi` — CONFIRMAT structural pe ambele fixuri (hook + E-PLAN-001), a găsit o
+      citare falsă (script de investigație salvat în scratchpad de SESIUNE, nu de proiect) —
+      corectată imediat (`scratchpad/planse_pool_size_check.js` mutat în proiect, re-rulat, output
+      identic 23/36). `auditor-regresie` — FĂRĂ REGRESIE pe poartă (cifre confirmate live
+      independent), a găsit aceeași citare moartă (rezolvată) + lint nou +1 în testul adăugat
+      (`no-unsafe-function-type`, corectat imediat, lint revenit la 12 = baseline) + **`sw.js`
+      cache-first pe `app.js`/`diag.js` (ambele modificate) fără bump de `CACHE_VERSION`** — un PWA
+      deja instalat n-ar fi văzut fixul. **Corectat, cu confirmarea lui Roland (AskUserQuestion):**
+      `CACHE_VERSION` bump-uit `v77-20260911` → `v78-20260912`. Gate re-verificat după TOATE
+      corecțiile: `tsc 0 · jest 450/450 · lint 12 (= baseline) · build OK · pytest 121/121`.
 
 ---
 
@@ -126,8 +180,14 @@ pytest 121/121` (identic cu baseline Faza 5; capcană găsită: `pytest.exe` dir
       🟢, verificate live.
 - [ ] 🟡 **VERIFICARE PROGRAMATĂ (sesiunea următoare):** declanșarea AUTOMATĂ a hook-ului
       `SessionStart` + `AskUserQuestion` la `de_revizuit > 0` — NU se poate dovedi din sesiunea
-      curentă (sesiunea a pornit deja). Primul pas al următoarei sesiuni, scris în
-      `HANDOFF_SESIUNE.md`.
+      curentă (sesiunea a pornit deja). **Actualizat 2026-09-12 (mentenanță):** confirmat empiric că
+      NU a rulat vizibil la pornirea acestei sesiuni (spre deosebire de hook-urile SessionStart ale
+      pluginului Vercel, care AU produs output — deci mecanismul de bază funcționează). Cauză
+      diagnosticată cu documentația oficială (matcher și shell Windows EXCLUSE ca și cauze; calea
+      relativă fără `${CLAUDE_PROJECT_DIR}` = cauza probabilă) + fix aplicat + hook mutat în
+      `.claude/settings.json` (versionat, confirmat de Roland). Detaliu complet:
+      `docs/HANDOFF_SESIUNE.md` §REIA DE AICI. Rămâne 🟡 până la confirmare live la sesiunea
+      următoare — fixul nu se poate dovedi în sesiunea care îl aplică.
 - [x] 2.2 — `docs/MEDIU_CLAUDE_CODE.md` scris (auditori, reguli, gardă docs/, memorie, flux fază,
       capcane operaționale — inclusiv gotcha-ul pytest găsit la baseline).
 - [x] 2.4 — `CLAUDE.md` pasul 1 include acum `docs/completari_pt_reparatie.md`.

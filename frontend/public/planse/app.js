@@ -871,9 +871,20 @@
       meta.textContent =
         items.length +
         (items.length === 1 ? " planșă" : " planșe") +
+        (items.length < np
+          ? " (doar atâtea forme distincte la această dificultate)"
+          : "") +
         " · seed bază " +
         base;
-      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, np, items.length);
+      if (window.PlanseDiag)
+        window.PlanseDiag.notaLot(
+          meta,
+          np,
+          items.length,
+          items.length < np
+            ? "Există doar atâtea forme distincte la această dificultate — încearcă altă dificultate sau altă formă."
+            : undefined,
+        );
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }
@@ -1133,7 +1144,15 @@
           : "") +
         " · seed bază " +
         base;
-      if (window.PlanseDiag) window.PlanseDiag.notaLot(meta, np, items.length);
+      if (window.PlanseDiag)
+        window.PlanseDiag.notaLot(
+          meta,
+          np,
+          items.length,
+          items.length < np
+            ? "Există doar atâtea forme distincte la această dificultate — încearcă altă dificultate sau altă formă."
+            : undefined,
+        );
       actions.style.display = items.length ? "flex" : "none";
       solBtn.textContent = "👁 Arată soluția";
     }

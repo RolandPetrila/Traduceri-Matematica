@@ -117,8 +117,16 @@
    * @param {HTMLElement} metaEl elementul în care se scrie rezumatul
    * @param {number} cerute     câte fișe a cerut
    * @param {number} obtinute   câte au ieșit
+   * @param {string} [advice]   text de sfat, ÎN LOC de default-ul "Mai apasă o
+   *   dată pentru altele noi." — necesar la dictare/uneste (2026-09-12), unde
+   *   catalogul de forme e FIX (23/36 rezultate posibile total, vezi
+   *   config/error_codes.json E-PLAN-001): reîncercarea NU produce nimic nou
+   *   dacă toate formele posibile la acea dificultate au fost deja văzute, deci
+   *   sfatul generic ar fi înșelător. Omis → comportament identic ca înainte
+   *   (labirint/căutare/numere/integramă, spațiu de semnături practic
+   *   nelimitat, unde "mai apasă o dată" chiar ajută).
    */
-  function notaLot(metaEl, requested, produced) {
+  function notaLot(metaEl, requested, produced, advice) {
     if (!metaEl) return;
 
     // `meta` trăiește ÎNĂUNTRUL barei `.gen-actions`, care rămâne ascunsă când nu
@@ -139,7 +147,8 @@
       produced +
       " din " +
       requested +
-      " au putut fi generate. Mai apasă o dată pentru altele noi.";
+      " au putut fi generate. " +
+      (advice || "Mai apasă o dată pentru altele noi.");
 
     metaEl.textContent += " · " + msg;
 

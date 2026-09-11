@@ -305,11 +305,11 @@ export const ERROR_CATALOG: Record<string, ErrorInfo> = {
     area: "scolare",
   },
   "E-PLAN-001": {
-    message: "Generarea unei planse a esuat",
+    message: "Lotul de planse nu a iesit complet (produced < requested)",
     cause:
-      "Un generator din modulul Planse (labirint/cautare/uneste/dictare/numere/integrama) a aruncat o eroare la construirea fisei. Generatorul e in context.generator.",
+      "DOUA cauze posibile, distinse de context.kind (verificat empiric 2026-09-12, generatoarele rulate direct): 'logic' = un generator a aruncat efectiv o eroare la construire (vezi context.cause + stack). 'unknown' = bucla a rulat FARA nicio exceptie dar nu a gasit destule semnaturi NOI - de obicei NU e bug: dictare.js si uneste.js au un catalog FIX de forme numite (nu geometrie procedurala ca labirint/cautare/numere/integrama), iar signature() depinde DOAR de (forma, dificultate), nu de seed. Spatiul total de rezultate posibile e mic (dictare: 23 = 8 Usor/9 Standard/6 Greu; uneste: 36 = 12 forme x 3 dificultati) si se epuizeaza usor prin uz normal (orice planta printata/adaugata-in-cos e marcata definitiv 'vazuta' in istoricul global din lib/history.js, MAX_SEEN=300 partajat intre toate 6 generatoarele) sau prin testare intensiva.",
     fix:
-      "Modul offline, vanilla JS: vezi frontend/public/planse/app.js + generators/. Reproduce cu parametrii din context (aceeasi forma, acelasi numar de itemi).",
+      "Citeste intai context.kind. 'logic' -> reproduce cu parametrii din context (generator + forma + dificultate), vezi frontend/public/planse/app.js + generators/. 'unknown' -> NU presupune bug: verifica localStorage['planse:history:v1'] (cheia seen) inainte de orice - daca (forma, dificultate) cerute sunt deja toate 'vazute', asta e epuizare reala a catalogului, nu eroare de cod. Optiuni de politica (decizie de produs, nu fix automat): marire catalog forme, istoric scopat per-generator, TTL/expirare, sau buton reset istoric pt utilizator.",
     severity: "error",
     area: "planse",
   },
