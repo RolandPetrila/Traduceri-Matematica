@@ -27,8 +27,9 @@
 
 **Ultima actualizare:** 2026-09-12 (mentenanță post-Faza 6 — programul de reparație e ÎNCHIS,
 nicio fază nouă; vezi §🔧 Mentenanță mai jos pt task-urile curente) · **Producție:**
-`traduceri-frontend.vercel.app` + `traduceri-api.vercel.app` (neschimbată — nu s-a touch-uit cod
-de aplicație încă în sesiunea curentă) · Faza 6 (ultima) închisă 2026-09-11/12, vezi
+`traduceri-frontend.vercel.app` — **redeployată 2026-09-12** cu fixul E-PLAN-001 la Planșe (commit
+`687f61d`), confirmat LIVE (`GET /sw.js` → `CACHE_VERSION = "v78-20260912"`) · `traduceri-api.vercel.app`
+neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, vezi
 `docs/HANDOFF_SESIUNE.md`
 
 ---
@@ -73,7 +74,7 @@ de aplicație încă în sesiunea curentă) · Faza 6 (ultima) închisă 2026-09
       pigeonhole garantat incomplet; uneste/Standard cu toate cele 12 forme marcate „văzute" +
       cerere 2 → 0 produse; labirint (generator neafectat) → avertisment vechi neschimbat (probă că
       fix-ul nu a scăpat la celelalte 4 generatoare). **Gate final: `tsc 0 · jest 450/450 (447+3) ·
-    build OK · pytest 121/121`** — zero regresie.
+  build OK · pytest 121/121`** — zero regresie.
       **Verdictele celor doi auditori (R-AUDIT-FAZA, 2026-09-12, aplicat și în mentenanță):**
       `auditor-dovezi` — CONFIRMAT structural pe ambele fixuri (hook + E-PLAN-001), a găsit o
       citare falsă (script de investigație salvat în scratchpad de SESIUNE, nu de proiect) —
