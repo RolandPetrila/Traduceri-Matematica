@@ -36,12 +36,23 @@ neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, 
 
 ## 🔧 Mentenanță (2026-09-12) — fără fază nouă, aceeași disciplină
 
-- [x] **Hook `SessionStart` (R-DOCS-GUARD) nu rula vizibil automat** — diagnosticat cu documentația
-      oficială Claude Code (matcher `""` și shell Windows EXCLUSE ca și cauze; cale relativă fără
-      `${CLAUDE_PROJECT_DIR}` = cauza probabilă) + fix aplicat + hook mutat în `.claude/settings.json`
-      (versionat, confirmat de Roland prin `AskUserQuestion`). Detaliu: `docs/HANDOFF_SESIUNE.md`
-      §REIA DE AICI. **Rămâne 🟡** — fixul nu se poate dovedi în sesiunea care îl aplică, se
-      confirmă la pornirea sesiunii următoare.
+- [ ] 🟡 **Hook `SessionStart` (R-DOCS-GUARD) nu rula vizibil automat** — diagnostic runda 1
+      (matcher `""` și shell Windows EXCLUSE; „cale relativă fără `${CLAUDE_PROJECT_DIR}`" propusă
+      ca cauză probabilă, fix aplicat, hook mutat în `.claude/settings.json` versionat). **Runda 2,
+      aceeași zi: cauza „cale relativă" INFIRMATĂ EMPIRIC** — testat cu variabila expusă corect
+      (cum o vede un proces de hook real, nu ca atribuire inline pe aceeași linie de comandă),
+      comanda ORIGINALĂ (inclusiv fără `${CLAUDE_PROJECT_DIR}`) rulează corect. Fix-ul cu
+      `${CLAUDE_PROJECT_DIR}` rămâne (întărire, bună practică), dar NU era problema reală. Dovezi
+      noi de la Roland exclud și: hook-urile din settings „nu merg în general" (hook-ul global
+      `check-mcp-health.sh` CHIAR rulează, doar tace pt că scrie în fișier propriu, nu pe stdout),
+      `disableAllHooks`/politici managed, `settings.local.json` lipsă, migrarea fișierului (a
+      eșuat identic din ambele variante — netracat ȘI versionat). Cauza reală: **[NEGĂSIT]**,
+      rămâne un singur teren neexclus (ceva specific hook-urilor de scop PROIECT). Instrumentare
+      sentinel adăugată (`scratchpad/hook-sentinel.log`, scrisă necondiționat de comanda hook-ului,
+      pe lângă comanda reală, nemodificată) — separă „nu rulează deloc" de „rulează dar tace în
+      context". Detaliu complet: `docs/HANDOFF_SESIUNE.md` §REIA DE AICI. **Rămâne 🟡** — testul
+      decisiv (`/hooks`, rulat de Roland din sesiunea lui + linia nouă sau absentă din sentinel la
+      pornirea sesiunii următoare) nu s-a putut încă rula/confirma.
 - [x] **`E-PLAN-001` la Planșe (`dictare`, `uneste`) — diagnosticat COMPLET, cu dovadă rulată, nu
       presupunere:**
       **a) Bug sau comportament corect?** COMPORTAMENT CORECT — bucla respectă contractul ei (nu
@@ -74,7 +85,7 @@ neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, 
       pigeonhole garantat incomplet; uneste/Standard cu toate cele 12 forme marcate „văzute" +
       cerere 2 → 0 produse; labirint (generator neafectat) → avertisment vechi neschimbat (probă că
       fix-ul nu a scăpat la celelalte 4 generatoare). **Gate final: `tsc 0 · jest 450/450 (447+3) ·
-  build OK · pytest 121/121`** — zero regresie.
+build OK · pytest 121/121`** — zero regresie.
       **Verdictele celor doi auditori (R-AUDIT-FAZA, 2026-09-12, aplicat și în mentenanță):**
       `auditor-dovezi` — CONFIRMAT structural pe ambele fixuri (hook + E-PLAN-001), a găsit o
       citare falsă (script de investigație salvat în scratchpad de SESIUNE, nu de proiect) —

@@ -15,41 +15,72 @@
 continuă ca mentenanță normală, pornind cu pasul 🟡 de mai jos.
 
 **🟡 PRIMUL ACT AL SESIUNII URMĂTOARE (obligatoriu, înainte de orice altceva) — actualizat
-2026-09-12, cauză identificată + fix aplicat, NEDOVEDIT ÎNCĂ LIVE:**
+2026-09-12 (a doua rundă, aceeași zi): CAUZA „cale relativă" DIN RUNDA ANTERIOARĂ E INFIRMATĂ
+EMPIRIC. Cauza reală rămâne [NEGĂSIT]. Instrumentare de tip sentinel adăugată — verificarea de mai
+jos e testul decisiv.**
 
-- **Verificare:** la pornire, caută în context un mesaj `SessionStart hook success:` cu conținut
-  JSON de forma `{"scanate":N,"de_revizuit":M,"detalii":[...]}`. Dacă apare → mecanismul
-  funcționează, fix confirmat, poți bifa 🟢 în `docs/Plan_in_Lucru.md` și șterge acest bloc. Dacă
-  NU apare din nou → fixul de mai jos n-a rezolvat-o, revino cu alt diagnostic (nu repeta „nu știm
-  de ce" — pornește de la ce s-a exclus deja, vezi mai jos).
-- Dacă `de_revizuit > 0` în acel output → `AskUserQuestion` cu Roland ÎNAINTE de orice altă acțiune
-  (`CLAUDE.md` pasul 2).
+- **Verificare pas 1 (surfacing):** la pornire, caută în context un mesaj `SessionStart hook
+success:` cu conținut JSON `{"scanate":N,"de_revizuit":M,"detalii":[...]}`. Dacă apare → 🟢,
+  bifează în `docs/Plan_in_Lucru.md` și șterge acest bloc.
+- **Verificare pas 2 (execuție, dacă pas 1 tace):** citește `scratchpad/hook-sentinel.log` (root
+  proiect). Fiecare pornire de sesiune ar trebui să adauge o linie `<timestamp> hook-ran rc=0`.
+  **Baseline la momentul scrierii acestui bloc: fișierul NU EXISTĂ** (`auditor-dovezi`, în
+  verificarea lui, a rulat comanda manual de 3 ori și a lăsat 3 linii de test în fișier — au fost
+  identificate ca artefact de audit, NU de o sesiune Claude Code reală, și șterse imediat după,
+  ca fișierul să pornească gol pt testul decisiv). Deci orice linie găsită la pornirea sesiunii
+  viitoare e REALĂ, nu reziduu.
+  - **Linie NOUĂ apărută** (fișierul există, cu ≥1 linie) → hook-ul RULEAZĂ, dar output-ul lui nu
+    ajunge vizibil în context. Cauza e „surfacing", nu „execuție/înregistrare" — diagnostic
+    separat, nu presupune nimic din ce urmează mai jos.
+  - **Fișierul tot lipsește** → hook-ul de proiect NU pornește deloc (nici măcar procesul). Cel mai
+    plauzibil teren rămas, neconfirmat încă: gating separat pt hook-uri din fișiere de scop
+    PROIECT (posibil legat de faptul că fișierul era nou/necomis) — de confirmat/infirmat cu
+    `/hooks` (rulat de Roland, vezi mai jos).
+- Dacă `de_revizuit > 0` în JSON (când/dacă apare) → `AskUserQuestion` cu Roland ÎNAINTE de orice
+  altă acțiune (`CLAUDE.md` pasul 2).
 
-**Diagnostic făcut 2026-09-12 (sesiune de mentenanță, nu fază nouă) — verificat cu documentația
-oficială Claude Code (`code.claude.com/docs/en/hooks.md`), NU presupus:**
+**Diagnostic — runda 1, 2026-09-12 (sesiune de mentenanță) — ce s-a exclus, verificat cu
+documentația oficială Claude Code:**
 
-- **EXCLUS:** `matcher: ""` la `SessionStart` — confirmat în documentație ca echivalent cu
-  omiterea câmpului ("match all"). Nu era cauza.
-- **EXCLUS:** shell-ul pe Windows — Claude Code folosește Git Bash (îl avem instalat), unde `;`
-  e separator valid. Nu era cauza (ipoteză proprie, infirmată).
-- **CAUZA PROBABILĂ:** comanda folosea o cale RELATIVĂ (`node .claude/scripts/check-docs-classification.mjs`)
-  fără `${CLAUDE_PROJECT_DIR}`. Documentația spune explicit că astfel de căi se rezolvă față de
-  `cwd` la momentul lansării hook-ului (nu garantat = rădăcina proiectului) și recomandă
-  `${CLAUDE_PROJECT_DIR}` tocmai pentru acest caz. Dacă `cwd` la lansarea automată a hook-ului nu
-  era rădăcina proiectului, `node` ar fi eșuat cu `MODULE_NOT_FOUND` pe stderr, cu stdout GOL — iar
-  `; exit 0` (adăugat ca să nu blocheze sesiunea la `de_revizuit>0`) ar fi mascat exit code-ul,
-  explicând tăcerea completă (nici succes, nici eroare vizibilă) observată la pornirea sesiunii
-  Fazei 6 următoare. **Nu s-a putut testa direct** — Bash tool-ul folosit pt diagnostic NU are
-  `${CLAUDE_PROJECT_DIR}` în mediul lui (verificat: variabilă goală), deci nu e un mediu echivalent
-  cu cel în care Claude Code lansează hook-urile; testul acolo ar fi fost fals.
-- **FIX APLICAT:** `"command": "node \"${CLAUDE_PROJECT_DIR}/.claude/scripts/check-docs-classification.mjs\"; exit 0"`.
-- **Migrare confirmată de Roland (AskUserQuestion, 2026-09-12):** hook-ul mutat din
-  `.claude/settings.local.json` (negit-uit) în **`.claude/settings.json` (nou, versionat)** —
-  motiv: declanșatorul gărzii R-DOCS-GUARD trebuie să supraviețuiască unei clonări noi/migrări de
-  laptop, nu doar scriptul. Confirmat sigur: hook-urile din cele două fișiere SE COMBINĂ (merge),
-  nu se exclud — documentat oficial. `settings.local.json` păstrează doar `permissions`. La
-  auditul de dovezi (2026-09-12): fișierul era încă `??` (netracat) la momentul auditului, deci
-  „versionat" devine adevărat abia după commit-ul acestei sesiuni.
+- **EXCLUS:** `matcher: ""` la `SessionStart` — echivalent cu omiterea câmpului ("match all").
+- **EXCLUS:** shell-ul pe Windows — Claude Code folosește Git Bash, unde `;` e separator valid.
+- ~~**CAUZA PROBABILĂ:** cale RELATIVĂ fără `${CLAUDE_PROJECT_DIR}`~~ — **INFIRMATĂ EMPIRIC, runda
+  2 (aceeași zi):** testul care „confirma" asta seta `CLAUDE_PROJECT_DIR` ca atribuire inline PE
+  ACEEAȘI LINIE cu comanda (`VAR=val node "${VAR}/..."`), care NU e felul în care Claude Code
+  furnizează variabila unui proces de hook (o pune deja în mediu, nu ca prefix inline) — un fals
+  pozitiv de reproducere, nu o cauză reală. Testat corect (variabilă EXPORTATĂ, cum o vede orice
+  proces de hook): comanda ORIGINALĂ (inclusiv varianta cu cale relativă, fără
+  `${CLAUDE_PROJECT_DIR}`) rulează CORECT și produce `{"scanate":15,"de_revizuit":0,"detalii":[]}`,
+  exit 0. Deci `cwd`-ul la lansarea hook-ului ESTE rădăcina proiectului pe această mașină — ipoteza
+  inversă (cwd greșit) nu se susține.
+- **FIX-ul cu `${CLAUDE_PROJECT_DIR}` RĂMÂNE pe loc** — dar re-etichetat: e ÎNTĂRIRE (bună practică
+  documentată oficial, robustă la un `cwd` viitor diferit), **NU fixul problemei reale** — problema
+  reală nu era asta.
+
+**Diagnostic — runda 2, 2026-09-12 (aceeași sesiune de mentenanță) — dovezi noi de la Roland
+(verificări read-only din sesiunea sa separată, `/hooks`-adiacente), ce mai exclud:**
+
+- **[CERT] EXCLUS:** hook-urile SessionStart din fișiere de settings NU merg „în general" pe
+  această mașină — hook-ul GLOBAL (`~/.claude/settings.json` → `check-mcp-health.sh`) chiar
+  rulează: jurnalul lui propriu (`~/.claude/debug/mcp-health.log`) are o intrare nouă exact la
+  pornirea sesiunii (verificat pe mtime). E tăcut în context doar pt că scrie STRICT în fișier, nu
+  pe stdout — nu pt că n-ar rula.
+- **[CERT] EXCLUS:** `disableAllHooks` / `allowManagedHooksOnly` — nesetate în
+  `~/.claude/settings.json`; nu există `C:\Program Files\ClaudeCode\managed-settings.json`.
+- **[CERT] EXCLUS:** `~/.claude/settings.local.json` ca „al doilea fișier care ar fi trebuit să
+  preia" — NU există (deci nu e cazul unui fișier local care umbrește proiectul).
+- **[CERT] Migrarea fișierului NU e cauza:** hook-ul de PROIECT a eșuat identic din AMBELE
+  variante — `.claude/settings.local.json` (varianta veche, negit-uit) ȘI `.claude/settings.json`
+  (varianta nouă, versionată, curentă). Dacă „netracat vs versionat" ar fi contat, doar una dintre
+  variante ar fi eșuat.
+- **Rămâne un singur teren neexclus:** ceva specific hook-urilor de scop PROIECT (spre deosebire de
+  cele globale, `~/.claude/`) — posibil gating pe fișier nou/necomis, posibil altceva. **[NEGĂSIT]
+  încă** — `/hooks` (Roland) + sentinel-ul de mai sus sunt testele care ar tranșa.
+
+**Migrare fișier (istoric, neschimbat):** hook-ul mutat din `.claude/settings.local.json` în
+`.claude/settings.json` (versionat) la cererea lui Roland (`AskUserQuestion`, 2026-09-12) — motiv:
+declanșatorul R-DOCS-GUARD trebuie să supraviețuiască unei clonări noi/migrări de laptop. Rămâne
+justificată ca decizie (bună practică), independent de faptul că nu a rezolvat tăcerea hook-ului.
 
 **A doua reparație de mentenanță, aceeași sesiune (2026-09-12) — `E-PLAN-001` la modulul Planșe
 (`dictare`, `uneste`):** diagnosticat complet (bucla e CORECTĂ, catalogul de erori era imprecis,

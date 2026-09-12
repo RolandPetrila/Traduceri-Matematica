@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/scripts/check-docs-classification.mjs\"; exit 0"
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/scripts/check-docs-classification.mjs\"; RC=$?; echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ) hook-ran rc=$RC\" >> \"${CLAUDE_PROJECT_DIR}/scratchpad/hook-sentinel.log\"; exit 0"
           }
         ]
       }
