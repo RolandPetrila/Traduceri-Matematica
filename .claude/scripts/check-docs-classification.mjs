@@ -106,7 +106,12 @@ function classify(name, phaseTokens) {
 
 function main() {
   if (!existsSync(DOCS)) {
-    console.log(JSON.stringify({ eroare: `docs/ nu exista la ${DOCS}` }));
+    // Nu incepe cu '{' — daca ar incepe, Claude Code il interpreteaza ca JSON structurat de
+    // control pt hook-uri (schema hookSpecificOutput/decision), pica validarea de schema (nu are
+    // acele campuri) si mesajul NU mai ajunge vizibil la Claude, desi exit code-ul ramane 0/1
+    // normal — cauza reala a tacerii hook-ului SessionStart gasita si documentata 2026-09-12
+    // (vezi docs/HANDOFF_SESIUNE.md §REIA DE AICI).
+    console.log(`R-DOCS-GUARD eroare: docs/ nu exista la ${DOCS}`);
     process.exit(1);
   }
   const phaseTokens = phaseTokensByHeading(readPlanInLucruText());
@@ -122,7 +127,11 @@ function main() {
     de_revizuit: deRevizuit.length,
     detalii: deRevizuit,
   };
-  console.log(JSON.stringify(summary, null, 2));
+  // Nu incepe cu '{' — motiv: vezi comentariul de la eroarea "docs/ nu exista" de mai sus.
+  console.log(`R-DOCS-GUARD scanate=${summary.scanate} de_revizuit=${summary.de_revizuit}`);
+  if (summary.de_revizuit > 0) {
+    console.log(JSON.stringify(summary.detalii, null, 2));
+  }
   process.exit(deRevizuit.length > 0 ? 1 : 0);
 }
 

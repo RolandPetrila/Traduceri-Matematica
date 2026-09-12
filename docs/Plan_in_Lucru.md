@@ -36,23 +36,28 @@ neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, 
 
 ## 🔧 Mentenanță (2026-09-12) — fără fază nouă, aceeași disciplină
 
-- [ ] 🟡 **Hook `SessionStart` (R-DOCS-GUARD) nu rula vizibil automat** — diagnostic runda 1
-      (matcher `""` și shell Windows EXCLUSE; „cale relativă fără `${CLAUDE_PROJECT_DIR}`" propusă
-      ca cauză probabilă, fix aplicat, hook mutat în `.claude/settings.json` versionat). **Runda 2,
-      aceeași zi: cauza „cale relativă" INFIRMATĂ EMPIRIC** — testat cu variabila expusă corect
-      (cum o vede un proces de hook real, nu ca atribuire inline pe aceeași linie de comandă),
-      comanda ORIGINALĂ (inclusiv fără `${CLAUDE_PROJECT_DIR}`) rulează corect. Fix-ul cu
-      `${CLAUDE_PROJECT_DIR}` rămâne (întărire, bună practică), dar NU era problema reală. Dovezi
-      noi de la Roland exclud și: hook-urile din settings „nu merg în general" (hook-ul global
-      `check-mcp-health.sh` CHIAR rulează, doar tace pt că scrie în fișier propriu, nu pe stdout),
-      `disableAllHooks`/politici managed, `settings.local.json` lipsă, migrarea fișierului (a
-      eșuat identic din ambele variante — netracat ȘI versionat). Cauza reală: **[NEGĂSIT]**,
-      rămâne un singur teren neexclus (ceva specific hook-urilor de scop PROIECT). Instrumentare
-      sentinel adăugată (`scratchpad/hook-sentinel.log`, scrisă necondiționat de comanda hook-ului,
-      pe lângă comanda reală, nemodificată) — separă „nu rulează deloc" de „rulează dar tace în
-      context". Detaliu complet: `docs/HANDOFF_SESIUNE.md` §REIA DE AICI. **Rămâne 🟡** — testul
-      decisiv (`/hooks`, rulat de Roland din sesiunea lui + linia nouă sau absentă din sentinel la
-      pornirea sesiunii următoare) nu s-a putut încă rula/confirma.
+- [ ] 🟡 **Hook `SessionStart` (R-DOCS-GUARD) nu rula vizibil automat — CAUZĂ PLAUZIBILĂ GĂSITĂ ȘI
+      FIX APLICAT, nedovedit live încă (runda 3, 2026-09-12):** `/hooks` (rulat de Roland) a confirmat hook-ul de proiect
+      DEJA înregistrat corect (grup `[User, Project, Plugin] (all)`, alături de cel global care
+      rulează sigur) — elimină definitiv ipotezele rundelor 1-2 (cale relativă, gating pe fișier de
+      proiect). Cauza reală, verificată la documentația oficială Claude Code: scriptul scotea
+      `console.log(JSON.stringify(summary))` → stdout începe cu `{` → Claude Code îl interpretează
+      ca JSON STRUCTURAT de control pt hook-uri (schemă `hookSpecificOutput`/`decision`), pică
+      validarea (JSON-ul nostru n-avea acele câmpuri) → non-blocking error, dar notița de eroare
+      apare DOAR în transcriptul lui Roland, niciodată ca și context pt Claude (citat exact din
+      documentație). **Fix:** `.claude/scripts/check-docs-classification.mjs` — output reformatat
+      ca text simplu (`R-DOCS-GUARD scanate=N de_revizuit=M`, nu mai începe cu `{`), detaliile ca
+      array separat doar dacă `de_revizuit>0`. Testat manual, ambele căi (0 și >0 de_revizuit),
+      exit code 0/1 neschimbat. Instrumentarea sentinel (`scratchpad/hook-sentinel.log`, adăugată
+      la runda 2) rămâne ca a doua confirmare independentă. Detaliu complet, inclusiv rundele 1-2
+      (ipoteze infirmate, istoric): `docs/HANDOFF_SESIUNE.md` §REIA DE AICI. **Rămâne 🟡 până la
+      prima pornire reală de sesiune** — un `SessionStart hook success` nu se poate dovedi din
+      sesiunea care aplică fixul. **Precizare `auditor-dovezi` (runda 3):** verificarea mecanicii
+      scriptului (A/B/C mai jos) e CONFIRMATĂ live, dar surfacing-ul real prin `SessionStart`
+      rămâne [PROBABIL], nu [CERT] — sesiunea în care s-a aplicat fix-ul e continuarea ACELEIAȘI
+      sesiuni Claude Code care a diagnosticat problema (același `session_id` ca la runda 1-2), deci
+      niciun `SessionStart` autentic nu s-a mai declanșat de la aplicarea fix-ului încoace. Testul
+      decisiv rămâne strict: sesiune NOUĂ, pornită de la zero.
 - [x] **`E-PLAN-001` la Planșe (`dictare`, `uneste`) — diagnosticat COMPLET, cu dovadă rulată, nu
       presupunere:**
       **a) Bug sau comportament corect?** COMPORTAMENT CORECT — bucla respectă contractul ei (nu

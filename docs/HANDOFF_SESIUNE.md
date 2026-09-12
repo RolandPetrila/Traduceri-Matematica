@@ -14,30 +14,41 @@
 (`99_Roland_Work/Fazele_mentiuni_Roland.md`). O sesiune nouă NU deschide automat o fază nouă —
 continuă ca mentenanță normală, pornind cu pasul 🟡 de mai jos.
 
-**🟡 PRIMUL ACT AL SESIUNII URMĂTOARE (obligatoriu, înainte de orice altceva) — actualizat
-2026-09-12 (a doua rundă, aceeași zi): CAUZA „cale relativă" DIN RUNDA ANTERIOARĂ E INFIRMATĂ
-EMPIRIC. Cauza reală rămâne [NEGĂSIT]. Instrumentare de tip sentinel adăugată — verificarea de mai
-jos e testul decisiv.**
+**🟡 CAUZĂ PLAUZIBILĂ GĂSITĂ, FIX APLICAT — 2026-09-12 (runda 3, aceeași zi) — verificat cu
+documentația oficială Claude Code + `/hooks` (rulat de Roland). NEDOVEDIT ÎNCĂ LIVE: sesiunea care a
+aplicat fix-ul e CONTINUAREA aceleiași sesiuni care a diagnosticat problema (același `session_id`
+ca la rundele 1-2) — niciun `SessionStart` autentic nu s-a mai declanșat de atunci. Testul decisiv
+rămâne strict o sesiune NOUĂ, pornită de la zero.**
 
-- **Verificare pas 1 (surfacing):** la pornire, caută în context un mesaj `SessionStart hook
-success:` cu conținut JSON `{"scanate":N,"de_revizuit":M,"detalii":[...]}`. Dacă apare → 🟢,
-  bifează în `docs/Plan_in_Lucru.md` și șterge acest bloc.
-- **Verificare pas 2 (execuție, dacă pas 1 tace):** citește `scratchpad/hook-sentinel.log` (root
-  proiect). Fiecare pornire de sesiune ar trebui să adauge o linie `<timestamp> hook-ran rc=0`.
-  **Baseline la momentul scrierii acestui bloc: fișierul NU EXISTĂ** (`auditor-dovezi`, în
-  verificarea lui, a rulat comanda manual de 3 ori și a lăsat 3 linii de test în fișier — au fost
-  identificate ca artefact de audit, NU de o sesiune Claude Code reală, și șterse imediat după,
-  ca fișierul să pornească gol pt testul decisiv). Deci orice linie găsită la pornirea sesiunii
-  viitoare e REALĂ, nu reziduu.
-  - **Linie NOUĂ apărută** (fișierul există, cu ≥1 linie) → hook-ul RULEAZĂ, dar output-ul lui nu
-    ajunge vizibil în context. Cauza e „surfacing", nu „execuție/înregistrare" — diagnostic
-    separat, nu presupune nimic din ce urmează mai jos.
-  - **Fișierul tot lipsește** → hook-ul de proiect NU pornește deloc (nici măcar procesul). Cel mai
-    plauzibil teren rămas, neconfirmat încă: gating separat pt hook-uri din fișiere de scop
-    PROIECT (posibil legat de faptul că fișierul era nou/necomis) — de confirmat/infirmat cu
-    `/hooks` (rulat de Roland, vezi mai jos).
-- Dacă `de_revizuit > 0` în JSON (când/dacă apare) → `AskUserQuestion` cu Roland ÎNAINTE de orice
-  altă acțiune (`CLAUDE.md` pasul 2).
+- **Verificare la pornirea sesiunii URMĂTOARE:** caută în context un mesaj `SessionStart hook
+success:` cu textul `R-DOCS-GUARD scanate=N de_revizuit=M`. Dacă apare → 🟢 CONFIRMAT, bifează în
+  `docs/Plan_in_Lucru.md` și șterge acest bloc (păstrează doar rezumatul din
+  `docs/Plan_Finalizat.md`). Dacă tot nu apare → revino cu diagnostic nou, pornind de la ce s-a
+  exclus (runda 1 + runda 2, mai jos) — NU repeta ipotezele deja infirmate.
+- **Verificare secundară (independentă):** `scratchpad/hook-sentinel.log` ar trebui să aibă o linie
+  nouă `<timestamp> hook-ran rc=0` — fișierul a fost golit explicit înainte de închiderea acestei
+  sesiuni (era contaminat cu linii de test din verificările `auditor-dovezi`).
+- Dacă `de_revizuit > 0` (vizibil acum ca text simplu, nu ca JSON) → `AskUserQuestion` cu Roland
+  ÎNAINTE de orice altă acțiune (`CLAUDE.md` pasul 2).
+
+**Mecanismul exact (`/hooks` + documentația oficială Claude Code, citat verbatim):** hook-ul de
+proiect ERA deja înregistrat corect (confirmat cu `/hooks`: grupul `[User, Project, Plugin] (all)`,
+3 hook-uri, `check-docs-classification…` apare ca `Project Settings`, alături de hook-ul global
+`check-mcp-health.sh` care rulează sigur). Problema reală: scriptul scotea
+`console.log(JSON.stringify(summary, null, 2))` → stdout `{"scanate":15,"de_revizuit":0,...}`.
+Regula oficială Claude Code pt interpretarea stdout-ului: _„Starts with `{` and ends with `}`:
+Claude Code parses it as JSON... exit 0 with a parsed object that fails schema validation is a
+non-blocking error: the action proceeds, and the transcript shows a `<hook name> hook error`
+notice"_ — **dar acea notiță apare doar în transcriptul lui Roland, NU e „shown to Claude as
+context"** (citat explicit din documentație). JSON-ul nostru n-avea niciun câmp din schema oficială
+de control a hook-urilor (`hookSpecificOutput`/`decision`/etc.) → pica validarea → tăcere completă
+spre Claude, deși sesiunea continua normal (non-blocking). **Fix aplicat:**
+`.claude/scripts/check-docs-classification.mjs` — output-ul nu mai începe cu `{`
+(`console.log('R-DOCS-GUARD scanate=' + s + ' de_revizuit=' + d)`, detaliile ca array separat doar
+dacă `de_revizuit>0`) → tratat garantat ca text simplu, vizibil la Claude. Testat manual (ambele
+căi: 0 și >0 de_revizuit, exit code 0/1 neschimbat) înainte de commit.
+
+**Runda 1 + runda 2 (istoric, ipoteze deja EXCLUSE — nu le repeta):**
 
 **Diagnostic — runda 1, 2026-09-12 (sesiune de mentenanță) — ce s-a exclus, verificat cu
 documentația oficială Claude Code:**
@@ -73,9 +84,9 @@ documentația oficială Claude Code:**
   variante — `.claude/settings.local.json` (varianta veche, negit-uit) ȘI `.claude/settings.json`
   (varianta nouă, versionată, curentă). Dacă „netracat vs versionat" ar fi contat, doar una dintre
   variante ar fi eșuat.
-- **Rămâne un singur teren neexclus:** ceva specific hook-urilor de scop PROIECT (spre deosebire de
-  cele globale, `~/.claude/`) — posibil gating pe fișier nou/necomis, posibil altceva. **[NEGĂSIT]
-  încă** — `/hooks` (Roland) + sentinel-ul de mai sus sunt testele care ar tranșa.
+- **La momentul rundei 2, rămăsese un singur teren neexclus** (gating specific hook-urilor de scop
+  PROIECT) — **eliminat la runda 3** de `/hooks` (Roland): hook-ul de proiect era deja înregistrat
+  normal, alături de cel global. Vezi mecanismul real mai sus.
 
 **Migrare fișier (istoric, neschimbat):** hook-ul mutat din `.claude/settings.local.json` în
 `.claude/settings.json` (versionat) la cererea lui Roland (`AskUserQuestion`, 2026-09-12) — motiv:
