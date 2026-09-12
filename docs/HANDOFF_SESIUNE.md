@@ -34,6 +34,20 @@ zero 429, pe ambele chei — **Mistral OCR e VIU**, „429 persistent" era artef
 din 4.5c. Zero cod atins (fallback rămâne neschimbat). Detaliu + dovadă: `docs/Plan_Finalizat.md`
 §„Mentenanță — retestare Mistral" (2026-09-12).
 
+**A patra reparație de mentenanță, aceeași zi (2026-09-12) — R-DIAG-AUTO, prima rulare din
+această sesiune:** control pozitiv reprodus pe Supabase (cele trei grupuri 61/10/4 din Faza 6
+§2.7, exact); găsit un item preexistent (predatează Faza 6 cu ~14h) necatalogat:
+`level=error, error_code=NULL, message="Internal error"`, iOS/Safari, `context=null` — cauza
+erorii ÎN SINE rămâne [NEGĂSIT], dar orbirea diagnostică din jurul ei a fost confirmată ÎN COD:
+handler-ul `unhandledrejection` din `frontend/src/lib/monitoring.ts` nu trimitea niciodată
+`context`. Fix (un singur item, plafon respectat): capturare `context:{reasonType, reasonName,
+reasonCode, reasonString}`. Dovadă: 2 teste noi jsdom + reproducere manuală în Chrome pe
+dev-server local. Gate identic cu baseline (`tsc 0 · jest 452/452 · lint 12 · build OK ·
+pytest 121/121`), cei trei auditori rulați (FĂRĂ REGRESIE · 7/8 CONFIRMAT+1 corecție de delta ·
+mandat respectat+2 corecții de precizie). Detaliu complet: `docs/Plan_in_Lucru.md` §🔧 Mentenanță.
+Nota veche despre ceasul laptopului („cu o zi înainte") a fost infirmată empiric la această
+sesiune (verificat vs 3 surse externe, identic la secundă) — vezi `docs/Plan_in_Lucru.md`.
+
 **Ce a livrat Faza 6 (2026-09-11/12), pe scurt — detaliu complet + verdicte auditori:
 `docs/Plan_Finalizat.md` §„Faza 6":**
 

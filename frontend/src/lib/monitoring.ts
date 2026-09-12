@@ -230,10 +230,22 @@ export function initGlobalErrorHandlers(): void {
   });
 
   window.addEventListener("unhandledrejection", (event) => {
-    const reason = event.reason;
-    logError(reason?.message || String(reason), {
-      stack: reason?.stack,
+    const reason = event.reason as
+      | { message?: string; stack?: string; name?: string; code?: unknown }
+      | string
+      | number
+      | null
+      | undefined;
+    const asObj = reason && typeof reason === "object" ? reason : undefined;
+    logError(asObj?.message || String(reason), {
+      stack: asObj?.stack,
       source: "unhandled-promise-rejection",
+      context: {
+        reasonType: typeof reason,
+        reasonName: asObj?.name,
+        reasonCode: asObj?.code,
+        reasonString: asObj ? undefined : String(reason),
+      },
     });
   });
 

@@ -16,17 +16,19 @@
 > dublura pe care Faza 5 o interzice explicit). Istoricul complet al fazelor închise, cu tabelele
 > de dovadă live: `docs/Plan_Finalizat.md`.
 
-> ### ⏰ ATENȚIE la datele din acest proiect
+> ### ⏰ Notă despre ceasul laptopului (infirmată empiric, 2026-09-12)
 >
-> **Ceasul laptopului e cu o zi ÎNAINTE.** Verificat cu două surse independente: Google și
-> Vercel raportează **07.09.2026 08:17 GMT**, laptopul raportează 08.09.2026. Jurnalul din
-> Supabase e corect; laptopul nu. Consecințe: (a) toate datele „08.09.2026" scrise azi în
-> documente, comentarii de cod, mesaje de commit și nume de dovezi sunt **greșite cu o zi**;
-> (b) R-DIAG-AUTO filtrează „log-uri recente" după un ceas care o ia înainte. **De reparat pe
-> laptop** (sincronizare oră Windows), nu în cod.
+> Nota veche de aici ("ceasul e cu o zi înainte", scrisă 2026-09-07/08) NU se mai confirmă.
+> Reverificat 2026-09-12: ora locală vs. 3 surse externe independente (Google, GitHub,
+> Cloudflare) — identice la secundă (un al 4-lea martor, Vercel, a dat o valoare discordantă,
+> dar prin header de edge cache, nu ca sursă de timp primară). **Ceasul e corect ACUM.** Rămâne
+> un risc mic, nu un defect activ: `w32tm /query /status` arată serviciul de sincronizare oră
+> Windows OPRIT — nesincronizat, ceasul poate deriva din nou în timp. De remediat la conveniență
+> (pornire serviciu W32Time), fără urgență.
 
 **Ultima actualizare:** 2026-09-12 (mentenanță post-Faza 6 — programul de reparație e ÎNCHIS,
-nicio fază nouă; vezi §🔧 Mentenanță mai jos pt task-urile curente) · **Producție:**
+nicio fază nouă; adăugat R-DIAG-AUTO — fix orbire diagnostică `unhandledrejection`; vezi
+§🔧 Mentenanță mai jos pt task-urile curente) · **Producție:**
 `traduceri-frontend.vercel.app` — **redeployată 2026-09-12** cu fixul E-PLAN-001 la Planșe (commit
 `687f61d`), confirmat LIVE (`GET /sw.js` → `CACHE_VERSION = "v78-20260912"`) · `traduceri-api.vercel.app`
 neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, vezi
@@ -36,6 +38,53 @@ neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, 
 
 ## 🔧 Mentenanță (2026-09-12) — fără fază nouă, aceeași disciplină
 
+- [x] 🟢 **R-DIAG-AUTO — verificare + diagnostic log-uri de eroare (sesiune `/onboard` nouă,
+      2026-09-12, prima rulare a acestei reguli în această sesiune):**
+      **Control pozitiv (obligatoriu înainte de verdict):** interogat direct Supabase
+      (`tenders-ro`, `logs`). Cele trei grupuri documentate la Faza 6 §2.7 s-au reprodus EXACT:
+      `editor:dictation_error`=61 (2026-07-26), `editor:translate_error`=10 (2026-08-20→09-06),
+      `editor:ocr_import_error`=4 (2026-07-30→09-02) — aceleași cifre, aceleași ferestre de timp.
+      Totalul `level=action AND error_code IS NULL` = **854** (nu 846 ca la Faza 6) — delta de +8
+      **corectat de `auditor-dovezi`** după o primă explicație greșită a mea: cele 8 rânduri
+      excedentare sunt EXCLUSIV din 2026-09-12 (azi), compuse din 4× `editor:translate` + 4×
+      `editor:page_count` (acțiuni normale, nu erori) — NU din `editor:insert`/`editor:ocr_import`
+      cum am afirmat inițial fără verificare directă. Lecție reținută: nu prezenta o explicație de
+      delta ca fapt fără să o verifici separat.
+      **Item găsit** (citind TOATE nivelele, nu doar ERROR/WARN): `level=error, error_code=NULL,
+message="Internal error"`, id `244f7ac5`, `2026-09-11 07:22:50`, `source=unhandled-promise-
+rejection`, `context=null`, `stack=null`, iOS/Safari/mobile. **Precizie cerută de
+      `auditor-cerinte`:** NU e un item "nou" apărut după Faza 6 — predatează închiderea Fazei 6
+      (2026-09-11 21:19) cu ~14 ore; corect spus, e un item preexistent din bucket-ul
+      `level=error/warn, error_code=null` (43 rânduri), niciodată examinat individual până acum
+      (Faza 6 a acoperit doar bucket-ul `level=action`). Șirul „Internal error" NU apare nicăieri
+      în codul sursă propriu (grep repo-wide, zero rezultate) — cauza erorii ÎN SINE rămâne
+      **[NEGĂSIT]** (posibil o chirie WebKit/iOS Safari, nereprodusă local), NU s-a speculat.
+      **Cauza confirmată ÎN COD** (nu presupunere) pt orbirea diagnostică din jurul ei:
+      `frontend/src/lib/monitoring.ts`, handler-ul `window.addEventListener("unhandledrejection",
+...)` nu trimitea NICIODATĂ câmpul `context` la `logError` — orice `reason` care nu e un
+      `Error` propriu-zis (string, DOMException, obiect simplu) rămânea fără nicio urmă
+      diagnostică dincolo de mesaj. **Fix (UN SINGUR item, plafonul respectat):** handler-ul
+      capturează acum `context: {reasonType, reasonName, reasonCode, reasonString}` — dacă
+      recidivează, viitorul rând din Supabase va avea de-acum context real, nu `null`.
+      **Dovadă live, în 2 trepte:** (1) test nou `monitoring-unhandledrejection.test.ts` (2 teste,
+      execuție reală prin jsdom, nu mock — unul reproduce exact `reason="Internal error"`); (2) la
+      cererea `auditor-cerinte` (jsdom nu ajunge, a cerut verificare într-un browser real),
+      reprodus manual în Chrome pe dev-server local (`localhost:3000`, fără deploy):
+      `Promise.reject('Internal error')` → log capturat cu
+      `context:{reasonType:"string",reasonString:"Internal error"}` — confirmat vizual, nu doar în
+      test. **Gate**: `tsc 0 · jest 452/452 (450+2 noi) · lint 12 (=baseline) · build OK ·
+pytest 121/121` — identic cu baseline, verificat independent de `auditor-regresie`.
+      **Service worker**: NU necesită bump de `CACHE_VERSION` (confirmat de `auditor-regresie`) —
+      `monitoring.ts` e servit prin chunk Next.js hashat, cale network-first în `sw.js`, nu
+      cache-first pe nume fix ca la modulul Planșe.
+      **Scope respectat** (confirmat de `auditor-cerinte`): NU am atins Groq 429/auto-continuare,
+      NU am atins opțiunea B de capacitate OCR, NU am deschis fază nouă, NU am făcut deploy. Cele
+      61 rânduri `editor:dictation_error` NU au fost tratate ca bug (microfon tăcut, nu defect de
+      cod — `finding_dictation_silent_device_2026_07_26`), zero cod de dictare atins.
+      **Verdictele celor trei auditori:** `auditor-regresie` → FĂRĂ REGRESIE. `auditor-dovezi` →
+      7/8 CONFIRMAT + 1 corecție (delta +8, aplicată mai sus). `auditor-cerinte` → mandat respectat
+      pe scop/disciplină + 2 corecții (verificare live completată ulterior în browser real;
+      etichetare „nou"→„preexistent, neexaminat" aplicată mai sus).
 - [x] 🟢 **Hook `SessionStart` (R-DOCS-GUARD) — CONFIRMAT LIVE (2026-09-12, sesiune `/onboard`
       nouă, `session_id` diferit de rundele 1-3):** mesajul `SessionStart:startup hook success:
 R-DOCS-GUARD scanate=15 de_revizuit=0` a apărut vizibil în context — exact testul decisiv
@@ -269,8 +318,8 @@ cerere explicită:
 
 ## Riscuri deschise (genuine — cele rezolvate au migrat în `Plan_Finalizat.md`)
 
-| Risc                                      | Stare                                                                                                                                                                                                       |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Germana revenea în slovacă prin NLLB      | 🟡 reparat + 8 teste; nedovedibil live din exterior (DeepL servește `de` direct, nu ajunge la NLLB într-o cerere reală)                                                                                     |
-| Mesaje neacționabile în modulele neatinse | 🟡 mecanism gata, 9 locuri centrale reparate la Faza 2; acoperirea sistematică pe fiecare buton a trecut prin Faza 3 (inventar) + Faza 4 (audit live) — de reconfirmat dacă a mai rămas vreun gol la Faza 6 |
-| **Ceasul laptopului e cu o zi înainte**   | 🔴 deschis — de reparat pe laptop (sincronizare oră Windows). Afectează R-DIAG-AUTO și toate datele scrise în documentație                                                                                  |
+| Risc                                          | Stare                                                                                                                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Germana revenea în slovacă prin NLLB          | 🟡 reparat + 8 teste; nedovedibil live din exterior (DeepL servește `de` direct, nu ajunge la NLLB într-o cerere reală)                                                                                             |
+| Mesaje neacționabile în modulele neatinse     | 🟡 mecanism gata, 9 locuri centrale reparate la Faza 2; acoperirea sistematică pe fiecare buton a trecut prin Faza 3 (inventar) + Faza 4 (audit live) — de reconfirmat dacă a mai rămas vreun gol la Faza 6         |
+| Ceasul laptopului — serviciul W32Time e oprit | 🟢 ceasul CORECT (verificat 2026-09-12 vs 3 surse externe, identic la secundă) — nota veche „cu o zi înainte" era infirmată; rămâne doar risc mic de drift viitor (serviciul de sincronizare e oprit), fără urgență |
