@@ -41,7 +41,7 @@
 - **Școlare** → [F0-F5 (skeleton 112 noduri + toate ciclurile)](#școlare-f0-f5-2026-08-07-→-08) · [motor de desen determinist](#școlare—motor-de-desen-determinist-2026-08-09) · [autonomie text (fără referințe la imagini)](#școlare—autonomie-text-2026-08-09) — origine: [conversația Carla](#origine-planșe--școlare-conversația-carla)
 - **Securitate** → [S1-S8](#securitate-s1-s8-2026-08-01) · [audit /audit full](#re-audit--curățenie-2026-08-10)
 - **Infra/Deploy (Vercel, Supabase, CI)** → [migrare v4.0](#migrare-vercel--supabase-v40-2026-07)· [CI GitHub Actions](#cerințele-r1-r8-2026-07-30-→-08-01) · [curățare cod mort C1-C7](#curățenie-c1-c7-2026-08-03)
-- **Proces / Auditori / Documentație** → [consolidare PLAN_MASTER](#consolidare-plan_master-2026-07-30) · [cei trei auditori (R-AUDIT-FAZA)](#faza-2-—-bug-sk-2026-09-08-→-09) · [R-STOP-FAZA](#faza-3-—-caiet-de-sarcini-2026-09-09) · [Faza 5 — unificare documentație (`Plan_Finalizat.md`+`docs/arhiva/`)](#faza-5-—-unificarea-documentației-în-două-fișiere-vii-2026-09-11) · [Faza 6 — automatizarea (gardă `docs/`, memorie unică, R-DIAG-AUTO lărgit)](#faza-6-—-automatizarea-procesului-2026-09-11)
+- **Proces / Auditori / Documentație** → [consolidare PLAN_MASTER](#consolidare-plan_master-2026-07-30) · [cei trei auditori (R-AUDIT-FAZA)](#faza-2-—-bug-sk-2026-09-08-→-09) · [R-STOP-FAZA](#faza-3-—-caiet-de-sarcini-2026-09-09) · [Faza 5 — unificare documentație (`Plan_Finalizat.md`+`docs/arhiva/`)](#faza-5-—-unificarea-documentației-în-două-fișiere-vii-2026-09-11) · [Faza 6 — automatizarea (gardă `docs/`, memorie unică, R-DIAG-AUTO lărgit)](#faza-6-—-automatizarea-procesului-2026-09-11) · [Mentenanță hook SessionStart confirmat live (2026-09-12)](#mentenanță-post-program-—-hook-sessionstart-r-docs-guard-tăcut-2026-09-12)
 
 ---
 
@@ -563,6 +563,44 @@ poarta, `auditor-cerințe` compară livrarea cu mențiunile scrise de Roland. Ni
 **completitudinea internă a `Plan_Finalizat.md` însuși** — că o fază declarată închisă chiar are o
 secțiune proprie aici, nu doar o referință către una. Reparat la cererea explicită a lui Roland, ca
 prim pas al Fazei 6, înaintea oricărei alte modificări din acea fază.
+
+### Mentenanță post-program — hook `SessionStart` R-DOCS-GUARD tăcut (2026-09-12)
+
+**Nu e o fază nouă** — programul de reparație (Fazele 1-6) rămâne închis; asta e o reparație de
+mentenanță normală, aceeași zi ca închiderea Fazei 6.
+
+**Simptom:** hook-ul `SessionStart` local (`.claude/scripts/check-docs-classification.mjs`,
+instalat la Faza 6) nu producea niciun mesaj vizibil în context la pornirea sesiunii, deși rula
+fără eroare (`/hooks`, rulat de Roland, confirma hook-ul de proiect deja înregistrat corect, grup
+`[User, Project, Plugin] (all)`, alături de cel global care rula sigur).
+
+**3 runde de diagnostic (ipoteze excluse, în ordine):**
+
+1. **Runda 1:** `matcher: ""` — EXCLUS (echivalent cu "match all"); shell-ul pe Windows (Git
+   Bash, `;` valid) — EXCLUS. Ipoteza inițială „cale relativă fără `${CLAUDE_PROJECT_DIR}`" s-a
+   dovedit **fals pozitivă** la runda 2 (testul care părea s-o confirme seta variabila inline pe
+   aceeași linie cu comanda, nu cum o furnizează real Claude Code unui proces de hook).
+2. **Runda 2:** excluse `disableAllHooks`/`allowManagedHooksOnly` (nesetate), un al doilea fișier
+   de settings care ar fi umbrit proiectul (nu există), migrarea fișierului
+   (`.claude/settings.local.json` → `.claude/settings.json`, ambele variante eșuau identic).
+3. **Runda 3 (cauza reală, confirmată cu `/hooks` + documentația oficială Claude Code):** scriptul
+   scotea `console.log(JSON.stringify(summary))` → stdout începe cu `{` → Claude Code îl
+   interpretează ca JSON de control pt hook-uri (schema `hookSpecificOutput`/`decision`); JSON-ul
+   nostru n-avea acele câmpuri → pică validarea → eroare non-blocking, dar notița de eroare apare
+   DOAR în transcriptul lui Roland, niciodată ca și context pt Claude (citat exact din
+   documentația oficială). **Fix:** output reformatat ca text simplu
+   (`R-DOCS-GUARD scanate=N de_revizuit=M`, nu mai începe cu `{`), detaliile ca array separat doar
+   dacă `de_revizuit>0`. Testat manual, ambele căi (0 și >0), exit code 0/1 neschimbat.
+
+**🟢 CONFIRMAT LIVE (2026-09-12, sesiune `/onboard` reală, `session_id` nou — nu continuarea
+sesiunii care a aplicat fixul):** mesajul `SessionStart:startup hook success: R-DOCS-GUARD
+scanate=15 de_revizuit=0` a apărut vizibil în context la pornirea sesiunii, exact testul decisiv
+pe care runda 3 îl ceruse explicit. Mecanismul funcționează end-to-end: script → hook → context
+Claude, fără intervenție manuală.
+
+**Verdict `auditor-dovezi` (runda 3, pe mecanica scriptului, înainte de confirmarea live):**
+CONFIRMAT structural (testele A/B/C ale scriptului), a găsit o citare falsă (script de
+investigație salvat greșit în scratchpad de sesiune, nu de proiect) — corectată imediat.
 
 ---
 
