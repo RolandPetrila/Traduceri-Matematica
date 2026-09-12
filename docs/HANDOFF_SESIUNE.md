@@ -28,6 +28,12 @@ non-regresie + `CACHE_VERSION` bump-uit (`v77-20260911`→`v78-20260912`, altfel
 instalate nu ar fi văzut fixul, prins de `auditor-regresie`). Detaliu complet, verdictele ambilor
 auditori și gate-ul final: `docs/Plan_in_Lucru.md` §🔧 Mentenanță (2026-09-12).
 
+**A treia reparație de mentenanță, aceeași zi (2026-09-12) — retestare ONESTĂ Mistral „2
+req/min" (datorie tehnică din 4.5c, sărită de 2 ori):** sondă reală, 12/12 cereri → HTTP 200,
+zero 429, pe ambele chei — **Mistral OCR e VIU**, „429 persistent" era artefact al sondei burst
+din 4.5c. Zero cod atins (fallback rămâne neschimbat). Detaliu + dovadă: `docs/Plan_Finalizat.md`
+§„Mentenanță — retestare Mistral" (2026-09-12).
+
 **Ce a livrat Faza 6 (2026-09-11/12), pe scurt — detaliu complet + verdicte auditori:
 `docs/Plan_Finalizat.md` §„Faza 6":**
 
@@ -52,9 +58,11 @@ dovezi → 6 CONFIRMAT, 2 PARȚIAL (o referință moartă nouă + o imprecizie d
 corectate), 1 INFIRMAT-onest (auto-consistența nefăcută LA MOMENTUL auditului, corect marcată
 `[ ]`, făcută imediat după). cerințe → toate cele 4 completări obligatorii onorate.
 
-**3 datorii tehnice deschise, NEATINSE intenționat** (rămân în `docs/Plan_in_Lucru.md` §amânat
-conștient): retestare onestă Mistral „2 req/min", risc 429 Groq pe auto-continuare, opțiunea B de
-capacitate OCR (~1040/zi).
+**3 datorii tehnice deschise la închiderea Fazei 6, NEATINSE intenționat atunci** (rămân în
+`docs/Plan_in_Lucru.md` §amânat conștient): retestare onestă Mistral „2 req/min" **(rezolvată
+ulterior, 2026-09-12 — vezi paragraful de mai sus, „A treia reparație de mentenanță"; NU mai e
+deschisă)**, risc 429 Groq pe auto-continuare, opțiunea B de capacitate OCR (~1040/zi) — acestea
+două rămân deschise.
 
 **Plan complet + jurnal execuție:** `docs/arhiva/PLAN_FAZA6_AUTOMATIZARE_2026-09-11.md`.
 

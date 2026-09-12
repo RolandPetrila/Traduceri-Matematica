@@ -41,7 +41,7 @@
 - **Școlare** → [F0-F5 (skeleton 112 noduri + toate ciclurile)](#școlare-f0-f5-2026-08-07-→-08) · [motor de desen determinist](#școlare—motor-de-desen-determinist-2026-08-09) · [autonomie text (fără referințe la imagini)](#școlare—autonomie-text-2026-08-09) — origine: [conversația Carla](#origine-planșe--școlare-conversația-carla)
 - **Securitate** → [S1-S8](#securitate-s1-s8-2026-08-01) · [audit /audit full](#re-audit--curățenie-2026-08-10)
 - **Infra/Deploy (Vercel, Supabase, CI)** → [migrare v4.0](#migrare-vercel--supabase-v40-2026-07)· [CI GitHub Actions](#cerințele-r1-r8-2026-07-30-→-08-01) · [curățare cod mort C1-C7](#curățenie-c1-c7-2026-08-03)
-- **Proces / Auditori / Documentație** → [consolidare PLAN_MASTER](#consolidare-plan_master-2026-07-30) · [cei trei auditori (R-AUDIT-FAZA)](#faza-2-—-bug-sk-2026-09-08-→-09) · [R-STOP-FAZA](#faza-3-—-caiet-de-sarcini-2026-09-09) · [Faza 5 — unificare documentație (`Plan_Finalizat.md`+`docs/arhiva/`)](#faza-5-—-unificarea-documentației-în-două-fișiere-vii-2026-09-11) · [Faza 6 — automatizarea (gardă `docs/`, memorie unică, R-DIAG-AUTO lărgit)](#faza-6-—-automatizarea-procesului-2026-09-11) · [Mentenanță hook SessionStart confirmat live (2026-09-12)](#mentenanță-post-program-—-hook-sessionstart-r-docs-guard-tăcut-2026-09-12)
+- **Proces / Auditori / Documentație** → [consolidare PLAN_MASTER](#consolidare-plan_master-2026-07-30) · [cei trei auditori (R-AUDIT-FAZA)](#faza-2-—-bug-sk-2026-09-08-→-09) · [R-STOP-FAZA](#faza-3-—-caiet-de-sarcini-2026-09-09) · [Faza 5 — unificare documentație (`Plan_Finalizat.md`+`docs/arhiva/`)](#faza-5-—-unificarea-documentației-în-două-fișiere-vii-2026-09-11) · [Faza 6 — automatizarea (gardă `docs/`, memorie unică, R-DIAG-AUTO lărgit)](#faza-6-—-automatizarea-procesului-2026-09-11) · [Mentenanță hook SessionStart confirmat live (2026-09-12)](#mentenanță-post-program-—-hook-sessionstart-r-docs-guard-tăcut-2026-09-12) · [Mentenanță retestare Mistral (2026-09-12)](#mentenanță-—-retestare-mistral-2026-09-12)
 
 ---
 
@@ -601,6 +601,49 @@ Claude, fără intervenție manuală.
 **Verdict `auditor-dovezi` (runda 3, pe mecanica scriptului, înainte de confirmarea live):**
 CONFIRMAT structural (testele A/B/C ale scriptului), a găsit o citare falsă (script de
 investigație salvat greșit în scratchpad de sesiune, nu de proiect) — corectată imediat.
+
+### Mentenanță — retestare Mistral (2026-09-12)
+
+**Datorie tehnică din 4.5c, sărită de 2 ori (4.5d, 4.5e), rezolvată acum.** Promisă explicit ca
+„primul task al fazei următoare" (commit `605d4f8`), retestarea EMPIRICĂ a limitei Mistral „2
+req/min" (documentată în `~/.api-keys/catalog.md` pt `MISTRAL_API_KEY`/`MISTRAL_API_KEY_2`) nu se
+făcuse — Faza 4.5c doar o infirmase ANALITIC (sonda de atunci trăsese 6 cereri în ~20s, primise
+429, și raportase greșit „Mistral e mort"; memoria `feedback_verifica_limita_inainte_de_sonda`
+codifică exact această capcană).
+
+**2 corecturi de pornire, verificate în cod înainte de sondă (nu presupuse):**
+
+1. Mistral e **OCR-only** azi, nu „OCR/traducere" cum scria planul (stale) — singurul punct de
+   integrare activ e `api/lib/ocr_structured.py` → `_ocr_with_mistral_structured()` (model
+   `mistral-ocr-latest`, `POST https://api.mistral.ai/v1/ocr`, cheie din `MISTRAL_API_KEY`).
+   `translation_router.py` îl menționează DOAR într-un comentariu despre cod eliminat 2026-08-07
+   (`d2749d7`) — corectat în plan.
+2. Imaginile de test sunt în `99_Roland_Work/Teste_Input/` (nu `Teste_Input/` la rădăcină, cum
+   presupunea vag planul) — folosită `limite_matematica.jpeg` (pagină reală de matematică).
+
+**Sondă:** `scratchpad/mistral_rate_limit_probe_2026-09-12.mjs` (versionat, nu scratchpad de
+sesiune — lecția citării false prinsă de auditor la runda hook-ului, aplicată direct aici). Cereri
+REALE către endpoint-ul de producție, spațiate 35s (sub limita de 2/min = 30s/cerere), 6
+cereri/cheie (~3min30s/cheie), ambele chei ale proiectului testate SEPARAT, în ferestre de timp
+distincte (pauză 60s între ele) ca să nu se amestece eventuale 429 între conturi.
+
+**Rezultat (`scratchpad/mistral_rate_limit_probe_output_2026-09-12.json`):** **12/12 cereri → HTTP
+200**, OCR valid (`pages:1` fiecare), zero 429, zero erori, pe AMBELE chei
+(`MISTRAL_API_KEY`, `MISTRAL_API_KEY_2`). Durată răspuns: 244-1046ms — cea mai lentă a fost prima
+cerere globală (1046ms, probabil cold start de rețea), restul 244-611ms fără tipar clar (nu strict
+descrescător per cheie — ex. a doua cerere de pe `MISTRAL_API_KEY_2`, 611ms, e mai lentă decât
+prima ei, 273ms).
+
+**Verdict [CERT]:** Mistral OCR e VIU, pe ambele chei, la un ritm sub limita documentată (35s
+spacing = ~1.7 req/min < 2 req/min), susținut 6 cereri consecutive fără nicio degradare. Confirmă
+exact ipoteza Fazei 4.5c: sonda de atunci lucra la ~18 req/min (6 cereri în ~20s) — de ~9× peste
+limita documentată — iar 429-urile măsurau propria ei încălcare de plafon, nu o defecțiune a
+providerului. Fallback-ul din `ocr_structured.py` e **legitim și rămâne neschimbat** — zero cod
+de aplicație atins la acest task (doar sondă + documentație).
+
+**Decizie:** conform mandatului, rezultatele au fost aduse lui Roland prin `AskUserQuestion`
+înainte de orice schimbare la lanțul de fallback; verdictul nu a cerut nicio modificare de cod
+(Mistral rămâne fallback-ul existent, neatins).
 
 ---
 

@@ -1,0 +1,21 @@
+=== Sonda Mistral OCR — spatiere 35s (>30s), 6 cereri/cheie ===
+
+--- Testez MISTRAL_API_KEY ---
+[MISTRAL_API_KEY] req 1/6 ts=2026-09-12T13:19:58.021Z status=200 durationMs=1046 body="OK, pages=1"
+[MISTRAL_API_KEY] req 2/6 ts=2026-09-12T13:20:34.084Z status=200 durationMs=277 body="OK, pages=1"
+[MISTRAL_API_KEY] req 3/6 ts=2026-09-12T13:21:09.373Z status=200 durationMs=288 body="OK, pages=1"
+[MISTRAL_API_KEY] req 4/6 ts=2026-09-12T13:21:44.675Z status=200 durationMs=244 body="OK, pages=1"
+[MISTRAL_API_KEY] req 5/6 ts=2026-09-12T13:22:19.928Z status=200 durationMs=329 body="OK, pages=1"
+[MISTRAL_API_KEY] req 6/6 ts=2026-09-12T13:22:55.268Z status=200 durationMs=302 body="OK, pages=1"
+
+--- Pauza 60s intre chei (ferestre de timp separate) ---
+
+--- Testez MISTRAL_API_KEY_2 ---
+[MISTRAL_API_KEY_2] req 1/6 ts=2026-09-12T13:23:55.579Z status=200 durationMs=273 body="OK, pages=1"
+[MISTRAL_API_KEY_2] req 2/6 ts=2026-09-12T13:24:30.864Z status=200 durationMs=611 body="OK, pages=1"
+[MISTRAL_API_KEY_2] req 3/6 ts=2026-09-12T13:25:06.484Z status=200 durationMs=257 body="OK, pages=1"
+[MISTRAL_API_KEY_2] req 4/6 ts=2026-09-12T13:25:41.751Z status=200 durationMs=246 body="OK, pages=1"
+[MISTRAL_API_KEY_2] req 5/6 ts=2026-09-12T13:26:17.006Z status=200 durationMs=252 body="OK, pages=1"
+[MISTRAL_API_KEY_2] req 6/6 ts=2026-09-12T13:26:52.266Z status=200 durationMs=327 body="OK, pages=1"
+
+=== Rezultate scrise in scratchpad/mistral_rate_limit_probe_output_2026-09-12.json ===

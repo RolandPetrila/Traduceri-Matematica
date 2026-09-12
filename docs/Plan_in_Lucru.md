@@ -38,7 +38,7 @@ neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, 
 
 - [x] 🟢 **Hook `SessionStart` (R-DOCS-GUARD) — CONFIRMAT LIVE (2026-09-12, sesiune `/onboard`
       nouă, `session_id` diferit de rundele 1-3):** mesajul `SessionStart:startup hook success:
-    R-DOCS-GUARD scanate=15 de_revizuit=0` a apărut vizibil în context — exact testul decisiv
+R-DOCS-GUARD scanate=15 de_revizuit=0` a apărut vizibil în context — exact testul decisiv
       cerut de runda 3. Istoric diagnostic complet (3 runde, ipoteze excluse) + cauza reală (JSON
       brut pe stdout pica validarea de schemă a hook-urilor Claude Code) + fix:
       `docs/Plan_Finalizat.md` §„Mentenanță post-program — hook SessionStart" (2026-09-12).
@@ -99,8 +99,8 @@ OCR + reparație de proces) — toate cu dovadă live, verdicte ale celor trei a
 de commit reale. **Detaliul complet, per fază, cronologic: `docs/Plan_Finalizat.md`.**
 
 Rămân deschise din acest istoric (nu sărite — vezi §„Datorii tehnice deschise" mai jos):
-retestarea onestă Mistral „2 req/min", riscul Groq de 429 pe auto-continuare, opțiunea B de
-capacitate OCR.
+riscul Groq de 429 pe auto-continuare, opțiunea B de capacitate OCR. (Retestarea onestă Mistral
+„2 req/min" — REZOLVATĂ 2026-09-12, vezi §Datorii tehnice.)
 
 ---
 
@@ -222,14 +222,13 @@ pytest 121/121` (identic cu baseline Faza 5; capcană găsită: `pytest.exe` dir
 
 ---
 
-## ⏳ Datorii tehnice deschise (identificate 4.5c-4.5e, NEREZOLVATE, cu bună știință)
+## ⏳ Datorii tehnice deschise (identificate 4.5c-4.5e; una rezolvată 2026-09-12, restul cu bună știință deschise)
 
-- 🟡 **Mistral OCR/traducere — retestare ONESTĂ a limitei „2 req/min" NEFĂCUTĂ**: cereri
-  spațiate ≥30s (sub 2/min), testate separat pe fiecare cheie a proiectului. Afirmația „429
-  persistent" a fost infirmată ANALITIC în Faza 4.5c (sonda anterioară trăsese 6 cereri în
-  ~20s — 429-urile veneau de la sondă, nu de la cont) — dar testul EMPIRIC, promis ca „primul
-  task al fazei următoare" (commit `605d4f8`), nu s-a făcut nici la 4.5d, nici la 4.5e.
-  Disponibilitatea reală a Mistral ca fallback rămâne NEDETERMINATĂ.
+- [x] 🟢 **Mistral OCR — retestare ONESTĂ a limitei „2 req/min" — REZOLVATĂ (2026-09-12):**
+      12/12 cereri reale (2 chei × 6, spațiate 35s) → HTTP 200, zero 429. **Mistral OCR e VIU** —
+      „429 persistent" (4.5c) era artefact al sondei burst, nu limitare reală. Fallback-ul din
+      `api/lib/ocr_structured.py` rămâne neschimbat. Detaliu + dovadă:
+      `docs/Plan_Finalizat.md` §„Mentenanță — retestare Mistral" (2026-09-12).
 - 🟡 **Groq — risc de 429 pe auto-continuare în aceeași fereastră de 60s**: `maxTokens:6000`
   (4.5d/4.5e) e dovedit sub plafonul de 8000 TPM pt O SINGURĂ cerere (live, `total_tokens`
   ~2500-2800). Dar `continueGenerate`/`continueCorrect` pot declanșa un AL DOILEA apel Groq în
