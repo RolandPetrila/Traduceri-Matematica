@@ -61,7 +61,8 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
   ) => {
     const html = editor.getHTML();
     const flags = contentFlags(html);
-    trackEditor("export", { format, name, ...flags });
+    // Fără `name`: titlul îl dă utilizatoarea, poate conține date personale.
+    trackEditor("export", { format, ...flags });
     try {
       await run();
     } catch (err) {

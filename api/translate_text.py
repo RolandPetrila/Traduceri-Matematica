@@ -275,10 +275,9 @@ class handler(BaseHTTPRequestHandler):
             # Vercel rejects any request body over ~4.5MB at the platform edge
             # (413 FUNCTION_PAYLOAD_TOO_LARGE) BEFORE this handler runs, so the app
             # check must sit below that to return a clean JSON error instead of an
-            # opaque platform 413. The client currently echoes figure crops (img_b64)
-            # through this text endpoint, inflating the body; a page whose crops push
-            # it past ~4MB will 413. Proper fix (follow-up): strip img_b64 client-side
-            # before POST (translation needs no image data) and re-attach after.
+            # opaque platform 413. The only client (editor F8, editor-translate.ts)
+            # sends text segments only ({type, content}) — no figure crops (img_b64),
+            # so real payloads stay far below this cap (re-checked 2026-09-23).
             if content_length > 4_000_000:  # 4MB — under Vercel's ~4.5MB body cap
                 from lib.exceptions import RequestTooLarge
                 raise RequestTooLarge("Request too large")

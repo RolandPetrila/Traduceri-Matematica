@@ -45,6 +45,7 @@ Motiv: ruta Next `frontend/src/app/api/logs` s-ar ciocni cu functiile Python `ap
    NEXT_PUBLIC_SUPABASE_URL  = https://<proiect>.supabase.co      (doar pt CSP)
    SUPABASE_URL              = https://<proiect>.supabase.co      (ruta /api/logs)
    SUPABASE_SERVICE_KEY      = <service_role key>                 (ruta /api/logs, server-side)
+   TRADUCERI_DIAG_TOKEN      = <cod de acces>                     (citirea GET /api/logs; fara el → 401)
    ```
 3. Deploy. Dupa deploy, intoarce-te la proiectul API si seteaza `ALLOWED_ORIGIN`/`APP_PUBLIC_URL`
    la domeniul real al frontend-ului, apoi redeploy API.
@@ -82,7 +83,9 @@ Apoi `vercel --prod` pentru redeploy. Alternativ: adauga-le manual in dashboard-
 
 - Deschide frontend-ul → upload o poza/PDF → vezi progresul real per-pagina.
 - Switch RO → SK → editeaza un text → re-export PDF/DOCX → editarea e prezenta.
-- `/diagnostics` → sursa "Toate dispozitivele" arata log-urile din Supabase (cross-device).
+- `/diagnostics` → sursa "Toate dispozitivele" cere codul de acces (`TRADUCERI_DIAG_TOKEN`, o
+  singura data per dispozitiv), apoi arata log-urile din Supabase (cross-device). Fara cod:
+  `GET /api/logs` → 401 (citirea e protejata din 2026-09-23; scrierea/telemetria ramane publica).
 - Provoaca o eroare (ex. fisier invalid) → apare cu cod (`E-OCR-001` etc.) in diagnostics.
 
 ## Note free-tier
@@ -94,5 +97,10 @@ Apoi `vercel --prod` pentru redeploy. Alternativ: adauga-le manual in dashboard-
   (rasterizare pdf.js in browser). Nu procesa zeci de pagini intr-un singur apel.
 - Supabase free se **suspenda dupa ~1 saptamana** de inactivitate. Codul e **fail-open**: daca
   Supabase e jos, OCR/traducerea merg normal, doar logarea se degradeaza.
-- Retentie log-uri: ruleaza periodic `delete from logs where created_at < now() - interval '30 days';`
+- Retentie log-uri: **NU e automatizata, intentionat** (reverificat 2026-09-23: fara pg_cron,
+  ~1.900 randuri, ~1 MB — neglijabil fata de 500 MB free). Istoricul vechi e folosit de
+  R-DIAG-AUTO (ex. Faza 6 a folosit randurile `editor:dictation_error` din iulie, vechi de >30
+  zile, ca dovada pt regula largita). Daca devine vreodata
+  necesar, curatarea se face MANUAL:
+  `delete from logs where created_at < now() - interval '90 days';`
 - `keepalive.py` a fost eliminat (serverless nu are cold-start-idle de pingat).

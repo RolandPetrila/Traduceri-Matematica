@@ -27,12 +27,11 @@ const nextConfig = {
     NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "",
   },
   // Lint does NOT run during `next build` (a style nit never blocks a deploy).
-  // ⚠️ HONEST (S8, verificat 2026-08-01): NU există CI/pre-push hook — `.git/hooks`
-  // are doar `*.sample`, fără `.husky`, fără `.github/workflows`; iar `npm run lint`
-  // are 12 erori pre-existente (unescaped-entities + no-explicit-any în dictare).
-  // Lint = pas MANUAL/advisory (`npm run lint`). Gate-ul REAL impus per-schimbare =
-  // `tsc --noEmit` + `jest` + `next build` (vezi PLAN_MASTER §10). Un CI care rulează
-  // tsc+jest+lint = backlog (cere întâi curățarea celor 12 erori).
+  // Reverificat 2026-09-23: CI EXISTĂ din 2026-08-07 (`.github/workflows/gate.yml`,
+  // tsc + jest + build + pytest, non-blocking) — dar NU rulează lint, pentru că
+  // `npm run lint` are 12 erori pre-existente (unescaped-entities + no-explicit-any
+  // în dictare). Lint = pas MANUAL/advisory (`npm run lint`), urmărit ca număr
+  // (12 = baseline) de `auditor-regresie`. Lint în CI = după curățarea celor 12.
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -9,6 +9,22 @@ import { getErrorInfo } from "@/lib/error-catalog";
 type FilterLevel = "all" | LogLevel;
 type LogSource = "server" | "local";
 
+// Citirea logurilor cross-device cere un cod de acces (audit 2026-09-23). Îl
+// ținem doar pe dispozitivul lui Roland, în localStorage — nu e în bundle.
+const DIAG_TOKEN_KEY = "diag_access_token";
+
+function readStoredToken(): string {
+  try {
+    return localStorage.getItem(DIAG_TOKEN_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function tokenHeaders(token: string): HeadersInit | undefined {
+  return token ? { "x-diag-token": token } : undefined;
+}
+
 /** Normalized log shape covering both Supabase rows and localStorage entries. */
 interface DiagLog {
   id: string;
@@ -70,8 +86,39 @@ export default function DiagnosticsPage() {
   const [note, setNote] = useState<string>("");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Citit în efect, nu în useState: localStorage la randarea inițială =
+  // hydration mismatch. `null` = încă necitit → amânăm primul fetch.
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenDraft, setTokenDraft] = useState("");
+  const [needsToken, setNeedsToken] = useState(false);
+
+  useEffect(() => {
+    setToken(readStoredToken());
+  }, []);
+
+  const saveToken = () => {
+    const t = tokenDraft.trim();
+    if (!t) return;
+    try {
+      localStorage.setItem(DIAG_TOKEN_KEY, t);
+    } catch {
+      // stocare indisponibilă (fereastră privată) — codul merge doar în sesiunea curentă
+    }
+    setTokenDraft("");
+    setToken(t);
+  };
+
+  const forgetToken = () => {
+    try {
+      localStorage.removeItem(DIAG_TOKEN_KEY);
+    } catch {
+      // ignorăm
+    }
+    setToken("");
+  };
 
   const load = useCallback(async () => {
+    if (token === null) return;
     setLoading(true);
     setNote("");
     if (source === "local") {
@@ -83,10 +130,23 @@ export default function DiagnosticsPage() {
     }
     // Server (Supabase, cross-device) with local fallback.
     try {
-      const res = await fetch("/api/logs?limit=300", { cache: "no-store" });
+      const res = await fetch("/api/logs?limit=300", {
+        cache: "no-store",
+        headers: tokenHeaders(token),
+      });
       const data = await res.json();
       const rows = Array.isArray(data.logs) ? data.logs : [];
-      if (rows.length > 0) {
+      setNeedsToken(res.status === 401);
+      if (res.status === 401) {
+        setNote(
+          `${data.note || "Cod de acces necesar."} Se afiseaza logurile locale.`,
+        );
+        setLogs(
+          (getLocalLogs() as unknown as Record<string, unknown>[]).map(
+            fromLocal,
+          ),
+        );
+      } else if (rows.length > 0) {
         setLogs(rows.map(fromSupabaseRow));
       } else {
         setNote(
@@ -106,7 +166,7 @@ export default function DiagnosticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [source]);
+  }, [source, token]);
 
   useEffect(() => {
     load();
@@ -260,15 +320,20 @@ export default function DiagnosticsPage() {
       { name: "API health", url: `${api}/api/health` },
       { name: "DeepL usage", url: `${api}/api/deepl-usage` },
       { name: "Gemini usage", url: `${api}/api/gemini-usage` },
-      { name: "Loguri (Supabase)", url: `/api/logs?limit=1` },
+      {
+        name: "Loguri (Supabase)",
+        url: `/api/logs?limit=1`,
+        opts: { headers: tokenHeaders(token || "") },
+      },
     ];
     const results: string[] = [];
     for (const c of checks) {
       const t0 = Date.now();
       try {
-        const res = await fetch(c.url, { cache: "no-store" });
+        const res = await fetch(c.url, { cache: "no-store", ...c.opts });
+        const hint = res.status === 401 ? " — cod de acces lipsa/gresit" : "";
         results.push(
-          `${res.ok ? "✅" : "⚠️"} ${c.name}: HTTP ${res.status} (${Date.now() - t0}ms)`,
+          `${res.ok ? "✅" : "⚠️"} ${c.name}: HTTP ${res.status}${hint} (${Date.now() - t0}ms)`,
         );
       } catch (e) {
         results.push(
@@ -359,6 +424,15 @@ export default function DiagnosticsPage() {
           >
             Goleste cache &amp; reincarca
           </button>
+          {token && (
+            <button
+              onClick={forgetToken}
+              className="chalk-btn text-sm"
+              title="Sterge codul de acces salvat pe acest dispozitiv"
+            >
+              Uita codul
+            </button>
+          )}
           <label className="flex items-center gap-2 text-sm text-chalk-white/70">
             <input
               type="checkbox"
@@ -377,6 +451,36 @@ export default function DiagnosticsPage() {
         )}
 
         {note && <p className="text-chalk-yellow/80 text-xs mb-3">{note}</p>}
+
+        {source === "server" && needsToken && (
+          <form
+            className="chalk-card p-3 mb-4 flex flex-wrap gap-2 items-center"
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveToken();
+            }}
+          >
+            <label
+              htmlFor="diag-token"
+              className="text-chalk-white text-sm w-full"
+            >
+              Logurile de pe toate dispozitivele sunt protejate. Introdu codul
+              de acces (se tine minte pe acest dispozitiv).
+            </label>
+            <input
+              id="diag-token"
+              type="password"
+              autoComplete="off"
+              value={tokenDraft}
+              onChange={(e) => setTokenDraft(e.target.value)}
+              placeholder="Cod de acces"
+              className="flex-1 min-w-[12rem] rounded-lg bg-black/30 border border-chalk-white/30 px-3 py-2 text-sm text-chalk-white"
+            />
+            <button type="submit" className="chalk-btn text-sm">
+              Salveaza codul
+            </button>
+          </form>
+        )}
 
         {loading ? (
           <p className="text-chalk-white">Se incarca...</p>

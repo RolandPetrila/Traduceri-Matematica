@@ -65,6 +65,11 @@ const PDF_EDIT_ACTIONS = [
   },
 ];
 
+function fileExt(name: string): string {
+  const i = name.lastIndexOf(".");
+  return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
+}
+
 export default function ConvertorPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [operation, setOperation] = useState("convert");
@@ -135,7 +140,8 @@ export default function ConvertorPage() {
       operation,
       targetFormat,
       fileCount: files.length,
-      fileNames: files.map((f) => f.name),
+      // Doar extensia — numele fișierelor pot conține date personale.
+      fileExts: files.map((f) => fileExt(f.name)),
       fileSizes: files.map((f) => f.size),
       pdfAction: operation === "edit-pdf" ? pdfAction : undefined,
     });
@@ -276,8 +282,8 @@ export default function ConvertorPage() {
         operation,
         targetFormat,
         duration_ms: duration,
-        outputFile: a.download,
-        fileNames: files.map((f) => f.name),
+        outputExt: fileExt(a.download),
+        fileExts: files.map((f) => fileExt(f.name)),
       });
 
       // Save to conversion history with output data for re-download

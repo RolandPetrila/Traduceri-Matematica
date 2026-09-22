@@ -22,8 +22,9 @@ create index if not exists logs_created_at_idx on public.logs (created_at desc);
 create index if not exists logs_level_idx      on public.logs (level);
 create index if not exists logs_error_code_idx on public.logs (error_code);
 
--- Retentie: pastreaza doar ultimele 30 zile (ruleaza periodic sau via pg_cron).
--- delete from public.logs where created_at < now() - interval '30 days';
+-- Retentie: NU e automatizata, intentionat (fara pg_cron; ~1 MB la 2026-09-23).
+-- Istoricul vechi serveste diagnosticului (R-DIAG-AUTO). Curatare doar manual, la nevoie:
+-- delete from public.logs where created_at < now() - interval '90 days';
 
 -- ─────────────────────────────────────────────────────────────
 -- 2. Tabela gemini_counter — contor zilnic apeluri Gemini

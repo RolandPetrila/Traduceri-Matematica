@@ -70,7 +70,11 @@ Scopul (cerut de Roland, 2026-08-20): NU astepta ca Roland sa raporteze erori. L
 proactiv:
 
 1. **La START (dupa onboard):** citeste log-urile de eroare recente — Supabase (tabela `logs`, prin
-   MCP `claude_ai_Supabase` sau `GET /api/logs`) SAU log-urile pe care Roland le lipeste. **Citeste
+   MCP `claude_ai_Supabase` — preferat, SQL direct — sau `GET /api/logs`, care din 2026-09-23 cere
+   header `x-diag-token` = env `TRADUCERI_DIAG_TOKEN`, altfel 401) SAU log-urile pe care Roland le
+   lipeste. **Acopera TOATE randurile de la ultima sesiune** — numara-le intai (`count(*)` cu
+   `created_at >` data ultimei sesiuni); un esantion `limit=N` poate trunchia tacut (2026-09-23:
+   esantionul de 200 rata 47 din 247 de randuri). **Citeste
    TOATE nivelele** (`error`/`warn`/`action`/`info`), NU doar `ERROR`/`WARN` (corectat la Faza 6 —
    bug-ul SK din Faza 1 era logat la nivel `action`, `error_code=null`, si regula veche, respectata
    la literă, l-a filtrat afară — raport fals-liniștitor). Grupeaza pe `error_code` cand exista;

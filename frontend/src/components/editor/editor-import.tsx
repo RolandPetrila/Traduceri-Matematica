@@ -424,7 +424,7 @@ function buildNotice(
       severity: "warn",
       context: {
         fallbackReason: meta.fallbackReason ?? null,
-        filename: meta.filename,
+        ext: ext(meta.filename),
       },
     });
   }
@@ -533,7 +533,7 @@ export function EditorImportProvider({
             error: new Error("Import fara continut: 0 blocuri extrase"),
             context: {
               files: files.length,
-              filename: files[0]?.name,
+              ext: files[0] ? ext(files[0].name) : null,
               sizeKb: Math.round((files[0]?.size || 0) / 1024),
               usedOcr: r.usedOcr,
               failedPages: r.failedPages,
@@ -590,7 +590,7 @@ export function EditorImportProvider({
             error: err,
             context: {
               files: files.length,
-              filename: files[0]?.name,
+              ext: files[0] ? ext(files[0].name) : null,
               sizeKb: Math.round((files[0]?.size || 0) / 1024),
               forceOcr: forceOcrRef.current,
               lang: usedLang,

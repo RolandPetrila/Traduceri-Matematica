@@ -3,6 +3,7 @@ import { Atkinson_Hyperlegible, STIX_Two_Text } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/monitoring/ErrorBoundary";
 import { MonitoringInit } from "@/components/monitoring/MonitoringInit";
+import { SW_REGISTER_SCRIPT } from "@/lib/sw-register-script";
 
 // Tipografie — self-hosted prin next/font (zero request extern, zero layout-shift).
 // UI (butoane, meniuri, tot shell-ul): Atkinson Hyperlegible — proiectat de Braille
@@ -52,39 +53,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                // If a NEW service worker takes control, auto-reload ONCE so the
-                // fresh build loads immediately — no stale shell can persist. Guard:
-                // only reload when a controller already existed (an UPDATE), never on
-                // first-ever install. This is what makes deploys reach every device
-                // (fixes the "stuck on old version" class of bug).
-                var __hadController = !!navigator.serviceWorker.controller;
-                var __refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', function() {
-                  if (__refreshing || !__hadController) return;
-                  __refreshing = true;
-                  window.location.reload();
-                });
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                    reg.update();
-                    setInterval(function() { reg.update(); }, 60000);
-                    // A newly installed worker (while an old one controls) = update
-                    // ready: tell it to activate now instead of waiting.
-                    reg.addEventListener('updatefound', function() {
-                      var nw = reg.installing;
-                      if (!nw) return;
-                      nw.addEventListener('statechange', function() {
-                        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                          nw.postMessage({ type: 'SKIP_WAITING' });
-                        }
-                      });
-                    });
-                  }).catch(function() {});
-                });
-              }
-            `,
+            __html: SW_REGISTER_SCRIPT,
           }}
         />
       </head>

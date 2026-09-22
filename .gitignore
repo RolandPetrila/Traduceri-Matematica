@@ -79,6 +79,8 @@ dev_server_log.txt
 scratchpad/toc_*.txt
 scratchpad/editor_dump.txt
 scratchpad/pdf_inventory_out.txt
+# mesaje de commit scrise in fisier (git commit -F) — temporare, nu dovezi
+scratchpad/commit_msg_*.txt
 
 .env*
 manuale_matematica_local/

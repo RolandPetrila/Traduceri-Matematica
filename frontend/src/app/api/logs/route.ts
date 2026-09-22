@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { DIAG_TOKEN_HEADER, checkDiagToken } from "@/lib/diag-auth";
+import { redactLogContext } from "@/lib/log-redact";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -141,6 +143,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "too_large" }, { status: 413 });
     }
     const log = JSON.parse(raw);
+    // Fără nume de documente/fișiere nicăieri mai departe (Supabase, loguri
+    // Vercel, fișier local) — inclusiv de la PWA-uri cu bundle vechi.
+    log.context = redactLogContext(log.context);
 
     // Server log stream (viewable in the platform dashboard logs)
     const code = log.errorCode ? `${log.errorCode} ` : "";
@@ -175,16 +180,34 @@ export async function POST(request: NextRequest) {
 }
 
 // Cross-device diagnostics: read recent logs from Supabase.
-// Query params: level, error_code, limit.
+// Query params: level, error_code, limit. Header: x-diag-token (cod de acces).
 export async function GET(request: NextRequest) {
   // M6 (audit 2026-08-10): doar POST era plafonat — GET putea fi apelat nelimitat
   // (citește cu service-role key, până la 1000 rânduri/apel din Supabase).
   // Reutilizează același bucket per-IP ca la POST — telemetria legitimă (un om
-  // pe /diagnostics) rămâne larg sub 120/min.
+  // pe /diagnostics) rămâne larg sub 120/min. Rulează ÎNAINTEA verificării
+  // codului, deci plafonează și încercările de ghicire.
   if (rateLimited(clientIp(request))) {
     return NextResponse.json(
       { status: "rate_limited", total: 0, logs: [] },
       { status: 429 },
+    );
+  }
+  // Audit 2026-09-23 (= M4 din 2026-08-08): citirea era publică — oricine cu
+  // URL-ul vedea device/context/stack + numele documentelor. Acum cere cod.
+  const auth = checkDiagToken(request.headers.get(DIAG_TOKEN_HEADER));
+  if (auth !== "ok") {
+    return NextResponse.json(
+      {
+        status: "unauthorized",
+        total: 0,
+        logs: [],
+        note:
+          auth === "not_configured"
+            ? "Citirea logurilor e protejată, dar codul de acces nu e configurat pe server."
+            : "Cod de acces lipsă sau greșit.",
+      },
+      { status: 401 },
     );
   }
   if (!supabaseReady) {

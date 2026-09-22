@@ -26,13 +26,49 @@
 > Windows OPRIT — nesincronizat, ceasul poate deriva din nou în timp. De remediat la conveniență
 > (pornire serviciu W32Time), fără urgență.
 
-**Ultima actualizare:** 2026-09-12 (mentenanță post-Faza 6 — programul de reparație e ÎNCHIS,
+**Ultima actualizare:** 2026-09-23 (mentenanță: audit GPT verificat + R-DIAG-AUTO, vezi prima
+secțiune §🔧) · anterior 2026-09-12 (mentenanță post-Faza 6 — programul de reparație e ÎNCHIS,
 nicio fază nouă; adăugat R-DIAG-AUTO — fix orbire diagnostică `unhandledrejection`; vezi
 §🔧 Mentenanță mai jos pt task-urile curente) · **Producție:**
 `traduceri-frontend.vercel.app` — **redeployată 2026-09-12** cu fixul E-PLAN-001 la Planșe (commit
 `687f61d`), confirmat LIVE (`GET /sw.js` → `CACHE_VERSION = "v78-20260912"`) · `traduceri-api.vercel.app`
 neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, vezi
 `docs/HANDOFF_SESIUNE.md`
+
+---
+
+## 🔧 Mentenanță (2026-09-23) — audit GPT verificat + R-DIAG-AUTO
+
+Sursa: `Downloads/Traduceri_Audit_GPT.md` (audit static, read-only, agentul lui de cod
+ÎNTRERUPT — nu „doi agenți independenți"). Verificat punct cu punct pe cod + producție.
+Verdict: P0 loguri publice CONFIRMAT live (= M4 din auditul 2026-08-08, niciodată decis);
+rate-limit = backlog amânat conștient; CORS moot în prod (OPTIONS cu origine străină →
+`traduceri-frontend.vercel.app`, + D43); `img_b64`→413 INFIRMAT (F8 trimite doar
+`{type, content}`); retenție = adevărat dar 960 kB; CI/lint = intenționat; `scratchpad/`
+ignorat global = respins (45 fișiere versionate ca dovezi); `git fsck` = fără valoare.
+Decizii Roland (AskUserQuestion ×2, 2026-09-23): token + redactare, toate 4 corecturile mici,
+SW prag 3 eșecuri, curățare rânduri vechi (doar câmpurile), E-NET-003 doar catalog.
+
+- [x] Baseline gate înainte de prima modificare — `tsc 0 · jest 452/452 · lint 12 · build OK ·
+      pytest 121/121` (identic cu 2026-09-12)
+- [x] `GET /api/logs` cere token (`x-diag-token` = env `TRADUCERI_DIAG_TOKEN`, comparație
+      timing-safe, fail-closed) + `/diagnostics` cere token o dată (localStorage) + teste 401/200
+      — `lib/diag-auth.ts` (+4 teste) + `api/logs/route.test.ts` (4 teste, rută reală, mediu node)
+- [x] Redactare nume în loguri: `editor:export` (`name`), autosave (`docName`), legacy (`name`
+      ×2), import Editor (`filename` ×3), Convertor (`fileNames` ×2, `outputFile`) → extensii/lungimi
+      — la sursă (client) + pe server la insert (`lib/log-redact.ts`, +5 teste; acoperă și PWA-uri
+      cu bundle vechi; `name` păstrat doar când e clasă de eroare, ex. „TypeError")
+- [x] SW: `reg.update()` fără `.catch` în `layout.tsx` → prag 3 eșecuri consecutive online —
+      script mutat în `lib/sw-register-script.ts` (+3 teste, rulează șirul REAL în jsdom)
+- [x] E-NET-003: catalog corectat (cauza = runtime Vercel la cold start, nu cod propriu) —
+      `error_codes.json` + oglinda regenerată; 34/34 recuperate de la ultima sesiune, 70/72 total
+- [x] Corecturi: comentarii care mint (`next.config.js`, `gate.yml`, `translate_text.py`) +
+      CI Node 20→24 + retenție documentată onest (`DEPLOY_VERCEL.md`, `schema.sql`) +
+      `.gitignore` `scratchpad/commit_msg_*.txt` + R-DIAG-AUTO (`project_rules.md`, `CLAUDE.md`)
+- [ ] Token creat de Roland (INBOX `.api-keys`) → setat pe Vercel `traduceri-frontend`
+- [ ] Gate + deploy (confirmare) + verificare live (401 fără token, 200 cu token, export fără nume)
+- [ ] Curățare rânduri vechi Supabase (doar câmpurile de nume)
+- [ ] Cei trei auditori + handoff + `Plan_Finalizat.md` + memorie + commit/push
 
 ---
 

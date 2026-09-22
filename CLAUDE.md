@@ -34,7 +34,8 @@ elementele matematice raman intacte, cache persistent per limba) → Editare liv
    aceasta sesiune) — **+** `.claude/rules/project_rules.md`. `.claude/memory/` din proiect e
    arhivat (`.claude/memory/arhiva/`, de la Faza 6) — istoric pre-2026-07, NU se mai citeste automat.
 5. **(R-DIAG-AUTO, corectata la Faza 6)** Verifica log-urile de eroare recente (Supabase tabela
-   `logs` / `/api/logs` / ce lipeste Roland) — **citeste TOATE nivelele** (`error`/`warn`/`action`/
+   `logs` prin MCP / `GET /api/logs` cu header `x-diag-token` / ce lipeste Roland) — acopera TOATE
+   randurile de la ultima sesiune (numara-le intai) si **citeste TOATE nivelele** (`error`/`warn`/`action`/
    `info`), NU doar `ERROR`/`WARN`. Grupeaza pe `error_code` cand exista; cand lipseste (`null`),
    cauta semnal de esec in mesaj/context (exact defectul care a ascuns bug-ul SK din Faza 1: log
    la nivel `action`, `error_code=null`, filtrat de o regula prea ingusta). Confirma cauza in cod

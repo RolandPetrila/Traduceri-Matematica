@@ -188,7 +188,6 @@ export function EditorDocumentProvider({
           error: e,
           context: {
             htmlLen: html.length,
-            docName,
             quotaLikely: (e as Error)?.name === "QuotaExceededError",
           },
         });
@@ -239,7 +238,7 @@ export function EditorDocumentProvider({
     // are legătură cu ce e pe ecran.
     clearSourceSnapshot();
     markLegacyHandled();
-    trackEditor("legacy_bring", { name: legacy.name });
+    trackEditor("legacy_bring", { htmlLen: legacy.html.length });
     setLegacyAvailableName(null);
   }, [editor, persist]);
 
@@ -269,7 +268,7 @@ export function EditorDocumentProvider({
       persist(legacy.html, legacy.name);
       setLegacyImportedName(legacy.name);
       markLegacyHandled();
-      trackEditor("legacy_import_auto", { name: legacy.name });
+      trackEditor("legacy_import_auto", { htmlLen: legacy.html.length });
     }
   }, [editor, persist]);
 
