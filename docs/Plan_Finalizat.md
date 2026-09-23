@@ -645,6 +645,73 @@ de aplicație atins la acest task (doar sondă + documentație).
 înainte de orice schimbare la lanțul de fallback; verdictul nu a cerut nicio modificare de cod
 (Mistral rămâne fallback-ul existent, neatins).
 
+### Mentenanță — E-PLAN-001 + orbirea `unhandledrejection` (2026-09-12, transfer întârziat)
+
+Transferat abia la 2026-09-23 (semnalat de `auditor-cerinte`: pct. 6 din
+`completari_pt_reparatie.md` încălcat la sesiunea trecută). **E-PLAN-001 la Planșe**
+(`dictare`/`uneste`): bucla era corectă, catalogul fix (23/36 semnături) se epuiza prin uz normal
+→ mesajul din UI corectat + catalogul de erori extins + 3 teste + `CACHE_VERSION` v78 — commit
+`687f61d`, deployat și confirmat live (`c9ed420`). **R-DIAG-AUTO:** handler-ul
+`unhandledrejection` din `monitoring.ts` nu trimitea `context` → capturează acum
+`{reasonType, reasonName, reasonCode, reasonString}` + 2 teste — commit `710c97b`; **NU a fost
+deployat atunci** (deploy-ul anterior era din 2026-09-11 23:43 UTC), a ajuns în producție abia
+cu deploy-ul din 2026-09-23. Verdicte auditori complete: `docs/Plan_in_Lucru.md` §🔧 2026-09-12
+(rămase acolo ca istoric al acelei sesiuni).
+
+### Mentenanță — audit GPT verificat + loguri protejate (2026-09-23)
+
+**Cerere Roland:** „analizează dacă acest audit este corect și dacă putem utiliza date valoroase"
+(`Downloads/Traduceri_Audit_GPT.md`). **Verdict pe audit** (verificat pe cod + producție): agentul
+lui de cod fusese ÎNTRERUPT (raport parțial, nu „doi agenți independenți"); **P0 loguri publice
+CONFIRMAT live** (= M4 din auditul 2026-08-08, nedecis 6 săptămâni; dovadă nouă: titlurile
+documentelor în `context.name`); rate-limit = backlog amânat conștient; CORS moot în prod
+(origine străină → `traduceri-frontend.vercel.app`) + D43; `img_b64`→413 INFIRMAT (F8 trimite
+doar `{type, content}`, comentariu vechi corectat); retenție = adevărat dar ~1 MB; CI/lint =
+intenționat; ignorare globală `scratchpad/` respinsă (45 fișiere versionate ca dovezi); `git fsck`
+= fără valoare; gitleaks/Dependabot = neevaluate în detaliu (vezi `Plan_in_Lucru.md`); branch
+protection respins (solo + auto-push).
+
+**Livrat (decizii Roland, AskUserQuestion ×3 — D53 în `PLAN_DECISIONS.md`):**
+
+- `GET /api/logs` cere `x-diag-token` = env `TRADUCERI_DIAG_TOKEN` (timing-safe, fail-closed,
+  după rate-limit) + `/diagnostics` cere codul o dată (localStorage). Token generat local fără
+  afișare → Windows User env + Vercel (Production, sensitive) + bloc în `~/.api-keys/INBOX.md`.
+- Nume de documente/fișiere scoase din loguri, la sursă și pe server (`lib/log-redact.ts`):
+  `name`/`docName`/`filename`/`fileNames`/`outputFile`, lista de fișiere din `sample`
+  (prinsă de `auditor-regresie`), numele din mesajele VALIDATE (a doua rundă `auditor-regresie`),
+  extensii doar dintr-o listă cunoscută + normalizate pe server (a treia rundă). 80 rânduri
+  istorice curățate în Supabase (VALIDATE: 20/20 conțineau literalul „output”, zero nume;
+  `ext`/`fileExts`: zero rânduri). Limită notată: primul nivel din `context`, nu obiecte
+  imbricate/`stack`/`cause`.
+- SW: `reg.update()` fără `.catch` (6 erori în Supabase) → prag 3 eșecuri consecutive online
+  (`lib/sw-register-script.ts`).
+- E-NET-003: catalog corectat (runtime Vercel la cold start, nu cod propriu; TOATE aparițiile
+  recuperate automat — 72/72; cifrele de incident scoase din catalog după INFIRMAT-ul
+  `auditor-dovezi`, catalogul descrie categoria).
+- Comentarii care mințeau (`next.config.js`, `gate.yml`, `translate_text.py`), CI Node 20→24,
+  retenție documentată onest (manuală), `.gitignore` pt `commit_msg_*`, R-DIAG-AUTO: citire prin
+  MCP + numără toate rândurile de la ultima sesiune.
+
+**Dovezi live:** `GET /api/logs` fără cod/cod greșit → 401, cod corect → 200; sonde POST în
+Supabase (`a7bba6b4` context, `b97bc162` sample, `82f6667c` message) → toate fără nume; HTML live
+conține scriptul SW nou; captură `/diagnostics` cu formularul (calea 401, prod); calea de SUCCES
+(cod → salvat → formular dispărut → 200 → ținut minte la reîncărcare → „Uită codul" îl șterge)
+exersată cu tastare+click REALE în Chrome pe build de producție LOCAL cu cod de test (pe prod,
+UI-ul cu codul real = la prima folosire de către Roland; API-ul prod 401/200 dovedit prin curl);
+CI verde pe Node 24 (runs 35798498195, 35800855974, 35801781293). Poarta finală: `tsc 0 · jest
+474/474 (452+22) · lint 12 · build OK · pytest 121/121`. Commit-uri `da54d84`, `2861bf8`,
+`69b3ada` + commit-ul de închidere; 4 deploy-uri prod frontend.
+
+**Verdicte auditori:** `auditor-regresie` — FĂRĂ REGRESIE pe fiecare delta (da54d84, 2861bf8,
+69b3ada), a găsit 2 scurgeri reale (sample + message), reparate înainte de închidere.
+`auditor-cerinte` — toate deciziile ONORATE; extinderea redactării = în mandat; conținutul lăsat
+ca întrebare = corect (mențiunea 1c); lacune documentare corectate (R-DIAG-AUTO pe toate
+grupurile, D53, acest transfer, runda 3 citată). `auditor-dovezi` (a doua rulare; prima a căzut
+pe eroare de rețea) — 9 CONFIRMAT, 1 PARȚIAL (calea de succes `/diagnostics` nedovedită →
+exersată apoi pe build local), 1 INFIRMAT (cifrele E-NET-003 din catalog: 72/72 recuperate, nu
+70/72 — corectat prin scoaterea statisticilor) + a semnalat eticheta [PROBABIL] lipsă la cauza SW
+(adăugată) și comentarii care promiteau mai mult decât codul (corectate).
+
 ---
 
 ## Notă de proces — capcane recurente de reținut (nu re-descoperi)

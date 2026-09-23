@@ -88,7 +88,7 @@ describe("redactLogContext — fără nume de documente/fișiere în Supabase", 
     expect(redactFileListSample(s)).toBe(s);
   });
 
-  it("fileExtToken: doar extensii cunoscute, altfel „?\" (fără pseudo-extensii din nume)", () => {
+  it('fileExtToken: doar extensii cunoscute, altfel „?" (fără pseudo-extensii din nume)', () => {
     expect(fileExtToken("teza.PDF")).toBe(".pdf");
     expect(fileExtToken("poza.heic")).toBe(".heic");
     expect(fileExtToken("Maria.Popescu")).toBe("?");
@@ -112,6 +112,25 @@ describe("redactLogContext — fără nume de documente/fișiere în Supabase", 
     ).toBe("VALIDATE | Conversie convert: .pdf | 212 KB | OK");
     expect(redactLogMessage("editor:export")).toBe("editor:export");
     expect(redactLogMessage(undefined)).toBeUndefined();
+  });
+
+  it("ext/outputExt/fileExts de la bundle-uri intermediare → normalizate la extensii cunoscute", () => {
+    expect(
+      redactLogContext({
+        ext: "popescu",
+        outputExt: "pdf",
+        fileExts: ["03 popescu ana", "docx", ".jpg", "?", ""],
+      }),
+    ).toEqual({
+      ext: "?",
+      outputExt: ".pdf",
+      fileExts: ["?", ".docx", ".jpg", "?", "?"],
+    });
+    // forma nouă rămâne identică (idempotent)
+    expect(redactLogContext({ ext: ".pdf", fileExts: [".png"] })).toEqual({
+      ext: ".pdf",
+      fileExts: [".png"],
+    });
   });
 
   it("lasă neatinse valorile care nu sunt obiecte simple", () => {

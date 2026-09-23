@@ -26,64 +26,75 @@
 > Windows OPRIT — nesincronizat, ceasul poate deriva din nou în timp. De remediat la conveniență
 > (pornire serviciu W32Time), fără urgență.
 
-**Ultima actualizare:** 2026-09-23 (mentenanță: audit GPT verificat + R-DIAG-AUTO, vezi prima
-secțiune §🔧) · anterior 2026-09-12 (mentenanță post-Faza 6 — programul de reparație e ÎNCHIS,
-nicio fază nouă; adăugat R-DIAG-AUTO — fix orbire diagnostică `unhandledrejection`; vezi
-§🔧 Mentenanță mai jos pt task-urile curente) · **Producție:**
-`traduceri-frontend.vercel.app` — **redeployată 2026-09-12** cu fixul E-PLAN-001 la Planșe (commit
-`687f61d`), confirmat LIVE (`GET /sw.js` → `CACHE_VERSION = "v78-20260912"`) · `traduceri-api.vercel.app`
-neatinsă (nimic backend modificat) · Faza 6 (ultima) închisă 2026-09-11/12, vezi
-`docs/HANDOFF_SESIUNE.md`
+**Ultima actualizare:** 2026-09-23 (mentenanță: audit GPT verificat + loguri protejate, vezi prima
+secțiune §🔧) · **Producție:** `traduceri-frontend.vercel.app` — redeployată 2026-09-23 de 3 ori
+(ultimul: commit `69b3ada`, include și fixul `unhandledrejection` din `710c97b`, nedeployat până
+atunci); `sw.js` neschimbat (`CACHE_VERSION = "v78-20260912"`) · `traduceri-api.vercel.app`
+neatinsă · Faza 6 (ultima din program) închisă 2026-09-11/12, vezi `docs/HANDOFF_SESIUNE.md`
 
 ---
 
-## 🔧 Mentenanță (2026-09-23) — audit GPT verificat + R-DIAG-AUTO
+## 🔧 Mentenanță (2026-09-23) — audit GPT verificat + loguri protejate
 
-Sursa: `Downloads/Traduceri_Audit_GPT.md` (audit static, read-only, agentul lui de cod
-ÎNTRERUPT — nu „doi agenți independenți"). Verificat punct cu punct pe cod + producție.
-Verdict: P0 loguri publice CONFIRMAT live (= M4 din auditul 2026-08-08, niciodată decis);
-rate-limit = backlog amânat conștient; CORS moot în prod (OPTIONS cu origine străină →
-`traduceri-frontend.vercel.app`, + D43); `img_b64`→413 INFIRMAT (F8 trimite doar
-`{type, content}`); retenție = adevărat dar 960 kB; CI/lint = intenționat; `scratchpad/`
-ignorat global = respins (45 fișiere versionate ca dovezi); `git fsck` = fără valoare.
-Decizii Roland (AskUserQuestion ×2, 2026-09-23): token + redactare, toate 4 corecturile mici,
-SW prag 3 eșecuri, curățare rânduri vechi (doar câmpurile), E-NET-003 doar catalog.
+**Livrat (commit-uri `da54d84`, `2861bf8`, `69b3ada` + 3 deploy-uri prod frontend) + dovezi +
+verdictele celor trei auditori → `docs/Plan_Finalizat.md` §„Mentenanță — audit GPT verificat +
+loguri protejate (2026-09-23)" + decizia D53 (`99_Plan_vs_Audit/PLAN_DECISIONS.md`).** Decizii
+Roland: AskUserQuestion ×3 — runda 3 verbatim: „Da, după ce creez token-ul (Recomandat) ✔ asta
+aleg dar cu conditia sa faci automat setarile si deploy-ul pe vercel , eu sa fac doar ceea ce e
+obligatoriu din partea mea sa execut !" + curățare „Da, toate numele".
 
-- [x] Baseline gate înainte de prima modificare — `tsc 0 · jest 452/452 · lint 12 · build OK ·
-      pytest 121/121` (identic cu 2026-09-12)
-- [x] `GET /api/logs` cere token (`x-diag-token` = env `TRADUCERI_DIAG_TOKEN`, comparație
-      timing-safe, fail-closed) + `/diagnostics` cere token o dată (localStorage) + teste 401/200
-      — `lib/diag-auth.ts` (+4 teste) + `api/logs/route.test.ts` (4 teste, rută reală, mediu node)
-- [x] Redactare nume în loguri: `editor:export` (`name`), autosave (`docName`), legacy (`name`
-      ×2), import Editor (`filename` ×3), Convertor (`fileNames` ×2, `outputFile`) → extensii/lungimi
-      — la sursă (client) + pe server la insert (`lib/log-redact.ts`, +5 teste; acoperă și PWA-uri
-      cu bundle vechi; `name` păstrat doar când e clasă de eroare, ex. „TypeError")
-      **+ lacună prinsă de `auditor-regresie`:** `context.sample` ducea lista fișierelor cu nume
-      la eșecul importului Editor (`editor.import`) și al Convertorului (`convertor.convert`) +
-      titlul în contextul E-CONV-002 → reparat la sursă (`fileListSample`: „.pdf (application/pdf)")
-      + pe server după `flow` (idempotent), +3 teste; 5 rânduri vechi curățate
-      **+ a doua rundă `auditor-regresie`:** `lib/validator.ts` scria numele fișierului rezultat în
-      `message` (nu în `context`) → acum doar extensia (`fileExtToken`, listă de extensii cunoscute —
-      „Maria.Popescu" nu mai lasă „.popescu") + `redactLogMessage` pe server pt bundle-uri vechi,
-      +2 teste. Istoric: toate cele 20 de mesaje VALIDATE conțin literalul `output`, zero nume
-      reale → nimic de curățat [CERT, interogare Supabase]
-- [x] SW: `reg.update()` fără `.catch` în `layout.tsx` → prag 3 eșecuri consecutive online —
-      script mutat în `lib/sw-register-script.ts` (+3 teste, rulează șirul REAL în jsdom)
-- [x] E-NET-003: catalog corectat (cauza = runtime Vercel la cold start, nu cod propriu) —
-      `error_codes.json` + oglinda regenerată; 34/34 recuperate de la ultima sesiune, 70/72 total
-- [x] Corecturi: comentarii care mint (`next.config.js`, `gate.yml`, `translate_text.py`) +
-      CI Node 20→24 + retenție documentată onest (`DEPLOY_VERCEL.md`, `schema.sql`) +
-      `.gitignore` `scratchpad/commit_msg_*.txt` + R-DIAG-AUTO (`project_rules.md`, `CLAUDE.md`)
-- [x] Token `TRADUCERI_DIAG_TOKEN` generat local fără afișare (32 octeți random, precedent „Kizur
-      Cron Secret") → Windows User env + Vercel `traduceri-frontend` (Production, sensitive) + bloc
-      în `~/.api-keys/INBOX.md`. **Rămas pt Roland:** „procesează inbox" în `.api-keys` (→ master)
-- [x] Gate + deploy (confirmat de Roland) + verificare live: `GET /api/logs` fără cod → 401, cod
-      greșit → 401, cod corect → 200; sondă POST cu 5 chei de nume → în Supabase doar
-      `{"probe":true}` (rând `a7bba6b4`); HTML live conține scriptul SW nou; `/diagnostics` arată
-      formularul de cod (captură); CI Node 24 verde (run 35798498195)
-- [x] Curățare rânduri vechi Supabase: 75 rânduri (name/docName/fileNames/outputFile) + 5 rânduri
-      (`sample` cu nume, Convertor) — 0 chei de nume rămase; `name="Error"` (clasă) păstrat
-- [ ] Cei trei auditori + handoff + `Plan_Finalizat.md` + memorie + commit/push
+**Rămase deschise (NU sunt 🟢 — `auditor-dovezi` sau decizie lipsă):**
+
+- [x] 🟢 E-NET-003 — catalogul avea cifre greșite (`auditor-dovezi` INFIRMAT: 72/72 recuperate,
+      nu 70/72 — cele 2 din 07.09 aveau cheia veche `recuperat:true`; 36, nu 34, în 12-22.09) →
+      statisticile de incident SCOASE din catalog (descrie categoria, `failure.ts:26-27`) —
+      `error_codes.json` + oglinda regenerată, anti-drift verde
+- [x] 🟢 (local) `/diagnostics` calea de SUCCES — exersată cu tastare+click REALE în Chrome, pe
+      build de producție LOCAL (`next start`, cod de test, fără Supabase): cod → salvat în
+      localStorage → formular dispărut → răspuns 200 („Supabase neconfigurat") → ținut minte la
+      reîncărcare → „Uită codul" îl șterge și formularul revine. Pe PROD: API 401/200 dovedit
+      prin curl; UI-ul cu codul real = confirmat la prima folosire de către Roland.
+- [ ] ⬜ **Roland:** „procesează inbox" în `~/.api-keys` (→ master; până atunci REGULA DE AUR e
+      încălcată temporar — valoarea stă în staging, nu în master) — sau îl face Claude, cu
+      confirmarea ta · **+ introdu codul în `/diagnostics`** pe fiecare dispozitiv de pe care
+      vrei să vezi logurile (valoarea: din master după procesare, sau din blocul din `INBOX.md`)
+- [ ] ⬜ **Decizie Roland — CONȚINUT în loguri** (nu nume): traducere
+      (`editor-translate-state.tsx:333`, JSON document ≤180 car.), dictare
+      (`editor-dictation.tsx:177`, 80 car. din transcript), căutare (`editor-find.tsx:288`,
+      `query`). Mențiunea 1c cere conținut pt reproducerea erorilor; variantă deja existentă:
+      excepția Teste (`failure.ts:23-25`, `sample: undefined`). Acum nepublice (cod de acces).
+- [ ] ⬜ **Decizie Roland — E-EDIT-003 pe iPhone (13.09):** documentul avea 4,9 MB (figuri base64)
+      → peste cota localStorage (~5 MB) → autosalvarea s-a oprit (alarma din UI a apărut). Remediu
+      posibil: stocarea documentului în IndexedDB [RELEVANT] — efort mediu, de decis.
+- [ ] ⬜ **Decizie Roland — rânduri de test în Supabase prod** (nume FAKE, zero date reale):
+      `a7bba6b4`, `b97bc162`, `82f6667c` (implementare), `ba45af48`, `7a52a9d8`, `6207ea58`
+      (`auditor-dovezi`) — șterg sau păstrez ca dovezi? Până atunci: R-DIAG-AUTO le ignoră.
+- [ ] ⬜ **Confirmare Roland — 2 adaosuri nedecise explicit:** comanda manuală de retenție scrisă
+      cu 90 zile (nu 30) în `DEPLOY_VERCEL.md`/`schema.sql`; regula „numără toate rândurile de la
+      ultima sesiune" adăugată în R-DIAG-AUTO (`project_rules.md`, `CLAUDE.md`).
+- ⏸️ Din auditul GPT, neevaluate în detaliu: gitleaks/pre-commit secret scanning + Dependabot
+  (gratuite, R-COST ok) — [RELEVANT], de decis. Branch protection = respins (solo + auto-push).
+
+**Limite cunoscute (nu blochează, notate onest):** redactarea de pe server acoperă cheile de pe
+PRIMUL nivel din `context`, `sample` în fluxurile `editor.import`/`convertor.convert` și mesajele
+VALIDATE — NU obiecte imbricate, `stack`, `context.cause` (niciun cod de producție nu pune nume
+acolo azi, scanare `auditor-dovezi`). SW: de ce eșuează instalarea în Firefox rămâne [NEGĂSIT] —
+fixul doar oprește zgomotul. `frontend/public/sw.js:2` spune „auto-generated" deși
+`CACHE_VERSION` e manual (backlog „SW auto-versioning"). Din cele 45 de fișiere versionate în
+`scratchpad/`, 16 sunt citate explicit ca dovezi; argumentul decisiv contra ignorării globale e
+altul: o intrare `.gitignore` nu scoate fișierele deja versionate, iar partea utilă
+(`commit_msg_*`) s-a aplicat.
+
+**R-DIAG-AUTO (247 rânduri, 12.09 17:30 → 22.09 23:40, TOATE nivelele — verdict per grup):**
+
+| Grup | n | Verdict |
+| --- | --- | --- |
+| SW update — `unhandled-promise-rejection` | 5 (+1 din 03.09) | [PROBABIL] `reg.update()` fără `.catch` + eșec trecător (perechi la ~60s) → prag 3; cauza instalării în Firefox [NEGĂSIT] |
+| `E-NET-003` (deeplQuota/translate/import.ocr) | 34 | runtime Vercel la cold start, 100% recuperate automat; catalog corectat |
+| `E-EDIT-003` autosave + source.persist (iOS) | 2 | cota localStorage depășită (doc 4,9 MB) — decizie deschisă mai sus |
+| `E-EDIT-002` no_voice_loop + `editor:dictation_error` | 2 + 7 | clasa cunoscută „microfon tăcut” (`finding_dictation_silent_device`) [PROBABIL], fără cod atins |
+| `E-NET-002` Gemini 503 pe `/api/proxy` | 3 | Gemini supraîncărcat; toate 3 au căzut pe Groq → 200 în 3-4s [CERT] — lanțul de fallback funcționează |
+| action / info | ~196 | normale |
 
 ---
 
@@ -279,7 +290,8 @@ pytest 121/121` (identic cu baseline Faza 5; capcană găsită: `pytest.exe` dir
       PLAN_FAZA5 de test. Fix: doar titlul H2, ancorat. Re-testat: caz curat (0), caz stale
       simulat (1, prins corect), cleanup (0) — toate 3 confirmate live. Mecanismul + logica sunt
       🟢, verificate live.
-- [ ] 🟡 **VERIFICARE PROGRAMATĂ (sesiunea următoare):** declanșarea AUTOMATĂ a hook-ului
+- [x] 🟢 **(REZOLVAT — CONFIRMAT LIVE 2026-09-12, vezi §🔧 2026-09-12 mai sus; bifa rămăsese
+      nemarcată, semnalat de `auditor-cerinte` 2026-09-23)** declanșarea AUTOMATĂ a hook-ului
       `SessionStart` + `AskUserQuestion` la `de_revizuit > 0` — NU se poate dovedi din sesiunea
       curentă (sesiunea a pornit deja). **Actualizat 2026-09-12 (mentenanță):** confirmat empiric că
       NU a rulat vizibil la pornirea acestei sesiuni (spre deosebire de hook-urile SessionStart ale

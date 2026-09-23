@@ -143,10 +143,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "too_large" }, { status: 413 });
     }
     const log = JSON.parse(raw);
-    // Fără nume de documente/fișiere în context/sample și în mesajele VALIDATE,
-    // mai departe (Supabase, loguri Vercel, fișier local) — inclusiv de la PWA-uri
-    // cu bundle vechi. NU acoperă fragmentele de conținut (sample la traducere/
-    // dictare, query la find) — decizie deschisă, vezi docs/Plan_in_Lucru.md.
+    // Redactare nume (vezi lib/log-redact.ts pt acoperirea EXACTĂ): cheile de nume
+    // de pe primul nivel din context, lista de fișiere din `sample` (import/Convertor),
+    // extensiile normalizate și mesajele VALIDATE — și pt PWA-uri cu bundle vechi.
+    // NU acoperă obiecte imbricate, `stack`, `cause` (azi niciun cod nu pune nume
+    // acolo) și nici fragmentele de CONȚINUT (sample la traducere/dictare, query la
+    // find) — decizie deschisă, vezi docs/Plan_in_Lucru.md.
     log.context = redactLogContext(log.context);
     log.message = redactLogMessage(log.message);
 

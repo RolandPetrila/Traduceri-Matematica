@@ -7,8 +7,10 @@
  * trezit din sleep, rețea mobilă instabilă) — worker-ul curent continuă să
  * servească, deci UN eșec e zgomot. Înainte, `reg.update()` n-avea `.catch` și
  * fiecare eșec ajungea în Supabase ca `error` (R-DIAG-AUTO, 2026-09-23: 6 rânduri
- * Firefox/Chrome, perechi la 60s distanță). Acum raportăm doar un eșec PERSISTENT:
- * 3 consecutive cât browserul e online → o singură respingere netratată, preluată
+ * Firefox/Chrome, perechi la ~60s distanță — mecanism [PROBABIL], nu reprodus;
+ * DE CE eșuează instalarea în Firefox rămâne [NEGĂSIT], fixul doar oprește
+ * zgomotul). Acum raportăm doar un eșec PERSISTENT: 3 consecutive cât browserul
+ * e online → o singură respingere netratată, preluată
  * (cu context) de handler-ul `unhandledrejection` din `monitoring.ts`.
  */
 export const SW_UPDATE_FAIL_THRESHOLD = 3;

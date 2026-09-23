@@ -94,7 +94,9 @@ export function redactLogMessage(message: unknown): unknown {
 export function fileListSample(
   files: ReadonlyArray<{ name: string; type: string }>,
 ): string {
-  return files.map((f) => `${fileExtToken(f.name)} (${f.type || "?"})`).join(", ");
+  return files
+    .map((f) => `${fileExtToken(f.name)} (${f.type || "?"})`)
+    .join(", ");
 }
 
 /**
@@ -109,6 +111,20 @@ export function redactFileListSample(sample: string): string {
       return m ? `${fileExtToken(m[1])} (${m[2]})` : "?";
     })
     .join(", ");
+}
+
+/**
+ * Câmpuri de log care poartă o extensie (`ext`, `outputExt`, `fileExts`). Bundle-urile
+ * deployate 2026-09-23 între 02:40 și 03:22 le calculau fără filtru („Maria.Popescu" →
+ * „popescu") — găsit de `auditor-regresie`. Normalizăm pe server la aceeași formă.
+ */
+const EXT_KEYS = new Set(["ext", "outputExt"]);
+
+function extValueToken(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  if (v === "?") return v;
+  const ext = v.replace(/^\./, "").toLowerCase();
+  return KNOWN_EXTS.has(ext) ? `.${ext}` : "?";
 }
 
 export function redactLogContext(context: unknown): unknown {
@@ -128,6 +144,14 @@ export function redactLogContext(context: unknown): unknown {
       FILE_LIST_SAMPLE_FLOWS.has(String(src.flow))
     ) {
       out[k] = redactFileListSample(v);
+      continue;
+    }
+    if (EXT_KEYS.has(k)) {
+      out[k] = extValueToken(v);
+      continue;
+    }
+    if (k === "fileExts" && Array.isArray(v)) {
+      out[k] = v.map(extValueToken);
       continue;
     }
     out[k] = v;
