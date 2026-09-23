@@ -54,18 +54,37 @@ obligatoriu din partea mea sa execut !" + curățare „Da, toate numele".
       localStorage → formular dispărut → răspuns 200 („Supabase neconfigurat") → ținut minte la
       reîncărcare → „Uită codul" îl șterge și formularul revine. Pe PROD: API 401/200 dovedit
       prin curl; UI-ul cu codul real = confirmat la prima folosire de către Roland.
-- [ ] ⬜ **Roland:** „procesează inbox" în `~/.api-keys` (→ master; până atunci REGULA DE AUR e
-      încălcată temporar — valoarea stă în staging, nu în master) — sau îl face Claude, cu
-      confirmarea ta · **+ introdu codul în `/diagnostics`** pe fiecare dispozitiv de pe care
-      vrei să vezi logurile (valoarea: din master după procesare, sau din blocul din `INBOX.md`)
-- [ ] ⬜ **Decizie Roland — CONȚINUT în loguri** (nu nume): traducere
-      (`editor-translate-state.tsx:333`, JSON document ≤180 car.), dictare
-      (`editor-dictation.tsx:177`, 80 car. din transcript), căutare (`editor-find.tsx:288`,
-      `query`). Mențiunea 1c cere conținut pt reproducerea erorilor; variantă deja existentă:
-      excepția Teste (`failure.ts:23-25`, `sample: undefined`). Acum nepublice (cod de acces).
-- [ ] ⬜ **Decizie Roland — E-EDIT-003 pe iPhone (13.09):** documentul avea 4,9 MB (figuri base64)
-      → peste cota localStorage (~5 MB) → autosalvarea s-a oprit (alarma din UI a apărut). Remediu
-      posibil: stocarea documentului în IndexedDB [RELEVANT] — efort mediu, de decis.
+- [x] 🟢 „Procesează inbox" — făcut de Claude la cererea lui Roland (AskUserQuestion, 2026-09-23):
+      secțiune adăugată în master (recitit după scriere — Google Drive: `VALUE MATCH`), `sync-env-vars`
+      → `[OK] TRADUCERI_DIAG_TOKEN`, `verify` → `[SET]` (length 41), `catalog.md` regenerat, blocul
+      din `INBOX.md` marcat `[PROCESAT 2026-09-23]` cu valoarea scoasă. REGULA DE AUR restabilită.
+      **Rămas pt Roland:** introdu codul în `/diagnostics` pe fiecare dispozitiv (valoarea: din master).
+- [x] 🟢 **Decizie Roland — CONȚINUT în loguri: SE PĂSTREAZĂ** (AskUserQuestion, 2026-09-23;
+      mențiunea 1c — reproducerea erorilor): traducere (`editor-translate-state.tsx:333`), dictare
+      (`editor-dictation.tsx:177`), căutare (`editor-find.tsx:288`). Acum citibile doar cu cod (D53).
+- [ ] ⬜ **PLAN (direcție confirmată de Roland 2026-09-23; implementare DOAR după confirmarea
+      planului): autosalvare fără limita de ~5 MB — IndexedDB.** Problema (E-EDIT-003, iPhone
+      13.09): documentul (`editor-document.tsx`, cheia `editor_nou_v1`, HTML cu figuri base64) +
+      sursa originală (`lib/editor-source-store.ts`) stau în localStorage (~5 MB/origine) → la
+      4,9 MB autosalvarea și salvarea sursei au picat. Pași propuși:
+      1. Cercetare cu surse (R3, ÎNAINTE de cod): cota IndexedDB pe iOS Safari/PWA instalat,
+         politica de ștergere după 7 zile fără interacțiune (ITP) pt site vs PWA pe ecranul
+         principal, `navigator.storage.persist()` — azi [INCERT], nu presupune.
+      2. Modul nou `lib/doc-store.ts` (IndexedDB nativ, fără dependențe de runtime):
+         `saveDoc`/`loadDoc`/`clearDoc` async, cu fallback pe localStorage dacă IndexedDB lipsește
+         (fereastră privată).
+      3. Migrare o singură dată: la pornire, dacă IndexedDB e gol și `editor_nou_v1` există →
+         copiere + verificare + abia apoi ștergere din localStorage (nimic pierdut la eșec).
+      4. Aceeași mutare pt sursa originală (`editor-source-store.ts`); cache-urile de traducere
+         doar dacă măsurătoarea arată că pun presiune pe cotă.
+      5. Păstrăm alarma existentă (`saveFailed`) + E-EDIT-003 pt eșecuri reale; teste jsdom
+         (`fake-indexeddb` doar ca devDependency, dacă e nevoie) + probă live pe iPhone real
+         (document >5 MB se salvează și supraviețuiește reîncărcării).
+      6. Bump `CACHE_VERSION` probabil NU e necesar (cod în chunk-uri network-first) — de
+         reconfirmat de `auditor-regresie`.
+      Alternative: (B) figurile ca blob-uri separate în IndexedDB, HTML cu referințe — mai
+      eficient, dar atinge exportul/editorul [OVERKILL acum]; (C) doar avertisment la ~4 MB —
+      nu rezolvă cauza [NU RECOMANDAT ca soluție finală].
 - [ ] ⬜ **Decizie Roland — rânduri de test în Supabase prod** (nume FAKE, zero date reale):
       `a7bba6b4`, `b97bc162`, `82f6667c`, `aee1d90d` (implementare), `ba45af48`, `7a52a9d8`, `6207ea58`
       (`auditor-dovezi`) — șterg sau păstrez ca dovezi? Până atunci: R-DIAG-AUTO le ignoră.
@@ -91,7 +110,7 @@ altul: o intrare `.gitignore` nu scoate fișierele deja versionate, iar partea u
 | --- | --- | --- |
 | SW update — `unhandled-promise-rejection` | 5 (+1 din 03.09) | [PROBABIL] `reg.update()` fără `.catch` + eșec trecător (perechi la ~60s) → prag 3; cauza instalării în Firefox [NEGĂSIT] |
 | `E-NET-003` (deeplQuota/translate/import.ocr) | 34 | runtime Vercel la cold start, 100% recuperate automat; catalog corectat |
-| `E-EDIT-003` autosave + source.persist (iOS) | 2 | cota localStorage depășită (doc 4,9 MB) — decizie deschisă mai sus |
+| `E-EDIT-003` autosave + source.persist (iOS) | 2 | cota localStorage depășită (doc 4,9 MB) — PLAN IndexedDB mai sus (de confirmat) |
 | `E-EDIT-002` no_voice_loop + `editor:dictation_error` | 2 + 7 | clasa cunoscută „microfon tăcut” (`finding_dictation_silent_device`) [PROBABIL], fără cod atins |
 | `E-NET-002` Gemini 503 pe `/api/proxy` | 3 | Gemini supraîncărcat; toate 3 au căzut pe Groq → 200 în 3-4s [CERT] — lanțul de fallback funcționează |
 | action / info | ~196 | normale |

@@ -712,6 +712,12 @@ exersată apoi pe build local), 1 INFIRMAT (cifrele E-NET-003 din catalog: 72/72
 70/72 — corectat prin scoaterea statisticilor) + a semnalat eticheta [PROBABIL] lipsă la cauza SW
 (adăugată) și comentarii care promiteau mai mult decât codul (corectate).
 
+**După raport (AskUserQuestion, 2026-09-23):** „procesează inbox" făcut de Claude la cererea lui
+Roland (master recitit după scriere pe Google Drive: `VALUE MATCH`; `sync` → `[OK]`; `verify` →
+`[SET]`; catalog regenerat; INBOX marcat `[PROCESAT]` cu valoarea scoasă). Fragmentele de
+conținut din loguri se păstrează (mențiunea 1c). Autosalvarea fără limita de 5 MB (IndexedDB) =
+plan în `Plan_in_Lucru.md`, de confirmat înainte de implementare.
+
 ---
 
 ## Notă de proces — capcane recurente de reținut (nu re-descoperi)

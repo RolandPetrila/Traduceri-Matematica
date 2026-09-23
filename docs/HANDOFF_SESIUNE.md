@@ -27,11 +27,13 @@ loguri protejate (2026-09-23)", decizie D53):
 - SW: zgomotul `reg.update()` oprit (prag 3 eșecuri); CI pe Node 24; comentarii care mințeau
   corectate; retenția logurilor = manuală, intenționat.
 
-**Deschise — vezi `docs/Plan_in_Lucru.md` §🔧 2026-09-23 (prima secțiune):** 2 itemi 🟡 de
-dovedit/corectat (dacă nu s-au închis deja în aceeași sesiune — verifică bifa) + decizii
-Roland: „procesează inbox" (token → master) și introducerea codului în `/diagnostics`; conținut
-în loguri (traducere/dictare/căutare); E-EDIT-003 pe iPhone (document 4,9 MB > cota
-localStorage → IndexedDB?); rânduri de test în Supabase; 2 adaosuri minore de confirmat.
+**Următorul pas propus (de confirmat de Roland ÎNAINTE de cod):** planul „autosalvare fără
+limita de ~5 MB — IndexedDB" din `docs/Plan_in_Lucru.md` §🔧 2026-09-23 (cauza: pe 13.09,
+autosalvarea Cristinei s-a oprit pe iPhone la un document de 4,9 MB). Pasul 1 = cercetare cu surse
+(cota IndexedDB + politica de ștergere pe iOS/PWA), nu cod. Alte deschise mici acolo: ștergerea
+rândurilor de test, confirmarea retenției de 90 zile + a regulii de numărare a rândurilor,
+gitleaks/Dependabot. Codul de acces e procesat complet (master + env + Vercel); Roland îl introduce
+în `/diagnostics` pe fiecare dispozitiv. Fragmentele de conținut din loguri SE PĂSTREAZĂ (D53).
 
 **⚠️ Rânduri de TEST în Supabase prod (nume FAKE — NU le trata ca incidente reale la
 R-DIAG-AUTO):** `a7bba6b4`, `b97bc162`, `82f6667c`, `aee1d90d` (message `diag:redact_*` /
