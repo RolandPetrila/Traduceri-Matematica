@@ -8,6 +8,7 @@ import { stripVercelFraming } from "@/lib/binary-framing";
 import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
+import { fileListSample } from "@/lib/log-redact";
 
 // Ținte suportate = EXACT ce acceptă rutarea din api/convert.py. (Bug găsit la
 // audit Faza C: UI oferea pdf→jpg/png fără rută backend → 400; corectat apoi
@@ -331,7 +332,7 @@ export default function ConvertorPage() {
           fileCount: files.length,
           totalKb: Math.round(files.reduce((s, x) => s + x.size, 0) / 1024),
         },
-        sample: files.map((x) => `${x.name} (${x.type || "?"})`).join(", "),
+        sample: fileListSample(files),
       });
       setResult({ success: false, message: f.userMessage });
     } finally {

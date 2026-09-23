@@ -1,4 +1,8 @@
-import { redactLogContext } from "./log-redact";
+import {
+  fileListSample,
+  redactFileListSample,
+  redactLogContext,
+} from "./log-redact";
 
 describe("redactLogContext — fără nume de documente/fișiere în Supabase", () => {
   it("elimină titlul documentului de la editor:export, păstrează restul", () => {
@@ -40,6 +44,46 @@ describe("redactLogContext — fără nume de documente/fișiere în Supabase", 
       redactLogContext({ name: "TypeError", message: "x", elapsed_ms: 3 }),
     ).toEqual({ name: "TypeError", message: "x", elapsed_ms: 3 });
     expect(redactLogContext({ name: "Error" })).toEqual({ name: "Error" });
+  });
+
+  it("sample = lista fișierelor (import Editor / Convertor) → doar extensii + tip", () => {
+    expect(
+      redactLogContext({
+        flow: "editor.import",
+        sample: "Lucrare Popescu.pdf (application/pdf), poza elev (?)",
+        sizeKb: 812,
+      }),
+    ).toEqual({
+      flow: "editor.import",
+      sample: ".pdf (application/pdf), ? (?)",
+      sizeKb: 812,
+    });
+    expect(
+      redactLogContext({
+        flow: "convertor.convert",
+        sample: "CARACTERIZARE ANGAJAT.docx (application/vnd.openxmlformats)",
+      }),
+    ).toEqual({
+      flow: "convertor.convert",
+      sample: ".docx (application/vnd.openxmlformats)",
+    });
+  });
+
+  it("sample din alte fluxuri (fragment de răspuns) rămâne neatins", () => {
+    const ctx = {
+      flow: "editor.deeplQuota",
+      sample: "x-vercel-internal-timing: bootstrap;dur=154 (a), b",
+    };
+    expect(redactLogContext(ctx)).toEqual(ctx);
+  });
+
+  it("fileListSample la sursă e idempotent față de redactarea de pe server", () => {
+    const s = fileListSample([
+      { name: "Ionescu Maria - teza.PDF", type: "application/pdf" },
+      { name: "fara extensie", type: "" },
+    ]);
+    expect(s).toBe(".pdf (application/pdf), ? (?)");
+    expect(redactFileListSample(s)).toBe(s);
   });
 
   it("lasă neatinse valorile care nu sunt obiecte simple", () => {

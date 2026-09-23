@@ -58,6 +58,10 @@ SW prag 3 eșecuri, curățare rânduri vechi (doar câmpurile), E-NET-003 doar 
       ×2), import Editor (`filename` ×3), Convertor (`fileNames` ×2, `outputFile`) → extensii/lungimi
       — la sursă (client) + pe server la insert (`lib/log-redact.ts`, +5 teste; acoperă și PWA-uri
       cu bundle vechi; `name` păstrat doar când e clasă de eroare, ex. „TypeError")
+      **+ lacună prinsă de `auditor-regresie`:** `context.sample` ducea lista fișierelor cu nume
+      la eșecul importului Editor (`editor.import`) și al Convertorului (`convertor.convert`) +
+      titlul în contextul E-CONV-002 → reparat la sursă (`fileListSample`: „.pdf (application/pdf)")
+      + pe server după `flow` (idempotent), +3 teste; 5 rânduri vechi curățate
 - [x] SW: `reg.update()` fără `.catch` în `layout.tsx` → prag 3 eșecuri consecutive online —
       script mutat în `lib/sw-register-script.ts` (+3 teste, rulează șirul REAL în jsdom)
 - [x] E-NET-003: catalog corectat (cauza = runtime Vercel la cold start, nu cod propriu) —
@@ -65,9 +69,15 @@ SW prag 3 eșecuri, curățare rânduri vechi (doar câmpurile), E-NET-003 doar 
 - [x] Corecturi: comentarii care mint (`next.config.js`, `gate.yml`, `translate_text.py`) +
       CI Node 20→24 + retenție documentată onest (`DEPLOY_VERCEL.md`, `schema.sql`) +
       `.gitignore` `scratchpad/commit_msg_*.txt` + R-DIAG-AUTO (`project_rules.md`, `CLAUDE.md`)
-- [ ] Token creat de Roland (INBOX `.api-keys`) → setat pe Vercel `traduceri-frontend`
-- [ ] Gate + deploy (confirmare) + verificare live (401 fără token, 200 cu token, export fără nume)
-- [ ] Curățare rânduri vechi Supabase (doar câmpurile de nume)
+- [x] Token `TRADUCERI_DIAG_TOKEN` generat local fără afișare (32 octeți random, precedent „Kizur
+      Cron Secret") → Windows User env + Vercel `traduceri-frontend` (Production, sensitive) + bloc
+      în `~/.api-keys/INBOX.md`. **Rămas pt Roland:** „procesează inbox" în `.api-keys` (→ master)
+- [x] Gate + deploy (confirmat de Roland) + verificare live: `GET /api/logs` fără cod → 401, cod
+      greșit → 401, cod corect → 200; sondă POST cu 5 chei de nume → în Supabase doar
+      `{"probe":true}` (rând `a7bba6b4`); HTML live conține scriptul SW nou; `/diagnostics` arată
+      formularul de cod (captură); CI Node 24 verde (run 35798498195)
+- [x] Curățare rânduri vechi Supabase: 75 rânduri (name/docName/fileNames/outputFile) + 5 rânduri
+      (`sample` cu nume, Convertor) — 0 chei de nume rămase; `name="Error"` (clasă) păstrat
 - [ ] Cei trei auditori + handoff + `Plan_Finalizat.md` + memorie + commit/push
 
 ---

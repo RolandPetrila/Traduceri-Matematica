@@ -42,6 +42,7 @@ import { useEditorTranslate, type LangCode } from "./editor-translate-state";
 import { useEditorDocument } from "./editor-document";
 import { trackEditor } from "./editor-telemetry";
 import { reportFailure } from "@/lib/failure";
+import { fileListSample } from "@/lib/log-redact";
 
 const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp"]);
 const TEXT_EXT = new Set(["txt", "md", "csv", "json"]);
@@ -596,9 +597,7 @@ export function EditorImportProvider({
               lang: usedLang,
               elapsed_ms: Date.now() - startedAt,
             },
-            sample: files
-              .map((f2) => `${f2.name} (${f2.type || "?"})`)
-              .join(", "),
+            sample: fileListSample(files),
           });
           setError(f.userMessage);
           if (Date.now() - startedAt > 8000) {

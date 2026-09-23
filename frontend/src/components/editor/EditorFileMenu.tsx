@@ -70,7 +70,7 @@ export function EditorFileMenu({ editor }: { editor: Editor | null }) {
         code: "E-CONV-002",
         flow: `editor.export.${format}`,
         error: err,
-        context: { format, name, ...flags },
+        context: { format, ...flags },
         userHint: `Exportul ${format.toUpperCase()} a eșuat.`,
       });
       alert(f.userMessage);
