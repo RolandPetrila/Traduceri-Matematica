@@ -31,17 +31,70 @@ const ERROR_CLASS_NAME = /^[A-Za-z]*(Error|Exception)$/;
  */
 const FILE_LIST_SAMPLE_FLOWS = new Set(["editor.import", "convertor.convert"]);
 
-function extToken(fileName: string): string {
+/**
+ * Doar extensii de fișier cunoscute: altfel „Maria.Popescu" ar lăsa „.popescu"
+ * (semnalat de `auditor-regresie`). Tipul MIME rămâne oricum în eșantion.
+ */
+const KNOWN_EXTS = new Set([
+  "pdf",
+  "doc",
+  "docx",
+  "odt",
+  "rtf",
+  "txt",
+  "md",
+  "html",
+  "htm",
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "heic",
+  "heif",
+  "bmp",
+  "tif",
+  "tiff",
+  "svg",
+  "zip",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "csv",
+  "json",
+]);
+
+/** „.pdf" pentru un nume de fișier, „?" dacă extensia lipsește sau e necunoscută. */
+export function fileExtToken(fileName: string): string {
   const i = fileName.lastIndexOf(".");
   const ext = i >= 0 ? fileName.slice(i + 1).toLowerCase() : "";
-  return /^[a-z0-9]{1,8}$/.test(ext) ? `.${ext}` : "?";
+  return KNOWN_EXTS.has(ext) ? `.${ext}` : "?";
+}
+
+/**
+ * `message` e text liber, deci nu-l redactăm generic — doar formele cunoscute
+ * care conțin un nume de fișier: mesajele VALIDATE ale Convertorului
+ * (`lib/validator.ts`, până la 2026-09-23 scriau numele fișierului rezultat).
+ */
+export function redactLogMessage(message: unknown): unknown {
+  if (typeof message !== "string") return message;
+  let m = /^(VALIDATE \| Conversie \S+: )(.+?)( \| \d+ KB \| OK)$/.exec(
+    message,
+  );
+  if (m) return `${m[1]}${fileExtToken(m[2])}${m[3]}`;
+  m = /^(VALIDATE \| Conversie \S+: fisier gol \(0 bytes\) — )(.+)$/.exec(
+    message,
+  );
+  if (m) return `${m[1]}${fileExtToken(m[2])}`;
+  return message;
 }
 
 /** La sursă: lista fișierelor fără nume — „.pdf (application/pdf), .jpg (image/jpeg)". */
 export function fileListSample(
   files: ReadonlyArray<{ name: string; type: string }>,
 ): string {
-  return files.map((f) => `${extToken(f.name)} (${f.type || "?"})`).join(", ");
+  return files.map((f) => `${fileExtToken(f.name)} (${f.type || "?"})`).join(", ");
 }
 
 /**
@@ -53,7 +106,7 @@ export function redactFileListSample(sample: string): string {
     .split(", ")
     .map((part) => {
       const m = /^(.*) \(([^()]*)\)$/.exec(part);
-      return m ? `${extToken(m[1])} (${m[2]})` : "?";
+      return m ? `${fileExtToken(m[1])} (${m[2]})` : "?";
     })
     .join(", ");
 }

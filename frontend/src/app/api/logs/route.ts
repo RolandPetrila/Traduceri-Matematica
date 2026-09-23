@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { DIAG_TOKEN_HEADER, checkDiagToken } from "@/lib/diag-auth";
-import { redactLogContext } from "@/lib/log-redact";
+import { redactLogContext, redactLogMessage } from "@/lib/log-redact";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -143,9 +143,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: "too_large" }, { status: 413 });
     }
     const log = JSON.parse(raw);
-    // Fără nume de documente/fișiere nicăieri mai departe (Supabase, loguri
-    // Vercel, fișier local) — inclusiv de la PWA-uri cu bundle vechi.
+    // Fără nume de documente/fișiere în context/sample și în mesajele VALIDATE,
+    // mai departe (Supabase, loguri Vercel, fișier local) — inclusiv de la PWA-uri
+    // cu bundle vechi. NU acoperă fragmentele de conținut (sample la traducere/
+    // dictare, query la find) — decizie deschisă, vezi docs/Plan_in_Lucru.md.
     log.context = redactLogContext(log.context);
+    log.message = redactLogMessage(log.message);
 
     // Server log stream (viewable in the platform dashboard logs)
     const code = log.errorCode ? `${log.errorCode} ` : "";

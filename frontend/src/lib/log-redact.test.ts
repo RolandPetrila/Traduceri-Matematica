@@ -1,7 +1,9 @@
 import {
+  fileExtToken,
   fileListSample,
   redactFileListSample,
   redactLogContext,
+  redactLogMessage,
 } from "./log-redact";
 
 describe("redactLogContext — fără nume de documente/fișiere în Supabase", () => {
@@ -84,6 +86,32 @@ describe("redactLogContext — fără nume de documente/fișiere în Supabase", 
     ]);
     expect(s).toBe(".pdf (application/pdf), ? (?)");
     expect(redactFileListSample(s)).toBe(s);
+  });
+
+  it("fileExtToken: doar extensii cunoscute, altfel „?\" (fără pseudo-extensii din nume)", () => {
+    expect(fileExtToken("teza.PDF")).toBe(".pdf");
+    expect(fileExtToken("poza.heic")).toBe(".heic");
+    expect(fileExtToken("Maria.Popescu")).toBe("?");
+    expect(fileExtToken("fara extensie")).toBe("?");
+  });
+
+  it("redactLogMessage: numele fișierului din mesajele VALIDATE → extensia", () => {
+    expect(
+      redactLogMessage(
+        "VALIDATE | Conversie convert: CARACTERIZARE ANGAJAT.pdf | 212 KB | OK",
+      ),
+    ).toBe("VALIDATE | Conversie convert: .pdf | 212 KB | OK");
+    expect(
+      redactLogMessage(
+        "VALIDATE | Conversie merge: fisier gol (0 bytes) — Lucrare Ionescu.pdf",
+      ),
+    ).toBe("VALIDATE | Conversie merge: fisier gol (0 bytes) — .pdf");
+    // idempotent + alte mesaje neatinse
+    expect(
+      redactLogMessage("VALIDATE | Conversie convert: .pdf | 212 KB | OK"),
+    ).toBe("VALIDATE | Conversie convert: .pdf | 212 KB | OK");
+    expect(redactLogMessage("editor:export")).toBe("editor:export");
+    expect(redactLogMessage(undefined)).toBeUndefined();
   });
 
   it("lasă neatinse valorile care nu sunt obiecte simple", () => {

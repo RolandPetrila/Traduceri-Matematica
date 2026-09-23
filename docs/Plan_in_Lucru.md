@@ -62,6 +62,11 @@ SW prag 3 eșecuri, curățare rânduri vechi (doar câmpurile), E-NET-003 doar 
       la eșecul importului Editor (`editor.import`) și al Convertorului (`convertor.convert`) +
       titlul în contextul E-CONV-002 → reparat la sursă (`fileListSample`: „.pdf (application/pdf)")
       + pe server după `flow` (idempotent), +3 teste; 5 rânduri vechi curățate
+      **+ a doua rundă `auditor-regresie`:** `lib/validator.ts` scria numele fișierului rezultat în
+      `message` (nu în `context`) → acum doar extensia (`fileExtToken`, listă de extensii cunoscute —
+      „Maria.Popescu" nu mai lasă „.popescu") + `redactLogMessage` pe server pt bundle-uri vechi,
+      +2 teste. Istoric: toate cele 20 de mesaje VALIDATE conțin literalul `output`, zero nume
+      reale → nimic de curățat [CERT, interogare Supabase]
 - [x] SW: `reg.update()` fără `.catch` în `layout.tsx` → prag 3 eșecuri consecutive online —
       script mutat în `lib/sw-register-script.ts` (+3 teste, rulează șirul REAL în jsdom)
 - [x] E-NET-003: catalog corectat (cauza = runtime Vercel la cold start, nu cod propriu) —

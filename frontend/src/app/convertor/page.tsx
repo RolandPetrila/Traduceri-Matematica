@@ -8,7 +8,7 @@ import { stripVercelFraming } from "@/lib/binary-framing";
 import { API_URL } from "@/lib/api-url";
 import { validateConversionOutput } from "@/lib/validator";
 import { addConversionToHistory } from "@/lib/storage";
-import { fileListSample } from "@/lib/log-redact";
+import { fileExtToken, fileListSample } from "@/lib/log-redact";
 
 // Ținte suportate = EXACT ce acceptă rutarea din api/convert.py. (Bug găsit la
 // audit Faza C: UI oferea pdf→jpg/png fără rută backend → 400; corectat apoi
@@ -65,11 +65,6 @@ const PDF_EDIT_ACTIONS = [
     description: "Adauga text watermark pe fiecare pagina",
   },
 ];
-
-function fileExt(name: string): string {
-  const i = name.lastIndexOf(".");
-  return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
-}
 
 export default function ConvertorPage() {
   const [files, setFiles] = useState<File[]>([]);
@@ -142,7 +137,7 @@ export default function ConvertorPage() {
       targetFormat,
       fileCount: files.length,
       // Doar extensia — numele fișierelor pot conține date personale.
-      fileExts: files.map((f) => fileExt(f.name)),
+      fileExts: files.map((f) => fileExtToken(f.name)),
       fileSizes: files.map((f) => f.size),
       pdfAction: operation === "edit-pdf" ? pdfAction : undefined,
     });
@@ -283,8 +278,8 @@ export default function ConvertorPage() {
         operation,
         targetFormat,
         duration_ms: duration,
-        outputExt: fileExt(a.download),
-        fileExts: files.map((f) => fileExt(f.name)),
+        outputExt: fileExtToken(a.download),
+        fileExts: files.map((f) => fileExtToken(f.name)),
       });
 
       // Save to conversion history with output data for re-download

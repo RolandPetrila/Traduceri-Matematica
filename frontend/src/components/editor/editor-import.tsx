@@ -42,7 +42,7 @@ import { useEditorTranslate, type LangCode } from "./editor-translate-state";
 import { useEditorDocument } from "./editor-document";
 import { trackEditor } from "./editor-telemetry";
 import { reportFailure } from "@/lib/failure";
-import { fileListSample } from "@/lib/log-redact";
+import { fileExtToken, fileListSample } from "@/lib/log-redact";
 
 const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp"]);
 const TEXT_EXT = new Set(["txt", "md", "csv", "json"]);
@@ -425,7 +425,7 @@ function buildNotice(
       severity: "warn",
       context: {
         fallbackReason: meta.fallbackReason ?? null,
-        ext: ext(meta.filename),
+        ext: fileExtToken(meta.filename),
       },
     });
   }
@@ -534,7 +534,7 @@ export function EditorImportProvider({
             error: new Error("Import fara continut: 0 blocuri extrase"),
             context: {
               files: files.length,
-              ext: files[0] ? ext(files[0].name) : null,
+              ext: files[0] ? fileExtToken(files[0].name) : null,
               sizeKb: Math.round((files[0]?.size || 0) / 1024),
               usedOcr: r.usedOcr,
               failedPages: r.failedPages,
@@ -591,7 +591,7 @@ export function EditorImportProvider({
             error: err,
             context: {
               files: files.length,
-              ext: files[0] ? ext(files[0].name) : null,
+              ext: files[0] ? fileExtToken(files[0].name) : null,
               sizeKb: Math.round((files[0]?.size || 0) / 1024),
               forceOcr: forceOcrRef.current,
               lang: usedLang,

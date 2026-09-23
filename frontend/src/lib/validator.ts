@@ -2,6 +2,7 @@
 // Logs VALIDATE entries for missing, empty, or suspicious data
 
 import { logInfo, logWarn, logCoded } from "./monitoring";
+import { fileExtToken } from "./log-redact";
 
 export function validateTranslationOutput(data: {
   html?: string;
@@ -69,14 +70,15 @@ export function validateConversionOutput(
     // Conversion produced nothing → error code (execution did not deliver).
     logCoded(
       "E-VALID-001",
-      `VALIDATE | Conversie ${operation}: fisier gol (0 bytes) — ${filename}`,
+      `VALIDATE | Conversie ${operation}: fisier gol (0 bytes) — ${fileExtToken(filename)}`,
       { source: "validator" },
     );
     return;
   }
 
   logInfo(
-    `VALIDATE | Conversie ${operation}: ${filename} | ${(blob.size / 1024).toFixed(0)} KB | OK`,
+    // Doar extensia: `filename` vine din numele încărcat de utilizatoare.
+    `VALIDATE | Conversie ${operation}: ${fileExtToken(filename)} | ${(blob.size / 1024).toFixed(0)} KB | OK`,
     {
       source: "validator",
     },
