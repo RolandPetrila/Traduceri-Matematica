@@ -67,7 +67,7 @@ obligatoriu din partea mea sa execut !" + curățare „Da, toate numele".
       → peste cota localStorage (~5 MB) → autosalvarea s-a oprit (alarma din UI a apărut). Remediu
       posibil: stocarea documentului în IndexedDB [RELEVANT] — efort mediu, de decis.
 - [ ] ⬜ **Decizie Roland — rânduri de test în Supabase prod** (nume FAKE, zero date reale):
-      `a7bba6b4`, `b97bc162`, `82f6667c` (implementare), `ba45af48`, `7a52a9d8`, `6207ea58`
+      `a7bba6b4`, `b97bc162`, `82f6667c`, `aee1d90d` (implementare), `ba45af48`, `7a52a9d8`, `6207ea58`
       (`auditor-dovezi`) — șterg sau păstrez ca dovezi? Până atunci: R-DIAG-AUTO le ignoră.
 - [ ] ⬜ **Confirmare Roland — 2 adaosuri nedecise explicit:** comanda manuală de retenție scrisă
       cu 90 zile (nu 30) în `DEPLOY_VERCEL.md`/`schema.sql`; regula „numără toate rândurile de la

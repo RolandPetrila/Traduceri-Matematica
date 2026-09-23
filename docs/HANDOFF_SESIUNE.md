@@ -34,7 +34,7 @@ Roland: „procesează inbox" (token → master) și introducerea codului în `/
 localStorage → IndexedDB?); rânduri de test în Supabase; 2 adaosuri minore de confirmat.
 
 **⚠️ Rânduri de TEST în Supabase prod (nume FAKE — NU le trata ca incidente reale la
-R-DIAG-AUTO):** `a7bba6b4`, `b97bc162`, `82f6667c` (message `diag:redact_*` /
+R-DIAG-AUTO):** `a7bba6b4`, `b97bc162`, `82f6667c`, `aee1d90d` (message `diag:redact_*` /
 `VALIDATE … SONDA`, source `claude-verificare-live`), `ba45af48`, `7a52a9d8`, `6207ea58`
 (source `auditor-dovezi*`).
 
